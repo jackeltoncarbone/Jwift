@@ -1,0 +1,13 @@
+{
+  "name": "jwift-workspace",
+  "private": true,
+  "description": "Jwift monorepo — Swift-style UI templates and components built on Jaui",
+  "workspaces": [
+    "Jwift.Angular"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=Jwift.Angular",
+    "test": "npm test --workspace=Jwift.Angular",
+    "watch": "npm run watch --workspace=Jwift.Angular"
+  }
+}

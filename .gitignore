@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+.angular/cache
+.claude/
+*.gen.ts
+
+# Build artifacts
+out-tsc/
