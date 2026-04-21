@@ -144,8 +144,6 @@ export abstract class JivHost {
   private _apply(): void {
     const opts = this._resolveOptions();
     const classStyle = (opts.Style ?? {}) as Record<string, unknown>;
-    // Extract element-level props (not part of JivStyle) before the
-    // style merge — these go on the Node directly.
     const overflow = 'Overflow' in classStyle ? classStyle['Overflow'] : undefined;
     const visible = 'Visible' in classStyle ? classStyle['Visible'] : undefined;
     const interactive = 'Interactive' in classStyle ? classStyle['Interactive'] : undefined;
@@ -164,11 +162,7 @@ export abstract class JivHost {
     if (userSelect !== undefined)    this.Node.UserSelect = userSelect as 'Auto' | 'None';
     if (fitMode !== undefined)       this.Node.FitMode = fitMode as 'Contain' | 'Cover';
 
-    // Rebuild Style from defaults + class values, REPLACING every field
-    // in place. This ensures class swaps (e.g. flat → pressed → flat on
-    // the SelectionIndicator) fully reset fields the previous class set
-    // but the new class didn't — Object.assign-style merging leaks the
-    // previous-state's Thickness/BezelWidth/etc. into the next state.
+    // Rebuild from defaults each time so class swaps fully reset unset fields.
     const next: JivStyle = { ...DefaultJivStyle, ...(classStyle as Partial<JivStyle>) };
     Object.assign(this.Node.Style, next);
 
