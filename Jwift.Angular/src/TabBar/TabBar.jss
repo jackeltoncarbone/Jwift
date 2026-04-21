@@ -8,6 +8,8 @@ Jwift_TabBarRow {
 }
 
 Jwift_TabBar {
+  UserSelect: None
+
   Background: rgba(255, 255, 255, 0)
   BorderWidth: 1pt
   BorderBlur: 0.25pt
