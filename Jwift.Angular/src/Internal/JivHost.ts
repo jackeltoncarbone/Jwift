@@ -1,4 +1,5 @@
 import {
+  ElementRef,
   effect,
   forwardRef,
   inject,
@@ -8,7 +9,7 @@ import {
   Jiv,
   JSS_REGISTRY,
 } from 'jaui-angular';
-import { Jiv as JivCore } from 'jaui';
+import { Jiv as JivCore, DefaultJivStyle, type JivStyle } from 'jaui';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 
 /**
@@ -56,6 +57,7 @@ export abstract class JivHost {
   private _canvas = inject(Jaui, { optional: true });
   private _registry = inject(JSS_REGISTRY);
   private _loader = inject(JwiftStyleLoader);
+  private _host = inject(ElementRef<HTMLElement>);
 
   private _className: () => string;
 
@@ -85,6 +87,13 @@ export abstract class JivHost {
       }
     }
     this.Node = new JivCore({ ...opts, ...elementProps });
+    // Bridge Jaui's canvas-level click gesture to a DOM click on this
+    // component's host element so `(click)` template bindings on ANY
+    // Jwift component (glass-button, tab-item, etc.) fire the same way
+    // they do on `<jiv>` from Jaui.Angular.
+    this.Node.OnClick = () => {
+      this._host.nativeElement.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    };
 
     // React to hot-edits (registry.Version bumps) and subclass-driven
     // className changes (e.g. GlassButton's shape input).
@@ -134,17 +143,35 @@ export abstract class JivHost {
 
   private _apply(): void {
     const opts = this._resolveOptions();
-    if (opts.Style) {
-      const style = opts.Style as Record<string, unknown>;
-      if ('Overflow' in style)      { this.Node.Overflow = style['Overflow'] as 'Visible' | 'Hidden' | 'Scroll'; delete style['Overflow']; }
-      if ('Visible' in style)       { this.Node.Visible = style['Visible'] as boolean; delete style['Visible']; }
-      if ('Interactive' in style)   { this.Node.Interactive = style['Interactive'] as boolean; delete style['Interactive']; }
-      if ('PointerEvents' in style) { this.Node.PointerEvents = style['PointerEvents'] as 'Auto' | 'None'; delete style['PointerEvents']; }
-      if ('Cursor' in style)        { this.Node.Cursor = style['Cursor'] as 'Default' | 'Pointer' | 'Text' | 'Move' | 'None'; delete style['Cursor']; }
-      if ('UserSelect' in style)    { this.Node.UserSelect = style['UserSelect'] as 'Auto' | 'None'; delete style['UserSelect']; }
-      if ('FitMode' in style)       { this.Node.FitMode = style['FitMode'] as 'Contain' | 'Cover'; delete style['FitMode']; }
-      Object.assign(this.Node.Style, style);
+    const classStyle = (opts.Style ?? {}) as Record<string, unknown>;
+    // Extract element-level props (not part of JivStyle) before the
+    // style merge — these go on the Node directly.
+    const overflow = 'Overflow' in classStyle ? classStyle['Overflow'] : undefined;
+    const visible = 'Visible' in classStyle ? classStyle['Visible'] : undefined;
+    const interactive = 'Interactive' in classStyle ? classStyle['Interactive'] : undefined;
+    const pointerEvents = 'PointerEvents' in classStyle ? classStyle['PointerEvents'] : undefined;
+    const cursor = 'Cursor' in classStyle ? classStyle['Cursor'] : undefined;
+    const userSelect = 'UserSelect' in classStyle ? classStyle['UserSelect'] : undefined;
+    const fitMode = 'FitMode' in classStyle ? classStyle['FitMode'] : undefined;
+    for (const k of ['Overflow','Visible','Interactive','PointerEvents','Cursor','UserSelect','FitMode']) {
+      delete classStyle[k];
     }
+    if (overflow !== undefined)      this.Node.Overflow = overflow as 'Visible' | 'Hidden' | 'Scroll';
+    if (visible !== undefined)       this.Node.Visible = visible as boolean;
+    if (interactive !== undefined)   this.Node.Interactive = interactive as boolean;
+    if (pointerEvents !== undefined) this.Node.PointerEvents = pointerEvents as 'Auto' | 'None';
+    if (cursor !== undefined)        this.Node.Cursor = cursor as 'Default' | 'Pointer' | 'Text' | 'Move' | 'None';
+    if (userSelect !== undefined)    this.Node.UserSelect = userSelect as 'Auto' | 'None';
+    if (fitMode !== undefined)       this.Node.FitMode = fitMode as 'Contain' | 'Cover';
+
+    // Rebuild Style from defaults + class values, REPLACING every field
+    // in place. This ensures class swaps (e.g. flat → pressed → flat on
+    // the SelectionIndicator) fully reset fields the previous class set
+    // but the new class didn't — Object.assign-style merging leaks the
+    // previous-state's Thickness/BezelWidth/etc. into the next state.
+    const next: JivStyle = { ...DefaultJivStyle, ...(classStyle as Partial<JivStyle>) };
+    Object.assign(this.Node.Style, next);
+
     if (opts.Layout)      Object.assign(this.Node.Layout, opts.Layout);
     if (opts.ChildLayout) Object.assign(this.Node.ChildLayout, opts.ChildLayout);
     if (opts.HoverStyle !== undefined)    this.Node.HoverStyle    = opts.HoverStyle    ?? null;

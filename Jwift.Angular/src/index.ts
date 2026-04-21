@@ -9,6 +9,8 @@ export { Toolbar } from './Toolbar/Toolbar';
 export { ToolbarTitle } from './ToolbarTitle/ToolbarTitle';
 export { ToolbarCompactDef } from './ToolbarTitle/ToolbarCompactDef';
 export { TabBar } from './TabBar/TabBar';
+export { TabItem } from './TabBar/TabItem';
+export { SelectionIndicator } from './SelectionIndicator/SelectionIndicator';
 export { Card, type CardSize } from './Card/Card';
 export { CardFooter } from './Card/CardFooter';
 export { SectionHeader } from './SectionHeader/SectionHeader';
