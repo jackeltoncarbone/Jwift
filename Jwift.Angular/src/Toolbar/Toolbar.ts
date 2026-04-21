@@ -30,7 +30,7 @@ import ToolbarJss from './Toolbar.jss';
 })
 export class Toolbar extends JivHost implements OnInit, OnDestroy {
   constructor() {
-    super('Toolbar', ToolbarJss, () => 'Jwift_Toolbar');
+    super('Toolbar', ToolbarJss, 'Jwift_Toolbar', () => 'Jwift_Toolbar');
   }
 
   ngOnInit(): void { this._attachOnInit(); }

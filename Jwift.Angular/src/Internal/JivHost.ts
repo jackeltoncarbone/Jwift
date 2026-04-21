@@ -60,18 +60,22 @@ export abstract class JivHost {
   private _className: () => string;
 
   /**
-   * @param sourceId   Unique key for the style sheet (used by the loader
-   *                   to dedupe across canvas instances).
-   * @param source     The raw JSS source to register in the registry.
-   * @param className  Resolver for this component's class name — a
-   *                   closure because subclasses typically vary the
-   *                   name by input (shape, variant, etc.).
+   * @param sourceId          Unique key for the style sheet (loader dedupes).
+   * @param source            The raw JSS source to register in the registry.
+   * @param initialClassName  Class name used at construction — must be a
+   *                          plain string because `super()` cannot touch
+   *                          subclass fields (TDZ). Typical pattern: pass
+   *                          the default variant.
+   * @param className         Resolver for reactive class-name changes (input
+   *                          signals, etc). Called LATER from effect(), by
+   *                          which time `this` is fully initialized, so
+   *                          closures over subclass signals are safe.
    */
-  constructor(sourceId: string, source: string, className: () => string) {
+  constructor(sourceId: string, source: string, initialClassName: string, className: () => string) {
     this._className = className;
     this._loader.Ensure(this._registry, sourceId, source);
 
-    const opts = this._resolveOptions();
+    const opts = this._resolveOptionsFor(initialClassName);
     const style = (opts.Style ?? {}) as Record<string, unknown>;
     const elementProps: Record<string, unknown> = {};
     for (const key of _ELEMENT_KEYS) {
@@ -110,7 +114,11 @@ export abstract class JivHost {
   }
 
   private _resolveOptions() {
-    const fromClass = this._registry.Resolve(this._className()) ?? null;
+    return this._resolveOptionsFor(this._className());
+  }
+
+  private _resolveOptionsFor(className: string) {
+    const fromClass = this._registry.Resolve(className) ?? null;
     return {
       Style:         fromClass?.Style         ? { ...fromClass.Style }         : undefined,
       Layout:        fromClass?.Layout        ? { ...fromClass.Layout }        : undefined,

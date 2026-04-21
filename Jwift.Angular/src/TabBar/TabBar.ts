@@ -37,7 +37,7 @@ import TabBarJss from './TabBar.jss';
 })
 export class TabBar extends JivHost implements OnInit, OnDestroy {
   constructor() {
-    super('TabBar', TabBarJss, () => 'Jwift_TabBar');
+    super('TabBar', TabBarJss, 'Jwift_TabBar', () => 'Jwift_TabBar');
   }
 
   ngOnInit(): void { this._attachOnInit(); }

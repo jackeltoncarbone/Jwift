@@ -41,7 +41,8 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
   readonly shape = input<GlassButtonShape>('round');
 
   constructor() {
-    super('GlassButton', GlassButtonJss, () => {
+    super('GlassButton', GlassButtonJss, 'Jwift_GlassBtn_Round', () => {
+      // Called lazily from the reactive effect — by then `this` is real.
       switch (this.shape()) {
         case 'pill':   return 'Jwift_GlassBtn_Pill';
         case 'square': return 'Jwift_GlassBtn_Square';
