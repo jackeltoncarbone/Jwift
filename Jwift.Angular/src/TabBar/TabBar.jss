@@ -16,9 +16,9 @@ Jwift_TabBar {
   BorderBrightness: 1.25
   BorderSaturation: 1.5
 
-  ShadowColor: rgba(0, 0, 0, 0.18)
-  ShadowBlur: 22pt
-  ShadowOffsetY: 6pt
+  ShadowColor: rgba(0, 0, 0, 0.2)
+  ShadowBlur: 28pt
+  ShadowOffsetY: 8pt
 
   BackdropFrostBlur: 4pt
   BackdropBrightness: 1.25

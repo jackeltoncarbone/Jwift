@@ -5,6 +5,8 @@
  */
 
 export { GlassButton, type GlassButtonShape } from './GlassButton/GlassButton';
+export { GlassDropdown } from './GlassDropdown/GlassDropdown';
+export { GlassDropdownItem, type GlassDropdownItemVariant } from './GlassDropdown/GlassDropdownItem';
 export { Toolbar } from './Toolbar/Toolbar';
 export { ToolbarTitle } from './ToolbarTitle/ToolbarTitle';
 export { ToolbarCompactDef } from './ToolbarTitle/ToolbarCompactDef';

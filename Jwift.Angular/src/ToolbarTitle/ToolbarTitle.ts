@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { Jiv } from 'jaui-angular';
+import { Jiv as JivCore } from 'jaui';
 import { Toolbar } from '../Toolbar/Toolbar';
 import { ToolbarCompactDef } from './ToolbarCompactDef';
 
@@ -57,10 +58,12 @@ export class ToolbarTitle implements OnInit, OnDestroy, AfterContentInit {
   private _fade = signal(0);
 
   constructor() {
-    // Drive target's opacity from the fade signal. Jaui animator springs.
+    // Fade only the target's first child (the hero logo) — not the whole
+    // target. Opacity cascades to descendants now, so fading the wrapper
+    // would wipe out the entire hero content.
     effect(() => {
-      const tgt = this.target();
-      if (tgt) tgt.Node.Style.Opacity = (1 - this._fade()).toString();
+      const logo = this.target()?.Node.Children[0] as JivCore | undefined;
+      if (logo) logo.Style.Opacity = (1 - this._fade()).toString();
     });
     // Mirror → toolbar compact visibility.
     effect(() => {
