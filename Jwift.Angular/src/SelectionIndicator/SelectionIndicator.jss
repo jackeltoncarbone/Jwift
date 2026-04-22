@@ -1,5 +1,5 @@
 Jwift_SelectionIndicator {
-  Position: Fixed
+  Position: Placed
   Layer: 1
 
   Background: rgba(255, 255, 255, 0.08)

@@ -6,7 +6,7 @@ Jwift_Card {
   ShadowColor: rgba(0, 0, 0, 0.45)
   ShadowBlur: 24pt
   ShadowOffsetY: 10pt
-  FlexGrow: 0
+  FlexGrow: 1
   FlexShrink: 0
   Overflow: Hidden
   FitMode: Cover

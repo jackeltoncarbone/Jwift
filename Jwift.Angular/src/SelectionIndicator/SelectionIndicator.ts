@@ -157,8 +157,11 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
     const width = baseWidth * this._shapeX.Value;
     const height = baseHeight * this._shapeY.Value;
-    const left = centerX - width / 2;
-    const top = t.Y + t.Height / 2 - height / 2;
+    // Placed: cl.Left/Top are relative to parent's box.
+    const parentX = parent?.X ?? 0;
+    const parentY = parent?.Y ?? 0;
+    const left = centerX - width / 2 - parentX;
+    const top = t.Y + t.Height / 2 - height / 2 - parentY;
 
     const cl = this.Node.ChildLayout;
     const leftPx = `${left}px`;
