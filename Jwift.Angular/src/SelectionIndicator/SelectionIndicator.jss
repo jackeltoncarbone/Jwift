@@ -64,7 +64,7 @@ Jwift_SelectionIndicator {
 Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   Background: rgba(255, 255, 255, 0.12)
 
-  BackdropBrightness: 1.5
+  BackdropBrightness: 2
   BackdropSaturation: 1.5
   BackdropContrast: 1
   BackdropFrostBlur: 0

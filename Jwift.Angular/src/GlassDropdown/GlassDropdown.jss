@@ -28,7 +28,7 @@ Jwift_GlassDropdown {
   Thickness: 2
   Fillet: 0.25
   BezelWidth: 11
-  BezelScale: 0.25
+  BezelScale: 0.5
   Refraction: 20
 
   LightAngle: 135
