@@ -9,7 +9,7 @@ Jwift_GlassBtn {
   ShadowBlur: 22pt
   ShadowOffsetY: 6pt
 
-  BackdropFrostBlur: 4pt
+  BackdropFrostBlur: 8pt
   BackdropBrightness: 1.25
   BackdropSaturation: 1.25
   BackdropContrast: 0.75
