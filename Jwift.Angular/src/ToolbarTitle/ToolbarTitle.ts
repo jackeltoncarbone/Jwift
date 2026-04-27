@@ -73,7 +73,11 @@ export class ToolbarTitle implements OnInit, OnDestroy, AfterContentInit {
 
   ngAfterContentInit(): void {
     const def = this._compactDef();
-    if (def) this.toolbar().RegisterCompact(def.Template);
+    // Always call — `null` clears any stale registration left by a
+    // previous page's toolbar-title (the toolbar persists across routes
+    // in the shared chrome, so a leaving page's compact would otherwise
+    // pollute the new page's toolbar layout).
+    this.toolbar().RegisterCompact(def?.Template ?? null);
   }
 
   ngOnInit(): void {
@@ -86,6 +90,10 @@ export class ToolbarTitle implements OnInit, OnDestroy, AfterContentInit {
 
   ngOnDestroy(): void {
     if (this._rafId) cancelAnimationFrame(this._rafId);
+    // Clear our compact registration so it doesn't bleed into the next
+    // page's toolbar — the toolbar instance lives in shared chrome and
+    // outlives this component.
+    this.toolbar().RegisterCompact(null);
   }
 
   /** Fade fires when target's first child (hero logo) is halfway behind

@@ -74,10 +74,22 @@ export class Toolbar extends JivHost implements OnInit, OnDestroy {
     this._detachOnDestroy();
   }
 
-  /** Mount a compact template into the toolbar's leading slot. Idempotent
-   *  on the same template — re-registering re-creates the view. */
-  RegisterCompact(tpl: TemplateRef<unknown>): void {
-    this._compactView?.destroy();
+  /** Mount a compact template into the toolbar's leading slot. Pass null
+   *  to clear (used by ToolbarTitle.ngOnDestroy so a template registered
+   *  by a leaving page doesn't persist into the next one's toolbar). */
+  RegisterCompact(tpl: TemplateRef<unknown> | null): void {
+    if (this._compactView) {
+      // Detach the compact's jiv from THIS toolbar before destroying the
+      // embedded view — the JivCore stays in Children otherwise (the
+      // embedded view doesn't know about the canvas tree).
+      if (this._compactHost) {
+        this.Node.RemoveChild(this._compactHost);
+        this._compactHost = null;
+      }
+      this._compactView.destroy();
+      this._compactView = null;
+    }
+    if (!tpl) return;
     // Custom injector: overrides Jiv DI so template's children attach to
     // THIS toolbar, not to the declaration-site Jiv ancestor.
     const injector = Injector.create({
