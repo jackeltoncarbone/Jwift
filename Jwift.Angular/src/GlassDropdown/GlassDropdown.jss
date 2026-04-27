@@ -49,12 +49,19 @@ Jwift_GlassDropdown {
   @Transition BorderBrightness { Duration: 10ms }
 }
 
+// Closed state sizes to its projected content so consumers can grow the
+// pill into a multi-cell button group (e.g. the chrome's [points][cart]
+// [avatar] cluster) without having to stamp another glass surface.
+// Padding 4pt + Gap 4pt matches the iOS reference: 3 × 40pt cells inside
+// a 48pt-tall pill.
 Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
+  Direction: Row
   Justify: Center
   Align: Center
-  Padding: 0pt
-  Width: 48pt
-  Height: 48pt
+  Padding: 4pt
+  Gap: 4pt
+  MinWidth: 48pt
+  MinHeight: 48pt
 }
 
 // Padding 6pt inside a 24pt-radius glass => item radius 18pt (concentric).
