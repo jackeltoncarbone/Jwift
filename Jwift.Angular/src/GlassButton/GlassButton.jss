@@ -33,19 +33,26 @@ Jwift_GlassBtn {
   Cursor: Pointer
   @Transition BackdropBrightness { Duration: 10ms }
   @Transition BorderBrightness { Duration: 10ms }
-  @Transition Transform { Duration: 160ms }
+  @Transition PointScale { Duration: 160ms }
+  @Transition VisualScale { Duration: 160ms }
 }
 
+// PointScale cascades through the layout solver — shrinks the button
+// AND every `pt`-based property in its subtree (children's FontSize,
+// Padding, etc.) by the same factor. Width/Height re-resolve and
+// JivAnimator springs the new sizes; the glyph caret inside rides
+// along proportionally, like a CSS `font-size` change cascading
+// through `em` units.
 Jwift_GlassBtn:Hover {
   BackdropBrightness: 1.85
   BorderBrightness: 1.5
-  Transform: scale(1.06)
+  VisualScale: 1.06
 }
 
 Jwift_GlassBtn:Active {
   BackdropBrightness: 2.5
   BorderBrightness: 1.7
-  Transform: scale(0.92)
+  VisualScale: 0.92
 }
 
 Jwift_GlassBtn_Round : Jwift_GlassBtn {
