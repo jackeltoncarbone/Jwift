@@ -3,7 +3,8 @@ Jwift_TabBarRow {
   Direction: Row
   Justify: Center
   Align: Center
-  Height: 64pt
+  Height: MinContent
+  Padding: 3pt
   PointerEvents: Auto
 }
 
@@ -47,7 +48,7 @@ Jwift_TabBar {
   Padding: 6pt
   Width: 640pt
   MaxWidth: 100%
-  Height: 68pt
+  Height: 60pt
   BorderRadius: 999pt
 }
 
