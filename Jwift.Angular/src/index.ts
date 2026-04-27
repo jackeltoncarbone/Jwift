@@ -5,6 +5,7 @@
  */
 
 export { Icon } from './Icon/Icon';
+export { Drawer } from './Drawer/Drawer';
 export { GlassButton, type GlassButtonShape } from './GlassButton/GlassButton';
 export { GlassDropdown } from './GlassDropdown/GlassDropdown';
 export { GlassDropdownItem, type GlassDropdownItemVariant } from './GlassDropdown/GlassDropdownItem';
