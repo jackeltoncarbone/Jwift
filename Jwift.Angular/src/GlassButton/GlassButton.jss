@@ -33,16 +33,19 @@ Jwift_GlassBtn {
   Cursor: Pointer
   @Transition BackdropBrightness { Duration: 10ms }
   @Transition BorderBrightness { Duration: 10ms }
+  @Transition Transform { Duration: 160ms }
 }
 
 Jwift_GlassBtn:Hover {
   BackdropBrightness: 1.85
   BorderBrightness: 1.5
+  Transform: scale(1.06)
 }
 
 Jwift_GlassBtn:Active {
   BackdropBrightness: 2.5
   BorderBrightness: 1.7
+  Transform: scale(0.92)
 }
 
 Jwift_GlassBtn_Round : Jwift_GlassBtn {
