@@ -40,10 +40,12 @@ export class Icon extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('Icon', IconJss, 'Jwift_Icon', () => this.className() ?? 'Jwift_Icon');
+    // Force the icon font on every text update — consumers' class can override
+    // size / weight / color, but the font family is always JwiftIcons.
     effect(() => {
       const cp = IconData[this.Name().toLowerCase()];
       const glyph = cp != null ? String.fromCodePoint(cp) : '';
-      this.Node.SetText(glyph, undefined);
+      this.Node.SetText(glyph, { FontFamily: 'JwiftIcons' });
     });
   }
 
