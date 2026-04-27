@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { Jiv, Jext } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
+import { Icon } from '../Icon/Icon';
 import { TabBar } from './TabBar';
 import TabBarJss from './TabBar.jss';
 
@@ -33,9 +34,9 @@ import TabBarJss from './TabBar.jss';
 @Component({
   selector: 'tab-item',
   standalone: true,
-  imports: [Jext],
+  imports: [Jext, Icon],
   template: `
-    <jext [class]="IconClass()" [text]="_active() && iconFill() ? iconFill() : icon()" />
+    <icon [class]="IconClass()" [Name]="_active() && iconFill() ? iconFill() : icon()" />
     <jext [class]="LabelClass()" [text]="label()" />
   `,
   styles: [':host { display: contents; }'],

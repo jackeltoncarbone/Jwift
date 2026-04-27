@@ -4,6 +4,7 @@
  * Swift-style UI templates and components built on Jaui.
  */
 
+export { Icon } from './Icon/Icon';
 export { GlassButton, type GlassButtonShape } from './GlassButton/GlassButton';
 export { GlassDropdown } from './GlassDropdown/GlassDropdown';
 export { GlassDropdownItem, type GlassDropdownItemVariant } from './GlassDropdown/GlassDropdownItem';
