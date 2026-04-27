@@ -11,6 +11,7 @@ import {
   signal,
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
+import { type ChildLayout } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import SliderJss from './Slider.jss';
 
@@ -39,7 +40,7 @@ export interface SliderScrubEvent {
   imports: [Jiv],
   template: `
     <jiv class="Jwift_SliderTrack">
-      <jiv class="Jwift_SliderFill" [style]="FillStyle()" />
+      <jiv class="Jwift_SliderFill" [childLayout]="FillChildLayout()" />
     </jiv>
     <jiv class="Jwift_SliderHit"
          (pointerdown)="onPointerDown($event)" />
@@ -63,7 +64,7 @@ export class Slider extends JivHost implements OnInit, OnDestroy {
 
   private readonly _active = signal(false);
 
-  protected readonly FillStyle = computed(() => {
+  protected readonly FillChildLayout = computed<Partial<ChildLayout>>(() => {
     const span = this.max() - this.min();
     if (span <= 0) return { Width: '0%' };
     const pct = Math.max(0, Math.min(100,
