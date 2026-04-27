@@ -104,7 +104,6 @@ Jwift_TabIconActive : Jwift_TabIcon {
 Jwift_TabIconExpanded : Jwift_TabIcon {
   FontSize: 18pt
   LineHeight: 1.2
-  Height: 22pt
 }
 
 Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
@@ -132,7 +131,6 @@ Jwift_TabLabelActive : Jwift_TabLabel {
 Jwift_TabLabelExpanded : Jwift_TabLabel {
   FontSize: 15pt
   LineHeight: 1.2
-  Height: 22pt
 }
 
 Jwift_TabLabelExpandedActive : Jwift_TabLabelExpanded {
