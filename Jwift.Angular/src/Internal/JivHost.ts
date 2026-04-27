@@ -9,7 +9,11 @@ import {
   Jiv,
   JSS_REGISTRY,
 } from 'jaui-angular';
-import { Jiv as JivCore, DefaultJivStyle, type JivStyle } from 'jaui';
+import {
+  Jiv as JivCore,
+  DefaultJivStyle, DefaultLayoutConfig, DefaultChildLayout,
+  type JivStyle, type LayoutConfig, type ChildLayout,
+} from 'jaui';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 
 /**
@@ -163,11 +167,18 @@ export abstract class JivHost {
     if (fitMode !== undefined)       this.Node.FitMode = fitMode as 'Contain' | 'Cover';
 
     // Rebuild from defaults each time so class swaps fully reset unset fields.
+    // Layout / ChildLayout follow the same pattern as Style — without the
+    // default rebuild, properties set by one variant (e.g. _Open's
+    // Width: 176pt) leak through to the next variant (_Closed) when the
+    // new class doesn't redeclare them, and the node never shrinks back.
     const next: JivStyle = { ...DefaultJivStyle, ...(classStyle as Partial<JivStyle>) };
     Object.assign(this.Node.Style, next);
 
-    if (opts.Layout)      Object.assign(this.Node.Layout, opts.Layout);
-    if (opts.ChildLayout) Object.assign(this.Node.ChildLayout, opts.ChildLayout);
+    const nextLayout: LayoutConfig = { ...DefaultLayoutConfig, ...(opts.Layout ?? {}) };
+    Object.assign(this.Node.Layout, nextLayout);
+
+    const nextChildLayout: ChildLayout = { ...DefaultChildLayout, ...(opts.ChildLayout ?? {}) };
+    Object.assign(this.Node.ChildLayout, nextChildLayout);
     if (opts.HoverStyle !== undefined)    this.Node.HoverStyle    = opts.HoverStyle    ?? null;
     if (opts.ActiveStyle !== undefined)   this.Node.ActiveStyle   = opts.ActiveStyle   ?? null;
     if (opts.FocusStyle !== undefined)    this.Node.FocusStyle    = opts.FocusStyle    ?? null;
