@@ -64,6 +64,68 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
   MinHeight: 48pt
 }
 
+// Closed-state cell — flat 40pt round hit-target inside a closed dropdown.
+// No own glass material (the wrapping dropdown owns the glass). Hover/
+// active tints lift the background. Consumers stop click propagation
+// when the cell should fire a direct action without toggling the
+// dropdown; let it bubble when the cell is the open/close trigger
+// (e.g. ellipsis). One canonical class — drill, picture, page-chrome
+// all share it.
+Jwift_GlassDropdownCell {
+  Width: 40pt
+  Height: 40pt
+  BorderRadius: 999pt
+  Direction: Row
+  Justify: Center
+  Align: Center
+  Background: rgba(255, 255, 255, 0)
+  Cursor: Pointer
+  Interactive: true
+  UserSelect: None
+  @Transition Background { Duration: 140ms }
+}
+
+Jwift_GlassDropdownCell:Hover {
+  Background: rgba(255, 255, 255, 0.14)
+}
+
+Jwift_GlassDropdownCell:Active {
+  Background: rgba(255, 255, 255, 0.22)
+}
+
+Jwift_GlassDropdownCell_Active : Jwift_GlassDropdownCell {
+  Background: rgba(255, 255, 255, 0.22)
+}
+
+// Round avatar-style cell — like the cell above but clips its inner
+// image to a circle. Used for cells that contain a profile photo or
+// other rounded artwork. Order: 200 pins it to the trailing end of the
+// closed-state row regardless of when its sibling cells get inserted
+// (signal-driven @for can populate later than static avatar cells,
+// which would otherwise leave the avatar at index 0).
+Jwift_GlassDropdownCell_Avatar : Jwift_GlassDropdownCell {
+  Overflow: Hidden
+  Order: 200
+}
+
+// Ellipsis "open the dropdown" trigger cell — sits between the action
+// cells and the avatar. Order: 100 puts it after default-Order action
+// cells but before the avatar (Order: 200).
+Jwift_GlassDropdownCell_Ellipsis : Jwift_GlassDropdownCell {
+  Order: 100
+}
+
+// Image inside an avatar cell. Fills the cell entirely so the photo IS
+// the cell (no inner padding showing the cell's own background as a
+// ring around a smaller photo). Cell already provides the round clip.
+Jwift_GlassDropdownCellAvatarImage {
+  Width: 100%
+  Height: 100%
+  BorderRadius: 999pt
+  Overflow: Hidden
+  FitMode: Cover
+}
+
 // Padding 6pt inside a 24pt-radius glass => item radius 18pt (concentric).
 Jwift_GlassDropdown_Open : Jwift_GlassDropdown {
   Width: 176pt
