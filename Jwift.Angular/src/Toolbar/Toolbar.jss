@@ -23,8 +23,11 @@ Jwift_Toolbar {
 //     </toolbar>
 //   </jiv>
 //
-// Pages with a custom inset (Drill / Picture editor with 28pt symmetric
-// concentric chrome) skip this and define their own pinned frame.
+// Padding: 18pt. Combined with Toolbar's own 10pt inset, glass-button
+// pills land 28pt from the screen edge — the canonical @ChromePad value
+// (concentric with @ScreenR: 80pt). Drill / Picture editors hardcode
+// 28pt directly in their own TopBar; this matches them so consumers
+// using <toolbar> + Jwift_PageHeader inherit the same concentric chrome.
 Jwift_PageHeader {
   Position: Placed
   Top: 0pt
@@ -33,7 +36,7 @@ Jwift_PageHeader {
   Direction: Column
   Justify: Start
   Align: Stretch
-  Padding: 8pt
+  Padding: 18pt
   Layer: 22
   PointerEvents: None
 }
