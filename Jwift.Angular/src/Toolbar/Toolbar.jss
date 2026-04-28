@@ -46,27 +46,26 @@ Jwift_PageHeader {
 // classes — consumers drop them on a `<jiv>` and nest the page-specific
 // content inside.
 //
-// Height: 48pt (NOT MinHeight) is critical — the trailing wrapper often
-// holds a `<glass-dropdown>` whose Position:Placed parking takes it OUT
-// of flex flow, leaving the wrapper with zero in-flow content. With
-// MinHeight, Jaui's flex resolves the cross-axis size from the in-flow
-// content (zero) and the wrapper collapses to 0pt. A 0-height wrapper
-// gets centered to the toolbar's vertical mid-line by Align:Center, and
-// the Placed child anchors Top:0 relative to that mid-line — pushing the
-// group ~half-toolbar-height down from the chrome edge. Locking the
-// wrapper to an explicit 48pt (the canonical pill/cell height) gives
-// flex a concrete size to use, so the wrapper aligns to the toolbar's
-// padded content top and the trailing group sits at the symmetric chrome
-// inset (top gap == side gap).
+// Leading wrapper auto-sizes from its in-flow content (back-button is
+// 48pt tall, providing the cross-axis size). MinHeight is a safety floor
+// when the page omits the back button so the wrapper still occupies the
+// content area and stays centered with the trailing group.
 Jwift_ToolbarLeading {
   Direction: Row
   Justify: Start
   Align: Center
   Gap: 10pt
-  Height: 48pt
+  MinHeight: 48pt
   FlexShrink: 0
 }
 
+// Trailing wrapper uses an explicit Height (NOT MinHeight) because the
+// only child is typically a `<glass-dropdown>` which is Position:Placed
+// (out-of-flow). With MinHeight Jaui's flex resolves the cross-axis from
+// in-flow content (zero) and the wrapper collapses to 0pt — the Placed
+// dropdown's Top:0 then anchors at the toolbar mid-line, dropping the
+// trailing group ~24pt below the leading group. Explicit Height locks
+// the wrapper to a fixed 48pt regardless of in-flow content.
 Jwift_ToolbarTrailing {
   Direction: Row
   Justify: End
