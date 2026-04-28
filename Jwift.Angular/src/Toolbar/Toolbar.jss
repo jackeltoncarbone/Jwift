@@ -8,6 +8,36 @@ Jwift_Toolbar {
   PointerEvents: Auto
 }
 
+// Page-level pinning frame for a per-page header. Position:Placed at the
+// top edge of the page's content area; consumers drop their `<toolbar>`
+// (or a leading/trailing group pair) inside.
+//
+// PointerEvents: None lets clicks pass through the empty middle of the
+// frame to whatever is underneath (the reality view, the page scroll);
+// the toolbar's own pills set PointerEvents: Auto to receive clicks.
+//
+//   <jiv class="Jwift_PageHeader">
+//     <toolbar #bar>
+//       <jiv class="Jwift_ToolbarLeading">...</jiv>
+//       <jiv class="Jwift_ToolbarTrailing">...</jiv>
+//     </toolbar>
+//   </jiv>
+//
+// Pages with a custom inset (Drill / Picture editor with 28pt symmetric
+// concentric chrome) skip this and define their own pinned frame.
+Jwift_PageHeader {
+  Position: Placed
+  Top: 0pt
+  Left: 0pt
+  Width: 100%
+  Direction: Column
+  Justify: Start
+  Align: Stretch
+  Padding: 8pt
+  Layer: 22
+  PointerEvents: None
+}
+
 // Leading / trailing group wrappers — every consumer toolbar needs to
 // cluster its leading items (back-button + title) and trailing items
 // (action dropdown + avatar) so they pack to opposite ends of the
@@ -42,6 +72,17 @@ Jwift_ToolbarTrailing {
   Gap: 8pt
   MinHeight: 48pt
   FlexShrink: 0
+}
+
+// Canonical chevron-left glyph used inside `<glass-button shape="round">`
+// for back buttons. Consumer toolbars apply this directly so they don't
+// have to re-declare the icon font / size / color per page.
+Jwift_ToolbarBackGlyph {
+  FontFamily: JwiftIcons
+  FontSize: 14pt
+  FontWeight: 600
+  Color: rgba(255, 255, 255, 0.92)
+  TextAlign: Center
 }
 
 // Toolbar title text. 15pt semibold matches the iOS 26 navigation-title
