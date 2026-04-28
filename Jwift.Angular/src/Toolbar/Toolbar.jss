@@ -46,16 +46,17 @@ Jwift_PageHeader {
 // classes — consumers drop them on a `<jiv>` and nest the page-specific
 // content inside.
 //
-// Leading wrapper auto-sizes from its in-flow content (back-button is
-// 48pt tall, providing the cross-axis size). MinHeight is a safety floor
-// when the page omits the back button so the wrapper still occupies the
-// content area and stays centered with the trailing group.
+// Leading wrapper — pure flex row. Auto-sizes from its in-flow content
+// (back-button is 48pt tall and 48pt wide, providing the cross-axis
+// size; title text takes its natural width). No Height / MinHeight —
+// imposing one alters Jaui's flex shrink/wrap resolution and can push
+// the title text onto a second line. This mirrors the legacy
+// TopBarLeading exactly.
 Jwift_ToolbarLeading {
   Direction: Row
   Justify: Start
   Align: Center
   Gap: 10pt
-  MinHeight: 48pt
   FlexShrink: 0
 }
 
