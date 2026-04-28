@@ -69,10 +69,10 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   BackdropContrast: 1
   BackdropFrostBlur: 0
 
-  Thickness: 5.5
-  Fillet: 0.5
-  Refraction: -2
-  BezelWidth: 8
+  Thickness: 8
+  Fillet: 1
+  Refraction: -1
+  BezelWidth: 16
   BezelScale: 0.25
   FresnelStrength: 0.35
   ChromaticAberration: 0.2
