@@ -2,7 +2,7 @@ Jwift_SelectionIndicator {
   Position: Placed
   Layer: 1
 
-  Background: rgba(255, 255, 255, 0.75)
+  Background: rgb(255, 255, 255)
   BorderRadius: 100pt
   BackdropBrightness: 1.25
   BackdropSaturation: 1.25
