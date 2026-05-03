@@ -91,12 +91,22 @@ export abstract class JivHost {
       }
     }
     this.Node = new JivCore({ ...opts, ...elementProps });
-    // Bridge Jaui's canvas-level click gesture to a DOM click on this
-    // component's host element so `(click)` template bindings on ANY
-    // Jwift component (glass-button, tab-item, etc.) fire the same way
-    // they do on `<jiv>` from Jaui.Angular.
+    // Bridge Jaui's canvas-level pointer + click gestures to DOM events
+    // on this component's host element so `(click)` and
+    // `(pointerdown/move/up)` template bindings on ANY Jwift component
+    // (glass-button, tab-item, etc.) fire the same way they do on
+    // `<jiv>` from Jaui.Angular.
     this.Node.OnClick = () => {
       this._host.nativeElement.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    };
+    this.Node.OnPointerDown = (e) => {
+      this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointerdown', e));
+    };
+    this.Node.OnPointerMove = (e) => {
+      this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointermove', e));
+    };
+    this.Node.OnPointerUp = (e) => {
+      this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointerup', e));
     };
 
     // React to hot-edits (registry.Version bumps) and subclass-driven
@@ -137,11 +147,15 @@ export abstract class JivHost {
       Layout:        fromClass?.Layout        ? { ...fromClass.Layout }        : undefined,
       ChildLayout:   fromClass?.ChildLayout   ? { ...fromClass.ChildLayout }   : undefined,
       TextStyle:     fromClass?.TextStyle     ? { ...fromClass.TextStyle }     : undefined,
-      HoverStyle:    fromClass?.HoverStyle,
-      ActiveStyle:   fromClass?.ActiveStyle,
-      FocusStyle:    fromClass?.FocusStyle,
-      DisabledStyle: fromClass?.DisabledStyle,
-      Springs:       fromClass?.Springs,
+      HoverStyle:        fromClass?.HoverStyle,
+      ActiveStyle:       fromClass?.ActiveStyle,
+      FocusStyle:        fromClass?.FocusStyle,
+      DisabledStyle:     fromClass?.DisabledStyle,
+      HoverTextStyle:    fromClass?.HoverTextStyle,
+      ActiveTextStyle:   fromClass?.ActiveTextStyle,
+      FocusTextStyle:    fromClass?.FocusTextStyle,
+      DisabledTextStyle: fromClass?.DisabledTextStyle,
+      Springs:           fromClass?.Springs,
     };
   }
 
@@ -179,10 +193,15 @@ export abstract class JivHost {
 
     const nextChildLayout: ChildLayout = { ...DefaultChildLayout, ...(opts.ChildLayout ?? {}) };
     Object.assign(this.Node.ChildLayout, nextChildLayout);
-    if (opts.HoverStyle !== undefined)    this.Node.HoverStyle    = opts.HoverStyle    ?? null;
-    if (opts.ActiveStyle !== undefined)   this.Node.ActiveStyle   = opts.ActiveStyle   ?? null;
-    if (opts.FocusStyle !== undefined)    this.Node.FocusStyle    = opts.FocusStyle    ?? null;
-    if (opts.DisabledStyle !== undefined) this.Node.DisabledStyle = opts.DisabledStyle ?? null;
+    if (opts.TextStyle) this.Node.SetText(this.Node.Text, opts.TextStyle);
+    if (opts.HoverStyle !== undefined)        this.Node.HoverStyle        = opts.HoverStyle        ?? null;
+    if (opts.ActiveStyle !== undefined)       this.Node.ActiveStyle       = opts.ActiveStyle       ?? null;
+    if (opts.FocusStyle !== undefined)        this.Node.FocusStyle        = opts.FocusStyle        ?? null;
+    if (opts.DisabledStyle !== undefined)     this.Node.DisabledStyle     = opts.DisabledStyle     ?? null;
+    if (opts.HoverTextStyle !== undefined)    this.Node.HoverTextStyle    = opts.HoverTextStyle    ?? null;
+    if (opts.ActiveTextStyle !== undefined)   this.Node.ActiveTextStyle   = opts.ActiveTextStyle   ?? null;
+    if (opts.FocusTextStyle !== undefined)    this.Node.FocusTextStyle    = opts.FocusTextStyle    ?? null;
+    if (opts.DisabledTextStyle !== undefined) this.Node.DisabledTextStyle = opts.DisabledTextStyle ?? null;
     this.Node.MarkLayoutDirty();
   }
 }
@@ -191,3 +210,22 @@ const _ELEMENT_KEYS = [
   'Overflow', 'Visible', 'Interactive', 'PointerEvents',
   'Cursor', 'UserSelect', 'PointScale', 'FitMode',
 ];
+
+function _clonePointerEvent(type: string, src: PointerEvent): PointerEvent {
+  const evt = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: src.clientX,
+    clientY: src.clientY,
+    pointerId: src.pointerId,
+    pointerType: src.pointerType,
+    button: src.button,
+    buttons: src.buttons,
+  });
+  // Marker so DOM listeners on ancestor elements (e.g. page-root field
+  // gesture handlers) can distinguish bridge-synthesized events — fired
+  // because Jaui hit-tested a Jiv-painted child — from native pointer
+  // events on the canvas, which target real field area.
+  (evt as PointerEvent & { __jauiBridged?: boolean }).__jauiBridged = true;
+  return evt;
+}
