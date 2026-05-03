@@ -89,3 +89,16 @@ JwiftSectionTitle {
   Color: rgba(255, 255, 255, 0.85)
   LetterSpacing: -0.3pt
 }
+
+// ── JwiftHeroGlass ──────────────────────────────────────────────────
+// Hero / CTA variant of JwiftGlass — heavier shadow + tinted fill so
+// the surface reads as the page's primary action button against in-
+// flow content. Inherits everything else (border luminosity, backdrop
+// blur, refraction, etc.) so it stays in the design-system family —
+// just with more visual weight than the standard floating glass.
+JwiftHeroGlass : JwiftGlass {
+  Background: rgba(255, 255, 255, 0.1)
+  ShadowColor: rgba(0, 0, 0, 0.2)
+  ShadowBlur: 28pt
+  ShadowOffsetY: 8pt
+}
