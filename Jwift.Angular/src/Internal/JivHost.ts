@@ -173,8 +173,10 @@ export abstract class JivHost {
       delete classStyle[k];
     }
     if (overflow !== undefined)      this.Node.Overflow = overflow as 'Visible' | 'Hidden' | 'Scroll';
-    if (visible !== undefined)       this.Node.Visible = visible as boolean;
-    if (interactive !== undefined)   this.Node.Interactive = interactive as boolean;
+    // JSS values arrive as strings ('true'/'false'); inline [style] passes
+    // real booleans. Coerce so 'false' doesn't end up truthy.
+    if (visible !== undefined)       this.Node.Visible = visible === true || visible === 'true';
+    if (interactive !== undefined)   this.Node.Interactive = interactive === true || interactive === 'true';
     if (pointerEvents !== undefined) this.Node.PointerEvents = pointerEvents as 'Auto' | 'None';
     if (cursor !== undefined)        this.Node.Cursor = cursor as 'Default' | 'Pointer' | 'Text' | 'Move' | 'None';
     if (userSelect !== undefined)    this.Node.UserSelect = userSelect as 'Auto' | 'None';
