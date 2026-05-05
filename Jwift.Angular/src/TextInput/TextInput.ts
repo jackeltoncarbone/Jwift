@@ -1,6 +1,6 @@
 import {
   ChangeDetectionStrategy, Component,
-  input, model, output,
+  input, model, output, viewChild,
 } from '@angular/core';
 import { Jinput, type JinputSpan, Jiv, Jext, Jyle } from 'jaui-angular';
 import TextInputJss from './TextInput.jss';
@@ -31,6 +31,7 @@ export type { JinputSpan as TextInputSpan };
     <jyle [source]="JssSource" />
     <jiv class="TextInputBox">
       <jinput
+        #jinput
         [Text]="Text()"
         (TextChange)="Text.set($event)"
         [Spans]="Spans()"
@@ -84,4 +85,12 @@ export class TextInput {
   protected readonly _fontWeight = (): number => this.FontWeight() ?? 400;
   protected readonly _lineHeightRatio = (): number => this.LineHeightRatio() ?? 1.6;
   protected readonly _rowGapPx = (): number => this.RowGapPx() ?? 5;
+
+  // ── Imperative API ───────────────────────────────────────────────
+  private readonly _jinput = viewChild<Jinput>('jinput');
+
+  /** Programmatically focus the input. Forwards to the underlying jinput. */
+  Focus = (): void => {
+    this._jinput()?.Focus();
+  };
 }
