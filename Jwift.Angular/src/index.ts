@@ -21,6 +21,8 @@ export { CardFooter } from './Card/CardFooter';
 export { SectionHeader } from './SectionHeader/SectionHeader';
 export { JwiftStyleLoader } from './Jss/Jwift.Style.Loader';
 export { JivHost } from './Internal/JivHost';
+export { ContextMenu } from './ContextMenu/ContextMenu';
+export { ContextMenuService, type ContextMenuItem } from './ContextMenu/ContextMenu.Service';
 // Universal Liquid-Glass JSS — opt in via space-separated class names
 // (`class="MyThing JwiftGlass"`) or single-inheritance (`MyThing :
 // JwiftGlass {...}`). Consumer page must register it once with a
