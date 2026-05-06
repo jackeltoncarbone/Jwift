@@ -37,8 +37,10 @@ import NumberTickerJss from './NumberTicker.jss';
       @for (cell of _cells(); track $index) {
         <jiv class="NumberTickerCell" [childLayout]="_cellLayout()">
           <jiv class="NumberTickerStack" [style]="_stackStyle(cell)">
-            <jext class="NumberTickerGlyph" [text]="cell.slots[0]" [textStyle]="_glyphTextStyle()" [childLayout]="_glyphLayout()" />
-            <jext class="NumberTickerGlyph" [text]="cell.slots[1]" [textStyle]="_glyphTextStyle()" [childLayout]="_glyphLayout()" />
+            <jext class="NumberTickerGlyph" [text]="cell.slots[0]" [textStyle]="_glyphTextStyle()"
+              [childLayout]="_glyphLayout()" [style]="_glyphStyle(cell, 0)" />
+            <jext class="NumberTickerGlyph" [text]="cell.slots[1]" [textStyle]="_glyphTextStyle()"
+              [childLayout]="_glyphLayout()" [style]="_glyphStyle(cell, 1)" />
           </jiv>
         </jiv>
       }
@@ -65,7 +67,9 @@ export class NumberTicker {
   /** Multiplier on FontSizePx that sets each cell's width. Uniform across
    *  every character so the row doesn't wiggle as digits change width
    *  in a proportional font (1 narrower than 4, etc.) — equivalent to
-   *  tabular-nums in CSS. Default 0.62 reads well for Inter digits. */
+   *  tabular-nums in CSS. Default 0.7 fits the widest Inter digits
+   *  (4, 8) without clipping; consumers wanting a tighter readout can
+   *  drop toward 0.6 if their font is narrower. */
   readonly CellWidthRatio = input<number | null>(null);
 
   // ── Resolved house defaults ────────────────────────────────────────
@@ -74,7 +78,7 @@ export class NumberTicker {
   protected readonly _fontWeight = (): number => this.FontWeight() ?? 500;
   protected readonly _color = (): string => this.Color() ?? 'rgba(255, 255, 255, 1)';
   protected readonly _lineHeightRatio = (): number => this.LineHeightRatio() ?? 1.2;
-  protected readonly _cellWidthRatio = (): number => this.CellWidthRatio() ?? 0.62;
+  protected readonly _cellWidthRatio = (): number => this.CellWidthRatio() ?? 0.7;
 
   /** Cell height in pt — same value sets the cell's Height and the slide
    *  distance so the incoming digit travels exactly one cell. */
@@ -109,6 +113,15 @@ export class NumberTicker {
 
   protected _stackStyle = (cell: Cell): Partial<JivStyle> => ({
     VisualTranslate: CellTranslatePt(cell, this._cellHeight()),
+  });
+
+  /** Per-slot opacity. Visible slot (matching cell.parity) holds at 1;
+   *  the other fades to 0. JSS @Transition Opacity on NumberTickerGlyph
+   *  smooths the swap so the outgoing digit fades out as it slides
+   *  toward the cell edge — softens the otherwise hard Overflow:Hidden
+   *  cut, giving the picker a graceful exit. */
+  protected _glyphStyle = (cell: Cell, slot: 0 | 1): Partial<JivStyle> => ({
+    Opacity: cell.parity === slot ? '1' : '0',
   });
 
   // ── Diff state ─────────────────────────────────────────────────────

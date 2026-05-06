@@ -61,22 +61,30 @@ const buildTicker = (spec: TickerSpec) => {
 
   const cellNodes: Jiv[] = [];
   const stackNodes: Jiv[] = [];
+  const slot0Nodes: Jiv[] = [];
+  const slot1Nodes: Jiv[] = [];
   for (const cell of spec.cells) {
     const cellJiv = new Jiv({
       Layout: { Direction: 'Column', Justify: 'Start', Align: 'Center' },
-      ChildLayout: { Width: `${cellWidth}pt`, Height: `${cellHeight}pt` },
+      ChildLayout: { Width: `${cellWidth}pt`, Height: `${cellHeight}pt`, FlexShrink: 0 },
       Style: { Overflow: 'Hidden' as unknown as string },
     });
+    // FlexShrink: 0 mirrors NumberTicker.jss — the stack must keep its
+    // 2× cellHeight natural height so slot 1 lives off-frame and the
+    // cell's Overflow:Hidden can clip it. Without this, default flex
+    // shrink (1) compresses both slots into the cell — both digits end
+    // up visible at half-height and the cell renders broken.
     const stackJiv = new Jiv({
       Layout: { Direction: 'Column', Justify: 'Start', Align: 'Center' },
+      ChildLayout: { FlexShrink: 0 },
       Style: { VisualTranslate: CellTranslatePt(cell, cellHeight) },
     });
     const slot0 = new Jiv({
-      ChildLayout: { Height: `${cellHeight}pt` },
+      ChildLayout: { Height: `${cellHeight}pt`, FlexShrink: 0 },
       Text: cell.slots[0],
     });
     const slot1 = new Jiv({
-      ChildLayout: { Height: `${cellHeight}pt` },
+      ChildLayout: { Height: `${cellHeight}pt`, FlexShrink: 0 },
       Text: cell.slots[1],
     });
     stackJiv.AddChild(slot0);
@@ -85,6 +93,8 @@ const buildTicker = (spec: TickerSpec) => {
     row.AddChild(cellJiv);
     cellNodes.push(cellJiv);
     stackNodes.push(stackJiv);
+    slot0Nodes.push(slot0);
+    slot1Nodes.push(slot1);
   }
 
   // Hand the solver an oversized viewport so flex doesn't ever shrink
@@ -95,7 +105,10 @@ const buildTicker = (spec: TickerSpec) => {
   // assertion readability (assertions stay in pt-space, the unit the
   // component author actually reasons in).
   const inPt = (px: number): number => px / POINT_SCALE;
-  return { root, row, cellNodes, stackNodes, results, cellWidth, cellHeight, inPt };
+  return {
+    root, row, cellNodes, stackNodes, slot0Nodes, slot1Nodes,
+    results, cellWidth, cellHeight, inPt,
+  };
 };
 
 const fresh = (ch: string): Cell => ({ parity: 0, slots: [ch, ''] });
@@ -185,6 +198,45 @@ describe('NumberTicker — stack VisualTranslate resolves with parity', () => {
     expect(inPt(stackNodes[0].RenderStyle.VisualTranslateY)).toBeCloseTo(0, 4);
     expect(inPt(stackNodes[1].RenderStyle.VisualTranslateY)).toBeCloseTo(-cellHeight, 4);
     expect(inPt(stackNodes[2].RenderStyle.VisualTranslateY)).toBeCloseTo(0, 4);
+  });
+});
+
+// ─── Slot sizing — flex-shrink must NOT collapse the stack ───
+//
+// Regression guard for the FlexShrink:0 contract in NumberTicker.jss.
+// Without it, the stack (natural height = 2 × cellHeight) gets shrunk
+// by the cell's flex layout to fit the cell's explicit cellHeight, and
+// each slot ends up at half-height — both digits visible at once,
+// crammed together. With it, the stack keeps its 2× height and slot 1
+// lives below the cell's clip frame.
+
+describe('NumberTicker — slots resist flex-shrink so the cell can clip slot 1', () => {
+  it('each slot resolves to exactly cellHeight, not half-height', () => {
+    const fontSizePt = 14;
+    const lineHeightRatio = 1.2;
+    const cellHeight = fontSizePt * lineHeightRatio;
+    const { slot0Nodes, slot1Nodes, results, inPt } = buildTicker({
+      fontSizePt, lineHeightRatio, cellWidthRatio: 0.62,
+      cells: [{ parity: 0, slots: ['1', '2'] }],
+    });
+    expect(inPt(results.get(slot0Nodes[0])!.Height)).toBeCloseTo(cellHeight, 4);
+    expect(inPt(results.get(slot1Nodes[0])!.Height)).toBeCloseTo(cellHeight, 4);
+  });
+
+  it('slot 1 lands below the cell — its Y offset = cellHeight, off-frame', () => {
+    const fontSizePt = 14;
+    const lineHeightRatio = 1.2;
+    const cellHeight = fontSizePt * lineHeightRatio;
+    const { slot0Nodes, slot1Nodes, results, inPt } = buildTicker({
+      fontSizePt, lineHeightRatio, cellWidthRatio: 0.62,
+      cells: [{ parity: 0, slots: ['1', '2'] }],
+    });
+    // Slot 0 at the top of the stack (Y = 0 inside its parent).
+    expect(inPt(results.get(slot0Nodes[0])!.Y)).toBeCloseTo(0, 4);
+    // Slot 1 immediately below it — exactly cellHeight away. Combined
+    // with the cell's Overflow:Hidden (set in JSS), this lands slot 1
+    // outside the visible cell box at parity 0.
+    expect(inPt(results.get(slot1Nodes[0])!.Y)).toBeCloseTo(cellHeight, 4);
   });
 });
 
