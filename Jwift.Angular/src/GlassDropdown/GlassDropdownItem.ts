@@ -31,7 +31,10 @@ export class GlassDropdownItem extends JivHost implements OnInit, OnDestroy {
   readonly keepOpen = input(false, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  private _dropdown = inject(GlassDropdown);
+  // Optional — items rendered inside a <glass-dropdown> ancestor get the
+  // dropdown reference via DI; standalone fixtures get null and just
+  // emit the click without trying to close anything.
+  private readonly _dropdown = inject(GlassDropdown, { optional: true });
 
   constructor() {
     super('GlassDropdownItem', GlassDropdownJss, 'Jwift_GlassDropdownItem', () => {
@@ -48,6 +51,6 @@ export class GlassDropdownItem extends JivHost implements OnInit, OnDestroy {
   protected _onClick(e: MouseEvent): void {
     e.stopPropagation();
     if (this.disabled()) return;
-    if (!this.keepOpen()) this._dropdown.Close();
+    if (!this.keepOpen()) this._dropdown?.Close();
   }
 }

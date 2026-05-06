@@ -10,7 +10,7 @@ export { Slider, type SliderScrubEvent } from './Slider/Slider';
 export { GlassButton, type GlassButtonShape } from './GlassButton/GlassButton';
 export { GlassDropdown } from './GlassDropdown/GlassDropdown';
 export { GlassDropdownItem, type GlassDropdownItemVariant } from './GlassDropdown/GlassDropdownItem';
-export { GlassActionGroup, GlassActionGroupMenu, type GlassAction } from './GlassActionGroup/GlassActionGroup';
+export { GlassActionGroup, type GlassAction } from './GlassActionGroup/GlassActionGroup';
 export { Toolbar } from './Toolbar/Toolbar';
 export { ToolbarTitle } from './ToolbarTitle/ToolbarTitle';
 export { ToolbarCompactDef } from './ToolbarTitle/ToolbarCompactDef';

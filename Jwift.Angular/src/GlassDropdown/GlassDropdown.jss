@@ -126,27 +126,48 @@ Jwift_GlassDropdownCellAvatarImage {
 // Open state pops out of flow so the expanded menu doesn't reflow siblings —
 // anchors top-right against the nearest Placed ancestor (typically
 // Jwift_PageHeader for toolbar consumers, or a consumer-side wrapper).
-// Padding 6pt inside a 24pt-radius glass => item radius 18pt (concentric).
+//
+// Concentric chain (assuming @ScreenR = 80pt and the standard 28pt chrome
+// inset of PageHeader 18pt + Toolbar 10pt):
+//   - Open glass rad = 80 − 28 = 52pt → app-concentric at the trailing-
+//     wrapper anchor with Top:0 Right:0 (no extra inset needed).
+//   - Padding: 6pt — small breathing room between the glass edge and the
+//     items, matching iOS/macOS popover convention. Items sit centered
+//     inside the larger glass curve rather than filling the corners.
+// Direction/Justify/Align re-stated explicitly: when the resolver swaps
+// from _Closed to _Open it rebuilds Layout from defaults, so anything not
+// declared on _Open falls back to default (Direction: Row), not the base.
 Jwift_GlassDropdown_Open : Jwift_GlassDropdown {
   Position: Placed
   Top: 0pt
   Right: 0pt
-  Width: 176pt
+  Width: 220pt
   Height: MinContent
+  Direction: Column
+  Justify: Start
+  Align: Stretch
   Padding: 6pt
+  Gap: 4pt
+  BorderRadius: 52pt
 }
 
+// Item geometry follows iOS 26 popover-menu proportions: 44pt-tall pill
+// rows with generous side padding and a comfortable icon→label gap.
+// BorderRadius is declared at full Height so the item is always a pill
+// regardless of how Height is later retuned — the renderer clamps to
+// half-Height (22pt visible). The concentric chain still treats the
+// effective radius as Height/2 = 22pt, and the open glass adds 6pt
+// padding on top of that to land at 28pt.
 Jwift_GlassDropdownItem {
   Direction: Row
   Justify: Start
   Align: Center
-  Gap: 10pt
+  Gap: 12pt
   Padding: 0pt 14pt
   Width: 100%
-  Height: 40pt
-  BorderRadius: 36pt
+  Height: 44pt
+  BorderRadius: 44pt
   Background: rgba(255, 255, 255, 0)
-  BackdropBrightness: 1.05
   Interactive: true
   Cursor: Pointer
   UserSelect: None
@@ -197,9 +218,13 @@ Jwift_GlassDropdownItem_Danger:Active {
   Background: rgba(255, 100, 100, 0.26)
 }
 
+// Icon size matches label FontSize so both glyphs share the same line-
+// height box and center identically along the row's cross axis. JwiftIcons
+// glyphs sit low in their font box; matching the label size keeps the
+// visual icon center aligned with the label baseline.
 Jwift_GlassDropdownItemIcon {
   FontFamily: JwiftIcons
-  FontSize: 18pt
+  FontSize: 15pt
   FontWeight: 500
   Color: rgba(255, 255, 255, 0.85)
   TextAlign: Center
@@ -218,7 +243,7 @@ Jwift_GlassDropdownItemIcon_Danger : Jwift_GlassDropdownItemIcon {
 
 Jwift_GlassDropdownItemLabel {
   FontFamily: Inter
-  FontSize: 14pt
+  FontSize: 15pt
   FontWeight: 500
   Color: rgba(255, 255, 255, 0.92)
   LetterSpacing: 0.1pt
@@ -228,5 +253,15 @@ Jwift_GlassDropdownItemLabel {
 
 Jwift_GlassDropdownItemLabel_Danger : Jwift_GlassDropdownItemLabel {
   Color: rgba(255, 110, 110, 0.95)
+}
+
+// Thin separator between groups of menu items (e.g. between "Cameras" and
+// "Rename" in the drill menu). Hairline at 6pt vertical inset matches the
+// standard dropdown padding.
+Jwift_GlassDropdownDivider {
+  Width: 100%
+  Height: 1pt
+  Background: rgba(255, 255, 255, 0.1)
+  Margin: 4pt 0pt
 }
 

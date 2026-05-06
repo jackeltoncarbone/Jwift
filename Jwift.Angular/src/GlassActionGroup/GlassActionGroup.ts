@@ -1,10 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ContentChild,
-  Directive,
   OnDestroy,
-  TemplateRef,
   ViewChild,
   afterNextRender,
   computed,
@@ -12,33 +9,42 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
 import { GlassDropdownItem, type GlassDropdownItemVariant } from '../GlassDropdown/GlassDropdownItem';
 import GlassActionGroupJss from './GlassActionGroup.jss';
 
+/** Single source of truth for both inline cells and dropdown items. Most
+ *  fields are optional so the same shape works in both slots. */
 export interface GlassAction {
+  /** Stable identifier — emitted via ActionClick. */
   Id: string;
-  Icon: string;
+  /** JwiftIcons glyph name. Use this for inline cells; menu items can use
+   *  Icon, Image, or neither (label-only). */
+  Icon?: string;
+  /** Image asset name — alternative to Icon for menu items (e.g. provider
+   *  logos). Wins over Icon when both are set. */
+  Image?: string;
+  /** Optional label. Inline cells ignore it; menu items render it. */
   Label?: string;
+  /** Inline cell only — highlights the cell with the active background. */
   Active?: boolean;
+  /** Suppresses click and dims the cell/item. */
   Disabled?: boolean;
+  /** Renders the menu item with the danger color palette. */
   Destructive?: boolean;
-}
-
-/** Marks a `<ng-template>` rendered inside the open-state dropdown alongside
- *  (or in place of) the auto-generated overflow items. Use it for sub-pages
- *  or custom items that don't fit the flat GlassAction schema.
- *
- *    <ng-template glassActionGroupMenu>
- *      ...custom open-state content...
- *    </ng-template>
- */
-@Directive({ selector: '[glassActionGroupMenu]', standalone: true })
-export class GlassActionGroupMenu {
-  constructor(public readonly Template: TemplateRef<unknown>) {}
+  /** Renders a thin divider line in the menu instead of a clickable item.
+   *  Inline cells skip dividers entirely. */
+  Divider?: boolean;
+  /** When set, clicking the action navigates to a sub-page in the dropdown
+   *  (see Pages input). Skips the ActionClick emit and keeps the dropdown
+   *  open. Works from both inline and menu slots. */
+  Page?: string;
+  /** Menu item only — when true, click does NOT auto-close the dropdown.
+   *  Useful for disabled items or items that toggle inline state. Page
+   *  items get this implicitly. */
+  KeepOpen?: boolean;
 }
 
 /**
@@ -50,15 +56,17 @@ export class GlassActionGroupMenu {
  *
  * Avatar and ellipsis-trigger are always present. Inline action count
  * auto-shrinks against the toolbar's available width — actions that don't
- * fit promote into the open dropdown as `<glass-dropdown-item>`s. Same
- * pattern as the legacy DOM `<toolbar-overflow-group>`.
+ * fit promote into the open dropdown menu before any explicit Menu items.
  *
  *   <glass-action-group
  *     [Actions]="auth.MenuActions()"
+ *     [Menu]="extraMenuItems()"
+ *     [Pages]="{ providers: auth.ProviderItems() }"
  *     [AvatarUrl]="auth.AvatarUrl()"
- *     (ActionClick)="onAction($event)">
- *     <ng-template glassActionGroupMenu>…subpage…</ng-template>
- *   </glass-action-group>
+ *     (ActionClick)="onAction($event)" />
+ *
+ * Items render INSIDE this component's template (not consumer-supplied
+ * `<ng-template>`s), so Angular DI and Jaui parent attachment Just Work.
  *
  * Auto-shrink reads the ancestor toolbar's solved width on each rAF tick,
  * subtracts the leading-wrapper width + paddings, and divides the slack by
@@ -69,7 +77,6 @@ export class GlassActionGroupMenu {
   selector: 'glass-action-group',
   standalone: true,
   imports: [
-    NgTemplateOutlet,
     Jiv, Jext, Jyle,
     Icon,
     GlassDropdown, GlassDropdownItem,
@@ -80,8 +87,8 @@ export class GlassActionGroupMenu {
     <glass-dropdown #dd>
       @if (!dd.IsOpen()) {
         @for (action of _InlineActions(); track action.Id) {
-          <jiv [class]="_CellClass(action)" (click)="_OnInlineClick(action, $event)">
-            <icon class="Jwift_GlassActionGlyph" [Name]="action.Icon" />
+          <jiv [class]="_CellClass(action)" (click)="_OnCellClick(action, $event)">
+            <icon class="Jwift_GlassActionGlyph" [Name]="action.Icon ?? ''" />
           </jiv>
         }
         <jiv class="Jwift_GlassDropdownCell_Ellipsis" (click)="$event.stopPropagation(); dd.Open()">
@@ -96,21 +103,26 @@ export class GlassActionGroupMenu {
           }
         </jiv>
       } @else {
-        @if (!dd.Page()) {
-          @for (action of _OverflowActions(); track action.Id) {
+        @let pg = dd.Page();
+        @for (item of _OpenItems(pg); track item.Id) {
+          @if (item.Divider) {
+            <jiv class="Jwift_GlassDropdownDivider" />
+          } @else {
             <glass-dropdown-item
-              [variant]="_ItemVariant(action)"
-              [disabled]="!!action.Disabled"
-              (click)="_OnOverflowClick(action)">
-              <icon [class]="_ItemIconClass(action)" [Name]="action.Icon" />
-              @if (action.Label) {
-                <jext [class]="_ItemLabelClass(action)" [text]="action.Label" />
+              [variant]="_ItemVariant(item)"
+              [disabled]="!!item.Disabled"
+              [keepOpen]="!!item.KeepOpen || !!item.Page"
+              (click)="_OnItemClick(item)">
+              @if (item.Image) {
+                <jiv class="Jwift_GlassDropdownItemImage" [image]="item.Image" />
+              } @else if (item.Icon) {
+                <icon [class]="_ItemIconClass(item)" [Name]="item.Icon" />
+              }
+              @if (item.Label) {
+                <jext [class]="_ItemLabelClass(item)" [text]="item.Label" />
               }
             </glass-dropdown-item>
           }
-        }
-        @if (_MenuTpl?.Template; as tpl) {
-          <ng-container *ngTemplateOutlet="tpl" />
         }
       }
     </glass-dropdown>
@@ -118,9 +130,18 @@ export class GlassActionGroupMenu {
   styles: [':host { display: contents; }'],
 })
 export class GlassActionGroup implements OnDestroy {
-  /** Flat action list. As many as fit the toolbar render as cells in the
-   *  closed pill; the rest become items in the open dropdown. */
+  /** Inline-cell candidates. As many as fit the toolbar render as cells in
+   *  the closed pill; the rest promote into the open menu (rendered
+   *  before any Menu items). */
   readonly Actions = input<readonly GlassAction[]>([]);
+
+  /** Always-in-the-menu items. Rendered after any auto-promoted overflow.
+   *  Use Divider items to group sections. */
+  readonly Menu = input<readonly GlassAction[]>([]);
+
+  /** Per-sub-page item lists. Reached when a click target carries Page,
+   *  or when a consumer calls `grp.PushPage(id)` directly. */
+  readonly Pages = input<Record<string, readonly GlassAction[]>>({});
 
   /** Avatar image URL. Falsy → falls back to `AvatarFallbackIcon`. */
   readonly AvatarUrl = input<string | null>(null);
@@ -134,50 +155,57 @@ export class GlassActionGroup implements OnDestroy {
    *  where the avatar is a navigation shortcut, not a menu trigger. */
   readonly AvatarOpensMenu = input<boolean>(true);
 
-  /** Fires when any action — inline cell or overflow menu item — is clicked.
-   *  Disabled actions are filtered out before emit. */
+  /** Fires when a non-page action is clicked (inline cell or menu item).
+   *  Disabled actions and Page-targeted actions are filtered out. */
   readonly ActionClick = output<string>();
 
   /** Fires when the avatar cell is clicked. Always emits regardless of
-   *  `AvatarOpensMenu`; consumers can wire navigation alongside the
-   *  default menu toggle, or set `AvatarOpensMenu=false` to suppress
-   *  the toggle and use this output as the sole avatar handler. */
+   *  `AvatarOpensMenu`. */
   readonly AvatarClick = output<void>();
 
   protected readonly JssSource = GlassActionGroupJss;
 
-  @ContentChild(GlassActionGroupMenu) protected readonly _MenuTpl?: GlassActionGroupMenu;
   @ViewChild('dd') private _Dd?: GlassDropdown;
 
   // Geometry constants — kept in sync with `Jwift_GlassDropdownCell` (40pt
   // square cells) and `Jwift_GlassDropdown_Closed` (4pt padding, 4pt gap).
-  // If those classes change, update here.
   private static readonly _CellPt        = 40;
   private static readonly _CellGapPt     =  4;
-  private static readonly _ClosedPadPt   =  4; // each side
+  private static readonly _ClosedPadPt   =  4;
   private static readonly _ReservedCells =  2; // avatar + ellipsis
 
-  /** rAF-polled "how many inline cells fit" — recomputed from the
-   *  ancestor toolbar's width minus the leading wrapper minus paddings. */
   private readonly _MaxInlineFit = signal<number>(Number.MAX_SAFE_INTEGER);
 
+  /** Cell-eligible subset of Actions — dividers and pure menu items
+   *  (e.g. things flagged as Disabled with no Icon) shouldn't appear as
+   *  inline cells. */
+  private readonly _CellEligible = computed(() =>
+    this.Actions().filter(a => !a.Divider && a.Icon)
+  );
+
   protected readonly _InlineActions = computed(() => {
-    const all = this.Actions();
+    const all = this._CellEligible();
     const fit = this._MaxInlineFit();
     return all.slice(0, Math.min(all.length, fit));
   });
 
+  /** Actions that didn't fit as inline cells — promoted into the menu. */
   protected readonly _OverflowActions = computed(() => {
-    const all = this.Actions();
+    const all = this._CellEligible();
     const fit = this._MaxInlineFit();
     return all.slice(Math.min(all.length, fit));
   });
 
+  /** Items rendered when the dropdown is open. Root page = overflow + Menu;
+   *  sub-pages = whatever Pages[id] returns. */
+  protected _OpenItems(page: string | null): readonly GlassAction[] {
+    if (page === null) return [...this._OverflowActions(), ...this.Menu()];
+    return this.Pages()[page] ?? [];
+  }
+
   private _rafId = 0;
 
   constructor() {
-    // Wait for the canvas to mount + first solve so `dd.Node.Parent` and
-    // ancestor `.Width` values are populated before we start polling.
     afterNextRender(() => {
       const tick = (): void => {
         this._UpdateInlineFit();
@@ -191,9 +219,6 @@ export class GlassActionGroup implements OnDestroy {
     if (this._rafId) cancelAnimationFrame(this._rafId);
   }
 
-  /** Forward the dropdown's primary toggle so consumers holding a
-   *  `<glass-action-group #grp>` reference can drive open/close
-   *  programmatically. */
   Open(): void { this._Dd?.Open(); }
   Close(): void { this._Dd?.Close(); }
   Toggle(): void { this._Dd?.Toggle(); }
@@ -202,13 +227,6 @@ export class GlassActionGroup implements OnDestroy {
   IsOpen(): boolean { return this._Dd?.IsOpen() ?? false; }
   Page(): string | null { return this._Dd?.Page() ?? null; }
 
-  /** Compute how many inline cells fit alongside avatar + ellipsis.
-   *
-   *  Walks: dropdown.Node → trailing wrapper → toolbar. Reads toolbar's
-   *  outer width, subtracts toolbar padding (`Jwift_Toolbar` Padding: 10pt
-   *  each side) + the leading-wrapper width to get the trailing slack.
-   *  Slack must cover the closed-pill padding + 2 reserved cells (avatar
-   *  + ellipsis) + their gap before any inline cell can fit. */
   private _UpdateInlineFit(): void {
     const ddNode = this._Dd?.Node;
     if (!ddNode) return;
@@ -225,14 +243,10 @@ export class GlassActionGroup implements OnDestroy {
     const closedPadPx  = GlassActionGroup._ClosedPadPt   * ps;
     const toolbarPadPx = 10 * ps;
 
-    // Toolbar outer width includes its own padding. Subtract both sides
-    // to get the inner content width available for leading + trailing.
     const innerW   = toolbar.Width - 2 * toolbarPadPx;
     const leadingW = leading?.Width ?? 0;
     const slack    = Math.max(0, innerW - leadingW);
 
-    // Closed pill needs: padding × 2 + reserved cells × cellPx +
-    // (reserved-1) cellGap. Each ADDITIONAL inline cell costs cellPx + gap.
     const reservedCellsW =
       2 * closedPadPx
       + GlassActionGroup._ReservedCells * cellPx
@@ -259,14 +273,24 @@ export class GlassActionGroup implements OnDestroy {
     return action.Destructive ? 'Jwift_GlassDropdownItemLabel_Danger' : 'Jwift_GlassDropdownItemLabel';
   }
 
-  protected _OnInlineClick(action: GlassAction, event: MouseEvent): void {
+  protected _OnCellClick(action: GlassAction, event: MouseEvent): void {
     event.stopPropagation();
-    if (action.Disabled) return;
-    this.ActionClick.emit(action.Id);
+    this._Dispatch(action);
   }
 
-  protected _OnOverflowClick(action: GlassAction): void {
+  protected _OnItemClick(action: GlassAction): void {
+    // GlassDropdownItem already stops propagation and handles auto-close;
+    // we just need to dispatch the action (or page navigation).
+    this._Dispatch(action);
+  }
+
+  private _Dispatch(action: GlassAction): void {
     if (action.Disabled) return;
+    if (action.Page) {
+      this._Dd?.Open();
+      this._Dd?.PushPage(action.Page);
+      return;
+    }
     this.ActionClick.emit(action.Id);
   }
 
