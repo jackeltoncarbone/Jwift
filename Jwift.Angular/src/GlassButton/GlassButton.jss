@@ -31,10 +31,14 @@ Jwift_GlassBtn {
 
   Interactive: true
   Cursor: Pointer
-  @Transition BackdropBrightness { Duration: 10ms }
-  @Transition BorderBrightness { Duration: 10ms }
-  @Transition PointScale { Duration: 160ms }
-  @Transition VisualScale { Duration: 160ms }
+  // Unified press/hover transition. All four channels run on the same
+  // critically-damped spring so the highlight blooms in lockstep with the
+  // squeeze instead of flashing ahead of it. 140ms lands snappy on :Active
+  // and light on :Hover without giving up the iOS-glass cushion.
+  @Transition BackdropBrightness { Duration: 140ms }
+  @Transition BorderBrightness { Duration: 140ms }
+  @Transition PointScale { Duration: 140ms }
+  @Transition VisualScale { Duration: 140ms }
 }
 
 // PointScale cascades through the layout solver — shrinks the button
