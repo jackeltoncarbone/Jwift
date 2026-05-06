@@ -19,15 +19,13 @@ TextInputBox {
   Padding: 0pt
 }
 
-// Inter is the Show Studio + Jwift baseline. The Jext nodes inside jinput
-// (rendered via JinputSegment / JinputPlaceholder classes) inherit this
-// FontFamily through the Jaui style cascade.
-TextInputBox JinputSegment {
+// Inter is the Show Studio + Jwift baseline. JinputSegment and JinputPlaceholder are Jaui-internal classes only emitted by jinput, so applying these rules globally is equivalent to scoping them under TextInputBox; JSS v1 doesn't support compound selectors.
+JinputSegment {
   FontFamily: Inter
   FontWeight: 400
 }
 
-TextInputBox JinputPlaceholder {
+JinputPlaceholder {
   FontFamily: Inter
   FontWeight: 400
 }
