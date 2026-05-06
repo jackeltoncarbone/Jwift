@@ -24,6 +24,7 @@ export { JivHost } from './Internal/JivHost';
 export { ContextMenu } from './ContextMenu/ContextMenu';
 export { ContextMenuService, type ContextMenuItem } from './ContextMenu/ContextMenu.Service';
 export { TextInput, type TextInputSpan } from './TextInput/TextInput';
+export { NumberTicker } from './NumberTicker/NumberTicker';
 // Universal Liquid-Glass JSS — opt in via space-separated class names
 // (`class="MyThing JwiftGlass"`) or single-inheritance (`MyThing :
 // JwiftGlass {...}`). Consumer page must register it once with a
