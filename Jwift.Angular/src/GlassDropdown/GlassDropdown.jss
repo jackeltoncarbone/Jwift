@@ -1,8 +1,5 @@
 Jwift_GlassDropdown {
   Overflow: Hidden;
-  Position: Placed
-  Top: 0pt
-  Right: 0pt
   Direction: Column
   Justify: Start
   Align: Stretch
@@ -126,8 +123,14 @@ Jwift_GlassDropdownCellAvatarImage {
   FitMode: Cover
 }
 
+// Open state pops out of flow so the expanded menu doesn't reflow siblings —
+// anchors top-right against the nearest Placed ancestor (typically
+// Jwift_PageHeader for toolbar consumers, or a consumer-side wrapper).
 // Padding 6pt inside a 24pt-radius glass => item radius 18pt (concentric).
 Jwift_GlassDropdown_Open : Jwift_GlassDropdown {
+  Position: Placed
+  Top: 0pt
+  Right: 0pt
   Width: 176pt
   Height: MinContent
   Padding: 6pt

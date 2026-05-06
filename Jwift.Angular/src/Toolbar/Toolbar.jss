@@ -49,27 +49,20 @@ Jwift_PageHeader {
 // classes — consumers drop them on a `<jiv>` and nest the page-specific
 // content inside.
 //
-// Leading wrapper — pure flex row. Auto-sizes from its in-flow content
-// (back-button is 48pt tall and 48pt wide, providing the cross-axis
-// size; title text takes its natural width). No Height / MinHeight —
-// imposing one alters Jaui's flex shrink/wrap resolution and can push
-// the title text onto a second line. This mirrors the legacy
-// TopBarLeading exactly.
+// Both groups pin to `Height: 48pt` for a uniform vertical baseline
+// regardless of child composition. Width is unconstrained on each so the
+// wrappers auto-size on the main axis from their in-flow content — the
+// trailing group can grow as cells are added (avatar + ellipsis at min,
+// extras pile on) and the toolbar's flex layout reflects the real width.
 Jwift_ToolbarLeading {
   Direction: Row
   Justify: Start
   Align: Center
   Gap: 10pt
+  Height: 48pt
   FlexShrink: 0
 }
 
-// Trailing wrapper uses an explicit Height (NOT MinHeight) because the
-// only child is typically a `<glass-dropdown>` which is Position:Placed
-// (out-of-flow). With MinHeight Jaui's flex resolves the cross-axis from
-// in-flow content (zero) and the wrapper collapses to 0pt — the Placed
-// dropdown's Top:0 then anchors at the toolbar mid-line, dropping the
-// trailing group ~24pt below the leading group. Explicit Height locks
-// the wrapper to a fixed 48pt regardless of in-flow content.
 Jwift_ToolbarTrailing {
   Direction: Row
   Justify: End
