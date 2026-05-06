@@ -37,6 +37,7 @@ export type { JinputSpan as TextInputSpan };
         [Spans]="Spans()"
         [Placeholder]="Placeholder()"
         [ReadOnly]="ReadOnly()"
+        [MultiLine]="MultiLine()"
         [FontFamily]="_fontFamily()"
         [FontSizePx]="_fontSizePx()"
         [FontWeight]="_fontWeight()"
@@ -45,7 +46,9 @@ export type { JinputSpan as TextInputSpan };
         (PositionClicked)="PositionClicked.emit($event)"
         (PositionHovered)="PositionHovered.emit($event)"
         (FocusChanged)="FocusChanged.emit($event)"
-        (ContextMenuRequested)="ContextMenuRequested.emit($event)" />
+        (ContextMenuRequested)="ContextMenuRequested.emit($event)"
+        (Submitted)="Submitted.emit($event)"
+        (Cancelled)="Cancelled.emit($event)" />
     </jiv>
   `,
   styles: [':host { display: contents; }'],
@@ -58,6 +61,7 @@ export class TextInput {
   readonly Spans = input<readonly JinputSpan[]>([]);
   readonly Placeholder = input('');
   readonly ReadOnly = input(false);
+  readonly MultiLine = input(false);
 
   /** Optional font overrides. Left at house defaults when not provided. */
   readonly FontFamily = input<string | null>(null);
@@ -76,6 +80,8 @@ export class TextInput {
     selEnd: number;
     value: string;
   }>();
+  readonly Submitted = output<KeyboardEvent>();
+  readonly Cancelled = output<KeyboardEvent>();
 
   // ── House defaults ───────────────────────────────────────────────
   // Apple-style baseline. PointScale 1.25 → 16pt × 1.25 = 20px.
