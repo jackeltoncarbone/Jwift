@@ -10,6 +10,7 @@ import {
   ViewContainerRef,
   effect,
   forwardRef,
+  input,
   signal,
 } from '@angular/core';
 import { Jiv } from 'jaui-angular';
@@ -54,8 +55,16 @@ export class Toolbar extends JivHost implements OnInit, OnDestroy {
    *  compact template registers and creates its content. */
   private _compactHost: JivCore | null = null;
 
+  /** Extra class(es) appended to `Jwift_Toolbar` so consumers can override
+   *  toolbar fields (Padding, Layer, etc.) from outside without forking
+   *  or wrapping. JssRegistry.Resolve merges classes left-to-right, so
+   *  whatever the consumer passes wins on field conflicts. Example:
+   *  `<toolbar Class="EditorToolbarFlush">` zeroes horizontal padding
+   *  when the toolbar is nested in an already-chrome-padded container. */
+  readonly Class = input<string>('');
+
   constructor() {
-    super('Toolbar', ToolbarJss, 'Jwift_Toolbar', () => 'Jwift_Toolbar');
+    super('Toolbar', ToolbarJss, 'Jwift_Toolbar', () => `Jwift_Toolbar ${this.Class()}`.trim());
 
     // Drive the compact slot's jiv opacity from the visibility signal.
     // The style animator will spring the transition smooth.
