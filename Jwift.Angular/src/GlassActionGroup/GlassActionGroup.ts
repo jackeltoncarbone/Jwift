@@ -228,6 +228,14 @@ export class GlassActionGroup implements OnDestroy {
   Page(): string | null { return this._Dd?.Page() ?? null; }
 
   private _UpdateInlineFit(): void {
+    // Skip while the dropdown is open. Trailing wrapper collapses (its
+    // in-flow content goes Position:Placed) and toolbar's solved widths
+    // are mid-transition every frame — the floor() boundary in the fit
+    // math then flips between N and N+1 cells, making a phantom extra
+    // cell briefly appear in the closed-pill state when the dropdown
+    // closes. The visible cell count only matters when closed, so freeze
+    // the value while the dropdown is open.
+    if (this._Dd?.IsOpen()) return;
     const ddNode = this._Dd?.Node;
     if (!ddNode) return;
     const trailing = ddNode.Parent;
@@ -252,9 +260,27 @@ export class GlassActionGroup implements OnDestroy {
       + GlassActionGroup._ReservedCells * cellPx
       + (GlassActionGroup._ReservedCells - 1) * cellGapPx;
     const perInline = cellPx + cellGapPx;
-    const fit = Math.max(0, Math.floor((slack - reservedCellsW) / perInline));
+    const rawFit = Math.max(0, Math.floor((slack - reservedCellsW) / perInline));
+    const currentFit = this._MaxInlineFit();
 
-    if (fit !== this._MaxInlineFit()) this._MaxInlineFit.set(fit);
+    // Hysteresis: require slack to clear the boundary by > 8pt before
+    // flipping cell count. Without this, sub-pt fluctuations in solved
+    // toolbar/leading widths (Jaui re-solves layout on every frame; tiny
+    // text-metric or hit-test side effects nudge the floor() boundary)
+    // make `rawFit` toggle ±1 frame to frame. The dropdown's Width
+    // @Transition then animates between the two cell-count widths, which
+    // visibly slides the trailing cluster left, then slowly back right.
+    const HYSTERESIS_PT = 8;
+    if (rawFit > currentFit) {
+      const enterBoundary = (currentFit + 1) * perInline + reservedCellsW;
+      if (slack < enterBoundary + HYSTERESIS_PT) return;
+    } else if (rawFit < currentFit) {
+      const exitBoundary = currentFit * perInline + reservedCellsW;
+      if (slack > exitBoundary - HYSTERESIS_PT) return;
+    } else {
+      return;
+    }
+    this._MaxInlineFit.set(rawFit);
   }
 
   protected _CellClass(action: GlassAction): string {

@@ -147,7 +147,7 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown {
   Justify: Start
   Align: Stretch
   Padding: 6pt
-  Gap: 4pt
+  Gap: 0pt
   BorderRadius: 52pt
 }
 
@@ -256,12 +256,11 @@ Jwift_GlassDropdownItemLabel_Danger : Jwift_GlassDropdownItemLabel {
 }
 
 // Thin separator between groups of menu items (e.g. between "Cameras" and
-// "Rename" in the drill menu). Hairline at 6pt vertical inset matches the
-// standard dropdown padding.
+// "Rename" in the drill menu). Hairline only — sits flush against the
+// rows above/below so the divider is a visual cut, not a wide gap.
 Jwift_GlassDropdownDivider {
   Width: 100%
   Height: 1pt
   Background: rgba(255, 255, 255, 0.1)
-  Margin: 4pt 0pt
 }
 
