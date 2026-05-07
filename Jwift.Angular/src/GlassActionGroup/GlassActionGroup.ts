@@ -94,14 +94,16 @@ export interface GlassAction {
         <jiv class="Jwift_GlassDropdownCell_Ellipsis" (click)="$event.stopPropagation(); dd.Open()">
           <icon class="Jwift_GlassActionGlyph" Name="ellipsis" />
         </jiv>
-        @let url = AvatarUrl();
-        <jiv class="Jwift_GlassDropdownCell_Avatar" (click)="_OnAvatarClick($event)">
-          @if (url) {
-            <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="url" />
-          } @else {
-            <icon class="Jwift_GlassActionGlyph" [Name]="AvatarFallbackIcon()" />
-          }
-        </jiv>
+        @if (ShowAvatar()) {
+          @let url = AvatarUrl();
+          <jiv class="Jwift_GlassDropdownCell_Avatar" (click)="_OnAvatarClick($event)">
+            @if (url) {
+              <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="url" />
+            } @else {
+              <icon class="Jwift_GlassActionGlyph" [Name]="AvatarFallbackIcon()" />
+            }
+          </jiv>
+        }
       } @else {
         @let pg = dd.Page();
         @for (item of _OpenItems(pg); track item.Id) {
@@ -152,8 +154,21 @@ export class GlassActionGroup implements OnDestroy {
   /** When true (default) clicking the avatar bubbles to the dropdown's
    *  host-click and toggles open. When false, the click is consumed and
    *  only `AvatarClick` fires — useful for chrome (e.g. Drill, Picture)
-   *  where the avatar is a navigation shortcut, not a menu trigger. */
+   *  where the avatar is a navigation shortcut, not a menu trigger.
+   *  Ignored when `AvatarPage` is set. */
   readonly AvatarOpensMenu = input<boolean>(true);
+
+  /** When set, clicking the avatar opens the dropdown and pushes this
+   *  sub-page id (look it up in `Pages`). Lets the avatar be a distinct
+   *  trigger from the ellipsis — e.g. ellipsis opens page actions, avatar
+   *  opens an auth menu. Overrides `AvatarOpensMenu`. */
+  readonly AvatarPage = input<string | null>(null);
+
+  /** When true (default) the avatar cell renders in the closed pill.
+   *  When false, the cell is omitted entirely — for pages that mount a
+   *  separate `<nav-avatar />` for the auth menu and only need the action
+   *  group for inline cells + ellipsis-triggered overflow menu. */
+  readonly ShowAvatar = input<boolean>(true);
 
   /** Fires when a non-page action is clicked (inline cell or menu item).
    *  Disabled actions and Page-targeted actions are filtered out. */
@@ -172,7 +187,6 @@ export class GlassActionGroup implements OnDestroy {
   private static readonly _CellPt        = 40;
   private static readonly _CellGapPt     =  4;
   private static readonly _ClosedPadPt   =  4;
-  private static readonly _ReservedCells =  2; // avatar + ellipsis
 
   private readonly _MaxInlineFit = signal<number>(Number.MAX_SAFE_INTEGER);
 
@@ -255,10 +269,11 @@ export class GlassActionGroup implements OnDestroy {
     const leadingW = leading?.Width ?? 0;
     const slack    = Math.max(0, innerW - leadingW);
 
+    const reservedCells = this.ShowAvatar() ? 2 : 1; // ellipsis (+ avatar)
     const reservedCellsW =
       2 * closedPadPx
-      + GlassActionGroup._ReservedCells * cellPx
-      + (GlassActionGroup._ReservedCells - 1) * cellGapPx;
+      + reservedCells * cellPx
+      + (reservedCells - 1) * cellGapPx;
     const perInline = cellPx + cellGapPx;
     const rawFit = Math.max(0, Math.floor((slack - reservedCellsW) / perInline));
     const currentFit = this._MaxInlineFit();
@@ -322,6 +337,13 @@ export class GlassActionGroup implements OnDestroy {
 
   protected _OnAvatarClick(event: MouseEvent): void {
     this.AvatarClick.emit();
+    const page = this.AvatarPage();
+    if (page) {
+      event.stopPropagation();
+      this._Dd?.Open();
+      this._Dd?.PushPage(page);
+      return;
+    }
     if (!this.AvatarOpensMenu()) event.stopPropagation();
   }
 }
