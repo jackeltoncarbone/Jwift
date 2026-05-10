@@ -57,6 +57,14 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
   Align: Center
   Padding: 4pt
   Gap: 4pt
+  // Explicit Width/Height: MinContent so the @Transition Width/Height
+  // rules on the base class have a numeric target to spring toward
+  // when collapsing from _Open. Without these, the resolver leaves
+  // Width/Height as "unset" on close and Jaui's transition machinery
+  // has nothing to interpolate to — the dropdown sticks at its open
+  // size after the avatar is dismissed.
+  Width: MinContent
+  Height: MinContent
   MinWidth: 48pt
   MinHeight: 48pt
 }

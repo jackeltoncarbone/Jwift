@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { Jiv } from 'jaui-angular';
-import { Jiv as JivCore } from 'jaui';
+import { JivHandle as JivCore } from 'jaui';
 import { Toolbar } from '../Toolbar/Toolbar';
 import { ToolbarCompactDef } from './ToolbarCompactDef';
 

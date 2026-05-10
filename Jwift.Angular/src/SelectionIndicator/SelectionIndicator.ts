@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
-import { Jiv as JivCore, ResolveLengthTuple4, Spring } from 'jaui';
+import { JivHandle as JivCore, ResolveLengthTuple4, Spring } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import SelectionIndicatorJss from './SelectionIndicator.jss';
 
@@ -39,6 +39,14 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _shapeX = new Spring(1, 2500, 60, 1);
   private _shapeY = new Spring(1, 2500, 60, 1);
   private _firstValid = false;
+  // The current target / parent we've subscribed to per-frame rect
+  // snapshots from. With Jaui in the worker, JivHandle.X/Y/Width/Height
+  // on main are zero unless WatchRect(true) has been set; the worker
+  // then emits W2M_RectSnapshot every frame and the handle updates.
+  // We re-subscribe whenever target() or its parent changes and tear
+  // down the old subscription so we don't leak rect traffic.
+  private _watchedTarget: JivCore | null = null;
+  private _watchedParent: JivCore | null = null;
 
   constructor() {
     super('SelectionIndicator', SelectionIndicatorJss, 'Jwift_SelectionIndicator', () => {
@@ -61,7 +69,33 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this._rafId) cancelAnimationFrame(this._rafId);
     this._unbindPointer?.();
+    this._unwatchTargets();
     this._detachOnDestroy();
+  }
+
+  /** Replace the target/parent rect-snapshot subscriptions when the
+   *  SelectionIndicator's `target` swaps to a different TabItem (selection
+   *  change). The old target/parent get `WatchRect(false)` so the worker
+   *  stops emitting snapshots for them, and the new pair get `(true)`. */
+  private _ensureWatched(target: JivCore | null, parent: JivCore | null): void {
+    if (target === this._watchedTarget && parent === this._watchedParent) return;
+    if (this._watchedTarget && this._watchedTarget !== target) {
+      this._watchedTarget.WatchRect(false);
+    }
+    if (this._watchedParent && this._watchedParent !== parent) {
+      this._watchedParent.WatchRect(false);
+    }
+    this._watchedTarget = target;
+    this._watchedParent = parent;
+    if (target) target.WatchRect(true);
+    if (parent && parent !== target) parent.WatchRect(true);
+  }
+
+  private _unwatchTargets(): void {
+    this._watchedTarget?.WatchRect(false);
+    this._watchedParent?.WatchRect(false);
+    this._watchedTarget = null;
+    this._watchedParent = null;
   }
 
   private _wirePointerTracking(): void {
@@ -91,9 +125,17 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
   private _sync(): void {
     const t = this.target();
-    if (!t) return;
+    if (!t) {
+      this._unwatchTargets();
+      return;
+    }
 
     const parent = t.Parent as (JivCore | null);
+    // Subscribe to per-frame rect snapshots from the worker — without
+    // this the JivHandle's X/Y/Width/Height stay at zero on main and
+    // the indicator never sizes itself correctly. Re-runs on target swap.
+    this._ensureWatched(t, parent);
+
     let ctxNode: JivCore | null = parent;
     while (ctxNode && !ctxNode.ResolveCtx) ctxNode = ctxNode.Parent as (JivCore | null);
     if (parent && ctxNode?.ResolveCtx) {

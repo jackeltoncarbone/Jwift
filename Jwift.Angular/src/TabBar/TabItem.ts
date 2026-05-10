@@ -82,6 +82,17 @@ export class TabItem extends JivHost implements OnInit, OnDestroy {
     });
   }
 
-  ngOnInit(): void { this._attachOnInit(); }
-  ngOnDestroy(): void { this._detachOnDestroy(); }
+  ngOnInit(): void {
+    this._attachOnInit();
+    // Subscribe to per-frame rect snapshots from the worker so the parent
+    // TabBar's drag-gesture hit-test (`_hitIndex`) can read this item's
+    // canvas-local rect on main. Without this, n.X/n.Y/n.Width/n.Height
+    // stay at zero on main and every hit-test reports -1, so dragging
+    // the indicator across tabs never updates the selected index.
+    this.Node.WatchRect(true);
+  }
+  ngOnDestroy(): void {
+    this.Node.WatchRect(false);
+    this._detachOnDestroy();
+  }
 }

@@ -13,7 +13,7 @@ import {
   signal,
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
-import { Jiv as JivCore } from 'jaui';
+import { JivHandle as JivCore } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { TabItem } from './TabItem';
 import TabBarJss from './TabBar.jss';
@@ -68,6 +68,13 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
 
   /** Effective selection — drag wins over input while dragging. */
   readonly EffectiveSelected = computed(() => this._dragIndex() ?? this.selected());
+
+  /** True while a drag gesture is in progress. Drives the
+   *  `<selection-indicator>`'s pressed/glass state (worker mode no longer
+   *  syncs `JivHandle.Active` to main, so the indicator can't observe
+   *  press state by reading the target's Active flag — TabBar exposes its
+   *  authoritative drag flag here instead). */
+  readonly IsPressed = computed(() => this._dragIndex() !== null);
 
   /** Selected tab's underlying JivCore — drives `<selection-indicator>`. */
   readonly ActiveNode = computed<JivCore | null>(() => {

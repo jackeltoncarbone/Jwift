@@ -14,7 +14,7 @@ import {
   signal,
 } from '@angular/core';
 import { Jiv } from 'jaui-angular';
-import { Jiv as JivCore } from 'jaui';
+import { JivHandle as JivCore } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import ToolbarJss from './Toolbar.jss';
 
@@ -111,17 +111,17 @@ export class Toolbar extends JivHost implements OnInit, OnDestroy {
     // fires AFTER Toolbar's own projected children have attached. So the
     // compact node ends up at the END of Children, making it the trailing
     // slot under Justify: SpaceBetween (avatar ends up leading — wrong).
-    // Wait a microtask for the embedded view's jivs to attach, then pluck
-    // them off the end and splice them back in at index 0 so they become
-    // the leading slot. Marks layout dirty so the flex reflow picks up.
+    // Wait a microtask for the embedded view's jivs to attach, then move
+    // them to index 0 so they become the leading slot. `MoveChildToIndex`
+    // updates both the main-side handle's local Children array AND posts
+    // a `move-child` op so the worker's JivCore tree reorders to match.
     queueMicrotask(() => {
       const children = this.Node.Children;
       if (children.length === 0) return;
-      const compact = children.pop() as JivCore;
-      children.unshift(compact);
+      const compact = children[children.length - 1];
+      this.Node.MoveChildToIndex(compact, 0);
       this._compactHost = compact;
       this._compactHost.Style.Opacity = this._compactVisible() ? '1' : '0';
-      this.Node.MarkLayoutDirty();
     });
   }
 

@@ -10,9 +10,9 @@ import {
   JSS_REGISTRY,
 } from 'jaui-angular';
 import {
-  Jiv as JivCore,
-  DefaultJivStyle, DefaultLayoutConfig, DefaultChildLayout,
-  type JivStyle, type LayoutConfig, type ChildLayout,
+  JivHandle,
+  type JivApplyOpts,
+  type PointerPayload,
 } from 'jaui';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 
@@ -21,38 +21,22 @@ import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
  * wrapper around one). Encapsulates the boilerplate every Jwift
  * component needs:
  *
- *   1. Register the component's JSS sheet once per canvas (via the
- *      loader) so N instances don't spam N merges.
- *   2. Create a JivCore in the constructor using resolved options from
- *      the registry — early enough that children's DI can find us.
- *   3. Reactively re-apply merged options when the registry version
- *      bumps (hot-edit support) or the subclass's className signal
- *      changes.
+ *   1. Register the component's JSS sheet once per canvas.
+ *   2. Allocate a worker-side Jiv via the bridge and post a `create` op
+ *      with resolved options — early enough that children's DI finds us.
+ *   3. Reactively re-apply merged options on registry-version /
+ *      className changes — each enqueues an `apply` op.
  *   4. Attach to the nearest ancestor Jiv / canvas Root on init;
- *      `RequestLeave` on destroy for a clean fade-out.
+ *      `RequestLeave` + `Destroy` on detach.
  *
- * Subclass usage:
- *
- *   @Component({
- *     selector: 'my-thing',
- *     template: '<ng-content></ng-content>',
- *     styles: [':host { display: contents; }'],
- *     providers: [
- *       { provide: Jiv, useExisting: forwardRef(() => MyThing) },
- *     ],
- *   })
- *   export class MyThing extends JivHost {
- *     constructor() {
- *       super('MyThing', MyThingJss, () => 'My_Thing_Class');
- *     }
- *   }
- *
- * `providers` still has to go on the @Component decorator (the Jiv DI
- * token is per-subclass), but every line after that lives here.
+ * Worker-mode: `Node` is a `JivHandle`. Subclass code that does
+ * `this.Node.AddChild(...)`, `this.Node.MarkLayoutDirty()`,
+ * `this.Node.SetText(...)`, etc. continues to work — JivHandle
+ * preserves those names and forwards them as ops.
  */
 export abstract class JivHost {
-  /** Underlying Jiv — children attach here via the Jiv DI token. */
-  readonly Node: JivCore;
+  /** Underlying worker-side Jiv (handle). Children attach here via DI. */
+  readonly Node: JivHandle;
 
   private _parentJiv = inject<Jiv | null>(forwardRef(() => Jiv), {
     skipSelf: true,
@@ -65,58 +49,37 @@ export abstract class JivHost {
 
   private _className: () => string;
 
-  /**
-   * @param sourceId          Unique key for the style sheet (loader dedupes).
-   * @param source            The raw JSS source to register in the registry.
-   * @param initialClassName  Class name used at construction — must be a
-   *                          plain string because `super()` cannot touch
-   *                          subclass fields (TDZ). Typical pattern: pass
-   *                          the default variant.
-   * @param className         Resolver for reactive class-name changes (input
-   *                          signals, etc). Called LATER from effect(), by
-   *                          which time `this` is fully initialized, so
-   *                          closures over subclass signals are safe.
-   */
   constructor(sourceId: string, source: string, initialClassName: string, className: () => string) {
     this._className = className;
     this._loader.Ensure(this._registry, sourceId, source);
 
-    const opts = this._resolveOptionsFor(initialClassName);
-    const style = (opts.Style ?? {}) as Record<string, unknown>;
-    const elementProps: Record<string, unknown> = {};
-    for (const key of _ELEMENT_KEYS) {
-      if (key in style) {
-        elementProps[key] = style[key];
-        delete style[key];
-      }
+    if (!this._canvas) {
+      throw new Error('[Jwift] component must be inside a <jaui>');
     }
-    this.Node = new JivCore({ ...opts, ...elementProps });
-    // Bridge Jaui's canvas-level pointer + click gestures to DOM events
-    // on this component's host element so `(click)` and
-    // `(pointerdown/move/up)` template bindings on ANY Jwift component
-    // (glass-button, tab-item, etc.) fire the same way they do on
-    // `<jiv>` from Jaui.Angular.
-    this.Node.OnClick = () => {
-      this._host.nativeElement.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    };
-    this.Node.OnContextMenu = (src: MouseEvent) => {
-      this._host.nativeElement.dispatchEvent(new MouseEvent('contextmenu', {
-        bubbles: true, cancelable: true,
-        clientX: src.clientX, clientY: src.clientY, button: src.button,
-      }));
-    };
-    this.Node.OnPointerDown = (e) => {
-      this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointerdown', e));
-    };
-    this.Node.OnPointerMove = (e) => {
-      this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointermove', e));
-    };
-    this.Node.OnPointerUp = (e) => {
-      this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointerup', e));
-    };
+    const bridge = this._canvas.Bridge;
+    this.Node = new JivHandle(bridge, bridge.AllocateId());
 
-    // React to hot-edits (registry.Version bumps) and subclass-driven
-    // className changes (e.g. GlassButton's shape input).
+    bridge.Enqueue({
+      K: 'create',
+      Id: this.Node.Id,
+      Opts: this._buildOpts(initialClassName),
+    });
+
+    this.Node.SetHit({
+      OnClick: () => {
+        this._host.nativeElement.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      },
+      OnContextMenu: (src: PointerPayload) => {
+        this._host.nativeElement.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true, cancelable: true,
+          clientX: src.ClientX, clientY: src.ClientY, button: src.Button,
+        }));
+      },
+      OnPointerDown: (e) => this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointerdown', e)),
+      OnPointerMove: (e) => this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointermove', e)),
+      OnPointerUp: (e) => this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointerup', e)),
+    });
+
     effect(() => {
       this._registry.Version();
       this._className();
@@ -124,93 +87,53 @@ export abstract class JivHost {
     });
   }
 
-  /** Call from ngOnInit. Attaches this node under the nearest Jaui parent. */
   protected _attachOnInit(): void {
-    this._parent().AddChild(this.Node);
-    this._canvas?.Canvas.Animations.Kick();
+    const parentNode = this._parentJiv ? this._parentJiv.Node : this._canvas!.Root;
+    parentNode.AddChild(this.Node);
   }
 
-  /** Call from ngOnDestroy. Starts the leave-presence fade. */
   protected _detachOnDestroy(): void {
     this.Node.RequestLeave();
-    this._canvas?.Canvas.Animations.Kick();
-  }
-
-  private _parent(): JivCore {
-    if (this._parentJiv) return this._parentJiv.Node;
-    if (this._canvas) return this._canvas.Root;
-    throw new Error('[Jwift] component must be inside a <jaui>');
-  }
-
-  private _resolveOptions() {
-    return this._resolveOptionsFor(this._className());
-  }
-
-  private _resolveOptionsFor(className: string) {
-    const fromClass = this._registry.Resolve(className) ?? null;
-    return {
-      Style:         fromClass?.Style         ? { ...fromClass.Style }         : undefined,
-      Layout:        fromClass?.Layout        ? { ...fromClass.Layout }        : undefined,
-      ChildLayout:   fromClass?.ChildLayout   ? { ...fromClass.ChildLayout }   : undefined,
-      TextStyle:     fromClass?.TextStyle     ? { ...fromClass.TextStyle }     : undefined,
-      HoverStyle:        fromClass?.HoverStyle,
-      ActiveStyle:       fromClass?.ActiveStyle,
-      FocusStyle:        fromClass?.FocusStyle,
-      DisabledStyle:     fromClass?.DisabledStyle,
-      HoverTextStyle:    fromClass?.HoverTextStyle,
-      ActiveTextStyle:   fromClass?.ActiveTextStyle,
-      FocusTextStyle:    fromClass?.FocusTextStyle,
-      DisabledTextStyle: fromClass?.DisabledTextStyle,
-      Springs:           fromClass?.Springs,
-    };
+    this.Node.Destroy();
   }
 
   private _apply(): void {
-    const opts = this._resolveOptions();
-    const classStyle = (opts.Style ?? {}) as Record<string, unknown>;
-    const overflow = 'Overflow' in classStyle ? classStyle['Overflow'] : undefined;
-    const visible = 'Visible' in classStyle ? classStyle['Visible'] : undefined;
-    const interactive = 'Interactive' in classStyle ? classStyle['Interactive'] : undefined;
-    const pointerEvents = 'PointerEvents' in classStyle ? classStyle['PointerEvents'] : undefined;
-    const cursor = 'Cursor' in classStyle ? classStyle['Cursor'] : undefined;
-    const userSelect = 'UserSelect' in classStyle ? classStyle['UserSelect'] : undefined;
-    const fitMode = 'FitMode' in classStyle ? classStyle['FitMode'] : undefined;
-    for (const k of ['Overflow','Visible','Interactive','PointerEvents','Cursor','UserSelect','FitMode']) {
-      delete classStyle[k];
+    this.Node.Apply(this._buildOpts(this._className()));
+  }
+
+  private _buildOpts(className: string): JivApplyOpts {
+    const fromClass = this._registry.Resolve(className) ?? null;
+    const styleBag = (fromClass?.Style ? { ...fromClass.Style } : {}) as Record<string, unknown>;
+
+    const elementProps: JivApplyOpts['ElementProps'] = {};
+    for (const key of _ELEMENT_KEYS) {
+      if (key in styleBag) {
+        const v = styleBag[key];
+        if (key === 'Visible' || key === 'Interactive') {
+          (elementProps as Record<string, unknown>)[key] = (v === true || v === 'true');
+        } else {
+          (elementProps as Record<string, unknown>)[key] = v;
+        }
+        delete styleBag[key];
+      }
     }
-    if (overflow !== undefined)      this.Node.Overflow = overflow as 'Visible' | 'Hidden' | 'Scroll';
-    // JSS values arrive as strings ('true'/'false'); inline [style] passes
-    // real booleans. Coerce so 'false' doesn't end up truthy.
-    if (visible !== undefined)       this.Node.Visible = visible === true || visible === 'true';
-    if (interactive !== undefined)   this.Node.Interactive = interactive === true || interactive === 'true';
-    if (pointerEvents !== undefined) this.Node.PointerEvents = pointerEvents as 'Auto' | 'None';
-    if (cursor !== undefined)        this.Node.Cursor = cursor as 'Default' | 'Pointer' | 'Text' | 'Move' | 'None';
-    if (userSelect !== undefined)    this.Node.UserSelect = userSelect as 'Auto' | 'None';
-    if (fitMode !== undefined)       this.Node.FitMode = fitMode as 'Contain' | 'Cover';
 
-    // Rebuild from defaults each time so class swaps fully reset unset fields.
-    // Layout / ChildLayout follow the same pattern as Style — without the
-    // default rebuild, properties set by one variant (e.g. _Open's
-    // Width: 176pt) leak through to the next variant (_Closed) when the
-    // new class doesn't redeclare them, and the node never shrinks back.
-    const next: JivStyle = { ...DefaultJivStyle, ...(classStyle as Partial<JivStyle>) };
-    Object.assign(this.Node.Style, next);
-
-    const nextLayout: LayoutConfig = { ...DefaultLayoutConfig, ...(opts.Layout ?? {}) };
-    Object.assign(this.Node.Layout, nextLayout);
-
-    const nextChildLayout: ChildLayout = { ...DefaultChildLayout, ...(opts.ChildLayout ?? {}) };
-    Object.assign(this.Node.ChildLayout, nextChildLayout);
-    if (opts.TextStyle) this.Node.SetText(this.Node.Text, opts.TextStyle);
-    if (opts.HoverStyle !== undefined)        this.Node.HoverStyle        = opts.HoverStyle        ?? null;
-    if (opts.ActiveStyle !== undefined)       this.Node.ActiveStyle       = opts.ActiveStyle       ?? null;
-    if (opts.FocusStyle !== undefined)        this.Node.FocusStyle        = opts.FocusStyle        ?? null;
-    if (opts.DisabledStyle !== undefined)     this.Node.DisabledStyle     = opts.DisabledStyle     ?? null;
-    if (opts.HoverTextStyle !== undefined)    this.Node.HoverTextStyle    = opts.HoverTextStyle    ?? null;
-    if (opts.ActiveTextStyle !== undefined)   this.Node.ActiveTextStyle   = opts.ActiveTextStyle   ?? null;
-    if (opts.FocusTextStyle !== undefined)    this.Node.FocusTextStyle    = opts.FocusTextStyle    ?? null;
-    if (opts.DisabledTextStyle !== undefined) this.Node.DisabledTextStyle = opts.DisabledTextStyle ?? null;
-    this.Node.MarkLayoutDirty();
+    return {
+      Style:         styleBag,
+      Layout:        fromClass?.Layout        ? ({ ...fromClass.Layout }      as Record<string, unknown>) : undefined,
+      ChildLayout:   fromClass?.ChildLayout   ? ({ ...fromClass.ChildLayout } as Record<string, unknown>) : undefined,
+      TextStyle:     fromClass?.TextStyle     ? ({ ...fromClass.TextStyle }   as Record<string, unknown>) : undefined,
+      HoverStyle:        fromClass?.HoverStyle        as Record<string, unknown> | undefined,
+      ActiveStyle:       fromClass?.ActiveStyle       as Record<string, unknown> | undefined,
+      FocusStyle:        fromClass?.FocusStyle        as Record<string, unknown> | undefined,
+      DisabledStyle:     fromClass?.DisabledStyle     as Record<string, unknown> | undefined,
+      HoverTextStyle:    fromClass?.HoverTextStyle    as Record<string, unknown> | undefined,
+      ActiveTextStyle:   fromClass?.ActiveTextStyle   as Record<string, unknown> | undefined,
+      FocusTextStyle:    fromClass?.FocusTextStyle    as Record<string, unknown> | undefined,
+      DisabledTextStyle: fromClass?.DisabledTextStyle as Record<string, unknown> | undefined,
+      Springs:           fromClass?.Springs           as Record<string, Record<string, unknown>> | undefined,
+      ElementProps:      Object.keys(elementProps).length > 0 ? elementProps : undefined,
+    };
   }
 }
 
@@ -219,25 +142,21 @@ const _ELEMENT_KEYS = [
   'Cursor', 'UserSelect', 'PointScale', 'FitMode',
 ];
 
-function _clonePointerEvent(type: string, src: PointerEvent): PointerEvent {
+function _clonePointerEvent(type: string, src: PointerPayload): PointerEvent {
   const evt = new PointerEvent(type, {
     bubbles: true,
     cancelable: true,
-    clientX: src.clientX,
-    clientY: src.clientY,
-    pointerId: src.pointerId,
-    pointerType: src.pointerType,
-    button: src.button,
-    buttons: src.buttons,
-    shiftKey: src.shiftKey,
-    ctrlKey: src.ctrlKey,
-    altKey: src.altKey,
-    metaKey: src.metaKey,
+    clientX: src.ClientX,
+    clientY: src.ClientY,
+    pointerId: src.PointerId,
+    pointerType: src.PointerType,
+    button: src.Button,
+    buttons: src.Buttons,
+    shiftKey: src.Shift,
+    ctrlKey: src.Ctrl,
+    altKey: src.Alt,
+    metaKey: src.Meta,
   });
-  // Marker so DOM listeners on ancestor elements (e.g. page-root field
-  // gesture handlers) can distinguish bridge-synthesized events — fired
-  // because Jaui hit-tested a Jiv-painted child — from native pointer
-  // events on the canvas, which target real field area.
   (evt as PointerEvent & { __jauiBridged?: boolean }).__jauiBridged = true;
   return evt;
 }
