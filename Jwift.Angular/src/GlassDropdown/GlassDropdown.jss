@@ -57,14 +57,17 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
   Align: Center
   Padding: 4pt
   Gap: 4pt
-  // Explicit Width/Height: MinContent so the @Transition Width/Height
-  // rules on the base class have a numeric target to spring toward
-  // when collapsing from _Open. Without these, the resolver leaves
-  // Width/Height as "unset" on close and Jaui's transition machinery
-  // has nothing to interpolate to — the dropdown sticks at its open
-  // size after the avatar is dismissed.
-  Width: MinContent
-  Height: MinContent
+  // Width: MaxContent — sum of all cells + gaps + padding (intended
+  // pill behavior: actions + ellipsis + avatar in a row). MinContent on
+  // a Row container resolves to MAX child intrinsic-min, not the sum,
+  // so the pill collapsed to a single-cell circle (48pt × 48pt floor)
+  // instead of expanding to fit the cluster. Height: MaxContent gives
+  // the same answer as MinContent on the cross axis (tallest child),
+  // kept symmetric for readability. The @Transition Width/Height rules
+  // on the base class still have a numeric target to spring toward on
+  // close — the resolved sum is a concrete number.
+  Width: MaxContent
+  Height: MaxContent
   MinWidth: 48pt
   MinHeight: 48pt
 }

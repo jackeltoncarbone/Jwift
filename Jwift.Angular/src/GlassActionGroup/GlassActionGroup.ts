@@ -190,6 +190,11 @@ export class GlassActionGroup implements OnDestroy {
 
   private readonly _MaxInlineFit = signal<number>(Number.MAX_SAFE_INTEGER);
 
+  /** One-shot wiring guard for WatchRect on the toolbar / leading / dropdown
+   *  ancestor chain. Set on first `_UpdateInlineFit` after mount so the rest
+   *  of the rAF loop sees live widths instead of the 0 default. */
+  private _fitRectsWired = false;
+
   /** Cell-eligible subset of Actions — dividers and pure menu items
    *  (e.g. things flagged as Disabled with no Icon) shouldn't appear as
    *  inline cells. */
@@ -258,6 +263,18 @@ export class GlassActionGroup implements OnDestroy {
     if (!toolbar) return;
 
     const leading = toolbar.Children.find(c => c !== trailing);
+    // Post-worker-migration JivHandle.Width/Height only reflect live rects
+    // when subscribed via WatchRect. Without these, toolbar.Width / leading.Width
+    // read 0, slack = 0, and every action gets promoted to the overflow menu.
+    // Idempotent; the worker sends a snapshot once per frame after the first
+    // call. Wire them lazily here so we always run against the actual ancestor
+    // chain after Angular mount.
+    if (!this._fitRectsWired) {
+      this._fitRectsWired = true;
+      toolbar.WatchRect?.(true);
+      if (leading) leading.WatchRect?.(true);
+      ddNode.WatchRect?.(true);
+    }
     const ps = toolbar.ResolveCtx?.PointScale ?? 1;
 
     const cellPx       = GlassActionGroup._CellPt        * ps;
