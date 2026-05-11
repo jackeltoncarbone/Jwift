@@ -13,6 +13,7 @@ import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
 import { GlassDropdownItem, type GlassDropdownItemVariant } from '../GlassDropdown/GlassDropdownItem';
+import { JwiftSpinner } from '../Spinner/JwiftSpinner';
 import GlassActionGroupJss from './GlassActionGroup.jss';
 
 /** Single source of truth for both inline cells and dropdown items. Most
@@ -32,6 +33,12 @@ export interface GlassAction {
   Active?: boolean;
   /** Suppresses click and dims the cell/item. */
   Disabled?: boolean;
+  /** Renders an inline spinner cell in place of the standard icon cell —
+   *  use for transient indicators (autosave, background sync). Spinner
+   *  actions render in the inline pill only; they're filtered out of the
+   *  overflow menu. Setting this implies `Disabled: true` for click
+   *  semantics — spinners aren't tap targets. */
+  Spinner?: boolean;
   /** Renders the menu item with the danger color palette. */
   Destructive?: boolean;
   /** Renders a thin divider line in the menu instead of a clickable item.
@@ -80,6 +87,7 @@ export interface GlassAction {
     Jiv, Jext, Jyle,
     Icon,
     GlassDropdown, GlassDropdownItem,
+    JwiftSpinner,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -87,9 +95,15 @@ export interface GlassAction {
     <glass-dropdown #dd>
       @if (!dd.IsOpen()) {
         @for (action of _InlineActions(); track action.Id) {
-          <jiv [class]="_CellClass(action)" (click)="_OnCellClick(action, $event)">
-            <icon class="Jwift_GlassActionGlyph" [Name]="action.Icon ?? ''" />
-          </jiv>
+          @if (action.Spinner) {
+            <jiv class="Jwift_GlassDropdownCell">
+              <jwift-spinner [size]="20" />
+            </jiv>
+          } @else {
+            <jiv [class]="_CellClass(action)" (click)="_OnCellClick(action, $event)">
+              <icon class="Jwift_GlassActionGlyph" [Name]="action.Icon ?? ''" />
+            </jiv>
+          }
         }
         <jiv class="Jwift_GlassDropdownCell_Ellipsis" (click)="$event.stopPropagation(); dd.Open()">
           <icon class="Jwift_GlassActionGlyph" Name="ellipsis" />
@@ -199,7 +213,7 @@ export class GlassActionGroup implements OnDestroy {
    *  (e.g. things flagged as Disabled with no Icon) shouldn't appear as
    *  inline cells. */
   private readonly _CellEligible = computed(() =>
-    this.Actions().filter(a => !a.Divider && a.Icon)
+    this.Actions().filter(a => !a.Divider && (a.Icon || a.Spinner))
   );
 
   protected readonly _InlineActions = computed(() => {
@@ -208,11 +222,14 @@ export class GlassActionGroup implements OnDestroy {
     return all.slice(0, Math.min(all.length, fit));
   });
 
-  /** Actions that didn't fit as inline cells — promoted into the menu. */
+  /** Actions that didn't fit as inline cells — promoted into the menu.
+   *  Spinner actions are excluded: they're transient indicators tied to
+   *  the inline pill (autosave, sync), so listing them as a menu row
+   *  would be both inert and confusing. */
   protected readonly _OverflowActions = computed(() => {
     const all = this._CellEligible();
     const fit = this._MaxInlineFit();
-    return all.slice(Math.min(all.length, fit));
+    return all.slice(Math.min(all.length, fit)).filter(a => !a.Spinner);
   });
 
   /** Items rendered when the dropdown is open. Root page = overflow + Menu;
