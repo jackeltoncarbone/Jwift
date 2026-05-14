@@ -3,6 +3,8 @@ Jwift_Card {
   Justify: End
   Align: Stretch
   BorderRadius: 48pt
+  BorderWidth: 1pt
+  BorderColor: rgba(255, 255, 255, 0.08)
   ShadowColor: rgba(0, 0, 0, 0.45)
   ShadowBlur: 24pt
   ShadowOffsetY: 10pt
