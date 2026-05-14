@@ -98,7 +98,13 @@ export class ToolbarTitle implements OnInit, OnDestroy, AfterContentInit {
 
   /** Fade fires when target's first child (hero logo) is halfway behind
    *  the TopBlur. Tracks first-child's absolute Y + half its height
-   *  against `topBlurHeight`. ±30pt smoothness on either side. */
+   *  against `topBlurHeight`. ±30pt smoothness on either side.
+   *
+   *  The fade window is floored at scrollY = 0 — when the first child
+   *  natively sits behind the TopBlur (hero content centered in a tall
+   *  HeroBody whose top is under the toolbar), the raw crossover scroll
+   *  is negative and the fade would otherwise read 1 before the user
+   *  has scrolled at all, hiding the logo on initial render. */
   private _recomputeFade(): void {
     const scrollJiv = this.scroll();
     const tgt = this.target();
@@ -107,8 +113,9 @@ export class ToolbarTitle implements OnInit, OnDestroy, AfterContentInit {
     const first = tgt.Node.Children[0];
     if (!first) return;
     const firstAbsY = tgt.Node.Y + first.Y;
-    const crossScroll = firstAbsY + first.Height / 2 - this.topBlurHeight();
     const half = 30;
+    const rawCross = firstAbsY + first.Height / 2 - this.topBlurHeight();
+    const crossScroll = Math.max(half, rawCross);
     const t = Math.min(1, Math.max(0, (scrollY - (crossScroll - half)) / (2 * half)));
     if (t !== this._fade()) this._fade.set(t);
   }
