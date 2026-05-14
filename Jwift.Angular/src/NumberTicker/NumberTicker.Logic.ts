@@ -1,40 +1,61 @@
 /**
  * Pure logic for the Jwift NumberTicker primitive. Lives apart from the
- * Angular component so the per-cell diff and the slide-distance math are
- * testable without spinning up a Jaui canvas or a TestBed.
+ * Angular component so the per-cell rotation math is unit-testable
+ * without spinning up a Jaui canvas or a TestBed.
  *
- * The shape of one cell:
+ * Three-slot model:
  *
- *   Cell {
- *     parity: 0 | 1     // which slot currently holds the visible character
- *     slots: [s0, s1]   // two-glyph buffer; the other slot lingers offscreen
- *   }
+ *   slots[s] = the character that slot s currently holds
+ *   positions[s] = which row of the 3-row band slot s sits in:
+ *                  -1 = above viewport
+ *                   0 = visible (in viewport)
+ *                  +1 = below viewport
+ *   opacities[s] = 1 when slot is the visible one, 0 otherwise
+ *   currentSlot  = index of the slot at position 0 (the visible slot)
  *
- * The visible character is always `slots[parity]`. The opposite slot
- * carries the previous character so the next digit-change can write
- * into it without disturbing what's onscreen mid-transition.
+ * On a digit change we rotate roles by ONE STEP in the direction matching
+ * the numeric change:
+ *   - incrementing → slide UP   → the slot currently at +1 becomes visible
+ *   - decrementing → slide DOWN → the slot currently at -1 becomes visible
+ *
+ * The slot that was just-visible slides out in the direction of motion.
+ * The third (off-screen) slot recycles to the opposite far side so it's
+ * ready for the next tick — its opacity stays 0 throughout, so the
+ * spring travelling through the viewport mid-jump is invisible.
+ *
+ * Non-numeric chars (e.g. the colon in "0:09") don't compute a direction;
+ * unchanged cells return by reference (so Angular's @for tracking skips
+ * re-render and the cell's springs stay settled).
  */
 
 export interface Cell {
-  parity: 0 | 1;
-  slots: [string, string];
+  slots: [string, string, string];
+  /** Each slot's vertical row in cell-heights. -1 above, 0 visible, +1 below. */
+  positions: [number, number, number];
+  opacities: [number, number, number];
+  currentSlot: 0 | 1 | 2;
+  /** Last visible char — compared against incoming to determine direction. */
+  lastChar: string;
 }
+
+const _initCell = (ch: string): Cell => ({
+  slots: [ch, '', ''],
+  positions: [0, -1, 1],
+  opacities: [1, 0, 0],
+  currentSlot: 0,
+  lastChar: ch,
+});
 
 /**
  * Diff a previous cell array against an incoming string. Returns a new
- * array of cells where:
- *   - each character in `value` produces one cell
- *   - cells whose visible character matches the previous run are returned
- *     by reference (so Angular's @for tracking skips re-render and the
- *     cell's VisualTranslate stays settled)
- *   - cells whose character changed flip parity and write the incoming
- *     character into the freed (formerly hidden) slot — the JSS
- *     @Transition VisualTranslate spring then animates the stack to
- *     expose it
- *   - cells appended past the previous length start at parity 0 with the
- *     character in slot 0 (no opening slide)
- *
- * No mutation of the input. Pure function — same input, same output.
+ * array where:
+ *   - each character produces one cell
+ *   - cells whose visible character matches the previous return by reference
+ *   - cells whose character changed rotate one slot in the direction of
+ *     numeric change (inc → slide UP, dec → slide DOWN). The "next"
+ *     slot inherits the new char; the previous-visible slot slides out;
+ *     the third slot recycles to the opposite far side at opacity 0.
+ *   - cells past the previous length start fresh with the new char visible
  */
 export const DiffCells = (prev: readonly Cell[], value: string): Cell[] => {
   const next: Cell[] = [];
@@ -42,30 +63,72 @@ export const DiffCells = (prev: readonly Cell[], value: string): Cell[] => {
     const ch = value.charAt(i);
     const existing = prev[i];
     if (!existing) {
-      next.push({ parity: 0, slots: [ch, ''] });
+      next.push(_initCell(ch));
       continue;
     }
-    const currentChar = existing.slots[existing.parity];
-    if (currentChar === ch) {
+    if (existing.lastChar === ch) {
       next.push(existing);
       continue;
     }
-    const newParity = (1 - existing.parity) as 0 | 1;
-    const newSlots: [string, string] = [existing.slots[0], existing.slots[1]];
-    newSlots[newParity] = ch;
-    next.push({ parity: newParity, slots: newSlots });
+    const oldNum = parseInt(existing.lastChar, 10);
+    const newNum = parseInt(ch, 10);
+    const direction: -1 | 0 | 1 =
+      Number.isNaN(oldNum) || Number.isNaN(newNum) ? 0
+        : newNum > oldNum ? 1
+          : newNum < oldNum ? -1
+            : 0;
+    if (direction === 0) {
+      // Non-numeric or same value — replace the visible slot's text in place,
+      // no slide. Snap rather than animate.
+      const newSlots = [...existing.slots] as [string, string, string];
+      newSlots[existing.currentSlot] = ch;
+      next.push({ ...existing, slots: newSlots, lastChar: ch });
+      continue;
+    }
+    // Find the slot currently at position == direction (i.e. +1 for inc,
+    // -1 for dec). That slot becomes the new visible one.
+    let nextSlot = -1;
+    for (let s = 0; s < 3; s++) {
+      if (existing.positions[s] === direction) { nextSlot = s; break; }
+    }
+    if (nextSlot < 0) {
+      // Degenerate — fall back to in-place replace.
+      const newSlots = [...existing.slots] as [string, string, string];
+      newSlots[existing.currentSlot] = ch;
+      next.push({ ...existing, slots: newSlots, lastChar: ch });
+      continue;
+    }
+    // The third slot (neither current nor next) recycles to the far side.
+    let recycleSlot = -1;
+    for (let s = 0; s < 3; s++) {
+      if (s !== existing.currentSlot && s !== nextSlot) { recycleSlot = s; break; }
+    }
+    const newSlots: [string, string, string] = [...existing.slots] as [string, string, string];
+    newSlots[nextSlot] = ch;
+    const newPositions: [number, number, number] = [0, 0, 0];
+    newPositions[existing.currentSlot] = -direction as -1 | 1; // slides out opposite to incoming
+    newPositions[nextSlot] = 0;
+    newPositions[recycleSlot] = direction;                      // jumps to the far side (invisible)
+    const newOpacities: [number, number, number] = [0, 0, 0];
+    newOpacities[nextSlot] = 1;
+    next.push({
+      slots: newSlots,
+      positions: newPositions,
+      opacities: newOpacities,
+      currentSlot: nextSlot as 0 | 1 | 2,
+      lastChar: ch,
+    });
   }
   return next;
 };
 
 /**
- * Vertical offset (in pt) the cell's stack must hold to expose the
- * current slot. At parity 0 the stack sits at the cell's top so slot 0
- * is visible (offset 0). At parity 1 the stack lifts by one cell height
- * so slot 1 is visible (offset −cellHeightPt).
- *
- * The string return shape matches Jaui's `VisualTranslate` two-token
- * format ("X Y", both Length-typed). Negative Y lifts the stack up.
+ * Vertical offset (in pt) for one slot — `position × cellHeight`. Negative
+ * lifts above viewport, positive drops below. Returned as a Jaui
+ * `VisualTranslate` two-token string.
  */
-export const CellTranslatePt = (cell: Cell, cellHeightPt: number): string =>
-  cell.parity === 0 ? '0 0' : `0 -${cellHeightPt}pt`;
+export const SlotTranslate = (cell: Cell, slotIdx: 0 | 1 | 2, cellHeightPt: number): string => {
+  const pos = cell.positions[slotIdx];
+  if (pos === 0) return '0 0';
+  return `0 ${pos * cellHeightPt}pt`;
+};

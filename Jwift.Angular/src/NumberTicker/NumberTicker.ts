@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import type { JivStyle, TextStyle, ChildLayout } from 'jaui';
-import { type Cell, DiffCells, CellTranslatePt } from './NumberTicker.Logic';
+import { type Cell, DiffCells, SlotTranslate } from './NumberTicker.Logic';
 import NumberTickerJss from './NumberTicker.jss';
 
 /**
@@ -19,12 +19,13 @@ import NumberTickerJss from './NumberTicker.jss';
  * Built for surfaces that update at a steady cadence (timecodes, beat
  * counters, scores). Generic — no drill-specific assumptions baked in.
  *
- * Each cell uses a two-slot rotating buffer: the current character lives
- * in slot N, the previous character lingers in slot N^1. When the digit
- * changes, parity flips, the incoming char is written to the (formerly
- * hidden) opposite slot, and the stack's `VisualTranslate` springs to
- * expose it. Direction of slide alternates per change, which reads
- * cleanly for monotonically-incrementing readouts.
+ * Each cell uses a three-slot rotating buffer (see NumberTicker.Logic).
+ * On a digit change we rotate roles in the direction of the numeric
+ * change: incrementing slides UP, decrementing slides DOWN. The third
+ * slot recycles to the far side of the viewport at opacity 0 so it's
+ * ready for the next tick in the same direction — its translate spring
+ * jumps through the viewport invisibly because opacity stays 0
+ * throughout.
  */
 @Component({
   selector: 'number-ticker',
@@ -36,12 +37,12 @@ import NumberTickerJss from './NumberTicker.jss';
     <jiv class="NumberTickerRow">
       @for (cell of _cells(); track $index) {
         <jiv class="NumberTickerCell" [childLayout]="_cellLayout()">
-          <jiv class="NumberTickerStack" [style]="_stackStyle(cell)">
-            <jext class="NumberTickerGlyph" [text]="cell.slots[0]" [textStyle]="_glyphTextStyle()"
-              [childLayout]="_glyphLayout()" [style]="_glyphStyle(cell, 0)" />
-            <jext class="NumberTickerGlyph" [text]="cell.slots[1]" [textStyle]="_glyphTextStyle()"
-              [childLayout]="_glyphLayout()" [style]="_glyphStyle(cell, 1)" />
-          </jiv>
+          <jext class="NumberTickerGlyph" [text]="cell.slots[0]" [textStyle]="_glyphTextStyle()"
+            [childLayout]="_glyphLayout()" [style]="_glyphStyle(cell, 0)" />
+          <jext class="NumberTickerGlyph" [text]="cell.slots[1]" [textStyle]="_glyphTextStyle()"
+            [childLayout]="_glyphLayout()" [style]="_glyphStyle(cell, 1)" />
+          <jext class="NumberTickerGlyph" [text]="cell.slots[2]" [textStyle]="_glyphTextStyle()"
+            [childLayout]="_glyphLayout()" [style]="_glyphStyle(cell, 2)" />
         </jiv>
       }
     </jiv>
@@ -111,17 +112,15 @@ export class NumberTicker {
     LineHeight: `${this._lineHeightRatio()}`,
   }));
 
-  protected _stackStyle = (cell: Cell): Partial<JivStyle> => ({
-    VisualTranslate: CellTranslatePt(cell, this._cellHeight()),
-  });
-
-  /** Per-slot opacity. Visible slot (matching cell.parity) holds at 1;
-   *  the other fades to 0. JSS @Transition Opacity on NumberTickerGlyph
-   *  smooths the swap so the outgoing digit fades out as it slides
-   *  toward the cell edge — softens the otherwise hard Overflow:Hidden
-   *  cut, giving the picker a graceful exit. */
-  protected _glyphStyle = (cell: Cell, slot: 0 | 1): Partial<JivStyle> => ({
-    Opacity: cell.parity === slot ? '1' : '0',
+  /** Per-slot translate + opacity. The three glyphs are positioned
+   *  independently — Cell.positions gives each slot's row (-1/0/+1) and
+   *  Cell.opacities gives its visibility. JSS @Transition on
+   *  VisualTranslate + Opacity smooths the slide and the fade. The
+   *  recycle slot's translate jump from one far side to the other is
+   *  invisible because opacity stays 0 throughout. */
+  protected _glyphStyle = (cell: Cell, slot: 0 | 1 | 2): Partial<JivStyle> => ({
+    VisualTranslate: SlotTranslate(cell, slot, this._cellHeight()),
+    Opacity: String(cell.opacities[slot]),
   });
 
   // ── Diff state ─────────────────────────────────────────────────────
