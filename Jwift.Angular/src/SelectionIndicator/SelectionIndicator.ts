@@ -38,6 +38,13 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _unbindPointer: (() => void) | null = null;
   private _shapeX = new Spring(1, 2500, 60, 1);
   private _shapeY = new Spring(1, 2500, 60, 1);
+  // Continuous press amount in [0, 1]. Drives the pad + size boost as a
+  // smooth curve so the indicator's size doesn't snap-then-chase when the
+  // boolean `isPressed` flips — every visual parameter (glass thickness,
+  // refraction, rim, tint, size) then springs in lockstep across the
+  // press/release transition. Stiffness/damping picked to roughly match
+  // the JSS @Transition durations on the glass props (280ms).
+  private _pressAmount = new Spring(0, 220, 26, 1);
   private _firstValid = false;
   // The current target / parent we've subscribed to per-frame rect
   // snapshots from. With Jaui in the worker, JivHandle.X/Y/Width/Height
@@ -58,6 +65,13 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this._attachOnInit();
+    // Subscribe to per-frame rect snapshots of our OWN Node — _sync's
+    // watery-bounce stretch uses (this.Node.X - lastX)/dt to compute
+    // velocity, and in worker mode JivHandle.X stays at 0 on main
+    // without WatchRect(true). Without this the velocity reads as
+    // zero every frame and the shape springs target 1.0 forever
+    // (no stretch, no squish, no perpendicular bulge).
+    this.Node.WatchRect(true);
     const tick = (): void => {
       this._sync();
       this._rafId = requestAnimationFrame(tick);
@@ -70,6 +84,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     if (this._rafId) cancelAnimationFrame(this._rafId);
     this._unbindPointer?.();
     this._unwatchTargets();
+    this.Node.WatchRect(false);
     this._detachOnDestroy();
   }
 
@@ -146,9 +161,31 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
     const override = this.pressed();
     const isPressed = override !== null ? override : this._autoPressed();
-    const [padT, padR, padB, padL] = isPressed ? this._lastPad : [0, 0, 0, 0];
-    const pressBoostY = isPressed ? 6 : 0;
-    const pressBoostX = isPressed && t.Height > 0 ? pressBoostY * (t.Width / t.Height) : 0;
+
+    const now = performance.now();
+    // Upper clamp prevents first-frame Euler blowup (dt of billions of ms).
+    const haveLast = this._lastT > 0;
+    const dt = haveLast
+      ? Math.min(0.033, Math.max(0.001, (now - this._lastT) / 1000))
+      : 0.016;
+
+    // Smooth the press transition over a continuous spring rather than a
+    // boolean — every visual parameter (glass thickness, refraction, rim,
+    // tint, pad, size boost) then springs in lockstep across the
+    // press/release transition. Without this, baseWidth/baseHeight snap
+    // discontinuously when isPressed flips and the @Transition Width/Height
+    // springs chase the snap, producing a visible size "skip."
+    this._pressAmount.Target = isPressed ? 1 : 0;
+    this._pressAmount.Step(dt);
+    const pressAmount = this._pressAmount.Value;
+
+    const [padTRaw, padRRaw, padBRaw, padLRaw] = this._lastPad;
+    const padT = padTRaw * pressAmount;
+    const padR = padRRaw * pressAmount;
+    const padB = padBRaw * pressAmount;
+    const padL = padLRaw * pressAmount;
+    const pressBoostY = 6 * pressAmount;
+    const pressBoostX = t.Height > 0 ? pressBoostY * (t.Width / t.Height) : 0;
     const baseWidth = t.Width + padL + padR + pressBoostX * 2;
     const baseHeight = t.Height + padT + padB + pressBoostY * 2;
 
@@ -164,10 +201,6 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       }
     }
 
-    const now = performance.now();
-    // Upper clamp prevents first-frame Euler blowup (dt of billions of ms).
-    const dt = Math.min(0.033, Math.max(0.001, (now - this._lastT) / 1000));
-    const haveLast = this._lastT > 0;
     const vx = haveLast ? (this.Node.X - this._lastX) / dt : 0;
     const vy = haveLast ? (this.Node.Y - this._lastY) / dt : 0;
     this._lastT = now;
@@ -177,7 +210,13 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     const STRETCH_MAX = 0.35;
     const SPEED_HALF = 500;
     const PERP_GAIN = 1.35;
-    const speed = Math.hypot(vx, vy);
+    // Stretch is meant to react to USER motion (drag-while-pressed across
+    // tabs), not to the indicator's own animation settling. Gating by
+    // isPressed prevents the indicator from squishing itself on release:
+    // when pressAmount shrinks, cl.Top moves down, the Y spring chases,
+    // and vy reads as positive — which would otherwise feed the stretch
+    // and add a vertical compression on top of the legitimate shrink.
+    const speed = isPressed ? Math.hypot(vx, vy) : 0;
     const stretch = STRETCH_MAX * speed / (speed + SPEED_HALF);
     const hShare = speed > 0 ? Math.abs(vx) / speed : 0;
     const vShare = speed > 0 ? Math.abs(vy) / speed : 0;
