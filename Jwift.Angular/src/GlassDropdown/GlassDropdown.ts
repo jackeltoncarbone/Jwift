@@ -38,6 +38,15 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this._attachOnInit();
+    // Subscribe the dropdown's JivHandle to per-frame rect snapshots from
+    // the worker. Without this, `Node.X / Y / Width / Height` stay at their
+    // default 0 — and the outside-click bounds check below resolves to
+    // `px >= 0 && px < 0` (false) for every tap. That dispatches `Close()`
+    // on every menu-item tap before the item's own click handler ever fires,
+    // making every dropdown item read as inert ("Sign In closes the menu
+    // like it isn't a button"). Idempotent — the worker emits a snapshot
+    // once per frame after the first call.
+    this.Node.WatchRect?.(true);
     // Everything renders into a single <canvas>, so DOM contains() can't
     // tell if a click landed inside or outside the dropdown — target is
     // always the canvas element. Check the pointer's canvas-space coords
