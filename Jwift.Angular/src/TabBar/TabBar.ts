@@ -88,6 +88,11 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
   private _rafId = 0;
   private _pointerId: number | null = null;
   private _unbind: (() => void) | null = null;
+  private _pressLatchTimer: ReturnType<typeof setTimeout> | null = null;
+  // Hold the press latch through the indicator's slide-to-new-tab.
+  // SelectionIndicator.jss @Transition X/Y/Width/Height = 260ms; we cover
+  // that plus the press-prop springs (200-280ms).
+  private static readonly _SlideLatchMs = 280;
 
   constructor() {
     super('TabBar', TabBarJss, 'Jwift_TabBar', () => 'Jwift_TabBar');
@@ -112,6 +117,7 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this._rafId) cancelAnimationFrame(this._rafId);
+    if (this._pressLatchTimer) clearTimeout(this._pressLatchTimer);
     this._unbind?.();
     this._detachOnDestroy();
   }
@@ -142,6 +148,12 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
       const [x, y] = toCanvasPoint(e.clientX, e.clientY);
       const idx = this._hitIndex(x, y);
       if (idx < 0) return;
+      // Cancel any pending press-latch release from a previous gesture so
+      // a fresh tap takes over cleanly instead of being cleared mid-press.
+      if (this._pressLatchTimer) {
+        clearTimeout(this._pressLatchTimer);
+        this._pressLatchTimer = null;
+      }
       this._pointerId = e.pointerId;
       this._dragIndex.set(idx);
       // Optimistic capture so pointermove reaches us even if the pointer
@@ -161,10 +173,22 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
       if (this._pointerId !== e.pointerId) return;
       const finalIdx = this._dragIndex();
       this._pointerId = null;
-      this._dragIndex.set(null);
       try { el.releasePointerCapture(e.pointerId); } catch {}
       if (finalIdx !== null && finalIdx !== this.selected()) {
+        // Emit BEFORE clearing _dragIndex so the consumer's selected()
+        // update lands before EffectiveSelected falls back to selected().
         this.selectedChange.emit(finalIdx);
+        // Keep IsPressed latched through the slide-to-new-tab animation
+        // so the indicator glass stays engaged while the pill travels,
+        // then releases at the new position. Without this latch, a tap
+        // (~50ms) is too short for the press spring to reach a visible
+        // glass state and the slide reads as a flat pill moving.
+        this._pressLatchTimer = setTimeout(() => {
+          this._pressLatchTimer = null;
+          if (this._pointerId === null) this._dragIndex.set(null);
+        }, TabBar._SlideLatchMs);
+      } else {
+        this._dragIndex.set(null);
       }
     };
 
