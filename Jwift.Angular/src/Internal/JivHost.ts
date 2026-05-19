@@ -118,10 +118,22 @@ export abstract class JivHost {
       }
     }
 
+    // Merge the live proxy state under the class-resolved bag so imperative
+    // writes (cl.Left, cl.Width, etc. set via `Node.ChildLayout.X = ...` from
+    // a subclass's RAF tick) survive the worker's class-snapshot reset.
+    // Without this, every className() change emits an apply op whose
+    // ChildLayout has only the class-defined keys (Position, Layer, ...);
+    // the worker resets ChildLayout to engine defaults before applying,
+    // wiping any TS-driven Left/Top/Width/Height for at least one frame
+    // (until the next RAF tick triggers a Proxy write). Class keys still
+    // win on conflict, so a class that genuinely changes ChildLayout
+    // (AddDrawer wide ↔ narrow Width:) overrides the stale proxy value.
     return {
       Style:         styleBag,
       Layout:        fromClass?.Layout        ? ({ ...fromClass.Layout }      as Record<string, unknown>) : undefined,
-      ChildLayout:   fromClass?.ChildLayout   ? ({ ...fromClass.ChildLayout } as Record<string, unknown>) : undefined,
+      ChildLayout:   fromClass?.ChildLayout
+        ? ({ ...this.Node.ChildLayout, ...fromClass.ChildLayout } as Record<string, unknown>)
+        : undefined,
       TextStyle:     fromClass?.TextStyle     ? ({ ...fromClass.TextStyle }   as Record<string, unknown>) : undefined,
       HoverStyle:        fromClass?.HoverStyle        as Record<string, unknown> | undefined,
       ActiveStyle:       fromClass?.ActiveStyle       as Record<string, unknown> | undefined,

@@ -35,6 +35,9 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _lastX = 0;
   private _lastY = 0;
   private _pointerX: number | null = null;
+  private _pointerDownX: number | null = null;
+  private _dragActive = false;
+  private static readonly _DragThresholdPx = 4;
   private _unbindPointer: (() => void) | null = null;
   private _shapeX = new Spring(1, 2500, 60, 1);
   private _shapeY = new Spring(1, 2500, 60, 1);
@@ -120,12 +123,56 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       const rect = el.getBoundingClientRect();
       return clientX - rect.left;
     };
-    const onDown = (e: PointerEvent) => { this._pointerX = toCanvasX(e.clientX); };
+    const toCanvasY = (clientY: number): number => {
+      const rect = el.getBoundingClientRect();
+      return clientY - rect.top;
+    };
+    // Whether the canvas point (x, y) lies inside the parent (tab strip)
+    // bounds. The pointer listeners attach to the WHOLE canvas (we have
+    // no per-tab DOM elements — Jaui draws everything in the worker), so
+    // we gate every event on whether it intersects THIS indicator's
+    // target-strip. Without this gate, any pointerdown anywhere on the
+    // page activates drag tracking and the indicator chases the cursor.
+    const inParentBounds = (x: number, y: number): boolean => {
+      const parent = this.target()?.Parent as (JivCore | null);
+      if (!parent) return false;
+      // Parent rect requires WatchRect; _sync subscribes once target() is
+      // set, so by the time pointer events arrive parent.X/Y/W/H are
+      // populated. If they're 0 (target not yet ready), fail closed.
+      if (parent.Width <= 0 || parent.Height <= 0) return false;
+      return x >= parent.X && x <= parent.X + parent.Width
+          && y >= parent.Y && y <= parent.Y + parent.Height;
+    };
+    const onDown = (e: PointerEvent) => {
+      const x = toCanvasX(e.clientX);
+      const y = toCanvasY(e.clientY);
+      // Only initiate drag tracking when pointerdown lands inside THIS
+      // indicator's target-strip. Pointerdowns elsewhere (other tab
+      // strips, scrollable content, modal backdrops, anything) leave
+      // _pointerDownX as null so onMove bails immediately.
+      if (!inParentBounds(x, y)) return;
+      this._pointerX = x;
+      this._pointerDownX = x;
+      this._dragActive = false;
+    };
     const onMove = (e: PointerEvent) => {
       if (e.buttons === 0) return;
-      this._pointerX = toCanvasX(e.clientX);
+      // Belt-and-suspenders: a pointerdown that happened OUTSIDE the
+      // parent never set _pointerDownX, so any subsequent pointermove
+      // (even with a button held) is irrelevant to this indicator.
+      if (this._pointerDownX === null) return;
+      const x = toCanvasX(e.clientX);
+      this._pointerX = x;
+      if (!this._dragActive
+          && Math.abs(x - this._pointerDownX) > SelectionIndicator._DragThresholdPx) {
+        this._dragActive = true;
+      }
     };
-    const onClear = () => { this._pointerX = null; };
+    const onClear = () => {
+      this._pointerX = null;
+      this._pointerDownX = null;
+      this._dragActive = false;
+    };
     el.addEventListener('pointerdown', onDown);
     el.addEventListener('pointermove', onMove);
     el.addEventListener('pointerup', onClear);
@@ -191,7 +238,12 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
     let centerX = t.X + t.Width / 2;
     let overshoot = 0;
-    if (isPressed && this._pointerX !== null) {
+    // Dead-zone the pointer follow: only swap centerX → finger position once
+    // the pointer has actually moved past the drag threshold. Tap-and-hold
+    // (finger registers a few px off the visual center, as fingers do) then
+    // stays centered on the tab. Only an actual drag-across-tabs engages
+    // the liquid follow.
+    if (this._dragActive && this._pointerX !== null) {
       centerX = this._pointerX;
       if (parent) {
         const minCenter = parent.X + padL + t.Width / 2;
@@ -212,11 +264,15 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     const PERP_GAIN = 1.35;
     // Stretch is meant to react to USER motion (drag-while-pressed across
     // tabs), not to the indicator's own animation settling. Gating by
-    // isPressed prevents the indicator from squishing itself on release:
-    // when pressAmount shrinks, cl.Top moves down, the Y spring chases,
-    // and vy reads as positive — which would otherwise feed the stretch
-    // and add a vertical compression on top of the legitimate shrink.
-    const speed = isPressed ? Math.hypot(vx, vy) : 0;
+    // _dragActive (instead of isPressed) excludes both:
+    //   - press-in expansion (target X drifts left as baseWidth grows
+    //     symmetrically about centerX, would otherwise feed horizontal
+    //     squish on every tap)
+    //   - release settle (pressAmount shrinks, Y spring chases, vy reads
+    //     positive, would otherwise pile vertical compression on top of
+    //     the legitimate shrink)
+    // Squish now only fires during an actual drag across tabs.
+    const speed = this._dragActive ? Math.hypot(vx, vy) : 0;
     const stretch = STRETCH_MAX * speed / (speed + SPEED_HALF);
     const hShare = speed > 0 ? Math.abs(vx) / speed : 0;
     const vShare = speed > 0 ? Math.abs(vy) / speed : 0;

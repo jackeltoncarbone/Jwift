@@ -2,10 +2,10 @@ Jwift_SelectionIndicator {
   Position: Placed
   Layer: 1
 
-  Background: rgba(255, 255, 255, 0.2)
+  Background: rgba(255, 255, 255, 0.1)
   BorderRadius: 100pt
-  BackdropBrightness: 1.25
-  BackdropSaturation: 1.25
+  BackdropBrightness: 1.5
+  BackdropSaturation: 1.5
   BackdropContrast: 1
   BackdropFrostBlur: 0
 
@@ -55,10 +55,18 @@ Jwift_SelectionIndicator {
   @Transition ShadowColor { Duration: 200ms }
   @Transition ShadowBlur { Duration: 200ms }
 
+  // X/Y and Width/Height MUST share the same duration. Press-in/out grows
+  // baseWidth symmetrically about centerX — so target_X moves left while
+  // target_Width grows (and vice versa on release). If the W spring is
+  // faster than the X spring, visible_X lags the rightward release motion
+  // while visible_Width is already small → the whole pill drifts toward
+  // the slower spring (visibly LEFT on release, RIGHT on press-in).
+  // Matching ω makes the left/right edge lags cancel, keeping the visible
+  // center on the tab.
   @Transition X      { Duration: 260ms }
   @Transition Y      { Duration: 260ms }
-  @Transition Width  { Duration: 80ms }
-  @Transition Height { Duration: 80ms }
+  @Transition Width  { Duration: 260ms }
+  @Transition Height { Duration: 260ms }
 }
 
 Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
