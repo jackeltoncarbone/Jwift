@@ -135,14 +135,11 @@ export abstract class JivHost {
         ? ({ ...this.Node.ChildLayout, ...fromClass.ChildLayout } as Record<string, unknown>)
         : undefined,
       TextStyle:     fromClass?.TextStyle     ? ({ ...fromClass.TextStyle }   as Record<string, unknown>) : undefined,
-      HoverStyle:        fromClass?.HoverStyle        as Record<string, unknown> | undefined,
-      ActiveStyle:       fromClass?.ActiveStyle       as Record<string, unknown> | undefined,
-      FocusStyle:        fromClass?.FocusStyle        as Record<string, unknown> | undefined,
-      DisabledStyle:     fromClass?.DisabledStyle     as Record<string, unknown> | undefined,
-      HoverTextStyle:    fromClass?.HoverTextStyle    as Record<string, unknown> | undefined,
-      ActiveTextStyle:   fromClass?.ActiveTextStyle   as Record<string, unknown> | undefined,
-      FocusTextStyle:    fromClass?.FocusTextStyle    as Record<string, unknown> | undefined,
-      DisabledTextStyle: fromClass?.DisabledTextStyle as Record<string, unknown> | undefined,
+      // Pseudo-selector rules — both `:Foo` and `:(expr)` from JSS —
+      // ride PredicateStyles as one consolidated list. The legacy 10
+      // *Style / *TextStyle slot fields were retired; the parser now
+      // compiles single-state pseudos to single-atom predicates.
+      PredicateStyles:   fromClass?.PredicateStyles   as ReadonlyArray<Record<string, unknown>> | undefined,
       Springs:           fromClass?.Springs           as Record<string, Record<string, unknown>> | undefined,
       ElementProps:      Object.keys(elementProps).length > 0 ? elementProps : undefined,
     };
