@@ -43,19 +43,20 @@ import { ToolbarCompactDef } from './ToolbarCompactDef';
 })
 export class ToolbarTitle implements OnInit, OnDestroy, AfterContentInit {
   readonly toolbar = input.required<Toolbar>();
+  /** Retained for backward-compat with existing template bindings.
+   *  No longer read — the swap threshold derives from the toolbar's
+   *  compact-host position vs the hero logo's, both of which are
+   *  canvas-local (scroll-subtracted) so scrollY is implicit. */
   readonly scroll = input.required<Jiv>();
-  /** The jiv whose Opacity fades as the hero title scrolls out. Usually
-   *  the HeroContent wrapper. Also used to measure the hero title's
-   *  position vs the TopBlur overlay for the swap trigger. */
+  /** The jiv whose first child (the hero logo) fades as it scrolls past
+   *  the toolbar. Usually the HeroContent wrapper. */
   readonly target = input.required<Jiv>();
-
-  /** The TopBlur overlay height in pt. Swap fires when the target's first
-   *  child (the logo) is halfway behind this zone. */
-  readonly topBlurHeight = input(200);
 
   private readonly _compactDef = contentChild(ToolbarCompactDef);
   private _rafId = 0;
   private _fade = signal(0);
+  private _watchedFirst: JivCore | null = null;
+  private _watchedCompact: JivCore | null = null;
 
   constructor() {
     // Fade only the target's first child (the hero logo) — not the whole
@@ -90,33 +91,57 @@ export class ToolbarTitle implements OnInit, OnDestroy, AfterContentInit {
 
   ngOnDestroy(): void {
     if (this._rafId) cancelAnimationFrame(this._rafId);
+    this._watchedFirst?.WatchRect(false);
+    this._watchedCompact?.WatchRect(false);
+    this._watchedFirst = null;
+    this._watchedCompact = null;
     // Clear our compact registration so it doesn't bleed into the next
     // page's toolbar — the toolbar instance lives in shared chrome and
     // outlives this component.
     this.toolbar().RegisterCompact(null);
   }
 
-  /** Fade fires when target's first child (hero logo) is halfway behind
-   *  the TopBlur. Tracks first-child's absolute Y + half its height
-   *  against `topBlurHeight`. ±30pt smoothness on either side.
+  /** Swap fires when the hero logo's on-screen center crosses the toolbar
+   *  logo's on-screen center — i.e. the moment the hero logo, scrolling
+   *  up, would visually pass through the slot where the toolbar logo sits.
+   *  ±30pt smoothness on either side of that crossing.
    *
-   *  The fade window is floored at scrollY = 0 — when the first child
-   *  natively sits behind the TopBlur (hero content centered in a tall
-   *  HeroBody whose top is under the toolbar), the raw crossover scroll
-   *  is negative and the fade would otherwise read 1 before the user
-   *  has scrolled at all, hiding the logo on initial render. */
+   *  Both Y values are canvas-local (the worker subtracts ancestor scroll
+   *  before posting RectSnapshot), so the comparison is purely a visual
+   *  one — scrollY doesn't enter the math. */
   private _recomputeFade(): void {
-    const scrollJiv = this.scroll();
     const tgt = this.target();
-    if (!scrollJiv || !tgt) return;
-    const scrollY = scrollJiv.Node.ScrollY;
-    const first = tgt.Node.Children[0];
-    if (!first) return;
-    const firstAbsY = tgt.Node.Y + first.Y;
+    const tb = this.toolbar();
+    if (!tgt || !tb) return;
+    const first = tgt.Node.Children[0] as JivCore | undefined;
+    const compact = tb.CompactHost;
+    if (!first || !compact) return;
+
+    // Subscribe lazily — rects are 0 until WatchRect(true). Calls are
+    // idempotent. Re-target if the underlying jiv changes (e.g. compact
+    // re-registered after a route swap).
+    if (this._watchedFirst !== first) {
+      this._watchedFirst?.WatchRect(false);
+      first.WatchRect(true);
+      this._watchedFirst = first;
+    }
+    if (this._watchedCompact !== compact) {
+      this._watchedCompact?.WatchRect(false);
+      compact.WatchRect(true);
+      this._watchedCompact = compact;
+    }
+
+    // Bail until both rects have been measured at least once — otherwise
+    // 0-vs-0 reads as "centers aligned" and the toolbar logo would flash
+    // in at half opacity on the first frame.
+    if (first.Height === 0 || compact.Height === 0) return;
+
+    const heroCenter = first.Y + first.Height / 2;
+    const toolbarCenter = compact.Y + compact.Height / 2;
+    // Positive once the hero logo has scrolled up past the toolbar slot.
+    const delta = toolbarCenter - heroCenter;
     const half = 30;
-    const rawCross = firstAbsY + first.Height / 2 - this.topBlurHeight();
-    const crossScroll = Math.max(half, rawCross);
-    const t = Math.min(1, Math.max(0, (scrollY - (crossScroll - half)) / (2 * half)));
+    const t = Math.min(1, Math.max(0, (delta + half) / (2 * half)));
     if (t !== this._fade()) this._fade.set(t);
   }
 }

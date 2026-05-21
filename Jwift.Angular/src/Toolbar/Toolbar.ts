@@ -55,6 +55,13 @@ export class Toolbar extends JivHost implements OnInit, OnDestroy {
    *  compact template registers and creates its content. */
   private _compactHost: JivCore | null = null;
 
+  /** Public accessor for the compact slot's JivCore so ToolbarTitle can
+   *  measure its on-screen position for the scroll-swap threshold (we
+   *  want the swap fired when the hero logo crosses THIS jiv, not a
+   *  fixed proxy like TopBlur height). Null until the compact template
+   *  registers and its embedded view attaches its first jiv to us. */
+  get CompactHost(): JivCore | null { return this._compactHost; }
+
   /** Extra class(es) appended to `Jwift_Toolbar` so consumers can override
    *  toolbar fields (Padding, Layer, etc.) from outside without forking
    *  or wrapping. JssRegistry.Resolve merges classes left-to-right, so
