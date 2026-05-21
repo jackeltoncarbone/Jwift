@@ -2,7 +2,7 @@ Jwift_Toolbar {
   Direction: Row
   Justify: SpaceBetween
   Align: Center
-  Padding: 10pt
+  Padding: 4pt
   Overflow: Visible
   Layer: 20
   PointerEvents: Auto
@@ -23,11 +23,8 @@ Jwift_Toolbar {
 //     </toolbar>
 //   </jiv>
 //
-// Padding: 18pt. Combined with Toolbar's own 10pt inset, glass-button
-// pills land 28pt from the screen edge — the canonical @ChromePad value
-// (concentric with @ScreenR: 80pt). Drill / Picture editors hardcode
-// 28pt directly in their own TopBar; this matches them so consumers
-// using <toolbar> + Jwift_PageHeader inherit the same concentric chrome.
+// Padding: 18pt. Combined with Toolbar's own 4pt inset, glass-button
+// pills land 22pt from the screen edge.
 Jwift_PageHeader {
   Position: Placed
   Top: 0pt
