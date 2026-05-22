@@ -3,6 +3,9 @@ import {
   effect,
   forwardRef,
   inject,
+  signal,
+  untracked,
+  type WritableSignal,
 } from '@angular/core';
 import {
   Jaui,
@@ -49,6 +52,38 @@ export abstract class JivHost {
 
   private _className: () => string;
 
+  /** Per-instance Style overrides for subclasses (e.g. Card setting
+   *  `Background: Url(...)` from a runtime `[image]` input). Merged ON TOP
+   *  of the JSS class's Style inside `_buildOpts`. Routed through this
+   *  signal — instead of via `this.Node.Style` proxy writes — so JivHost's
+   *  effect re-fires `_apply()` with the FULL class state every time the
+   *  override changes. Writing direct to `this.Node.Style` triggers
+   *  JivHandle's bare-proxy flush, which ships only the override and the
+   *  worker then resets the class state to defaults — wiping `Width`,
+   *  `Height`, etc. and collapsing the panel to 0×0. */
+  private readonly _styleOverride: WritableSignal<Record<string, unknown>> = signal({});
+
+  /** Subclass setter for runtime Style overrides. Triggers the JivHost
+   *  effect to re-fire `_apply()` with the merged class + override state.
+   *  The read of `_styleOverride()` is wrapped in `untracked` so callers
+   *  who run inside their own `effect()` (Card reading its `[image]`
+   *  signal, then calling this) don't accidentally create a feedback
+   *  loop: read → write → re-fire same effect → write → repeat → OOM. */
+  protected SetStyleOverride(patch: Record<string, unknown>): void {
+    const next = { ...untracked(() => this._styleOverride()), ...patch };
+    this._styleOverride.set(next);
+  }
+
+  /** Clear a single Style override key (e.g. when an `[image]` input goes
+   *  back to null / undefined). */
+  protected ClearStyleOverride(key: string): void {
+    const cur = untracked(() => this._styleOverride());
+    if (!(key in cur)) return;
+    const { [key]: _gone, ...rest } = cur;
+    void _gone;
+    this._styleOverride.set(rest);
+  }
+
   constructor(sourceId: string, source: string, initialClassName: string, className: () => string) {
     this._className = className;
     this._loader.Ensure(this._registry, sourceId, source);
@@ -83,6 +118,7 @@ export abstract class JivHost {
     effect(() => {
       this._registry.Version();
       this._className();
+      this._styleOverride();
       this._apply();
     });
   }
@@ -103,7 +139,17 @@ export abstract class JivHost {
 
   private _buildOpts(className: string): JivApplyOpts {
     const fromClass = this._registry.Resolve(className) ?? null;
-    const styleBag = (fromClass?.Style ? { ...fromClass.Style } : {}) as Record<string, unknown>;
+    // Layer the per-instance Style overrides OVER the class-resolved bag.
+    // Subclasses (e.g. Card setting `Background: Url(...)` from a runtime
+    // `[image]` input) call `SetStyleOverride` instead of writing through
+    // the JivHandle.Style proxy — direct proxy writes trigger the bare
+    // _flush path on the worker side, which only ships the override and
+    // resets the rest of core.Style to engine defaults (wiping the JSS
+    // class's Width/Height/Padding/etc.).
+    const styleBag = {
+      ...fromClass?.Style,
+      ...this._styleOverride(),
+    } as Record<string, unknown>;
 
     const elementProps: JivApplyOpts['ElementProps'] = {};
     for (const key of _ELEMENT_KEYS) {
@@ -118,16 +164,6 @@ export abstract class JivHost {
       }
     }
 
-    // Merge the live proxy state under the class-resolved bag so imperative
-    // writes (cl.Left, cl.Width, etc. set via `Node.ChildLayout.X = ...` from
-    // a subclass's RAF tick) survive the worker's class-snapshot reset.
-    // Without this, every className() change emits an apply op whose
-    // ChildLayout has only the class-defined keys (Position, Layer, ...);
-    // the worker resets ChildLayout to engine defaults before applying,
-    // wiping any TS-driven Left/Top/Width/Height for at least one frame
-    // (until the next RAF tick triggers a Proxy write). Class keys still
-    // win on conflict, so a class that genuinely changes ChildLayout
-    // (AddDrawer wide ↔ narrow Width:) overrides the stale proxy value.
     return {
       Style:         styleBag,
       Layout:        fromClass?.Layout        ? ({ ...fromClass.Layout }      as Record<string, unknown>) : undefined,
@@ -148,7 +184,7 @@ export abstract class JivHost {
 
 const _ELEMENT_KEYS = [
   'Overflow', 'Visible', 'Interactive', 'PointerEvents',
-  'Cursor', 'UserSelect', 'PointScale', 'FitMode',
+  'Cursor', 'UserSelect', 'PointScale',
 ];
 
 function _clonePointerEvent(type: string, src: PointerPayload): PointerEvent {

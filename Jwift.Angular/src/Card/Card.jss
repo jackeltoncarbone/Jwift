@@ -11,9 +11,15 @@ Jwift_Card {
   FlexGrow: 1
   FlexShrink: 0
   Overflow: Hidden
-  FitMode: Cover
   Width: 260pt
   Height: 195pt
+  // Card frame mounts immediately so its footer (title, badge, meta)
+  // renders the moment the record is bound. The cover image rides on the
+  // Background value — the Card component sets `Background: Url(src, Cover,
+  // <placeholder>)` per instance from its `[src]` input. While the bitmap
+  // is in flight the placeholder color paints; when ready the engine swaps
+  // the resolved Background to the texture.
+  Background: rgba(0, 0, 0, 0.55)
 }
 
 Jwift_Card_Compact : Jwift_Card {

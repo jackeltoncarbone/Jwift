@@ -13,6 +13,8 @@ import CardJss from './Card.jss';
 
 export type CardSize = 'default' | 'compact' | 'hero';
 
+const _CARD_PLACEHOLDER = 'rgba(0, 0, 0, 0.55)';
+
 /**
  * `<card>` — a fixed-size image card with a rounded overflow clip and
  * shadow. Size variants follow the Home.ts Variant conventions.
@@ -46,11 +48,23 @@ export class Card extends JivHost implements OnInit, OnDestroy {
       }
     });
 
-    // Propagate the image URL into the underlying Jiv. Initial value set
-    // on first run; reactive so `[image]` bindings update the card.
+    // Map the `[image]` input to the underlying Jiv's Background style. The
+    // engine resolves `Url(...)` to an Image-kind BackgroundValue, kicks
+    // ImageCache.LoadUrl, and the placeholder color baked into the
+    // `Url(...)` form is what the panel paints while the bitmap is in
+    // flight — card frame + footer render immediately at their
+    // JSS-styled positions. We route through SetStyleOverride (not the
+    // JivHandle.Style proxy) so JivHost re-applies the full class state
+    // alongside the override — proxy writes ship a bare apply op that
+    // resets ChildLayout/Layout/Style to defaults, collapsing the card.
     effect(() => {
-      const src = this.image();
-      if (src !== undefined) this.Node.ImageSrc = src;
+      const v = this.image();
+      if (v === undefined) return;
+      if (v === null || v === '') {
+        this.SetStyleOverride({ Background: _CARD_PLACEHOLDER });
+      } else {
+        this.SetStyleOverride({ Background: `Url("${v}", Cover, ${_CARD_PLACEHOLDER})` });
+      }
     });
   }
 
