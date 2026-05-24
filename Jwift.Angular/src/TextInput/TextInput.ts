@@ -2,10 +2,10 @@ import {
   ChangeDetectionStrategy, Component,
   input, model, output, viewChild,
 } from '@angular/core';
-import { Jinput, type JinputSpan, Jiv, Jext, Jyle } from 'jaui-angular';
+import { Jinput, type JinputSpan, type JinputPeerCaret, Jiv, Jext, Jyle } from 'jaui-angular';
 import TextInputJss from './TextInput.jss';
 
-export type { JinputSpan as TextInputSpan };
+export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret };
 
 /**
  * `<text-input>` — Jwift's house-styled wrapper around `<jinput>`.
@@ -35,6 +35,7 @@ export type { JinputSpan as TextInputSpan };
         [Text]="Text()"
         (TextChange)="Text.set($event)"
         [Spans]="Spans()"
+        [PeerCarets]="PeerCarets()"
         [Placeholder]="Placeholder()"
         [ReadOnly]="ReadOnly()"
         [MultiLine]="MultiLine()"
@@ -48,7 +49,8 @@ export type { JinputSpan as TextInputSpan };
         (FocusChanged)="FocusChanged.emit($event)"
         (ContextMenuRequested)="ContextMenuRequested.emit($event)"
         (Submitted)="Submitted.emit($event)"
-        (Cancelled)="Cancelled.emit($event)" />
+        (Cancelled)="Cancelled.emit($event)"
+        (SelectionChanged)="SelectionChanged.emit($event)" />
     </jiv>
   `,
   styles: [':host { display: contents; }'],
@@ -59,6 +61,7 @@ export class TextInput {
   // ── Inputs (pass-through) ────────────────────────────────────────
   readonly Text = model('');
   readonly Spans = input<readonly JinputSpan[]>([]);
+  readonly PeerCarets = input<readonly JinputPeerCaret[]>([]);
   readonly Placeholder = input('');
   readonly ReadOnly = input(false);
   readonly MultiLine = input(false);
@@ -82,6 +85,7 @@ export class TextInput {
   }>();
   readonly Submitted = output<KeyboardEvent>();
   readonly Cancelled = output<KeyboardEvent>();
+  readonly SelectionChanged = output<{ start: number; end: number }>();
 
   // ── House defaults ───────────────────────────────────────────────
   // Apple-style baseline. PointScale 1.25 → 16pt × 1.25 = 20px.

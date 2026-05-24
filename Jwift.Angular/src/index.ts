@@ -24,7 +24,7 @@ export { JwiftStyleLoader } from './Jss/Jwift.Style.Loader';
 export { JivHost } from './Internal/JivHost';
 export { ContextMenu } from './ContextMenu/ContextMenu';
 export { ContextMenuService, type ContextMenuItem } from './ContextMenu/ContextMenu.Service';
-export { TextInput, type TextInputSpan } from './TextInput/TextInput';
+export { TextInput, type TextInputSpan, type TextInputPeerCaret } from './TextInput/TextInput';
 export { NumberTicker } from './NumberTicker/NumberTicker';
 export { JwiftSpinner } from './Spinner/JwiftSpinner';
 // Universal Liquid-Glass JSS — opt in via space-separated class names

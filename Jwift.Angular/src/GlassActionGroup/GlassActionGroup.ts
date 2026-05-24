@@ -108,9 +108,20 @@ export interface GlassAction {
         <jiv class="Jwift_GlassDropdownCell_Ellipsis" (click)="$event.stopPropagation(); dd.Open()">
           <icon class="Jwift_GlassActionGlyph" Name="ellipsis" />
         </jiv>
+        @for (peerUrl of CollaboratorAvatarUrls(); track $index) {
+          <jiv class="Jwift_GlassDropdownCell_AvatarPeer">
+            <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="peerUrl" />
+          </jiv>
+        }
         @if (ShowAvatar()) {
           @let url = AvatarUrl();
-          <jiv class="Jwift_GlassDropdownCell_Avatar" (click)="_OnAvatarClick($event)">
+          <!-- Always include the on-top z-bump class so the cell DOM
+               doesn't get destroyed/recreated when collaborators arrive
+               (which would re-trigger Jaui's mount-fade). z-index only
+               matters when there's a peer stack to layer over; when
+               there isn't, no sibling competes so the extra ZIndex is
+               a no-op. -->
+          <jiv class="Jwift_GlassDropdownCell_Avatar Jwift_GlassDropdownCell_Avatar_OnTop" (click)="_OnAvatarClick($event)">
             @if (url) {
               <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="url" />
             } @else {
@@ -164,6 +175,10 @@ export class GlassActionGroup implements OnDestroy {
 
   /** JwiftIcons glyph name shown when `AvatarUrl` is null. */
   readonly AvatarFallbackIcon = input<string>('person.fill');
+
+  /** Other people's avatar URLs rendered as a peeking stack just before
+   *  the caller's own avatar in the pill. Empty by default. */
+  readonly CollaboratorAvatarUrls = input<readonly string[]>([]);
 
   /** When true (default) clicking the avatar bubbles to the dropdown's
    *  host-click and toggles open. When false, the click is consumed and
