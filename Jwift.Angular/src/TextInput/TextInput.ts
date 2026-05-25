@@ -44,6 +44,7 @@ export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret
         [FontWeight]="_fontWeight()"
         [LineHeightRatio]="_lineHeightRatio()"
         [RowGapPx]="_rowGapPx()"
+        [PlaceholderFontStyle]="PlaceholderFontStyle()"
         (PositionClicked)="PositionClicked.emit($event)"
         (PositionHovered)="PositionHovered.emit($event)"
         (FocusChanged)="FocusChanged.emit($event)"
@@ -65,6 +66,9 @@ export class TextInput {
   readonly Placeholder = input('');
   readonly ReadOnly = input(false);
   readonly MultiLine = input(false);
+  /** Placeholder slant — 'Italic' (house default) or 'Normal' for straight
+   *  placeholder text. */
+  readonly PlaceholderFontStyle = input<'Normal' | 'Italic'>('Italic');
 
   /** Optional font overrides. Left at house defaults when not provided. */
   readonly FontFamily = input<string | null>(null);

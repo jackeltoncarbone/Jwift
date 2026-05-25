@@ -72,7 +72,10 @@ Jwift_GlassBtn_Pill : Jwift_GlassBtn {
   Direction: Row
   Justify: Center
   Align: Center
-  Padding: 10pt 20pt
+  // Min height matches the round/square shapes (48pt) so a labeled pill is
+  // never shorter than the standard touch target.
+  MinHeight: 48pt
+  Padding: 0pt 22pt
   BorderRadius: 999pt
 }
 

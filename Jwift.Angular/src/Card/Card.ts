@@ -3,6 +3,7 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  booleanAttribute,
   effect,
   forwardRef,
   input,
@@ -24,6 +25,11 @@ const _CARD_PLACEHOLDER = 'rgba(0, 0, 0, 0.55)';
  *       <jext class="CardTitle" [text]="item.Title" />
  *     </card-footer>
  *   </card>
+ *
+ * Add `fluid` to opt the card into responsive sizing: it shrinks to fit its
+ * row (so it never overflows on narrow screens) and the row becomes an
+ * auto-grid that fills the available width. Without `fluid` the card keeps
+ * its original fixed size.
  */
 @Component({
   selector: 'card',
@@ -38,13 +44,15 @@ const _CARD_PLACEHOLDER = 'rgba(0, 0, 0, 0.55)';
 export class Card extends JivHost implements OnInit, OnDestroy {
   readonly size = input<CardSize>('default');
   readonly image = input<string | null | undefined>(undefined);
+  readonly fluid = input(false, { transform: booleanAttribute });
 
   constructor() {
     super('Card', CardJss, 'Jwift_Card', () => {
+      const fluid = this.fluid();
       switch (this.size()) {
-        case 'compact': return 'Jwift_Card_Compact';
-        case 'hero':    return 'Jwift_Card_Hero';
-        default:        return 'Jwift_Card';
+        case 'compact': return fluid ? 'Jwift_Card_Compact_Fluid' : 'Jwift_Card_Compact';
+        case 'hero':    return fluid ? 'Jwift_Card_Hero_Fluid'    : 'Jwift_Card_Hero';
+        default:        return fluid ? 'Jwift_Card_Fluid'         : 'Jwift_Card';
       }
     });
 
