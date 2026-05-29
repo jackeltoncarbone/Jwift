@@ -45,10 +45,15 @@ export class Card extends JivHost implements OnInit, OnDestroy {
   readonly size = input<CardSize>('default');
   readonly image = input<string | null | undefined>(undefined);
   readonly fluid = input(false, { transform: booleanAttribute });
+  // `fill` makes the card 100% × 100% of its parent so the PARENT dictates the
+  // card's size and aspect (the fixed size variants hardcode Width/Height, which
+  // a consumer can't override). Use when a grid cell owns the tile shape.
+  readonly fill = input(false, { transform: booleanAttribute });
 
   constructor() {
     super('Card', CardJss, 'Jwift_Card', () => {
       const fluid = this.fluid();
+      if (this.fill()) return fluid ? 'Jwift_Card_Fill_Fluid' : 'Jwift_Card_Fill';
       switch (this.size()) {
         case 'compact': return fluid ? 'Jwift_Card_Compact_Fluid' : 'Jwift_Card_Compact';
         case 'hero':    return fluid ? 'Jwift_Card_Hero_Fluid'    : 'Jwift_Card_Hero';

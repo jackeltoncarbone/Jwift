@@ -104,6 +104,30 @@ Jwift_Card_Hero_Fluid:Active {
   Brightness: 1.2
 }
 
+// Fill variant — card sizes to 100% of its parent so a grid cell can dictate
+// the tile's size and aspect (the fixed variants hardcode Width/Height). Keeps
+// the frame (radius, shadow, overflow, cover background) from Jwift_Card.
+Jwift_Card_Fill : Jwift_Card {
+  Width: 100%
+  Height: 100%
+  FlexGrow: 1
+  FlexShrink: 1
+}
+Jwift_Card_Fill_Fluid : Jwift_Card_Fill {
+  Interactive: true
+  Cursor: Pointer
+  @Transition VisualScale { Duration: 160ms }
+  @Transition Brightness { Duration: 160ms }
+}
+Jwift_Card_Fill_Fluid:Hover {
+  VisualScale: 1.02
+  Brightness: 1.12
+}
+Jwift_Card_Fill_Fluid:Active {
+  VisualScale: 0.975
+  Brightness: 1.22
+}
+
 Jwift_CardFooter {
   Direction: Column
   Justify: Start
