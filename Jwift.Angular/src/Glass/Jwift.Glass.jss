@@ -30,7 +30,7 @@ JwiftGlass {
   ShadowBlur: 22pt
   ShadowOffsetY: 6pt
 
-  BackdropFrostBlur: 8pt
+  BackdropFrostBlur: 16pt
   BackdropBrightness: 1.25
   BackdropSaturation: 1.25
   BackdropContrast: 0.75
