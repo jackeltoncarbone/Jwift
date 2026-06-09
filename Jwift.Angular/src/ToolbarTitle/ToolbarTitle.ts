@@ -55,18 +55,17 @@ export class ToolbarTitle implements OnInit, OnDestroy, AfterContentInit {
   private readonly _compactDef = contentChild(ToolbarCompactDef);
   private _rafId = 0;
   private _fade = signal(0);
+
+  /** Scroll-fade amount, 0 (hero fully shown) → 1 (scrolled away, compact shown).
+   *  The consumer binds the hero logo's Opacity to `1 - Fade()` via the `<jiv>`
+   *  `[style]` input so the fade rides the node's own Apply (a bare proxy write
+   *  would be reset by the worker's class-snapshot apply). */
+  readonly Fade = this._fade.asReadonly();
   private _watchedFirst: JivCore | null = null;
   private _watchedCompact: JivCore | null = null;
 
   constructor() {
-    // Fade only the target's first child (the hero logo) — not the whole
-    // target. Opacity cascades to descendants now, so fading the wrapper
-    // would wipe out the entire hero content.
-    effect(() => {
-      const logo = this.target()?.Node.Children[0] as JivCore | undefined;
-      if (logo) logo.Style.Opacity = (1 - this._fade()).toString();
-    });
-    // Mirror → toolbar compact visibility.
+    // Mirror → toolbar compact visibility (drives the compact logo's [style] Opacity).
     effect(() => {
       this.toolbar().SetCompactVisible(this._fade() > 0.5);
     });

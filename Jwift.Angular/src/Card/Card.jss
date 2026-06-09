@@ -40,24 +40,30 @@ Jwift_Card_Hero : Jwift_Card {
 }
 
 // ── Fluid variants (opt-in via `<card fluid>`) ──
-// The fixed variants above keep `FlexShrink: 0`, so an oversized card (e.g.
-// the 480pt hero on a 390px phone) overflows its row and is clipped by the
-// scroll container — it runs off the screen. The fluid variants flip
-// `FlexShrink: 1` so the existing `FlexGrow: 1` + `Wrap` turn the row into a
-// responsive auto-grid: a card too wide for the line shrinks to fill it
-// (never overflows), and once several basis-widths fit per line they wrap
-// and grow to fill evenly. Each variant keeps its own Width as the *basis*
-// that drives the column count (hero widest, compact narrowest), so a wider
-// screen naturally packs more columns of the smaller variants. No MinWidth —
-// a lone card must stay free to shrink down to the narrowest phone's content
-// width so it never runs off the edge.
-// Hover/active feedback for the widget cards: a very slight grow + brighten on
-// hover, and a slight shrink when pressed — same critically-damped transition
-// idiom as Jwift_GlassBtn. VisualScale is render-only (no layout/hit-test
-// impact), so neighbouring cards never reflow. Scoped to the fluid (widget)
-// variants so non-interactive card consumers are unaffected.
+// The fixed variants above hard-pin `Width` (260/200/480pt) with `FlexShrink: 0`,
+// so an oversized card overflows its row and runs off the screen. The fluid
+// variants turn the row into a responsive auto-grid: the hard Width becomes a
+// FlexBasis (the target column width that drives how many fit per line), with
+// FlexGrow:1 (fill the line's slack on wide screens — no left-clump gap) +
+// FlexShrink:1 + MaxWidth:100% (shrink to fit a narrow line — never overflow).
+//
+// `Width: Auto` is LOAD-BEARING: a concrete `Width` wins over `Align: Stretch`
+// AND over flex grow/shrink, so without resetting it the card stayed at its
+// fixed size inside a stretched/shrunk wrapper and spilled off the right edge
+// (the asymmetric-gap-on-mobile bug). MinWidth:0 lets a lone card shrink below
+// its basis to the narrowest phone's content width.
+//
+// Hover/active feedback: a slight grow + brighten on hover, slight shrink when
+// pressed — same critically-damped idiom as Jwift_GlassBtn. VisualScale is
+// render-only (no layout/hit-test impact) so neighbours never reflow. Scoped to
+// the fluid (widget) variants so non-interactive card consumers are unaffected.
 Jwift_Card_Fluid : Jwift_Card {
+  Width: Auto
+  FlexBasis: 260pt
+  FlexGrow: 1
   FlexShrink: 1
+  MinWidth: 0
+  MaxWidth: 100%
   Interactive: true
   Cursor: Pointer
   @Transition VisualScale { Duration: 160ms }
@@ -73,7 +79,12 @@ Jwift_Card_Fluid:Active {
 }
 
 Jwift_Card_Compact_Fluid : Jwift_Card_Compact {
+  Width: Auto
+  FlexBasis: 200pt
+  FlexGrow: 1
   FlexShrink: 1
+  MinWidth: 0
+  MaxWidth: 100%
   Interactive: true
   Cursor: Pointer
   @Transition VisualScale { Duration: 160ms }
@@ -89,7 +100,12 @@ Jwift_Card_Compact_Fluid:Active {
 }
 
 Jwift_Card_Hero_Fluid : Jwift_Card_Hero {
+  Width: Auto
+  FlexBasis: 480pt
+  FlexGrow: 1
   FlexShrink: 1
+  MinWidth: 0
+  MaxWidth: 100%
   Interactive: true
   Cursor: Pointer
   @Transition VisualScale { Duration: 160ms }

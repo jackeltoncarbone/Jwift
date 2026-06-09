@@ -8,7 +8,6 @@ import {
   TemplateRef,
   ViewChild,
   ViewContainerRef,
-  effect,
   forwardRef,
   input,
   signal,
@@ -50,6 +49,14 @@ export class Toolbar extends JivHost implements OnInit, OnDestroy {
   private _compactView: EmbeddedViewRef<unknown> | null = null;
   private _compactVisible = signal(false);
 
+  /** Whether the compact slot (e.g. the scrolled-in logo) should be visible.
+   *  The consumer binds the compact node's Opacity to this via the `<jiv>`
+   *  `[style]` input — NOT a back-door `host.Style.Opacity` write. A bare proxy
+   *  write loses to the compact node's own full-class Apply (the worker resets
+   *  Style to defaults on each class-snapshot apply, wiping the override); routing
+   *  Opacity through `[style]` makes it ride that same Apply so it survives. */
+  readonly CompactVisible = this._compactVisible.asReadonly();
+
   /** `Node` proxy for the compact slot's own Jiv — so the ToolbarTitle
    *  can drive Opacity on it while scroll-fading. Set lazily when the
    *  compact template registers and creates its content. */
@@ -72,14 +79,11 @@ export class Toolbar extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('Toolbar', ToolbarJss, 'Jwift_Toolbar', () => `Jwift_Toolbar ${this.Class()}`.trim());
-
-    // Drive the compact slot's jiv opacity from the visibility signal.
-    // The style animator will spring the transition smooth.
-    effect(() => {
-      const visible = this._compactVisible();
-      const host = this._compactHost;
-      if (host) host.Style.Opacity = visible ? '1' : '0';
-    });
+    // NOTE: compact-slot opacity is NOT driven here by writing host.Style.Opacity.
+    // A bare JivHandle.Style proxy write is clobbered by the compact node's own
+    // full-class Apply (worker resets Style to defaults per class-snapshot). The
+    // consumer instead binds the compact node's `[style]` Opacity to CompactVisible
+    // (see Toolbar/ToolbarTitle usage), so Opacity rides the node's own Apply.
   }
 
   ngOnInit(): void { this._attachOnInit(); }
@@ -128,7 +132,8 @@ export class Toolbar extends JivHost implements OnInit, OnDestroy {
       const compact = children[children.length - 1];
       this.Node.MoveChildToIndex(compact, 0);
       this._compactHost = compact;
-      this._compactHost.Style.Opacity = this._compactVisible() ? '1' : '0';
+      // Opacity is bound via the consumer's `[style]` input (CompactVisible), not
+      // written here — a bare proxy write would be reset by the node's own Apply.
     });
   }
 
