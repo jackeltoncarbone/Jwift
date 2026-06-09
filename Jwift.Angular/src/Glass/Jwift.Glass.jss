@@ -22,7 +22,7 @@ JwiftGlass {
 
   BorderWidth: 1pt
   BorderBlur: 0.25pt
-  BorderBrightness: 1.25
+  BorderBrightness: 1.5
   BorderSaturation: 1.5
   BorderColor: rgba(255, 255, 255, 0.15)
 
@@ -35,7 +35,7 @@ JwiftGlass {
   BackdropSaturation: 1.25
   BackdropContrast: 0.75
 
-  Thickness: 2
+  Thickness: 4
   Fillet: 0.25
   BezelWidth: 11
   BezelScale: 0.5

@@ -8,38 +8,23 @@ Jwift_TabBarRow {
   PointerEvents: Auto
 }
 
-Jwift_TabBar {
+// Inherits the canonical Liquid-Glass look from JwiftGlass (border
+// luminosity + flat 0.15 outline, backdrop blur, refraction, fresnel).
+// Only the differences from the standard surface are set below:
+//   • Heavier floating shadow (matches JwiftHeroGlass) — the bar sits
+//     above page content, not in flow.
+//   • Crisper bevel (BezelScale 0.25) + no specular for the long pill.
+Jwift_TabBar : JwiftGlass {
   UserSelect: None
-
-  Background: rgba(255, 255, 255, 0)
-  BorderWidth: 1pt
-  BorderBlur: 0.25pt
-  BorderBrightness: 1.25
-  BorderSaturation: 1.5
 
   ShadowColor: rgba(0, 0, 0, 0.2)
   ShadowBlur: 28pt
   ShadowOffsetY: 8pt
 
-  BackdropFrostBlur: 8pt
-  BackdropBrightness: 1.25
-  BackdropSaturation: 1.25
-  BackdropContrast: 0.75
-
-  Thickness: 2
-  Fillet: 0.25
-  BezelWidth: 11
   BezelScale: 0.25
-  Refraction: 20
-
-  LightAngle: 135
-  LightIntensity: 1
   SpecularIntensity: 0
   SpecularSharpness: 10
-  FresnelStrength: 0.55
-  ChromaticAberration: 0.3
   EdgeLightTop: 0
-  EdgeLightBottom: 0.03
 
   Direction: Row
   Justify: Start

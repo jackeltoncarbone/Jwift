@@ -1,4 +1,7 @@
-Jwift_GlassDropdown {
+// Inherits the canonical Liquid-Glass look from JwiftGlass. Overrides
+// only the heavier floating shadow (the dropdown lifts above content)
+// and its own radius + interactive springs.
+Jwift_GlassDropdown : JwiftGlass {
   Overflow: Hidden;
   Direction: Column
   Justify: Start
@@ -6,33 +9,9 @@ Jwift_GlassDropdown {
   Padding: 4pt
   Gap: 2pt
 
-  Background: rgba(255, 255, 255, 0)
-  BorderWidth: 1pt
-  BorderBlur: 0.25pt
-  BorderBrightness: 1.25
-  BorderSaturation: 1.5
-  BorderColor: rgba(255, 255, 255, 0.15)
-
   ShadowColor: rgba(0, 0, 0, 0.2)
   ShadowBlur: 28pt
   ShadowOffsetY: 8pt
-
-  BackdropFrostBlur: 8pt
-  BackdropBrightness: 1.25
-  BackdropSaturation: 1.25
-  BackdropContrast: 0.75
-
-  Thickness: 2
-  Fillet: 0.25
-  BezelWidth: 11
-  BezelScale: 0.5
-  Refraction: 20
-
-  LightAngle: 135
-  LightIntensity: 1
-  FresnelStrength: 0.55
-  ChromaticAberration: 0.3
-  EdgeLightBottom: 0.03
 
   BorderRadius: 42pt
 
