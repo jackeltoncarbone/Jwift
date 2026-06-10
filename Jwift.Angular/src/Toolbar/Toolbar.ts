@@ -116,20 +116,21 @@ export class Toolbar extends JivHost implements OnInit, OnDestroy {
       providers: [{ provide: Jiv, useValue: this }],
       parent: this._compactVcr.injector,
     });
+    // Snapshot the current children so we can identify the compact node as the
+    // one the embedded view ADDS — not "the last child". The bridge now inserts
+    // each child at its DOM-authored position (Jiv reorders on attach), and
+    // <ng-container #compactSlot> precedes <ng-content>, so the compact node
+    // lands at the FRONT, not the end. Grabbing children[last] would pick the
+    // trailing group (the avatar) and wrongly move IT to leading.
+    const before = new Set(this.Node.Children);
     this._compactView = this._compactVcr.createEmbeddedView(tpl, {}, { injector });
-    // The compact template's jivs attach to this.Node in tree order —
-    // but ToolbarTitle calls RegisterCompact in ngAfterContentInit, which
-    // fires AFTER Toolbar's own projected children have attached. So the
-    // compact node ends up at the END of Children, making it the trailing
-    // slot under Justify: SpaceBetween (avatar ends up leading — wrong).
-    // Wait a microtask for the embedded view's jivs to attach, then move
-    // them to index 0 so they become the leading slot. `MoveChildToIndex`
-    // updates both the main-side handle's local Children array AND posts
-    // a `move-child` op so the worker's JivCore tree reorders to match.
+    // Wait a microtask for the embedded view's jivs to attach, then pin the
+    // compact node to index 0 (the leading slot under Justify: SpaceBetween).
+    // `MoveChildToIndex` updates the main-side handle's Children AND posts a
+    // `move-child` op so the worker's JivCore tree matches.
     queueMicrotask(() => {
-      const children = this.Node.Children;
-      if (children.length === 0) return;
-      const compact = children[children.length - 1];
+      const compact = this.Node.Children.find(c => !before.has(c));
+      if (!compact) return;
       this.Node.MoveChildToIndex(compact, 0);
       this._compactHost = compact;
       // Opacity is bound via the consumer's `[style]` input (CompactVisible), not
