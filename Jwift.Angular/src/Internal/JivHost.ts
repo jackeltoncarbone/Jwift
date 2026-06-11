@@ -10,6 +10,7 @@ import {
 import {
   Jaui,
   Jiv,
+  JAUI_HOST_EL,
   JSS_REGISTRY,
 } from 'jaui-angular';
 import {
@@ -93,6 +94,13 @@ export abstract class JivHost {
     }
     const bridge = this._canvas.Bridge;
     this.Node = new JivHandle(bridge, bridge.AllocateId());
+    // Register this component's host element so both it and plain <jiv>
+    // siblings can reconcile child order to authored DOM position (see
+    // JAUI_HOST_EL + _reorderToDomPosition in Jaui's Jiv.ts). Without this
+    // a glass-button that attaches after a plain <jext> sibling appends to
+    // the END of the parent's Children — e.g. the toolbar back-button
+    // landing AFTER the title text instead of before it.
+    JAUI_HOST_EL.set(this.Node, this._host.nativeElement);
 
     bridge.Enqueue({
       K: 'create',
@@ -126,6 +134,38 @@ export abstract class JivHost {
   protected _attachOnInit(): void {
     const parentNode = this._parentJiv ? this._parentJiv.Node : this._canvas!.Root;
     parentNode.AddChild(this.Node);
+    // AddChild appends. If this component attached out of authored order
+    // (component ngOnInit can run after a plain <jext>/<jiv> sibling has
+    // already attached), move it to its real DOM position so paint/layout
+    // order matches the template instead of attach order. Mirrors the
+    // Jaui <jiv> directive's own reconciliation.
+    this._reorderToDomPosition(parentNode);
+  }
+
+  /** Reorder this node within its parent's Children to match DOM document order.
+   *  The target index is the count of current siblings whose host element
+   *  precedes ours in the DOM; a no-op when already in order (the common case),
+   *  so statically-ordered children never post a move op. Mirrors the identical
+   *  routine in Jaui's `Jiv` directive — kept in sync so glass/host components
+   *  and plain jivs order consistently against each other in a shared parent. */
+  private _reorderToDomPosition(parentNode: JivHandle): void {
+    const myEl = this._host.nativeElement;
+    const siblings = parentNode.Children;
+    let target = 0;
+    for (const sib of siblings) {
+      if (sib === this.Node) continue;
+      const sibEl = JAUI_HOST_EL.get(sib);
+      // Only order against siblings still in the DOM; a leaving node's element
+      // may be detached and would compare as disconnected.
+      if (!sibEl || !sibEl.isConnected) continue;
+      if (myEl.compareDocumentPosition(sibEl) & Node.DOCUMENT_POSITION_PRECEDING) {
+        target++;
+      }
+    }
+    const current = siblings.indexOf(this.Node);
+    if (current !== -1 && current !== target) {
+      parentNode.MoveChildToIndex(this.Node, target);
+    }
   }
 
   protected _detachOnDestroy(): void {
