@@ -42,9 +42,7 @@ Jwift_ContextMenuPanel : JwiftGlass {
   ShadowBlur: 32pt
   ShadowOffsetY: 10pt
 
-  BackdropFrostBlur: 12pt
-  BackdropSaturation: 1.4
-  BackdropContrast: 0.8
+  BackdropFilter: Blur(12pt) Saturate(1.4) Contrast(0.8)
 
   BorderRadius: 12pt
 }

@@ -21,8 +21,7 @@ Jwift_SectionViewAll {
   BorderRadius: 999pt
   BorderWidth: 1pt
   BorderColor: rgba(255, 255, 255, 0.18)
-  BackdropFrostBlur: 14pt
-  BackdropBrightness: 1.05
+  BackdropFilter: Blur(14pt) Brightness(1.05)
 }
 
 Jwift_SectionViewAllLabel {

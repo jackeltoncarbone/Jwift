@@ -22,18 +22,14 @@ JwiftGlass {
 
   BorderWidth: 1pt
   BorderBlur: 0.25pt
-  BorderBrightness: 1.5
-  BorderSaturation: 1.5
   BorderColor: rgba(255, 255, 255, 0.15)
+  BorderFilter: Brightness(1.5) Saturate(1.5)
 
   ShadowColor: rgba(0, 0, 0, 0.18)
   ShadowBlur: 22pt
   ShadowOffsetY: 6pt
 
-  BackdropFrostBlur: 16pt
-  BackdropBrightness: 1.25
-  BackdropSaturation: 1.25
-  BackdropContrast: 0.75
+  BackdropFilter: Blur(16pt) Brightness(1.25) Saturate(1.25) Contrast(0.75)
 
   Thickness: 4
   Fillet: 0.25
@@ -59,7 +55,46 @@ JwiftSolidGlass {
   BorderWidth: 1pt
   BorderColor: rgba(255, 255, 255, 0.08)
   BorderBlur: 0.25pt
-  BorderBrightness: 1.05
+  BorderFilter: Brightness(1.05)
+}
+
+// ── JwiftSolidOutline ───────────────────────────────────────────────
+// Reusable TOP-LAYER glass outline for SOLID (opaque) surfaces — cards, hero
+// banners, tiles. Drop it in as the LAST child of a clipped host (Overflow:
+// Hidden): a transparent-center overlay that fills the host and renders ONLY a
+// beveled, lit, SATURATING rim — picking up and saturating the host's own
+// content at the edge. No refraction / chromatic aberration / frost, so the
+// content underneath is never bent, fringed, or blurred — only its edge is lit
+// and saturated. Sits ABOVE inner content (e.g. a card's footer blur) so the
+// frame is never eaten. Consumer sets BorderRadius to match the host and Layer
+// to sit on top. Non-interactive so taps pass through to the host.
+JwiftSolidOutline {
+  Position: Placed
+  Top: 0pt
+  Left: 0pt
+  Width: 100%
+  Height: 100%
+  // Fully transparent to hit-testing: it's a top overlay covering the whole
+  // host, so without this it would swallow hover / press / clicks meant for the
+  // content + buttons beneath it. Interactive:false alone only stops it
+  // RESPONDING — PointerEvents:None is what lets events pass THROUGH.
+  Interactive: false
+  PointerEvents: None
+  Background: rgba(255, 255, 255, 0)
+  Thickness: 4
+  Fillet: 0.25
+  BezelWidth: 11
+  BezelScale: 0.5
+  Refraction: 0
+  ChromaticAberration: 0
+  LightAngle: 135
+  LightIntensity: 1
+  FresnelStrength: 0.55
+  EdgeLightBottom: 0.03
+  BorderWidth: 1pt
+  BorderBlur: 1pt
+  BorderColor: rgba(255, 255, 255, 0.1)
+  BorderFilter: Blur(3pt) Brightness(2) Saturate(4)
 }
 
 // ── JwiftNavGroup ───────────────────────────────────────────────────

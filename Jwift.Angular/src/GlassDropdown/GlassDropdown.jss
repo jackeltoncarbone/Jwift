@@ -21,8 +21,8 @@ Jwift_GlassDropdown : JwiftGlass {
   @Transition Width  { Duration: 280ms }
   @Transition Height { Duration: 280ms }
   @Transition Padding { Duration: 220ms }
-  @Transition BackdropBrightness { Duration: 10ms }
-  @Transition BorderBrightness { Duration: 10ms }
+  @Transition BackdropFilter { Duration: 10ms }
+  @Transition BorderFilter { Duration: 10ms }
 }
 
 // Closed state sizes to its projected content so consumers can grow the
@@ -162,16 +162,16 @@ Jwift_GlassDropdownItem {
   Cursor: Pointer
   UserSelect: None
 
-  @Transition BackdropBrightness { Duration: 180ms }
+  @Transition BackdropFilter { Duration: 180ms }
   @Transition Background { Duration: 180ms }
 }
 
 Jwift_GlassDropdownItem:Hover {
-  BackdropBrightness: 1.6
+  BackdropFilter: Brightness(1.6)
 }
 
 Jwift_GlassDropdownItem:Active {
-  BackdropBrightness: 2.4
+  BackdropFilter: Brightness(2.4)
 }
 
 Jwift_GlassDropdownItem_Danger : Jwift_GlassDropdownItem {
@@ -179,12 +179,12 @@ Jwift_GlassDropdownItem_Danger : Jwift_GlassDropdownItem {
 
 Jwift_GlassDropdownItem_Danger:Hover {
   Background: rgba(255, 80, 80, 0.15)
-  BackdropBrightness: 1.3
+  BackdropFilter: Brightness(1.3)
 }
 
 Jwift_GlassDropdownItem_Danger:Active {
   Background: rgba(255, 80, 80, 0.25)
-  BackdropBrightness: 1.6
+  BackdropFilter: Brightness(1.6)
 }
 
 Jwift_GlassDropdownItem_Disabled : Jwift_GlassDropdownItem {
@@ -193,11 +193,11 @@ Jwift_GlassDropdownItem_Disabled : Jwift_GlassDropdownItem {
 }
 
 Jwift_GlassDropdownItem_Disabled:Hover {
-  BackdropBrightness: 1
+  BackdropFilter: Brightness(1)
 }
 
 Jwift_GlassDropdownItem_Disabled:Active {
-  BackdropBrightness: 1
+  BackdropFilter: Brightness(1)
 }
 
 Jwift_GlassDropdownItem_Danger:Hover {

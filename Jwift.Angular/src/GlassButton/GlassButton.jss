@@ -14,8 +14,8 @@ Jwift_GlassBtn : JwiftGlass {
   // critically-damped spring so the highlight blooms in lockstep with the
   // squeeze instead of flashing ahead of it. 140ms lands snappy on :Active
   // and light on :Hover without giving up the iOS-glass cushion.
-  @Transition BackdropBrightness { Duration: 140ms }
-  @Transition BorderBrightness { Duration: 140ms }
+  @Transition BackdropFilter { Duration: 140ms }
+  @Transition BorderFilter { Duration: 140ms }
   @Transition PointScale { Duration: 140ms }
   @Transition VisualScale { Duration: 140ms }
 }
@@ -27,14 +27,14 @@ Jwift_GlassBtn : JwiftGlass {
 // along proportionally, like a CSS `font-size` change cascading
 // through `em` units.
 Jwift_GlassBtn:Hover {
-  BackdropBrightness: 1.85
-  BorderBrightness: 1.5
+  BackdropFilter: Brightness(1.85)
+  BorderFilter: Brightness(1.5)
   VisualScale: 1.06
 }
 
 Jwift_GlassBtn:Active {
-  BackdropBrightness: 2.5
-  BorderBrightness: 1.7
+  BackdropFilter: Brightness(2.5)
+  BorderFilter: Brightness(1.7)
   VisualScale: 0.92
 }
 

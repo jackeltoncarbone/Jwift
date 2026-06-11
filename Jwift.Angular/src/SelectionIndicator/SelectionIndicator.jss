@@ -4,10 +4,7 @@ Jwift_SelectionIndicator {
 
   Background: rgba(255, 255, 255, 0.1)
   BorderRadius: 100pt
-  BackdropBrightness: 1.5
-  BackdropSaturation: 1.25
-  BackdropContrast: 1
-  BackdropFrostBlur: 0
+  BackdropFilter: Brightness(1.5) Saturate(1.25) Contrast(1) Blur(0)
 
   Thickness: 0
   Fillet: 0.25
@@ -24,18 +21,14 @@ Jwift_SelectionIndicator {
 
   BorderWidth: 0
   BorderBlur: 0.25pt
-  BorderBrightness: 1
-  BorderSaturation: 1
+  BorderFilter: Brightness(1) Saturate(1)
   BorderColor: rgba(255, 255, 255, 0)
 
   ShadowColor: rgba(0, 0, 0, 0)
   ShadowBlur: 0
 
   @Transition Background { Duration: 200ms }
-  @Transition BackdropBrightness { Duration: 200ms }
-  @Transition BackdropSaturation { Duration: 200ms }
-  @Transition BackdropContrast { Duration: 200ms }
-  @Transition BackdropFrostBlur { Duration: 200ms }
+  @Transition BackdropFilter { Duration: 200ms }
   @Transition Thickness { Duration: 280ms }
   @Transition Fillet { Duration: 280ms }
   @Transition Refraction { Duration: 280ms }
@@ -49,8 +42,7 @@ Jwift_SelectionIndicator {
   @Transition EdgeLightBottom { Duration: 200ms }
   @Transition BorderWidth { Duration: 200ms }
   @Transition BorderBlur { Duration: 200ms }
-  @Transition BorderBrightness { Duration: 200ms }
-  @Transition BorderSaturation { Duration: 200ms }
+  @Transition BorderFilter { Duration: 200ms }
   @Transition BorderColor { Duration: 200ms }
   @Transition ShadowColor { Duration: 200ms }
   @Transition ShadowBlur { Duration: 200ms }
@@ -72,10 +64,7 @@ Jwift_SelectionIndicator {
 Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   Background: rgba(255, 255, 255, 0)
 
-  BackdropBrightness: 1.5
-  BackdropSaturation: 1.5
-  BackdropContrast: 1
-  BackdropFrostBlur: 0
+  BackdropFilter: Brightness(1.5) Saturate(1.5) Contrast(1) Blur(0)
 
   Thickness: 8
   Fillet: 1
@@ -92,8 +81,7 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
 
   BorderWidth: 1pt
   BorderBlur: 0.5pt
-  BorderBrightness: 1.5
-  BorderSaturation: 1.5
+  BorderFilter: Brightness(1.5) Saturate(1.5)
   BorderColor: rgba(255, 255, 255, 0.25)
 
   ShadowColor: rgba(0, 0, 0, 0.15)

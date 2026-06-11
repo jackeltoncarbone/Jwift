@@ -51,8 +51,7 @@ Jwift_DrawerPanel {
   Background: rgba(255, 255, 255, 0.06)
   BorderWidth: 1pt
   BorderColor: rgba(150, 150, 150, 0.2)
-  BackdropFrostBlur: 8pt
-  BackdropBrightness: 1.7
+  BackdropFilter: Blur(8pt) Brightness(1.7)
   ShadowColor: rgba(0, 0, 0, 0.4)
   ShadowBlur: 40pt
   Overflow: Hidden

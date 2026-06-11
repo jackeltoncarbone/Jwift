@@ -67,15 +67,15 @@ Jwift_Card_Fluid : Jwift_Card {
   Interactive: true
   Cursor: Pointer
   @Transition VisualScale { Duration: 160ms }
-  @Transition Brightness { Duration: 160ms }
+  @Transition Filter { Duration: 160ms }
 }
 Jwift_Card_Fluid:Hover {
   VisualScale: 1.02
-  Brightness: 1.12
+  Filter: Brightness(1.12)
 }
 Jwift_Card_Fluid:Active {
   VisualScale: 0.975
-  Brightness: 1.22
+  Filter: Brightness(1.22)
 }
 
 Jwift_Card_Compact_Fluid : Jwift_Card_Compact {
@@ -88,15 +88,15 @@ Jwift_Card_Compact_Fluid : Jwift_Card_Compact {
   Interactive: true
   Cursor: Pointer
   @Transition VisualScale { Duration: 160ms }
-  @Transition Brightness { Duration: 160ms }
+  @Transition Filter { Duration: 160ms }
 }
 Jwift_Card_Compact_Fluid:Hover {
   VisualScale: 1.02
-  Brightness: 1.12
+  Filter: Brightness(1.12)
 }
 Jwift_Card_Compact_Fluid:Active {
   VisualScale: 0.975
-  Brightness: 1.22
+  Filter: Brightness(1.22)
 }
 
 Jwift_Card_Hero_Fluid : Jwift_Card_Hero {
@@ -109,15 +109,15 @@ Jwift_Card_Hero_Fluid : Jwift_Card_Hero {
   Interactive: true
   Cursor: Pointer
   @Transition VisualScale { Duration: 160ms }
-  @Transition Brightness { Duration: 160ms }
+  @Transition Filter { Duration: 160ms }
 }
 Jwift_Card_Hero_Fluid:Hover {
   VisualScale: 1.015
-  Brightness: 1.1
+  Filter: Brightness(1.1)
 }
 Jwift_Card_Hero_Fluid:Active {
   VisualScale: 0.98
-  Brightness: 1.2
+  Filter: Brightness(1.2)
 }
 
 // Fill variant — card sizes to 100% of its parent so a grid cell can dictate
@@ -133,15 +133,15 @@ Jwift_Card_Fill_Fluid : Jwift_Card_Fill {
   Interactive: true
   Cursor: Pointer
   @Transition VisualScale { Duration: 160ms }
-  @Transition Brightness { Duration: 160ms }
+  @Transition Filter { Duration: 160ms }
 }
 Jwift_Card_Fill_Fluid:Hover {
   VisualScale: 1.02
-  Brightness: 1.12
+  Filter: Brightness(1.12)
 }
 Jwift_Card_Fill_Fluid:Active {
   VisualScale: 0.975
-  Brightness: 1.22
+  Filter: Brightness(1.22)
 }
 
 Jwift_CardFooter {
@@ -151,6 +151,6 @@ Jwift_CardFooter {
   Padding: 18pt
   Gap: 8pt
   ProgressiveBlurDirection: ToBottom
-  BackdropFrostBlur: 32pt
+  BackdropFilter: Blur(32pt)
   Background: rgba(0, 0, 0, 0.55)
 }
