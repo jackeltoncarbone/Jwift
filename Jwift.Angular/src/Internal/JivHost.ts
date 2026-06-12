@@ -190,6 +190,9 @@ export abstract class JivHost {
       ...fromClass?.Style,
       ...this._styleOverride(),
     } as Record<string, unknown>;
+    // Semantics is mirror-only data (Jaui.Angular SEO projection) — the
+    // render engine must never see it.
+    delete styleBag['Semantics'];
 
     const elementProps: JivApplyOpts['ElementProps'] = {};
     for (const key of _ELEMENT_KEYS) {
