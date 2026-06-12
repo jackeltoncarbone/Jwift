@@ -49,6 +49,10 @@ import TabBarJss from './TabBar.jss';
 export class TabBar extends JivHost implements OnInit, OnDestroy {
   readonly selected = input<number>(0);
 
+  /** Extra JSS class(es) merged AFTER Jwift_TabBar — consumer-side sizing for non-nav uses (a
+   *  settings segmented bar sets Width/Height here). Resolve merges left-to-right, consumer wins. */
+  readonly Class = input<string>('');
+
   /** Fires when a tap or drag lands on a different tab. Pair with
    *  `[selected]` for controlled use. Consumers typically drive routing
    *  from this output; the input syncs back from the resulting URL. */
@@ -95,7 +99,7 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
   private static readonly _SlideLatchMs = 280;
 
   constructor() {
-    super('TabBar', TabBarJss, 'Jwift_TabBar', () => 'Jwift_TabBar');
+    super('TabBar', TabBarJss, 'Jwift_TabBar', () => `Jwift_TabBar ${this.Class()}`.trim());
     // Keep TabItem's view of the active index in sync while dragging so
     // icon-swap (active glyph vs default glyph) follows the pointer.
     // Items re-read `selected()` via our EffectiveSelected override —

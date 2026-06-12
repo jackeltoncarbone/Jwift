@@ -36,7 +36,9 @@ import TabBarJss from './TabBar.jss';
   standalone: true,
   imports: [Jext, Icon],
   template: `
-    <icon [class]="IconClass()" [Name]="_active() && iconFill() ? iconFill() : icon()" />
+    @if (icon()) {
+      <icon [class]="IconClass()" [Name]="_active() && iconFill() ? iconFill() : icon()" />
+    }
     <jext [class]="LabelClass()" [text]="label()" />
   `,
   styles: [':host { display: contents; }'],
@@ -68,6 +70,8 @@ export class TabItem extends JivHost implements OnInit, OnDestroy {
 
   readonly LabelClass = computed(() => {
     const a = this._active();
+    // Label-only item (no icon): the label IS the tab — full reading size regardless of bar width.
+    if (!this.icon()) return a ? 'Jwift_TabLabelSoloActive' : 'Jwift_TabLabelSolo';
     const e = this._expanded();
     if (e) return a ? 'Jwift_TabLabelExpandedActive' : 'Jwift_TabLabelExpanded';
     return a ? 'Jwift_TabLabelActive' : 'Jwift_TabLabel';

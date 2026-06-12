@@ -44,12 +44,15 @@ Jwift_TabBar : JwiftGlass {
 
 // Tab items are transparent — all active/hover visual feedback comes
 // from the single shared indicator pill, not per-item backgrounds.
+// FlexGrow (not a fixed %) so any item count splits the bar evenly —
+// the five-tab nav lays out identically, and a two-option segmented
+// bar gets true halves.
 Jwift_TabItem {
   Direction: Column
   Justify: Center
   Align: Center
   Gap: 2pt
-  Width: 20%
+  FlexGrow: 1
   BorderRadius: 56pt
   Interactive: true
   Cursor: Pointer
@@ -120,6 +123,18 @@ Jwift_TabLabelExpanded : Jwift_TabLabel {
 }
 
 Jwift_TabLabelExpandedActive : Jwift_TabLabelExpanded {
+  FontWeight: 600
+  Color: rgba(255, 255, 255, 0.95)
+}
+
+// Label-only item (no icon) — the label IS the tab, at full reading size in any bar width.
+Jwift_TabLabelSolo : Jwift_TabLabel {
+  FontSize: 14pt
+  LineHeight: 1.2
+  Margin: 0pt
+}
+
+Jwift_TabLabelSoloActive : Jwift_TabLabelSolo {
   FontWeight: 600
   Color: rgba(255, 255, 255, 0.95)
 }

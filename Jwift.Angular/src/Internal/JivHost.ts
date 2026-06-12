@@ -1,8 +1,10 @@
 import {
+  Directive,
   ElementRef,
   effect,
   forwardRef,
   inject,
+  input,
   signal,
   untracked,
   type WritableSignal,
@@ -12,6 +14,7 @@ import {
   Jiv,
   JAUI_HOST_EL,
   JSS_REGISTRY,
+  WireTeleportInputs,
 } from 'jaui-angular';
 import {
   JivHandle,
@@ -38,9 +41,18 @@ import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
  * `this.Node.SetText(...)`, etc. continues to work — JivHandle
  * preserves those names and forwards them as ops.
  */
+@Directive()
 export abstract class JivHost {
   /** Underlying worker-side Jiv (handle). Children attach here via DI. */
   readonly Node: JivHandle;
+
+  // ── Teleport (base capability — every Jwift component is a jiv) ──
+  /** Makes this component a named OUTLET in the canvas-scoped TeleportRegistry. */
+  readonly TeleportId = input<string | undefined>(undefined);
+  /** Live AT the named outlet (the declaration site stops determining the
+   *  canvas parent; moves between outlets fly via the engine's rect springs).
+   *  `null` re-parents to the declaration-site parent. */
+  readonly TeleportTo = input<string | null | undefined>(undefined);
 
   private _parentJiv = inject<Jiv | null>(forwardRef(() => Jiv), {
     skipSelf: true,
@@ -128,6 +140,13 @@ export abstract class JivHost {
       this._className();
       this._styleOverride();
       this._apply();
+    });
+
+    WireTeleportInputs({
+      Node: this.Node,
+      TeleportId: this.TeleportId,
+      TeleportTo: this.TeleportTo,
+      NaturalParent: () => this._parentJiv ? this._parentJiv.Node : this._canvas?.Root ?? null,
     });
   }
 
