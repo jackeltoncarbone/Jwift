@@ -17,6 +17,11 @@ Jwift_TabBarRow {
 Jwift_TabBar : JwiftGlass {
   UserSelect: None
 
+  // A tab bar's height is intrinsic — it must NEVER be vertically compressed by sibling flex content.
+  // Without this, dropping a <tab-bar> into a flex column (a modal header, a settings panel) lets a
+  // FlexGrow neighbour squish it to a different height per layout. Pin it.
+  FlexShrink: 0
+
   ShadowColor: rgba(0, 0, 0, 0.2)
   ShadowBlur: 28pt
   ShadowOffsetY: 8pt

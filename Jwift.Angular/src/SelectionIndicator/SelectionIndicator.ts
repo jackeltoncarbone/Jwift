@@ -11,6 +11,7 @@ import {
 import { Jaui, Jiv } from 'jaui-angular';
 import { JivHandle as JivCore, ResolveLengthTuple4, Spring } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
+import { TabBar } from '../TabBar/TabBar';
 import SelectionIndicatorJss from './SelectionIndicator.jss';
 
 @Component({
@@ -26,6 +27,13 @@ import SelectionIndicatorJss from './SelectionIndicator.jss';
 export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   readonly target = input<JivCore | null>(null);
   readonly pressed = input<boolean | null>(null);
+
+  // A `<selection-indicator>` declared inside a `<tab-bar>` injects it and reads its authoritative
+  // drag/press flag automatically — so the GLASS press state "just works" without the consumer having
+  // to remember `[pressed]="tb.IsPressed()"`. (Worker mode no longer syncs JivHandle.Active to main,
+  // so the old `_autoPressed` rect-flag detection is dead; this is the standard wiring in its place.)
+  // An explicit `pressed` input still wins when given.
+  private _tabBar = inject(TabBar, { optional: true });
 
   private _canvasRef = inject(Jaui, { optional: true });
   private _rafId = 0;
@@ -59,11 +67,17 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _watchedParent: JivCore | null = null;
 
   constructor() {
-    super('SelectionIndicator', SelectionIndicatorJss, 'Jwift_SelectionIndicator', () => {
-      const override = this.pressed();
-      const p = override ?? this._autoPressed();
-      return p ? 'Jwift_SelectionIndicator_Pressed' : 'Jwift_SelectionIndicator';
-    });
+    super('SelectionIndicator', SelectionIndicatorJss, 'Jwift_SelectionIndicator', () =>
+      this._resolvePressed() ? 'Jwift_SelectionIndicator_Pressed' : 'Jwift_SelectionIndicator');
+  }
+
+  /** The effective press state: an explicit `pressed` input wins; else the parent TabBar's drag flag
+   *  (the standard auto-wiring); else the legacy rect-derived flag. */
+  private _resolvePressed(): boolean {
+    const override = this.pressed();
+    if (override !== null) return override;
+    if (this._tabBar) return this._tabBar.IsPressed();
+    return this._autoPressed();
   }
 
   ngOnInit(): void {
@@ -206,8 +220,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     }
     if (t.Width <= 0 || t.Height <= 0) return;
 
-    const override = this.pressed();
-    const isPressed = override !== null ? override : this._autoPressed();
+    const isPressed = this._resolvePressed();
 
     const now = performance.now();
     // Upper clamp prevents first-frame Euler blowup (dt of billions of ms).
