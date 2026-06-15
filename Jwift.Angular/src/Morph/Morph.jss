@@ -28,9 +28,15 @@ Jwift_MorphFaceHidden : Jwift_MorphFace {
 // The expanded content — an IN-FLOW child (the surface's intrinsic sizer: outlets that
 // hug content measure THIS). Resolves from a slight under-scale as the surface grows —
 // contents coming into focus inside an opening folder. Interactive only when shown.
+// Overflow: Scroll so that when the surface is height-capped (e.g. an outlet whose cell
+// is shorter than the content's natural height), the content shrinks to the cap and
+// SCROLLS rather than clipping or pushing the surface past its bounds. Harmless when the
+// surface hugs content: nothing overflows, so no scroll engages, and the intrinsic pass
+// ignores Overflow — short content still measures + hugs exactly as before.
 Jwift_MorphContent {
   Width: 100%
   Layer: 1
+  Overflow: Scroll
   PointerEvents: None
   Opacity: 0
   VisualScale: 0.94
