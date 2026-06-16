@@ -3,6 +3,7 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  effect,
   forwardRef,
   input,
 } from '@angular/core';
@@ -39,6 +40,10 @@ export type GlassButtonShape = 'round' | 'pill' | 'square';
 })
 export class GlassButton extends JivHost implements OnInit, OnDestroy {
   readonly shape = input<GlassButtonShape>('round');
+  /** Greys the button out and blocks every hit (no click, and no hover/active glass bloom). The pill
+   *  stays in layout — for "nothing to do yet" affordances that should read as present-but-unavailable
+   *  rather than disappear. */
+  readonly disabled = input<boolean>(false);
 
   constructor() {
     super('GlassButton', GlassButtonJss, 'Jwift_GlassBtn_Round', () => {
@@ -47,6 +52,19 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
         case 'pill':   return 'Jwift_GlassBtn_Pill';
         case 'square': return 'Jwift_GlassBtn_Square';
         default:       return 'Jwift_GlassBtn_Round';
+      }
+    });
+    // Disabled = dimmed + inert. Routed through the JivHost style-override channel (not a JSS pseudo) so
+    // it layers over whichever shape class is active. Interactive:false is the important half — it stops
+    // the engine hit-testing the pill, so neither the click nor the :Hover/:Active brightness springs
+    // fire on a disabled button.
+    effect(() => {
+      if (this.disabled()) {
+        this.SetStyleOverride({ Opacity: '0.4', Interactive: false, Cursor: 'Default' });
+      } else {
+        this.ClearStyleOverride('Opacity');
+        this.ClearStyleOverride('Interactive');
+        this.ClearStyleOverride('Cursor');
       }
     });
   }
