@@ -91,6 +91,7 @@ export class WheelPicker extends JivHost implements OnInit, OnDestroy {
   private _lastY = 0;
   private _lastT = 0;
   private _velocity = 0; // rows per ms
+  private _wheelSnapTimer: ReturnType<typeof setTimeout> | null = null;
   private static readonly _ClickThresholdPx = 5;
   private static readonly _SnapMs = 280;
 
@@ -123,6 +124,7 @@ export class WheelPicker extends JivHost implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._stopAnimation();
+    if (this._wheelSnapTimer !== null) clearTimeout(this._wheelSnapTimer);
     this._unbind?.();
     this.Node.WatchRect(false);
     this._detachOnDestroy();
@@ -188,15 +190,35 @@ export class WheelPicker extends JivHost implements OnInit, OnDestroy {
       this._startMomentum();
     };
 
+    // Mouse-wheel / trackpad scroll. Normalize line/page delta modes to px,
+    // advance the fractional position, and debounce a snap once scrolling stops.
+    const onWheel = (e: WheelEvent): void => {
+      if (!inside(e.clientX, e.clientY)) return;
+      e.preventDefault();
+      this._stopAnimation();
+      const px = e.deltaMode === 1 ? e.deltaY * 16
+               : e.deltaMode === 2 ? e.deltaY * this.Node.Height
+               : e.deltaY;
+      const ih = this.itemHeight();
+      this.ScrollPosition.update(p => ClampPosition(p + px / (ih * 2), this._count()));
+      if (this._wheelSnapTimer !== null) clearTimeout(this._wheelSnapTimer);
+      this._wheelSnapTimer = setTimeout(() => {
+        this._wheelSnapTimer = null;
+        this._snapTo(NearestIndex(this.ScrollPosition(), this._count()));
+      }, 140);
+    };
+
     el.addEventListener('pointerdown', onDown);
     el.addEventListener('pointermove', onMove);
     el.addEventListener('pointerup', onUp);
     el.addEventListener('pointercancel', onUp);
+    el.addEventListener('wheel', onWheel, { passive: false });
     this._unbind = () => {
       el.removeEventListener('pointerdown', onDown);
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onUp);
+      el.removeEventListener('wheel', onWheel);
     };
   }
 
