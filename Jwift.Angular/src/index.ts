@@ -29,6 +29,17 @@ export { ContextMenuService, type ContextMenuItem } from './ContextMenu/ContextM
 export { TextInput, type TextInputSpan, type TextInputPeerCaret } from './TextInput/TextInput';
 export { NumberTicker } from './NumberTicker/NumberTicker';
 export { JwiftSpinner } from './Spinner/JwiftSpinner';
+export { WheelPicker } from './WheelPicker/WheelPicker';
+export { WheelItem } from './WheelPicker/WheelItem';
+export {
+  type WheelGeometry,
+  type SlotProjection,
+  DefaultWheelGeometry,
+  ProjectSlot,
+  ClampPosition,
+  NearestIndex,
+  DegreesPerItem,
+} from './WheelPicker/WheelPicker.Logic';
 // Universal Liquid-Glass JSS — opt in via space-separated class names
 // (`class="MyThing JwiftGlass"`) or single-inheritance (`MyThing :
 // JwiftGlass {...}`). Consumer page must register it once with a
