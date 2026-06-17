@@ -31,6 +31,9 @@ export interface GlassAction {
   Label?: string;
   /** Inline cell only — highlights the cell with the active background. */
   Active?: boolean;
+  /** Inline cell only — tints the glyph (e.g. amber 'warn' for a warnings or
+   *  save-failed indicator) so it reads as an alert against the monochrome set. */
+  Tint?: 'warn';
   /** Suppresses click and dims the cell/item. */
   Disabled?: boolean;
   /** Renders an inline spinner cell in place of the standard icon cell —
@@ -44,6 +47,10 @@ export interface GlassAction {
   /** Renders a thin divider line in the menu instead of a clickable item.
    *  Inline cells skip dividers entirely. */
   Divider?: boolean;
+  /** Renders a non-interactive uppercase section header in the menu (uses
+   *  `Label` as the text). Used by the multi-group action bar to label each
+   *  group's consolidated overflow section. Skipped as an inline cell. */
+  Header?: boolean;
   /** When set, clicking the action navigates to a sub-page in the dropdown
    *  (see Pages input). Skips the ActionClick emit and keeps the dropdown
    *  open. Works from both inline and menu slots. */
@@ -105,9 +112,11 @@ export interface GlassAction {
             </jiv>
           }
         }
-        <jiv class="Jwift_GlassDropdownCell_Ellipsis" (click)="$event.stopPropagation(); dd.Open()">
-          <icon class="Jwift_GlassActionGlyph" Name="ellipsis" />
-        </jiv>
+        @if (ShowEllipsis()) {
+          <jiv class="Jwift_GlassDropdownCell_Ellipsis" (click)="$event.stopPropagation(); dd.Open()">
+            <icon class="Jwift_GlassActionGlyph" Name="ellipsis" />
+          </jiv>
+        }
         @for (peerUrl of CollaboratorAvatarUrls(); track $index) {
           <jiv class="Jwift_GlassDropdownCell_AvatarPeer">
             <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="peerUrl" />
@@ -134,6 +143,8 @@ export interface GlassAction {
         @for (item of _OpenItems(pg); track item.Id) {
           @if (item.Divider) {
             <jiv class="Jwift_GlassDropdownDivider" />
+          } @else if (item.Header) {
+            <jext class="Jwift_GlassDropdownSectionHeader" [text]="item.Label ?? ''" />
           } @else {
             <glass-dropdown-item
               [variant]="_ItemVariant(item)"
@@ -198,6 +209,11 @@ export class GlassActionGroup implements OnDestroy {
    *  separate `<nav-avatar />` for the auth menu and only need the action
    *  group for inline cells + ellipsis-triggered overflow menu. */
   readonly ShowAvatar = input<boolean>(true);
+
+  /** When true (default) the ellipsis trigger cell renders. Set false when the
+   *  avatar itself is the menu trigger (the multi-group bar's sink), so the
+   *  closed pill is just the avatar — no separate ellipsis. */
+  readonly ShowEllipsis = input<boolean>(true);
 
   /** Fires when a non-page action is clicked (inline cell or menu item).
    *  Disabled actions and Page-targeted actions are filtered out. */
@@ -318,7 +334,7 @@ export class GlassActionGroup implements OnDestroy {
     const leadingW = leading?.Width ?? 0;
     const slack    = Math.max(0, innerW - leadingW);
 
-    const reservedCells = this.ShowAvatar() ? 2 : 1; // ellipsis (+ avatar)
+    const reservedCells = (this.ShowEllipsis() ? 1 : 0) + (this.ShowAvatar() ? 1 : 0); // ellipsis (+ avatar)
     const reservedCellsW =
       2 * closedPadPx
       + reservedCells * cellPx

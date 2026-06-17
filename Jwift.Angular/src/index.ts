@@ -11,6 +11,7 @@ export { GlassButton, type GlassButtonShape } from './GlassButton/GlassButton';
 export { GlassDropdown } from './GlassDropdown/GlassDropdown';
 export { GlassDropdownItem, type GlassDropdownItemVariant } from './GlassDropdown/GlassDropdownItem';
 export { GlassActionGroup, type GlassAction } from './GlassActionGroup/GlassActionGroup';
+export { GlassActionBar, type ActionGroup } from './GlassActionBar/GlassActionBar';
 export { Toolbar } from './Toolbar/Toolbar';
 export { ToolbarTitle } from './ToolbarTitle/ToolbarTitle';
 export { ToolbarCompactDef } from './ToolbarTitle/ToolbarCompactDef';

@@ -245,6 +245,19 @@ Jwift_GlassDropdownItemLabel_Danger : Jwift_GlassDropdownItemLabel {
   Color: rgba(255, 110, 110, 0.95)
 }
 
+// Non-interactive section header — labels a consolidated overflow section in
+// the multi-group action bar's sink menu (e.g. "CAMERA", "FILE"). Small,
+// uppercase, dim; sits above its group's rows.
+Jwift_GlassDropdownSectionHeader {
+  FontFamily: Inter
+  FontSize: 10pt
+  FontWeight: 700
+  LetterSpacing: 0.6pt
+  Color: rgba(255, 255, 255, 0.45)
+  Padding: 8pt 14pt 4pt 14pt
+  MaxLines: 1
+}
+
 // Thin separator between groups of menu items (e.g. between "Cameras" and
 // "Rename" in the drill menu). Hairline only — sits flush against the
 // rows above/below so the divider is a visual cut, not a wide gap.
