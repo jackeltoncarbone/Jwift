@@ -11,6 +11,17 @@ Jwift_GlassActionBar {
   Height: MaxContent
 }
 
+// In-flow slot reserving an expandable group pill's closed footprint. Keeps
+// the bar's right-justified flow steady when the pill's dropdown opens (the
+// open menu goes Position:Placed = out of flow, which would otherwise collapse
+// the pill and slide siblings). Width/Height come from [childLayout]; Overflow
+// stays Visible so the popped menu isn't clipped.
+Jwift_GlassActionBarSlot {
+  Direction: Row
+  Justify: Center
+  Align: Center
+}
+
 // Amber-tinted variant of the inline-cell glyph — for alert cells (warnings,
 // save-failed) so they read against the otherwise-monochrome action set.
 // Declared in full (not inherited) since cross-file JSS inheritance is dropped.

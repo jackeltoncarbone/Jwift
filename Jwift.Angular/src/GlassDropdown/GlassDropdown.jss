@@ -84,6 +84,21 @@ Jwift_GlassDropdownCell_Active : Jwift_GlassDropdownCell {
   Background: rgba(255, 255, 255, 0.22)
 }
 
+// Disabled inline cell — dimmed + inert (e.g. Undo with nothing to undo). The
+// click is also gated in the consumer; this is the VISUAL half so a cell that
+// can't be used reads as unavailable instead of identical to an active one.
+// Hover/active are flattened so it doesn't light up under the pointer.
+Jwift_GlassDropdownCell_Disabled : Jwift_GlassDropdownCell {
+  Opacity: 0.3
+  Cursor: Default
+}
+Jwift_GlassDropdownCell_Disabled:Hover {
+  Background: rgba(255, 255, 255, 0)
+}
+Jwift_GlassDropdownCell_Disabled:Active {
+  Background: rgba(255, 255, 255, 0)
+}
+
 // Round avatar-style cell — like the cell above but clips its inner
 // image to a circle. Used for cells that contain a profile photo or
 // other rounded artwork. Order: 200 pins it to the trailing end of the
@@ -117,13 +132,14 @@ Jwift_GlassDropdownCellAvatarImage {
 // anchors top-right against the nearest Placed ancestor (typically
 // Jwift_PageHeader for toolbar consumers, or a consumer-side wrapper).
 //
-// Concentric chain (assuming @ScreenR = 80pt and the standard 28pt chrome
-// inset of PageHeader 18pt + Toolbar 10pt):
-//   - Open glass rad = 80 − 28 = 52pt → app-concentric at the trailing-
-//     wrapper anchor with Top:0 Right:0 (no extra inset needed).
-//   - Padding: 6pt — small breathing room between the glass edge and the
-//     items, matching iOS/macOS popover convention. Items sit centered
-//     inside the larger glass curve rather than filling the corners.
+// Concentric chain — the glass corner nests around the ROWS inside it, not the
+// app shell. Each item row is 44pt tall (→ 22pt pill radius), and the open
+// glass sits 6pt outside the rows (the Padding below), so the concentric glass
+// radius is 22 + 6 = 28pt. This is also the radius at which a single-row menu
+// (6 + 44 + 6 = 56pt tall) is an exact pill (radius = height/2): one row reads
+// as a capsule, and any taller menu (≥2 rows) is a rounded rectangle. The old
+// 52pt was app-shell-concentric (80 − 28pt chrome inset) but exceeded half the
+// height of short menus, so 2-option / few-warning dropdowns clamped to a pill.
 // Direction/Justify/Align re-stated explicitly: when the resolver swaps
 // from _Closed to _Open it rebuilds Layout from defaults, so anything not
 // declared on _Open falls back to default (Direction: Row), not the base.
@@ -138,7 +154,7 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown {
   Align: Stretch
   Padding: 6pt
   Gap: 0pt
-  BorderRadius: 52pt
+  BorderRadius: 45pt
 }
 
 // Item geometry follows iOS 26 popover-menu proportions: 44pt-tall pill

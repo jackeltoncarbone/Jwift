@@ -5,6 +5,7 @@ import {
   OnInit,
   forwardRef,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
@@ -27,6 +28,19 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   private readonly _page = signal<string | null>(null);
   readonly IsOpen = this._open.asReadonly();
   readonly Page   = this._page.asReadonly();
+
+  /** Guards opening via a host (glass-background) click. A glass dropdown that
+   *  would open to NO content renders as a flat empty sliver, which is the bug
+   *  class this prevents: the consumer binds whether the page the host would
+   *  open to actually has rows. Default true preserves the always-toggles
+   *  behaviour for consumers that don't wire it. Closing is never gated. */
+  readonly canOpen = input<boolean>(true);
+
+  /** Page id pushed when the dropdown is opened by a host click (vs. a specific
+   *  cell, which pushes its own page). Lets a single-page pill — e.g. the
+   *  warnings group — open its page when tapped ANYWHERE on the glass, instead
+   *  of opening to the empty root. null (default) opens the root page. */
+  readonly defaultPage = input<string | null>(null);
 
   private readonly _canvasRef = inject(Jaui, { optional: true });
   private _unbindDoc: (() => void) | null = null;
@@ -90,5 +104,14 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   PushPage(id: string): void { this._page.set(id); }
   PopPage():            void { this._page.set(null); }
 
-  protected _onHostClick(_e: MouseEvent): void { this.Toggle(); }
+  protected _onHostClick(_e: MouseEvent): void {
+    // Open via a host click is gated: an open with nothing to show is the flat-
+    // empty-glass bug. Closing is always allowed. On open, push the consumer's
+    // defaultPage so a single-page pill opens its page from any glass tap.
+    if (this._open()) { this.Close(); return; }
+    if (!this.canOpen()) return;
+    this._open.set(true);
+    const dp = this.defaultPage();
+    if (dp !== null) this._page.set(dp);
+  }
 }

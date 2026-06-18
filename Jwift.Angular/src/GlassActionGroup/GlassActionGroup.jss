@@ -13,6 +13,18 @@ Jwift_GlassActionGlyph {
   TextAlign: Center
 }
 
+// In-flow slot that reserves the closed pill's footprint so the toolbar
+// trailing cluster never reflows when the dropdown opens. The open menu pops
+// out of flow (Position:Placed), which would otherwise collapse this pill's
+// box and let right-justified siblings slide over. Width/Height are driven
+// from the measured closed pill via [childLayout]; this only sets box
+// defaults. Overflow stays Visible so the popped menu isn't clipped.
+Jwift_GlassActionGroupSlot {
+  Direction: Row
+  Justify: Center
+  Align: Center
+}
+
 // Collaborator peer-avatar cell. Sized as a full avatar circle, with
 // negative right margin so it overlaps the next item (~50% of a face)
 // for the peeking stack effect. White border separates overlapping

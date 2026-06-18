@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
+import { type ChildLayout } from 'jaui';
 import { Icon } from '../Icon/Icon';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
 import { GlassDropdownItem, type GlassDropdownItemVariant } from '../GlassDropdown/GlassDropdownItem';
@@ -99,7 +100,13 @@ export interface GlassAction {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <jyle [source]="JssSource" />
-    <glass-dropdown #dd>
+    <!-- In-flow slot reserving the closed pill's footprint. The dropdown
+         morphs out of flow (Position:Placed) when open; without this slot
+         that would collapse the pill's box and let right-justified siblings
+         in the toolbar cluster slide over. The slot holds the measured
+         closed width so nothing reflows; the open menu anchors to it. -->
+    <jiv class="Jwift_GlassActionGroupSlot" [childLayout]="_SlotLayout()">
+    <glass-dropdown #dd [canOpen]="_CanOpenRoot()">
       @if (!dd.IsOpen()) {
         @for (action of _InlineActions(); track action.Id) {
           @if (action.Spinner) {
@@ -164,6 +171,7 @@ export interface GlassAction {
         }
       }
     </glass-dropdown>
+    </jiv>
   `,
   styles: [':host { display: contents; }'],
 })
@@ -235,6 +243,29 @@ export class GlassActionGroup implements OnDestroy {
 
   private readonly _MaxInlineFit = signal<number>(Number.MAX_SAFE_INTEGER);
 
+  /** Closed-pill footprint (pt) reserved by the in-flow slot so the toolbar
+   *  cluster never reflows when the dropdown opens OR closes. Derived from the
+   *  closed cell COUNT — never the live dropdown width — so the slot stays
+   *  rock-steady while the pill's Width springs (220pt → closed) on close.
+   *  Measuring that spring is what dragged the slot down and slid siblings as
+   *  the menu collapsed. Geometry mirrors Jwift_GlassDropdown_Closed:
+   *  2·pad + n·cell + (n−1)·gap, minus the −28pt right margin each
+   *  collaborator peer cell overlaps by (Jwift_GlassDropdownCell_AvatarPeer). */
+  private static readonly _PeerOverlapPt = 28;
+  protected readonly _SlotLayout = computed<Partial<ChildLayout>>(() => {
+    const inline   = this._InlineActions().length;
+    const peers    = this.CollaboratorAvatarUrls().length;
+    const reserved = (this.ShowEllipsis() ? 1 : 0) + (this.ShowAvatar() ? 1 : 0);
+    const n = inline + peers + reserved;
+    const pad  = GlassActionGroup._ClosedPadPt;
+    const cell = GlassActionGroup._CellPt;
+    const gap  = GlassActionGroup._CellGapPt;
+    const w = n > 0
+      ? 2 * pad + n * cell + (n - 1) * gap - peers * GlassActionGroup._PeerOverlapPt
+      : 2 * pad;
+    return { Width: w + 'pt', Height: '48pt' };
+  });
+
   /** One-shot wiring guard for WatchRect on the toolbar / leading / dropdown
    *  ancestor chain. Set on first `_UpdateInlineFit` after mount so the rest
    *  of the rAF loop sees live widths instead of the 0 default. */
@@ -269,6 +300,15 @@ export class GlassActionGroup implements OnDestroy {
     if (page === null) return [...this._OverflowActions(), ...this.Menu()];
     return this.Pages()[page] ?? [];
   }
+
+  /** Whether a host (glass/avatar) tap may open the sink to its root page —
+   *  i.e. the root (overflow + Menu) has at least one row. Without this a sink
+   *  whose actions all fit inline and has no menu items opens to a flat empty
+   *  panel. Avatar/ellipsis paths that push a specific Page open programmatically
+   *  and are unaffected. */
+  protected readonly _CanOpenRoot = computed(() =>
+    this._OverflowActions().length + this.Menu().length > 0
+  );
 
   private _rafId = 0;
 
@@ -305,7 +345,10 @@ export class GlassActionGroup implements OnDestroy {
     if (this._Dd?.IsOpen()) return;
     const ddNode = this._Dd?.Node;
     if (!ddNode) return;
-    const trailing = ddNode.Parent;
+    // The dropdown now nests inside the reserving slot, so the toolbar
+    // cluster is one level further up than the dropdown's direct parent.
+    const slot = ddNode.Parent;
+    const trailing = slot?.Parent;
     if (!trailing) return;
     const toolbar = trailing.Parent;
     if (!toolbar) return;
@@ -364,7 +407,10 @@ export class GlassActionGroup implements OnDestroy {
   }
 
   protected _CellClass(action: GlassAction): string {
-    return action.Active ? 'Jwift_GlassDropdownCell Jwift_GlassDropdownCell_Active' : 'Jwift_GlassDropdownCell';
+    const classes = ['Jwift_GlassDropdownCell'];
+    if (action.Active) classes.push('Jwift_GlassDropdownCell_Active');
+    if (action.Disabled) classes.push('Jwift_GlassDropdownCell_Disabled');
+    return classes.join(' ');
   }
 
   protected _ItemVariant(action: GlassAction): GlassDropdownItemVariant {

@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
+import { type ChildLayout } from 'jaui';
 import { Icon } from '../Icon/Icon';
 import { GlassActionGroup, type GlassAction } from '../GlassActionGroup/GlassActionGroup';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
@@ -73,9 +74,15 @@ export interface ActionGroup {
         @if (gp.Expandable) {
           <!-- Expandable group pill — same <glass-dropdown> the sink/avatar uses:
                closed shows the cell row at its base footprint; a cell carrying
-               a Page opens this pill's own dropdown in place (out of flow, no
-               sibling reflow). -->
-          <glass-dropdown #gd>
+               a Page opens this pill's own dropdown in place. The dropdown goes
+               Position:Placed when open (out of flow), so we wrap it in an
+               in-flow slot sized to the closed footprint — that holds the bar's
+               flow steady (no sibling reflow) and the open menu anchors to this
+               slot, popping under its own pill rather than the bar's corner. -->
+          <jiv class="Jwift_GlassActionBarSlot" [childLayout]="_PillSlot(gp.Cells.length)">
+          <glass-dropdown #gd
+            [defaultPage]="_GroupDefaultPage(gp.Group)"
+            [canOpen]="_GroupCanOpen(gp.Group)">
             @if (!gd.IsOpen()) {
               @for (a of gp.Cells; track a.Id) {
                 @if (a.Spinner) {
@@ -113,6 +120,7 @@ export interface ActionGroup {
               }
             }
           </glass-dropdown>
+          </jiv>
         } @else {
           <jiv class="Jwift_GlassDropdown_Closed">
             @for (a of gp.Cells; track a.Id) {
@@ -203,6 +211,23 @@ export class GlassActionBar implements OnDestroy {
     return gp.Group.Pages?.[page] ?? [];
   }
 
+  /** The page a host (glass-background) tap should open. When a group has a
+   *  single page (the common case — e.g. warnings), tapping anywhere on the
+   *  pill opens it; with multiple pages there's no unambiguous default, so the
+   *  host opens nothing and only the per-cell Page targets apply. */
+  protected _GroupDefaultPage(g: ActionGroup): string | null {
+    const keys = g.Pages ? Object.keys(g.Pages) : [];
+    return keys.length === 1 ? keys[0] : null;
+  }
+
+  /** Whether a host tap should be allowed to open this pill at all — i.e. at
+   *  least one of its pages has rows. Prevents the flat empty-glass open when
+   *  the pill exists only for a non-expandable cell (e.g. the autosave
+   *  indicator) and its page list is currently empty. */
+  protected _GroupCanOpen(g: ActionGroup): boolean {
+    return !!g.Pages && Object.values(g.Pages).some(rows => rows.length > 0);
+  }
+
   /** Sink menu = consolidated `ToMenu` overflow (sectioned by group) then the
    *  appended `Menu` items. */
   protected readonly _SinkMenu = computed<readonly GlassAction[]>(() => {
@@ -240,8 +265,23 @@ export class GlassActionBar implements OnDestroy {
     if (this._rafId) cancelAnimationFrame(this._rafId);
   }
 
+  /** Closed-pill footprint (pt) for an expandable group's reserving slot —
+   *  same geometry the solver uses (`_pillWidth`): 2·pad + n·cell + (n−1)·gap.
+   *  Height is the fixed 48pt closed-pill height. Kept in flow so opening the
+   *  pill's Placed dropdown never reflows the bar. */
+  protected _PillSlot(n: number): Partial<ChildLayout> {
+    const pad = GlassActionBar._PadPt;
+    const cell = GlassActionBar._CellPt;
+    const gap = GlassActionBar._GapPt;
+    const w = n > 0 ? 2 * pad + n * cell + (n - 1) * gap : 0;
+    return { Width: w + 'pt', Height: '48pt' };
+  }
+
   protected _CellClass(a: GlassAction): string {
-    return a.Active ? 'Jwift_GlassDropdownCell Jwift_GlassDropdownCell_Active' : 'Jwift_GlassDropdownCell';
+    const classes = ['Jwift_GlassDropdownCell'];
+    if (a.Active) classes.push('Jwift_GlassDropdownCell_Active');
+    if (a.Disabled) classes.push('Jwift_GlassDropdownCell_Disabled');
+    return classes.join(' ');
   }
 
   protected _GlyphClass(a: GlassAction): string {
