@@ -55,12 +55,19 @@ Jwift_DrawerPanel {
   ShadowColor: rgba(0, 0, 0, 0.4)
   ShadowBlur: 40pt
   Overflow: Hidden
-  PointerEvents: Auto
+  // Closed = invisible + inert. Don't trust the negative `Bottom` alone to park it off-screen: the solver
+  // clamps a negative placed-anchor offset on a MinContent panel, leaving the glass pill stuck at the
+  // bottom edge of every page (this outlet is mounted app-wide). Opacity/PointerEvents make closed robust.
+  Opacity: 0
+  PointerEvents: None
   @Transition Bottom { Duration: 500ms }
+  @Transition Opacity { Duration: 350ms }
 }
 
 Jwift_DrawerPanel_Open : Jwift_DrawerPanel {
   Bottom: 16pt
+  Opacity: 1
+  PointerEvents: Auto
 }
 
 Jwift_DrawerHandle {
