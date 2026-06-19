@@ -24,6 +24,7 @@ JwiftGlass {
   BorderBlur: 0.25pt
   BorderColor: rgba(255, 255, 255, 0.15)
   BorderFilter: Brightness(1.5) Saturate(1.5)
+  BorderLayer: 10
 
   ShadowColor: rgba(0, 0, 0, 0.18)
   ShadowBlur: 22pt
