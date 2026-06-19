@@ -245,7 +245,10 @@ export abstract class JivHost {
 }
 
 const _ELEMENT_KEYS = [
-  'Overflow', 'Visible', 'Interactive', 'PointerEvents',
+  // 'Clip' MUST be here (parity with the <jiv> directive's extraction): without it a
+  // JivHost class's `Clip: Hidden` stays in the style bag and never reaches the element,
+  // so a rounded glass host (e.g. the drill library panel) silently never clips its content.
+  'Overflow', 'Clip', 'Visible', 'Interactive', 'PointerEvents',
   'Cursor', 'UserSelect', 'PointScale',
 ];
 
