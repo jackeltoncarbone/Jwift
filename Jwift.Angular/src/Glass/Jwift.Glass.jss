@@ -21,28 +21,28 @@ JwiftGlass {
   Background: rgba(255, 255, 255, 0)
 
   BorderWidth: 1pt
-  BorderBlur: 0.25pt
+  BorderBlur: 1pt
   BorderColor: rgba(255, 255, 255, 0.15)
-  BorderFilter: Brightness(1.5) Saturate(1.5)
+  BorderFilter: Brightness(1.25) Saturate(1.25)
   BorderLayer: 10
 
   ShadowColor: rgba(0, 0, 0, 0.18)
   ShadowBlur: 22pt
   ShadowOffsetY: 6pt
 
-  BackdropFilter: Blur(16pt) Brightness(1.25) Saturate(1.25) Contrast(0.75)
+  BackdropFilter: Blur(10pt) Brightness(1.25) Saturate(1.25) Contrast(0.75)
 
   Thickness: 4
   Fillet: 0.25
-  BezelWidth: 11
+  BezelWidth: 6
   BezelScale: 0.5
   Refraction: 20
 
   LightAngle: 135
   LightIntensity: 1
-  FresnelStrength: 0.55
+  FresnelStrength: 0.5
   ChromaticAberration: 0.3
-  EdgeLightBottom: 0.03
+  EdgeLightBottom: 0.2
 }
 
 // ── JwiftSolidGlass ─────────────────────────────────────────────────
@@ -59,29 +59,20 @@ JwiftSolidGlass {
   BorderFilter: Brightness(1.05)
 }
 
-// ── JwiftSolidOutline ───────────────────────────────────────────────
-// Reusable TOP-LAYER glass outline for SOLID (opaque) surfaces — cards, hero
-// banners, tiles. Drop it in as the LAST child of a clipped host (Overflow:
-// Hidden): a transparent-center overlay that fills the host and renders ONLY a
-// beveled, lit, SATURATING rim — picking up and saturating the host's own
-// content at the edge. No refraction / chromatic aberration / frost, so the
-// content underneath is never bent, fringed, or blurred — only its edge is lit
-// and saturated. Sits ABOVE inner content (e.g. a card's footer blur) so the
-// frame is never eaten. Consumer sets BorderRadius to match the host and Layer
-// to sit on top. Non-interactive so taps pass through to the host.
-JwiftSolidOutline {
-  Position: Placed
-  Top: 0pt
-  Left: 0pt
-  Width: 100%
-  Height: 100%
-  // Fully transparent to hit-testing: it's a top overlay covering the whole
-  // host, so without this it would swallow hover / press / clicks meant for the
-  // content + buttons beneath it. Interactive:false alone only stops it
-  // RESPONDING — PointerEvents:None is what lets events pass THROUGH.
-  Interactive: false
-  PointerEvents: None
-  Background: rgba(255, 255, 255, 0)
+// ── JwiftGlassOutline ───────────────────────────────────────────────
+// A SOLID surface that carries the iOS-26 glass RIM — beveled, fresnel-lit,
+// SATURATING the host's own content at the edge — with NO refraction, NO
+// backdrop frost, and a SOLID fill. The successor to the old JwiftSolidOutline
+// overlay element: instead of a separate top-layer jiv, the rim is THIS node's
+// own border, floated over its content via BorderLayer. Works because Jaui
+// decouples the glass border from the glass fill — a glass slab (Thickness > 0)
+// with Refraction 0 and no backdrop renders a solid fill but still paints its
+// glass bevel border. Drop onto any clipped (Overflow: Hidden) card/banner/tile;
+// the consumer owns Background / BorderRadius / Width / Height. A jiv is a jiv —
+// it can have a glass outline no matter what its fill is.
+JwiftGlassOutline {
+  // Glass slab geometry — drives the bevel/fresnel RIM only (Refraction 0 = no
+  // distortion of the content under the edge; the fill stays solid).
   Thickness: 4
   Fillet: 0.25
   BezelWidth: 11
@@ -92,10 +83,13 @@ JwiftSolidOutline {
   LightIntensity: 1
   FresnelStrength: 0.55
   EdgeLightBottom: 0.03
+  // The lit stroke that rides the bevel, floated ABOVE content so the footer
+  // blur / art never eats the frame.
   BorderWidth: 1pt
   BorderBlur: 1pt
   BorderColor: rgba(255, 255, 255, 0.1)
   BorderFilter: Blur(3pt) Brightness(2) Saturate(4)
+  BorderLayer: 10
 }
 
 // ── JwiftNavGroup ───────────────────────────────────────────────────
