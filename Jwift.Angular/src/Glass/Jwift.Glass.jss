@@ -46,31 +46,20 @@ JwiftGlass {
 }
 
 // ── JwiftSolidGlass ─────────────────────────────────────────────────
-// Opaque content surface — list rows, cards, tiles. Subtle white fill
-// + luminous border with NO backdrop blur (it's not an overlay, it's
-// content sitting in the scroll flow). Use for things that should
-// read as "page content with edge", not "floating glass on top of
-// content". Matches the Apple Mail / Notes list-row aesthetic.
+// A SOLID content surface that carries the iOS-26 glass RIM — beveled,
+// fresnel-lit, SATURATING the host's own content at the edge — with NO
+// refraction and NO backdrop frost, but a SOLID fill. This is genuinely
+// "solid glass": a slab that reads as opaque content with an edge (list
+// rows, cards, tiles, banners), yet paints the real glass bevel — not a
+// flat panel with a plain CSS border. The rim is THIS node's own border,
+// floated over its content via BorderLayer (successor to the old separate
+// top-layer outline jiv). Works because Jaui decouples the glass border
+// from the glass fill — a glass slab (Thickness > 0) with Refraction 0 and
+// no backdrop renders a solid fill but still paints its glass bevel border.
+// Drop onto any clipped (Overflow: Hidden) card/banner/tile; the consumer
+// owns Background / BorderRadius / Width / Height. A jiv is a jiv — it can
+// have a glass outline no matter what its fill is.
 JwiftSolidGlass {
-  Background: rgba(255, 255, 255, 0.04)
-  BorderWidth: 1pt
-  BorderColor: rgba(255, 255, 255, 0.08)
-  BorderBlur: 0.25pt
-  BorderFilter: Brightness(1.05)
-}
-
-// ── JwiftGlassOutline ───────────────────────────────────────────────
-// A SOLID surface that carries the iOS-26 glass RIM — beveled, fresnel-lit,
-// SATURATING the host's own content at the edge — with NO refraction, NO
-// backdrop frost, and a SOLID fill. The successor to the old JwiftSolidOutline
-// overlay element: instead of a separate top-layer jiv, the rim is THIS node's
-// own border, floated over its content via BorderLayer. Works because Jaui
-// decouples the glass border from the glass fill — a glass slab (Thickness > 0)
-// with Refraction 0 and no backdrop renders a solid fill but still paints its
-// glass bevel border. Drop onto any clipped (Overflow: Hidden) card/banner/tile;
-// the consumer owns Background / BorderRadius / Width / Height. A jiv is a jiv —
-// it can have a glass outline no matter what its fill is.
-JwiftGlassOutline {
   // Glass slab geometry — drives the bevel/fresnel RIM only (Refraction 0 = no
   // distortion of the content under the edge; the fill stays solid).
   Thickness: 4
