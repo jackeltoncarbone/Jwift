@@ -30,9 +30,9 @@ JwiftGlass {
   ShadowBlur: 22pt
   ShadowOffsetY: 6pt
 
-  BackdropFilter: Blur(10pt) Brightness(1.25) Saturate(1.25) Contrast(0.75)
+  BackdropFilter: Contrast(0.65) Blur(5pt) Brightness(1.5) Saturate(1.5) 
 
-  Thickness: 4
+  Thickness: 6
   Fillet: 0.25
   BezelWidth: 6
   BezelScale: 0.5
