@@ -58,6 +58,10 @@ Jwift_TabItem {
   Align: Center
   Gap: 2pt
   FlexGrow: 1
+  // Grow from a ZERO basis (not from content size) so every tab is an EQUAL slice of the bar. With the
+  // default Auto basis each item starts at its label width and only shares the leftover space, so wider
+  // labels (e.g. "Center" vs "End", "Scale" vs "Spin") stayed wider → uneven, off-centre segments.
+  FlexBasis: 0pt
   BorderRadius: 56pt
   Interactive: true
   Cursor: Pointer

@@ -2,9 +2,13 @@ Jwift_SelectionIndicator {
   Position: Placed
   Layer: 1
 
-  Background: rgba(255, 255, 255, 0.1)
+  // A more UNIFORM frosted-white fill (0.18, not a thin 0.1 lens) with gentler amplification
+  // (Brightness 1.28, Saturate 1.1, not 1.5/1.25). The thin/bright version amplified whatever was
+  // behind it, so an uneven backdrop (e.g. a bright streak crossing one side) made the pill glow
+  // lopsided. The heavier even fill keeps it reading as one balanced bright-glass pill.
+  Background: rgba(255, 255, 255, 0.18)
   BorderRadius: 100pt
-  BackdropFilter: Brightness(1.5) Saturate(1.25) Contrast(1) Blur(0)
+  BackdropFilter: Brightness(1.28) Saturate(1.1) Contrast(1) Blur(0)
 
   Thickness: 0
   Fillet: 0.25

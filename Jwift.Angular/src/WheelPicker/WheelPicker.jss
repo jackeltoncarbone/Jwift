@@ -28,8 +28,10 @@ Jwift_WheelPicker {
   Perspective: 900
 }
 
-// The chosen row's highlight — a subtle capsule pinned at the vertical
-// center. Sits BEHIND the rows (Layer 0) so the centered item reads on top.
+// The chosen row's highlight — a bright-glass capsule pinned at the vertical
+// center, matching the nav's Jwift_SelectionIndicator (Background 0.1 +
+// BackdropFilter Brightness 1.5 Saturate 1.25). Sits BEHIND the rows (Layer 0)
+// so the centered item reads ON TOP of the pill, exactly like iOS.
 Jwift_WheelSelectionBand {
   Position: Placed
   Top: 50%
@@ -39,9 +41,12 @@ Jwift_WheelSelectionBand {
   TranslateY: -50%
   Layer: 0
   BorderRadius: 12pt
-  Background: rgba(255, 255, 255, 0.06)
+  Background: rgba(255, 255, 255, 0.12)
+  BackdropFilter: Brightness(1.5) Saturate(1.25)
+  // Hairline edge so the pill stays legible on a dark sheet (Brightness(1.5)
+  // of a near-black backdrop barely lifts) — defines the band like iOS.
   BorderWidth: 1pt
-  BorderColor: rgba(255, 255, 255, 0.14)
+  BorderColor: rgba(255, 255, 255, 0.16)
 }
 
 // Every row fills the viewport and centers its content; the row's drum

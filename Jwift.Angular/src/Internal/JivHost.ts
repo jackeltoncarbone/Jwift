@@ -188,8 +188,16 @@ export abstract class JivHost {
   }
 
   protected _detachOnDestroy(): void {
+    // Per the Presence.md framework-binding contract — and matching the plain
+    // Jaui `<jiv>` directive, which was already fixed — ngOnDestroy calls ONLY
+    // RequestLeave. The engine's PresenceManager fades the node out (Presence
+    // 1→0), then hard-removes it and cleans up its bridge hit handlers +
+    // registry slot on the settle callback (~400ms later). Calling Destroy()
+    // here too (as this did) enqueued a follow-on 'destroy' op that the worker
+    // processed BEFORE the spring could fire — defeating the entire fade, so
+    // every Jwift surface (modals, sheets, the camera chrome) popped away
+    // instead of dissolving out the way it dissolved in.
     this.Node.RequestLeave();
-    this.Node.Destroy();
   }
 
   private _apply(): void {
