@@ -16,6 +16,9 @@ Jwift_GlassBtn : JwiftGlass {
   // and light on :Hover without giving up the iOS-glass cushion.
   @Transition BackdropFilter { Duration: 140ms }
   @Transition BorderFilter { Duration: 140ms }
+  // Background springs too so a chrome-theme accent GLOW (added on :Hover/:Active by the
+  // ChromeThemeService overlay) blooms in lockstep. No-op when untinted (no Background change).
+  @Transition Background { Duration: 140ms }
   @Transition PointScale { Duration: 140ms }
   @Transition VisualScale { Duration: 140ms }
 }
