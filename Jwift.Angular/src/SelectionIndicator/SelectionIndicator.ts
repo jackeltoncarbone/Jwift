@@ -133,14 +133,10 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _wirePointerTracking(): void {
     const el = this._canvasRef?.Canvas?.Element;
     if (!el) return;
-    const toCanvasX = (clientX: number): number => {
-      const rect = el.getBoundingClientRect();
-      return clientX - rect.left;
-    };
-    const toCanvasY = (clientY: number): number => {
-      const rect = el.getBoundingClientRect();
-      return clientY - rect.top;
-    };
+    // Pointer → node space (device px) via the canvas's single source of truth, so the in-bounds gate
+    // matches the device-px node rects on ≥2× displays. See CanvasProxy.ClientToNodePoint.
+    const toCanvasX = (clientX: number): number => this._canvasRef?.Canvas?.ClientToNodePoint(clientX, 0)[0] ?? clientX;
+    const toCanvasY = (clientY: number): number => this._canvasRef?.Canvas?.ClientToNodePoint(0, clientY)[1] ?? clientY;
     // Whether the canvas point (x, y) lies inside the parent (tab strip)
     // bounds. The pointer listeners attach to the WHOLE canvas (we have
     // no per-tab DOM elements — Jaui draws everything in the worker), so

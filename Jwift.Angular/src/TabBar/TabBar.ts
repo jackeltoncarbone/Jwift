@@ -143,10 +143,10 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     const el = this._canvasRef?.Canvas?.Element;
     if (!el) return;
 
-    const toCanvasPoint = (clientX: number, clientY: number): [number, number] => {
-      const rect = el.getBoundingClientRect();
-      return [clientX - rect.left, clientY - rect.top];
-    };
+    // Pointer → node space (device px) via the canvas's single source of truth. Node rects are device px;
+    // a raw CSS-px pointer mis-hits on ≥2× displays. See CanvasProxy.ClientToNodePoint.
+    const toCanvasPoint = (clientX: number, clientY: number): [number, number] =>
+      this._canvasRef?.Canvas?.ClientToNodePoint(clientX, clientY) ?? [clientX, clientY];
 
     const onDown = (e: PointerEvent): void => {
       const [x, y] = toCanvasPoint(e.clientX, e.clientY);
