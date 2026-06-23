@@ -24,7 +24,7 @@ export { Card, type CardSize } from './Card/Card';
 export { CardFooter } from './Card/CardFooter';
 export { SectionHeader } from './SectionHeader/SectionHeader';
 export { JwiftStyleLoader } from './Jss/Jwift.Style.Loader';
-export { JivHost } from './Internal/JivHost';
+export { JivHost, JWIFT_GLASS_TINT } from './Internal/JivHost';
 export { ContextMenu } from './ContextMenu/ContextMenu';
 export { ContextMenuService, type ContextMenuItem } from './ContextMenu/ContextMenu.Service';
 export { TextInput, type TextInputSpan, type TextInputPeerCaret } from './TextInput/TextInput';

@@ -72,11 +72,14 @@ Jwift_ToolbarTrailing {
 // Canonical chevron-left glyph used inside `<glass-button shape="round">`
 // for back buttons. Consumer toolbars apply this directly so they don't
 // have to re-declare the icon font / size / color per page.
+// @GlassInk: runtime foreground var (set from JS via registry.SetVar); default = the authored look.
+@GlassInk: rgba(255, 255, 255, 0.92)
+
 Jwift_ToolbarBackGlyph {
   FontFamily: JwiftIcons
   FontSize: 14pt
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @GlassInk
   TextAlign: Center
 }
 

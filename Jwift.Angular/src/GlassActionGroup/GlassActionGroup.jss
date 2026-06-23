@@ -5,11 +5,14 @@
 // inline-action cell so consumers don't roll their own size/color per
 // page. 14pt 700-weight matches the toolbar back-button glyph baseline
 // (Jwift_ToolbarBackGlyph) so cells across the chrome read as one set.
+// @GlassInk: runtime foreground var (set from JS via registry.SetVar); default = the authored look.
+@GlassInk: rgba(255, 255, 255, 0.95)
+
 Jwift_GlassActionGlyph {
   FontFamily: JwiftIcons
   FontSize: 14pt
   FontWeight: 700
-  Color: rgba(255, 255, 255, 0.95)
+  Color: @GlassInk
   TextAlign: Center
 }
 

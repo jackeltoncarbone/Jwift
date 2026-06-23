@@ -1,12 +1,14 @@
 import {
   Directive,
   ElementRef,
+  InjectionToken,
   effect,
   forwardRef,
   inject,
   input,
   signal,
   untracked,
+  type Signal,
   type WritableSignal,
 } from '@angular/core';
 import {
@@ -22,6 +24,14 @@ import {
   type PointerPayload,
 } from 'jaui';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
+
+/**
+ * Ambient glass tint — an optional accent fill (a colour string, or null) every Jwift glass component
+ * blends into its background. Provide it scoped to a subtree (e.g. a themed drill page) and every glass
+ * surface under it picks up the tint; provide nothing (the default) and glass looks exactly as authored.
+ * The value is a Signal so the host re-applies reactively when the tint changes.
+ */
+export const JWIFT_GLASS_TINT = new InjectionToken<Signal<string | null>>('JWIFT_GLASS_TINT');
 
 /**
  * Base class for Jwift Angular components that ARE a Jaui Jiv (not a
@@ -76,6 +86,10 @@ export abstract class JivHost {
    *  `Height`, etc. and collapsing the panel to 0×0. */
   private readonly _styleOverride: WritableSignal<Record<string, unknown>> = signal({});
 
+  /** Optional ambient accent tint from a themed ancestor scope. Consumed only by components that opt in
+   *  via `_useGlassTint()` — so containers (toolbars, sheets) stay neutral while glass pills/buttons tint. */
+  private readonly _glassTintToken = inject(JWIFT_GLASS_TINT, { optional: true });
+
   /** Subclass setter for runtime Style overrides. Triggers the JivHost
    *  effect to re-fire `_apply()` with the merged class + override state.
    *  The read of `_styleOverride()` is wrapped in `untracked` so callers
@@ -95,6 +109,19 @@ export abstract class JivHost {
     const { [key]: _gone, ...rest } = cur;
     void _gone;
     this._styleOverride.set(rest);
+  }
+
+  /** Opt this glass component into the ambient accent tint. Call ONCE in the subclass constructor:
+   *  a themed ancestor scope (providing JWIFT_GLASS_TINT) then blends its accent into this surface's
+   *  background; no provided tint leaves the authored glass untouched. Background-only, so it composes
+   *  with other style overrides (e.g. a disabled Opacity). Containers that should stay neutral simply
+   *  don't call this. */
+  protected _useGlassTint(): void {
+    effect(() => {
+      const tint = this._glassTintToken ? this._glassTintToken() : null;
+      if (tint) { this.SetStyleOverride({ Background: tint }); }
+      else { this.ClearStyleOverride('Background'); }
+    });
   }
 
   constructor(sourceId: string, source: string, initialClassName: string, className: () => string) {

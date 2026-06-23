@@ -2,7 +2,12 @@
 // luminosity + flat 0.15 outline, backdrop, refraction, fresnel). Only
 // the differences are set below: crisper bevel + no specular for the
 // small pill edge, plus the interactive press/hover springs.
+// Runtime theme vars (set from JS via registry.SetVar). Defaults = the authored look, so an
+// unthemed app is unchanged; a themed scope (the drill page) sets @GlassTint to the accent fill.
+@GlassTint: rgba(255, 255, 255, 0)
+
 Jwift_GlassBtn : JwiftGlass {
+  Background: @GlassTint
   BezelScale: 0.25
   SpecularIntensity: 0
   SpecularSharpness: 10

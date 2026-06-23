@@ -1,7 +1,15 @@
 // Inherits the canonical Liquid-Glass look from JwiftGlass. Overrides
 // only the heavier floating shadow (the dropdown lifts above content)
 // and its own radius + interactive springs.
+// Runtime theme vars (set from JS via registry.SetVar). Defaults = the authored look, so an unthemed
+// app is unchanged; a themed scope sets @GlassTint (accent fill) and @GlassInk (foreground text/icon).
+@GlassTint: rgba(255, 255, 255, 0)
+@GlassInk: rgba(255, 255, 255, 0.85)
+@GlassHover: rgba(255, 255, 255, 0.14)
+@GlassActive: rgba(255, 255, 255, 0.22)
+
 Jwift_GlassDropdown : JwiftGlass {
+  Background: @GlassTint
   Overflow: Hidden;
   Direction: Column
   Justify: Start
@@ -73,15 +81,15 @@ Jwift_GlassDropdownCell {
 }
 
 Jwift_GlassDropdownCell:Hover {
-  Background: rgba(255, 255, 255, 0.14)
+  Background: @GlassHover
 }
 
 Jwift_GlassDropdownCell:Active {
-  Background: rgba(255, 255, 255, 0.22)
+  Background: @GlassActive
 }
 
 Jwift_GlassDropdownCell_Active : Jwift_GlassDropdownCell {
-  Background: rgba(255, 255, 255, 0.22)
+  Background: @GlassActive
 }
 
 // Disabled inline cell — dimmed + inert (e.g. Undo with nothing to undo). The
@@ -232,7 +240,7 @@ Jwift_GlassDropdownItemIcon {
   FontFamily: JwiftIcons
   FontSize: 15pt
   FontWeight: 500
-  Color: rgba(255, 255, 255, 0.85)
+  Color: @GlassInk
   TextAlign: Center
   Width: 22pt
 }
@@ -251,7 +259,7 @@ Jwift_GlassDropdownItemLabel {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 500
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @GlassInk
   LetterSpacing: 0.1pt
   TextAlign: Left
   MaxLines: 1
