@@ -133,8 +133,8 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _wirePointerTracking(): void {
     const el = this._canvasRef?.Canvas?.Element;
     if (!el) return;
-    // Pointer → node space (device px) via the canvas's single source of truth, so the in-bounds gate
-    // matches the device-px node rects on ≥2× displays. See CanvasProxy.ClientToNodePoint.
+    // Pointer → node space (CSS px, canvas-origin) via the canvas's single source of truth, matching the
+    // CSS-px node rects the worker emits, so the in-bounds gate is correct on HiDPI displays too.
     const toCanvasX = (clientX: number): number => this._canvasRef?.Canvas?.ClientToNodePoint(clientX, 0)[0] ?? clientX;
     const toCanvasY = (clientY: number): number => this._canvasRef?.Canvas?.ClientToNodePoint(0, clientY)[1] ?? clientY;
     // Whether the canvas point (x, y) lies inside the parent (tab strip)

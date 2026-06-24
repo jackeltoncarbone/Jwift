@@ -90,7 +90,12 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
 
   private _canvasRef = inject(Jaui, { optional: true });
   private _rafId = 0;
-  private _pointerId: number | null = null;
+  /** The id of the pointer/finger currently driving the gesture — a PointerEvent `pointerId` for
+   *  mouse/pen, or a Touch `identifier` for touch. `null` when idle. */
+  private _activePointer: number | null = null;
+  /** Whether the active gesture came in via the touch-event path (so the pointer-event handlers ignore
+   *  it, and vice-versa). */
+  private _activeIsTouch = false;
   private _unbind: (() => void) | null = null;
   private _pressLatchTimer: ReturnType<typeof setTimeout> | null = null;
   // Hold the press latch through the indicator's slide-to-new-tab.
@@ -139,79 +144,138 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     return -1;
   }
 
+  // ── Gesture core (input-source-agnostic) ──────────────────────────
+  // Pointer → node space (CSS px, canvas-origin) via the canvas's single source of truth, matching the
+  // CSS-px rects the worker emits for each TabItem. See CanvasProxy.ClientToNodePoint.
+  private _toNode(clientX: number, clientY: number): [number, number] {
+    return this._canvasRef?.Canvas?.ClientToNodePoint(clientX, clientY) ?? [clientX, clientY];
+  }
+
+  /** Begin tracking a press at a client point. `id` is a pointerId (mouse/pen) or a touch identifier.
+   *  Returns true if the point landed on a tab (so the caller can capture the pointer). */
+  private _press(clientX: number, clientY: number, id: number, isTouch: boolean): boolean {
+    const [x, y] = this._toNode(clientX, clientY);
+    const idx = this._hitIndex(x, y);
+    if (idx < 0) return false;
+    // Cancel any pending press-latch release from a previous gesture so a fresh tap takes over cleanly
+    // instead of being cleared mid-press.
+    if (this._pressLatchTimer) {
+      clearTimeout(this._pressLatchTimer);
+      this._pressLatchTimer = null;
+    }
+    this._activePointer = id;
+    this._activeIsTouch = isTouch;
+    this._dragIndex.set(idx);
+    return true;
+  }
+
+  /** Update the drag-in-progress index as the pointer/finger moves. */
+  private _drag(clientX: number, clientY: number): void {
+    const [x, y] = this._toNode(clientX, clientY);
+    const idx = this._hitIndex(x, y);
+    if (idx < 0 || idx === this._dragIndex()) return;
+    this._dragIndex.set(idx);
+  }
+
+  /** Commit the gesture: emit if it landed on a different tab, then release with the press latch. */
+  private _release(): void {
+    const finalIdx = this._dragIndex();
+    this._activePointer = null;
+    if (finalIdx !== null && finalIdx !== this.selected()) {
+      // Emit BEFORE clearing _dragIndex so the consumer's selected() update lands before
+      // EffectiveSelected falls back to selected().
+      this.selectedChange.emit(finalIdx);
+      // Keep IsPressed latched through the slide-to-new-tab animation so the indicator glass stays
+      // engaged while the pill travels, then releases at the new position. Without this latch, a tap
+      // (~50ms) is too short for the press spring to reach a visible glass state and the slide reads
+      // as a flat pill moving.
+      this._pressLatchTimer = setTimeout(() => {
+        this._pressLatchTimer = null;
+        if (this._activePointer === null) this._dragIndex.set(null);
+      }, TabBar._SlideLatchMs);
+    } else {
+      this._dragIndex.set(null);
+    }
+  }
+
   private _wireDragGesture(): void {
     const el = this._canvasRef?.Canvas?.Element;
     if (!el) return;
 
-    // Pointer → node space (device px) via the canvas's single source of truth. Node rects are device px;
-    // a raw CSS-px pointer mis-hits on ≥2× displays. See CanvasProxy.ClientToNodePoint.
-    const toCanvasPoint = (clientX: number, clientY: number): [number, number] =>
-      this._canvasRef?.Canvas?.ClientToNodePoint(clientX, clientY) ?? [clientX, clientY];
-
+    // ── Mouse / pen — real PointerEvents fire normally. We ignore touch-type pointers here because, in
+    // Jaui's worker-mode input bridge, the canvas `touchstart` handler calls preventDefault(), which
+    // suppresses the browser's synthesis of PointerEvents for touches (see Bridge.Main.ts). Touch is
+    // handled via the touch-event path below — without it EVERY tab bar is dead on touch devices.
     const onDown = (e: PointerEvent): void => {
-      const [x, y] = toCanvasPoint(e.clientX, e.clientY);
-      const idx = this._hitIndex(x, y);
-      if (idx < 0) return;
-      // Cancel any pending press-latch release from a previous gesture so
-      // a fresh tap takes over cleanly instead of being cleared mid-press.
-      if (this._pressLatchTimer) {
-        clearTimeout(this._pressLatchTimer);
-        this._pressLatchTimer = null;
+      if (e.pointerType === 'touch') return;
+      if (this._press(e.clientX, e.clientY, e.pointerId, false)) {
+        // Optimistic capture so pointermove reaches us even if the pointer slips outside the canvas —
+        // we re-hit-test each move and clamp.
+        try { el.setPointerCapture(e.pointerId); } catch {}
       }
-      this._pointerId = e.pointerId;
-      this._dragIndex.set(idx);
-      // Optimistic capture so pointermove reaches us even if the pointer
-      // slips outside the canvas — we re-hit-test each move and clamp.
-      try { el.setPointerCapture(e.pointerId); } catch {}
     };
-
     const onMove = (e: PointerEvent): void => {
-      if (this._pointerId !== e.pointerId) return;
-      const [x, y] = toCanvasPoint(e.clientX, e.clientY);
-      const idx = this._hitIndex(x, y);
-      if (idx < 0 || idx === this._dragIndex()) return;
-      this._dragIndex.set(idx);
+      if (this._activeIsTouch || this._activePointer !== e.pointerId) return;
+      this._drag(e.clientX, e.clientY);
     };
-
     const onUp = (e: PointerEvent): void => {
-      if (this._pointerId !== e.pointerId) return;
-      const finalIdx = this._dragIndex();
-      this._pointerId = null;
+      if (this._activeIsTouch || this._activePointer !== e.pointerId) return;
       try { el.releasePointerCapture(e.pointerId); } catch {}
-      if (finalIdx !== null && finalIdx !== this.selected()) {
-        // Emit BEFORE clearing _dragIndex so the consumer's selected()
-        // update lands before EffectiveSelected falls back to selected().
-        this.selectedChange.emit(finalIdx);
-        // Keep IsPressed latched through the slide-to-new-tab animation
-        // so the indicator glass stays engaged while the pill travels,
-        // then releases at the new position. Without this latch, a tap
-        // (~50ms) is too short for the press spring to reach a visible
-        // glass state and the slide reads as a flat pill moving.
-        this._pressLatchTimer = setTimeout(() => {
-          this._pressLatchTimer = null;
-          if (this._pointerId === null) this._dragIndex.set(null);
-        }, TabBar._SlideLatchMs);
-      } else {
-        this._dragIndex.set(null);
-      }
+      this._release();
     };
-
     const onCancel = (e: PointerEvent): void => {
-      if (this._pointerId !== e.pointerId) return;
-      this._pointerId = null;
+      if (this._activeIsTouch || this._activePointer !== e.pointerId) return;
+      this._activePointer = null;
       this._dragIndex.set(null);
       try { el.releasePointerCapture(e.pointerId); } catch {}
+    };
+
+    // ── Touch — the only path that reaches us on touch devices (pointer events are suppressed; see
+    // above). Mirrors Jaui's own bridge: read clientX/Y straight off the Touch. Passive (we never
+    // preventDefault — Jaui's touchstart handler already does, and `touch-action: none` kills scroll).
+    const activeTouch = (e: TouchEvent): Touch | undefined => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === this._activePointer) return t;
+      }
+      return undefined;
+    };
+    const onTouchStart = (e: TouchEvent): void => {
+      if (this._activePointer !== null) return; // already tracking a finger
+      const t = e.changedTouches[0];
+      if (t) this._press(t.clientX, t.clientY, t.identifier, true);
+    };
+    const onTouchMove = (e: TouchEvent): void => {
+      const t = this._activeIsTouch ? activeTouch(e) : undefined;
+      if (t) this._drag(t.clientX, t.clientY);
+    };
+    const onTouchEnd = (e: TouchEvent): void => {
+      if (this._activeIsTouch && activeTouch(e)) this._release();
+    };
+    const onTouchCancel = (e: TouchEvent): void => {
+      if (this._activeIsTouch && activeTouch(e)) {
+        this._activePointer = null;
+        this._dragIndex.set(null);
+      }
     };
 
     el.addEventListener('pointerdown', onDown);
     el.addEventListener('pointermove', onMove);
     el.addEventListener('pointerup', onUp);
     el.addEventListener('pointercancel', onCancel);
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: true });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    el.addEventListener('touchcancel', onTouchCancel, { passive: true });
     this._unbind = () => {
       el.removeEventListener('pointerdown', onDown);
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onCancel);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchCancel);
     };
   }
 }

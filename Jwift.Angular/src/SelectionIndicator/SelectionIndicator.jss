@@ -70,10 +70,18 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
 
   BackdropFilter: Brightness(1.5) Saturate(1.5) Contrast(1) Blur(0)
 
+  // BezelWidth stays close to the base 8: the refraction's flat inner region is the rounded shape inset
+  // by BezelWidth (inner corner radius ≈ outerRadius − BezelWidth), so a wide bezel on this small pill
+  // squared off the refraction relative to the fully-rounded pill border. 8 keeps the inner refraction
+  // concentric with the pill.
+  //
+  // Fillet drives the central glass BULGE (a radial dome normalized by the panel's LONG axis), which on
+  // a wide pill forms a horizontal band that doesn't round with the endcaps. Keeping it low lets the
+  // pill-aware EDGE refraction dominate so the whole effect follows the pill instead of reading boxy.
   Thickness: 8
-  Fillet: 1
+  Fillet: 0.3
   Refraction: -1
-  BezelWidth: 16
+  BezelWidth: 8
   BezelScale: 0.25
   FresnelStrength: 0.35
   ChromaticAberration: 0.2
