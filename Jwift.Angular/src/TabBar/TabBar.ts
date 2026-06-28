@@ -99,22 +99,6 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     return items[this.EffectiveSelected()]?.Node ?? null;
   });
 
-  /** Which tab the indicator (pill) is PHYSICALLY over right now — its sprung
-   *  position, reported each frame by <selection-indicator>. `null` until first
-   *  report (consumers fall back to `selected`). Used by accent so the accent
-   *  travels WITH the pill (the tab it's over), not the cursor's tab (which jumps
-   *  ahead of the springing pill) nor the committed selection (which lags). */
-  readonly IndicatorOverIndex = signal<number | null>(null);
-
-  /** Called by <selection-indicator> each frame with the pill's sprung centre
-   *  (canvas space). Hit-tests it to a tab index; only writes on a boundary
-   *  cross so it doesn't churn the signal every frame. */
-  ReportIndicatorCenter(centerX: number, centerY: number): void {
-    const idx = this._hitIndex(centerX, centerY);
-    const next = idx >= 0 ? idx : null;
-    if (next !== null && next !== this.IndicatorOverIndex()) this.IndicatorOverIndex.set(next);
-  }
-
   private static readonly _ExpandThreshold = 560;
 
   private _canvasRef = inject(Jaui, { optional: true });

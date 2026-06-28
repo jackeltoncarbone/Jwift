@@ -253,15 +253,6 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       else this.ClearStyleOverride('Layer');
     }
 
-    // Report the pill's SPRUNG centre (canvas space, from WatchRect) to the bar
-    // so per-tab accent can light the tab the pill is physically OVER — travelling
-    // with the pill as it slides, instead of the cursor's tab (ahead) or the
-    // committed selection (behind).
-    this._tabBar?.ReportIndicatorCenter(
-      this.Node.X + this.Node.Width / 2,
-      this.Node.Y + this.Node.Height / 2,
-    );
-
     const [padTRaw, padRRaw, padBRaw, padLRaw] = this._lastPad;
     const padT = padTRaw * pressAmount;
     const padR = padRRaw * pressAmount;

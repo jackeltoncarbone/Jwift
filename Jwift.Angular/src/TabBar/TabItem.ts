@@ -70,15 +70,14 @@ export class TabItem extends JivHost implements OnInit, OnDestroy {
   readonly _active = computed(() => this._parentBar.EffectiveSelected() === this._index());
   private _expanded = computed(() => this._parentBar.Expanded());
 
-  /** The tab the INDICATOR is physically over (its sprung position), so the accent
-   *  travels WITH the pill as it slides — not the cursor's tab (EffectiveSelected,
-   *  which jumps ahead of the springing pill = "follows my hover") and not the
-   *  committed `selected` (which lags until release). Falls back to `selected`
-   *  before the indicator first reports (or if there's no indicator). */
-  private _selectedTab = computed(() => {
-    const over = this._parentBar.IndicatorOverIndex();
-    return (over ?? this._parentBar.selected()) === this._index();
-  });
+  /** The tab the indicator is targeting — EffectiveSelected (`_dragIndex ?? selected`).
+   *  A plain Angular signal set by pointer events + navigation, so changes always
+   *  trigger change detection and the accent lands correctly whether idle, dragging,
+   *  or just-released. (A prior rAF/rect-driven "physical pill position" approach
+   *  was abandoned: the indicator's Placed-node rect goes stale on main at rest, and
+   *  rAF signal writes don't drive CD once pointer events stop — so the accent stuck
+   *  on the boot tab / went white after release.) */
+  private _selectedTab = computed(() => this._parentBar.EffectiveSelected() === this._index());
 
   /** Accent colour to paint on this item's icon+label right now, or undefined to
    *  use the class default. Selected-accent shows when this is the committed
