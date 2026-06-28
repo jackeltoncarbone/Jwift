@@ -77,7 +77,7 @@ JwiftSolidGlass {
   BorderWidth: 1pt
   BorderBlur: 1pt
   BorderColor: rgba(255, 255, 255, 0.1)
-  BorderFilter: Blur(3pt) Brightness(2) Saturate(4)
+  BorderFilter: Blur(4pt) Brightness(2) Saturate(2)
   BorderLayer: 10
 }
 

@@ -57,6 +57,10 @@ Jwift_TabItem {
   Justify: Center
   Align: Center
   Gap: 2pt
+  // Between the indicator's two states: ABOVE the resting pill (Layer 0) so the
+  // label is crisp at rest, but BELOW the pressed pill (Layer 2) so the press-
+  // glass lifts over and magnifies it.
+  Layer: 1
   FlexGrow: 1
   // Grow from a ZERO basis (not from content size) so every tab is an EQUAL slice of the bar. With the
   // default Auto basis each item starts at its label width and only shares the leftover space, so wider

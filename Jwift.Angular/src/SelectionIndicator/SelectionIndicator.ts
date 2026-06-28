@@ -57,6 +57,10 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   // the JSS @Transition durations on the glass props (280ms).
   private _pressAmount = new Spring(0, 220, 26, 1);
   private _firstValid = false;
+  /** Whether we're currently holding the Layer:2 override (pill above the text)
+   *  through a press + its release settle. Tracked so we only set/clear the
+   *  override on transitions, not every frame. */
+  private _holdAbove = false;
   // The current target / parent we've subscribed to per-frame rect
   // snapshots from. With Jaui in the worker, JivHandle.X/Y/Width/Height
   // on main are zero unless WatchRect(true) has been set; the worker
@@ -234,6 +238,20 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     this._pressAmount.Target = isPressed ? 1 : 0;
     this._pressAmount.Step(dt);
     const pressAmount = this._pressAmount.Value;
+
+    // Keep the pill ABOVE the label for the WHOLE press gesture INCLUDING the
+    // release settle. The base/pressed JSS classes flip Layer (0↔2) the instant
+    // the pressed flag changes — so on release the pill would drop below the text
+    // while the magnify spring is still relaxing, hiding the settle. Hold a
+    // Layer:2 style override (it merges over the class) until pressAmount has
+    // fully relaxed, then clear it so the resting pill sits beneath the crisp
+    // label again. Only fires on the two transitions, not per frame.
+    const holdAbove = isPressed || pressAmount > 0.01;
+    if (holdAbove !== this._holdAbove) {
+      this._holdAbove = holdAbove;
+      if (holdAbove) this.SetStyleOverride({ Layer: 2 });
+      else this.ClearStyleOverride('Layer');
+    }
 
     const [padTRaw, padRRaw, padBRaw, padLRaw] = this._lastPad;
     const padT = padTRaw * pressAmount;
