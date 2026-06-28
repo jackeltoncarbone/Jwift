@@ -12,7 +12,13 @@ Jwift_SelectionIndicator {
   // lopsided. The heavier even fill keeps it reading as one balanced bright-glass pill.
   Background: rgba(255, 255, 255, 0.18)
   BorderRadius: 100pt
-  BackdropFilter: Brightness(1.28) Saturate(1.1) Contrast(1) Blur(0)
+  // NEUTRAL backdrop at rest (Brightness/Saturate = 1). The pill's highlight comes
+  // from the white Background fill, NOT a backdrop boost — so on release the
+  // pressed Brightness(1.5)/Saturate(1.5) animates all the way back to 1.0, and by
+  // the time the layer drops below the text the glass has ZERO effect on it → the
+  // layer swap is invisible (seamless). A non-1.0 resting filter left a residual
+  // tint that popped off the instant the layer dropped.
+  BackdropFilter: Brightness(1) Saturate(1) Contrast(1) Blur(0)
 
   // Real bevel glass (was flat Thickness 0/Refraction 0). The flat interior
   // (inside the bezel) samples the backdrop ~1:1 so the active label's CENTRE

@@ -37,9 +37,9 @@ import TabBarJss from './TabBar.jss';
   imports: [Jext, Icon],
   template: `
     @if (icon()) {
-      <icon [class]="IconClass()" [Name]="_active() && iconFill() ? iconFill() : icon()" />
+      <icon [class]="IconClass()" [Name]="_active() && iconFill() ? iconFill() : icon()" [color]="AppliedAccent()" />
     }
-    <jext [class]="LabelClass()" [text]="label()" />
+    <jext [class]="LabelClass()" [text]="label()" [textStyle]="LabelTextStyle()" />
   `,
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,6 +52,15 @@ export class TabItem extends JivHost implements OnInit, OnDestroy {
   readonly iconFill = input<string>('');
   readonly label = input<string>('');
 
+  // ── Accent (per-item; gated by the bar master) ──────────────────────────
+  /** This item's accent colour. Falls back to the bar's default Accent. */
+  readonly accent = input<string | undefined>(undefined);
+  /** This item opts into accent when it's the SELECTED tab. */
+  readonly accentSelected = input<boolean>(false);
+  /** This item opts into accent on HOVER (paints once the engine hover signal
+   *  is wired; the opt-in is honoured now so settings are complete). */
+  readonly accentHover = input<boolean>(false);
+
   private _parentBar = inject(TabBar);
 
   private _index = computed(() => this._parentBar.Items().indexOf(this));
@@ -60,6 +69,31 @@ export class TabItem extends JivHost implements OnInit, OnDestroy {
   // just after the release commits a new selection.
   readonly _active = computed(() => this._parentBar.EffectiveSelected() === this._index());
   private _expanded = computed(() => this._parentBar.Expanded());
+
+  /** The tab the INDICATOR is physically over (its sprung position), so the accent
+   *  travels WITH the pill as it slides — not the cursor's tab (EffectiveSelected,
+   *  which jumps ahead of the springing pill = "follows my hover") and not the
+   *  committed `selected` (which lags until release). Falls back to `selected`
+   *  before the indicator first reports (or if there's no indicator). */
+  private _selectedTab = computed(() => {
+    const over = this._parentBar.IndicatorOverIndex();
+    return (over ?? this._parentBar.selected()) === this._index();
+  });
+
+  /** Accent colour to paint on this item's icon+label right now, or undefined to
+   *  use the class default. Selected-accent shows when this is the committed
+   *  selected tab AND both the bar master AND the item opt into selected-accent.
+   *  Colour resolves to the item's own accent, else the bar's default Accent.
+   *  (Hover trigger is added once the engine exposes per-node hover.) */
+  readonly AppliedAccent = computed<string | undefined>(() => {
+    const showSelected = this._selectedTab() && this._parentBar.AccentSelected() && this.accentSelected();
+    if (!showSelected) return undefined;
+    return this.accent() ?? this._parentBar.Accent();
+  });
+  readonly LabelTextStyle = computed(() => {
+    const c = this.AppliedAccent();
+    return c ? { Color: c } : undefined;
+  });
 
   readonly IconClass = computed(() => {
     const a = this._active();

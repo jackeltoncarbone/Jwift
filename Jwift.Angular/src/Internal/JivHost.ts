@@ -86,6 +86,13 @@ export abstract class JivHost {
    *  `Height`, etc. and collapsing the panel to 0×0. */
   private readonly _styleOverride: WritableSignal<Record<string, unknown>> = signal({});
 
+  /** Per-instance TextStyle overrides (e.g. an Icon tinting its glyph to a
+   *  runtime accent colour). Merged ON TOP of the JSS class's TextStyle inside
+   *  `_buildOpts`, routed through a signal so JivHost's effect re-fires `_apply()`
+   *  with the FULL class state on change — same contract as `_styleOverride`,
+   *  but for the TextStyle bucket (Color / FontWeight / …) rather than Style. */
+  private readonly _textStyleOverride: WritableSignal<Record<string, unknown>> = signal({});
+
   /** Optional ambient accent tint from a themed ancestor scope. Consumed only by components that opt in
    *  via `_useGlassTint()` — so containers (toolbars, sheets) stay neutral while glass pills/buttons tint. */
   private readonly _glassTintToken = inject(JWIFT_GLASS_TINT, { optional: true });
@@ -109,6 +116,22 @@ export abstract class JivHost {
     const { [key]: _gone, ...rest } = cur;
     void _gone;
     this._styleOverride.set(rest);
+  }
+
+  /** Subclass setter for runtime TextStyle overrides (e.g. an accent Color on a
+   *  glyph/label). Same untracked-read + re-fire contract as SetStyleOverride. */
+  protected SetTextStyleOverride(patch: Record<string, unknown>): void {
+    const next = { ...untracked(() => this._textStyleOverride()), ...patch };
+    this._textStyleOverride.set(next);
+  }
+
+  /** Clear a single TextStyle override key (revert to the class's value). */
+  protected ClearTextStyleOverride(key: string): void {
+    const cur = untracked(() => this._textStyleOverride());
+    if (!(key in cur)) return;
+    const { [key]: _gone, ...rest } = cur;
+    void _gone;
+    this._textStyleOverride.set(rest);
   }
 
   /** Opt this glass component into the ambient accent tint. Call ONCE in the subclass constructor:
@@ -166,6 +189,7 @@ export abstract class JivHost {
       this._registry.Version();
       this._className();
       this._styleOverride();
+      this._textStyleOverride();
       this._apply();
     });
 
@@ -267,7 +291,9 @@ export abstract class JivHost {
       ChildLayout:   fromClass?.ChildLayout
         ? ({ ...this.Node.ChildLayout, ...fromClass.ChildLayout } as Record<string, unknown>)
         : undefined,
-      TextStyle:     fromClass?.TextStyle     ? ({ ...fromClass.TextStyle }   as Record<string, unknown>) : undefined,
+      TextStyle:     (fromClass?.TextStyle || Object.keys(this._textStyleOverride()).length > 0)
+        ? ({ ...fromClass?.TextStyle, ...this._textStyleOverride() } as Record<string, unknown>)
+        : undefined,
       // Pseudo-selector rules — both `:Foo` and `:(expr)` from JSS —
       // ride PredicateStyles as one consolidated list. The legacy 10
       // *Style / *TextStyle slot fields were retired; the parser now

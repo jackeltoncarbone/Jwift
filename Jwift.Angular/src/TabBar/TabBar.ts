@@ -49,6 +49,19 @@ import TabBarJss from './TabBar.jss';
 export class TabBar extends JivHost implements OnInit, OnDestroy {
   readonly selected = input<number>(0);
 
+  // ── Accent settings (master) ──────────────────────────────────────────────
+  // The bar is the GATE: each item carries its own accent + opt-ins regardless,
+  // but they only paint when the bar allows that category through. Effective per
+  // item: selected-accent ⇔ bar.AccentSelected && item.accentSelected; colour ⇔
+  // item.accent ?? bar.Accent.
+  /** Default accent colour for items that don't set their own. */
+  readonly Accent = input<string | undefined>(undefined);
+  /** Master gate: allow per-item SELECTED-accent through. */
+  readonly AccentSelected = input<boolean>(false);
+  /** Master gate: allow per-item HOVER-accent through (hover wiring lands with
+   *  the engine hover-exposure; the gate is here so settings are complete). */
+  readonly AccentHover = input<boolean>(false);
+
   /** Extra JSS class(es) merged AFTER Jwift_TabBar — consumer-side sizing for non-nav uses (a
    *  settings segmented bar sets Width/Height here). Resolve merges left-to-right, consumer wins. */
   readonly Class = input<string>('');
@@ -85,6 +98,22 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     const items = this.Items();
     return items[this.EffectiveSelected()]?.Node ?? null;
   });
+
+  /** Which tab the indicator (pill) is PHYSICALLY over right now — its sprung
+   *  position, reported each frame by <selection-indicator>. `null` until first
+   *  report (consumers fall back to `selected`). Used by accent so the accent
+   *  travels WITH the pill (the tab it's over), not the cursor's tab (which jumps
+   *  ahead of the springing pill) nor the committed selection (which lags). */
+  readonly IndicatorOverIndex = signal<number | null>(null);
+
+  /** Called by <selection-indicator> each frame with the pill's sprung centre
+   *  (canvas space). Hit-tests it to a tab index; only writes on a boundary
+   *  cross so it doesn't churn the signal every frame. */
+  ReportIndicatorCenter(centerX: number, centerY: number): void {
+    const idx = this._hitIndex(centerX, centerY);
+    const next = idx >= 0 ? idx : null;
+    if (next !== null && next !== this.IndicatorOverIndex()) this.IndicatorOverIndex.set(next);
+  }
 
   private static readonly _ExpandThreshold = 560;
 

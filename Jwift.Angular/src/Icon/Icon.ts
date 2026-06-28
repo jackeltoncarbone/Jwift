@@ -37,6 +37,9 @@ import IconJss from './Icon.jss';
 export class Icon extends JivHost implements OnInit, OnDestroy {
   readonly Name = input.required<string>();
   readonly className = input<string | undefined>(undefined, { alias: 'class' });
+  /** Optional runtime glyph colour (e.g. an accent tint). When set it overrides
+   *  the class Color; when cleared the class Color (default) applies. */
+  readonly color = input<string | undefined>(undefined);
 
   constructor() {
     super('Icon', IconJss, 'Jwift_Icon', () => this.className() ?? 'Jwift_Icon');
@@ -46,6 +49,12 @@ export class Icon extends JivHost implements OnInit, OnDestroy {
       const cp = IconData[this.Name().toLowerCase()];
       const glyph = cp != null ? String.fromCodePoint(cp) : '';
       this.Node.SetText(glyph, { FontFamily: 'JwiftIcons' });
+    });
+    // Runtime accent colour → TextStyle override (merges over the class Color).
+    effect(() => {
+      const c = this.color();
+      if (c) this.SetTextStyleOverride({ Color: c });
+      else this.ClearTextStyleOverride('Color');
     });
   }
 
