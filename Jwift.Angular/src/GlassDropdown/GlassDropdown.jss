@@ -21,7 +21,10 @@ Jwift_GlassDropdown : JwiftGlass {
   ShadowBlur: 28pt
   ShadowOffsetY: 8pt
 
-  BorderRadius: 42pt
+  // Concentric with the 44pt pill rows at the 4pt closed padding; the open
+  // state restates its own derivation below. Authored = apparent under the
+  // corner compensation, so the old eyeballed 42 is retired.
+  BorderRadius: 24pt
 
   Interactive: true
   Cursor: Pointer
@@ -162,7 +165,7 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown {
   Align: Stretch
   Padding: 6pt
   Gap: 0pt
-  BorderRadius: 45pt
+  BorderRadius: 28pt
 }
 
 // Item geometry follows iOS 26 popover-menu proportions: 44pt-tall pill
