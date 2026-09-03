@@ -3,36 +3,50 @@ import {
   Component,
   OnDestroy,
   OnInit,
-  computed,
   forwardRef,
   input,
   output,
 } from '@angular/core';
-import { Jiv } from 'jaui-angular';
+import { Jiv, Jext } from 'jaui-angular';
+import { Icon } from '../Icon/Icon';
 import { JivHost } from '../Internal/JivHost';
 import DrawerJss from './Drawer.jss';
 
 /**
- * `<drawer>` — Jwift bottom-anchored sliding drawer.
+ * `<drawer>` — the app's floating-sheet CARD: one Liquid-Glass surface that owns
+ * the grabber, the centered title, the top-left close, the concentric radius,
+ * and the rise motion, so every bottom sheet looks and moves identically.
  *
- *   <drawer [open]="cart.IsOpen()" (close)="cart.Close()">
- *     <!-- projected content: body of the drawer -->
- *   </drawer>
+ *   @if (Picker()) {
+ *     <jiv [class]="Entered() ? 'LibScrim' : 'LibScrimEnter'" (pointerdown)="Close()" />
+ *     <jiv class="SheetDock">
+ *       <drawer [entered]="Entered()" sheetTitle="Pictures" [sheetFill]="true" (close)="Close()">
+ *         ...body content...
+ *         <jiv sheetFooter>...pinned footer...</jiv>
+ *       </drawer>
+ *     </jiv>
+ *   }
  *
- * Spawns a full-canvas backdrop and a bottom-anchored panel; tapping the
- * backdrop or pressing Escape emits `close`. The panel renders projected
- * children via `<ng-content>` — consumers describe only the body.
+ * A jaui jiv parents by DI at its declaration site, so this shell IS the card
+ * and the projected content lands directly inside it; the full-canvas scrim and
+ * the centering `SheetDock` are the two shared-class siblings the consumer wraps
+ * around it (a single jiv-host cannot emit siblings of itself). `[entered]`
+ * drives the rise; the X and the scrim tap emit `close`.
  */
 @Component({
   selector: 'drawer',
   standalone: true,
-  imports: [Jiv],
+  imports: [Jiv, Jext, Icon],
   template: `
-    <jiv [class]="BackdropClass()" (click)="close.emit()" />
-    <jiv [class]="PanelClass()">
-      <jiv class="Jwift_DrawerHandle" />
-      <ng-content></ng-content>
-    </jiv>
+    <jiv class="Jwift_DrawerHandle" />
+    @if (sheetTitle()) {
+      <jext class="Jwift_DrawerTitle" [text]="sheetTitle()" />
+      <jiv class="Jwift_DrawerClose" (click)="close.emit()">
+        <icon class="Jwift_DrawerCloseGlyph" Name="xmark" />
+      </jiv>
+    }
+    <ng-content></ng-content>
+    <ng-content select="[sheetFooter]"></ng-content>
   `,
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,30 +55,28 @@ import DrawerJss from './Drawer.jss';
   ],
 })
 export class Drawer extends JivHost implements OnInit, OnDestroy {
-  readonly open  = input<boolean>(false);
-  readonly close = output<void>();
-
-  protected BackdropClass = computed(() =>
-    this.open() ? 'Jwift_DrawerBackdrop_Open' : 'Jwift_DrawerBackdrop');
-  protected PanelClass = computed(() =>
-    this.open() ? 'Jwift_DrawerPanel_Open' : 'Jwift_DrawerPanel');
-
-  private _onKey = (e: KeyboardEvent): void => {
-    if (this.open() && e.key === 'Escape') this.close.emit();
-  };
+  /** The settled/entered pose. Flip true a frame after mount (rAF) to play the
+   *  rise; the consumer owns this so the card and its scrim animate in step. */
+  readonly entered   = input<boolean>(false);
+  /** The header title; also gates the built-in grabber+title+close header. */
+  readonly sheetTitle = input<string>('');
+  /** A tall, definite-height browser card (its body scrolls, its [sheetFooter]
+   *  pins) instead of the default card that sizes to its content. */
+  readonly sheetFill  = input<boolean>(false);
+  readonly close      = output<void>();
 
   constructor() {
-    super('Drawer', DrawerJss, 'Jwift_DrawerRoot', () =>
-      this.open() ? 'Jwift_DrawerRoot_Open' : 'Jwift_DrawerRoot');
+    super('Drawer', DrawerJss, 'Jwift_DrawerCardEnter', () => {
+      const base = this.entered() ? 'Jwift_DrawerCard' : 'Jwift_DrawerCardEnter';
+      return this.sheetFill() ? base + ' Jwift_DrawerCardFill' : base;
+    });
   }
 
   ngOnInit(): void {
     this._attachOnInit();
-    document.addEventListener('keydown', this._onKey);
   }
 
   ngOnDestroy(): void {
-    document.removeEventListener('keydown', this._onKey);
     this._detachOnDestroy();
   }
 }

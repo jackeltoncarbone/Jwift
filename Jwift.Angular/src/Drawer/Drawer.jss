@@ -1,81 +1,102 @@
-// Drawer chrome: full-canvas overlay (backdrop) + bottom-anchored sliding
-// panel. State swap drives the slide and the backdrop fade — class names
-// match the open/closed input on the <drawer> component.
+// The floating-sheet CARD — the app's ONE bottom-sheet surface. A jaui jiv's
+// parent is resolved by DI at its DECLARATION site (Jiv injects skipSelf), so a
+// component that projects content can only ever parent that content to its OWN
+// root jiv — never a nested template jiv. This shell therefore IS the card: the
+// projected content lands directly inside it. The full-canvas scrim and the
+// centering dock are two shared-class lines the consumer wraps around it
+// (a Placed scrim + a flex SheetDock), because those must be SIBLINGS of the
+// card, which a single jiv-host cannot emit. The card sizes to its content by
+// default (a shape gallery) or fills tall when [sheetFill] (a library browser),
+// and rides up from below on [entered] via the same VisualTranslate the app's
+// SheetEnter used.
 
-Jwift_DrawerRoot {
-  Position: Placed
-  Top: 0pt
-  Left: 0pt
-  Right: 0pt
-  Bottom: 0pt
-  Direction: Column
-  PointerEvents: None
-}
-
-Jwift_DrawerRoot_Open : Jwift_DrawerRoot {
-  PointerEvents: Auto
-}
-
-Jwift_DrawerBackdrop {
-  Position: Placed
-  Top: 0pt
-  Left: 0pt
-  Right: 0pt
-  Bottom: 0pt
-  Background: rgba(0, 0, 0, 0)
-  PointerEvents: None
-  Interactive: false
-  @Transition Background { Duration: 350ms }
-}
-
-Jwift_DrawerBackdrop_Open : Jwift_DrawerBackdrop {
-  Background: rgba(0, 0, 0, 0.45)
-  PointerEvents: Auto
-  Interactive: true
-  Cursor: Pointer
-}
-
-Jwift_DrawerPanel {
-  Position: Placed
-  Bottom: -800pt
-  Left: 50%
-  TranslateX: -50%
-  Width: 768pt
-  MaxWidth: 90%
-  Height: MinContent
-  MaxHeight: 75%
-  Direction: Column
-  Justify: Start
-  Align: Stretch
-  BorderRadius: 32pt
-  Background: rgba(255, 255, 255, 0.06)
-  BorderWidth: 1pt
-  BorderColor: rgba(150, 150, 150, 0.2)
-  BackdropFilter: Blur(8pt) Brightness(1.7)
-  ShadowColor: rgba(0, 0, 0, 0.4)
-  ShadowBlur: 40pt
+Jwift_DrawerCard {
+  Layer: 25
+  Position: Flow
+  Width: 660pt
+  MaxWidth: 92%
   Overflow: Hidden
-  // Closed = invisible + inert. Don't trust the negative `Bottom` alone to park it off-screen: the solver
-  // clamps a negative placed-anchor offset on a MinContent panel, leaving the glass pill stuck at the
-  // bottom edge of every page (this outlet is mounted app-wide). Opacity/PointerEvents make closed robust.
-  Opacity: 0
-  PointerEvents: None
-  @Transition Bottom { Duration: 500ms }
-  @Transition Opacity { Duration: 350ms }
+  Direction: Column
+  Align: Stretch
+  Padding: 12pt 20pt 0pt 20pt
+  Gap: 14pt
+  BorderRadius: 38pt
+  Background: rgba(27, 31, 27, 0.72)
+  BackdropFilter: Blur(34pt) Saturate(1.8) Contrast(1.1)
+  BorderColor: rgba(255, 255, 255, 0.12)
+  BorderFilter: Brightness(1.1) Saturate(1.1)
+  FresnelStrength: 0.3
+  LightIntensity: 0.7
+  Thickness: 1.5
+  BezelWidth: 2
+  Refraction: 4
+  ShadowColor: rgba(0, 0, 0, 0.5)
+  ShadowBlur: 60pt
+  ShadowOffsetY: -18pt
+  Interactive: true
+  @Transition VisualTranslate { Duration: 380ms }
+  @Transition Opacity { Duration: 240ms }
 }
 
-Jwift_DrawerPanel_Open : Jwift_DrawerPanel {
-  Bottom: 16pt
-  Opacity: 1
-  PointerEvents: Auto
+// Pre-entry pose: parked a screen-height below, so the class swap to the settled
+// card animates the rise.
+Jwift_DrawerCardEnter : Jwift_DrawerCard {
+  VisualTranslate: 0 900pt
+}
+
+// [sheetFill] — a tall, definite-height browser card whose body FlexGrow-scrolls
+// and whose footer pins, versus the default content-sized gallery card. A lone
+// Height, applied ALONGSIDE the settled/enter class so it overrides only that.
+Jwift_DrawerCardFill {
+  Height: 82vh
 }
 
 Jwift_DrawerHandle {
-  Width: 40pt
-  Height: 4pt
-  BorderRadius: 999pt
-  Background: rgba(255, 255, 255, 0.2)
-  Margin: 12pt 0pt 0pt 0pt
   AlignSelf: Center
+  Width: 38pt
+  Height: 5pt
+  BorderRadius: 5pt
+  Background: rgba(255, 255, 255, 0.3)
+  Margin: 2pt 0pt 0pt 0pt
   FlexShrink: 0
+}
+
+Jwift_DrawerTitle {
+  AlignSelf: Center
+  UserSelect: None
+  FontFamily: Inter
+  FontSize: 22pt
+  FontWeight: 700
+  LetterSpacing: -0.4pt
+  Color: rgba(255, 255, 255, 0.96)
+  Margin: 0pt 0pt 2pt 0pt
+  FlexShrink: 0
+}
+
+Jwift_DrawerClose {
+  Layer: 26
+  Position: Placed
+  Top: 20pt
+  Left: 20pt
+  Width: 32pt
+  Height: 32pt
+  BorderRadius: 999pt
+  Direction: Row
+  Justify: Center
+  Align: Center
+  Background: rgba(255, 255, 255, 0.10)
+  Interactive: true
+  Cursor: Pointer
+  @Transition Background { Duration: 140ms }
+}
+
+Jwift_DrawerClose:Hover { Background: rgba(255, 255, 255, 0.18) }
+Jwift_DrawerClose:Active { VisualScale: 0.94 }
+
+Jwift_DrawerCloseGlyph {
+  FontFamily: JwiftIcons
+  FontSize: 12pt
+  FontWeight: 600
+  Color: rgba(255, 255, 255, 0.85)
+  TextAlign: Center
 }
