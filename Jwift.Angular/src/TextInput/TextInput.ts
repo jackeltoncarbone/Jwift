@@ -48,7 +48,7 @@ export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret
         (PositionClicked)="PositionClicked.emit($event)"
         (PositionHovered)="PositionHovered.emit($event)"
         (FocusChanged)="FocusChanged.emit($event)"
-        (ContextMenuRequested)="ContextMenuRequested.emit($event)"
+        (ContextRequested)="ContextRequested.emit($event)"
         (Submitted)="Submitted.emit($event)"
         (Cancelled)="Cancelled.emit($event)"
         (SelectionChanged)="SelectionChanged.emit($event)" />
@@ -81,11 +81,14 @@ export class TextInput {
   readonly PositionClicked = output<{ index: number; event: PointerEvent }>();
   readonly PositionHovered = output<{ index: number | null }>();
   readonly FocusChanged = output<boolean>();
-  readonly ContextMenuRequested = output<{
-    event: MouseEvent;
+  /** A context-class gesture (right-click or touch long-press) — see Jinput. */
+  readonly ContextRequested = output<{
+    source: 'mouse' | 'touch';
+    caretIndex: number;
     selStart: number;
     selEnd: number;
     value: string;
+    anchorRect: { x: number; y: number; width: number; height: number };
   }>();
   readonly Submitted = output<KeyboardEvent>();
   readonly Cancelled = output<KeyboardEvent>();
