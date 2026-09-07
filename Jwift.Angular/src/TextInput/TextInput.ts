@@ -44,6 +44,8 @@ export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret
         [FontWeight]="_fontWeight()"
         [LineHeightRatio]="_lineHeightRatio()"
         [RowGapPx]="_rowGapPx()"
+        [InputMode]="InputMode()"
+        [EnterKeyHint]="EnterKeyHint()"
         [PlaceholderFontStyle]="PlaceholderFontStyle()"
         (PositionClicked)="PositionClicked.emit($event)"
         (PositionHovered)="PositionHovered.emit($event)"
@@ -76,9 +78,13 @@ export class TextInput {
   readonly FontWeight = input<number | null>(null);
   readonly LineHeightRatio = input<number | null>(null);
   readonly RowGapPx = input<number | null>(null);
+  /** Keyboard identity, straight through to the jinput: plain text, and what
+   *  the return key claims to do. */
+  readonly InputMode = input<'text' | 'search' | 'none'>('text');
+  readonly EnterKeyHint = input<'enter' | 'done' | 'go' | 'search' | 'send'>('enter');
 
   // ── Outputs (pass-through) ───────────────────────────────────────
-  readonly PositionClicked = output<{ index: number; event: PointerEvent }>();
+  readonly PositionClicked = output<{ index: number; event: PointerEvent; summonedFocus?: boolean }>();
   readonly PositionHovered = output<{ index: number | null }>();
   readonly FocusChanged = output<boolean>();
   /** A context-class gesture (right-click or touch long-press) — see Jinput. */

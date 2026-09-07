@@ -81,14 +81,20 @@ Jwift_GlassDropdownCell {
   Interactive: true
   UserSelect: None
   @Transition Background { Duration: 140ms }
+  // The same 140ms squeeze the single glass button wears — a cell in a group
+  // and a button on its own are the same control at two densities, and they
+  // must answer a finger identically.
+  @Transition VisualScale { Duration: 140ms }
 }
 
 Jwift_GlassDropdownCell:Hover {
   Background: @GlassHover
+  VisualScale: 1.06
 }
 
 Jwift_GlassDropdownCell:Active {
   Background: @GlassActive
+  VisualScale: 0.92
 }
 
 Jwift_GlassDropdownCell_Active : Jwift_GlassDropdownCell {
@@ -119,6 +125,34 @@ Jwift_GlassDropdownCell_Disabled:Active {
 Jwift_GlassDropdownCell_Avatar : Jwift_GlassDropdownCell {
   Overflow: Hidden
   Order: 200
+}
+
+// The June special case, restored: a sink holding ONLY the avatar drops the
+// pill's padding so the avatar fills the whole glass — a true circle, not a
+// ring around a smaller circle — and the PILL takes the button squeeze while
+// the cell inside stays still (two nested squeezes read as a flinch).
+Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed {
+  Padding: 0pt
+  @Transition VisualScale { Duration: 140ms }
+  @Transition BackdropFilter { Duration: 140ms }
+}
+Jwift_GlassDropdown_ClosedAvatarOnly:Hover {
+  BackdropFilter: Brightness(1.85)
+  VisualScale: 1.06
+}
+Jwift_GlassDropdown_ClosedAvatarOnly:Active {
+  BackdropFilter: Brightness(2.5)
+  VisualScale: 0.92
+}
+Jwift_GlassDropdownCell_Avatar_Fill : Jwift_GlassDropdownCell_Avatar {
+  Width: 48pt
+  Height: 48pt
+}
+Jwift_GlassDropdownCell_Avatar_Fill:Hover {
+  VisualScale: 1
+}
+Jwift_GlassDropdownCell_Avatar_Fill:Active {
+  VisualScale: 1
 }
 
 // Ellipsis "open the dropdown" trigger cell — sits between the action

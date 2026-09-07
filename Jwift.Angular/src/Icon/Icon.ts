@@ -46,7 +46,12 @@ export class Icon extends JivHost implements OnInit, OnDestroy {
     // Force the icon font on every text update — consumers' class can override
     // size / weight / color, but the font family is always JwiftIcons.
     effect(() => {
-      const cp = IconData[this.Name().toLowerCase()];
+      const name = this.Name();
+      const cp = IconData[name.toLowerCase()];
+      // A missing glyph renders an invisible cell that keeps its footprint —
+      // a control that exists, takes taps, and shows nothing. Say so loudly:
+      // silence here cost a toolbar button its face for weeks.
+      if (cp == null && name) console.error(`[Icon] no glyph named "${name}" in Icon.Data — the cell renders blank`);
       const glyph = cp != null ? String.fromCodePoint(cp) : '';
       this.Node.SetText(glyph, { FontFamily: 'JwiftIcons' });
     });

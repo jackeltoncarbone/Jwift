@@ -106,7 +106,8 @@ export interface GlassAction {
          in the toolbar cluster slide over. The slot holds the measured
          closed width so nothing reflows; the open menu anchors to it. -->
     <jiv class="Jwift_GlassActionGroupSlot" [childLayout]="_SlotLayout()">
-    <glass-dropdown #dd [canOpen]="_CanOpenRoot()">
+    <glass-dropdown #dd [canOpen]="_CanOpenRoot()"
+      [closedVariant]="_AvatarOnly() ? 'Jwift_GlassDropdown_ClosedAvatarOnly' : null">
       @if (!dd.IsOpen()) {
         @for (action of _InlineActions(); track action.Id) {
           @if (action.Spinner) {
@@ -137,9 +138,13 @@ export interface GlassAction {
                matters when there's a peer stack to layer over; when
                there isn't, no sibling competes so the extra ZIndex is
                a no-op. -->
-          <jiv class="Jwift_GlassDropdownCell_Avatar Jwift_GlassDropdownCell_Avatar_OnTop" (click)="_OnAvatarClick($event)">
+          <jiv [class]="_AvatarOnly()
+                 ? 'Jwift_GlassDropdownCell_Avatar Jwift_GlassDropdownCell_Avatar_Fill Jwift_GlassDropdownCell_Avatar_OnTop'
+                 : 'Jwift_GlassDropdownCell_Avatar Jwift_GlassDropdownCell_Avatar_OnTop'" (click)="_OnAvatarClick($event)">
             @if (url) {
               <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="url" />
+            } @else if (AvatarInitials(); as initials) {
+              <jext class="Jwift_GlassActionAvatarInitials" [text]="initials" />
             } @else {
               <icon class="Jwift_GlassActionGlyph" [Name]="AvatarFallbackIcon()" />
             }
@@ -191,6 +196,17 @@ export class GlassActionGroup implements OnDestroy {
 
   /** Avatar image URL. Falsy → falls back to `AvatarFallbackIcon`. */
   readonly AvatarUrl = input<string | null>(null);
+
+  /** Initials shown when there is no AvatarUrl — a person is their monogram
+   *  before they are a generic glyph. Falls through to the icon when null. */
+  readonly AvatarInitials = input<string | null>(null);
+
+  /** The sink's special case: nothing inline but the avatar, so the avatar
+   *  fills the whole glass and the pill itself takes the button squeeze. */
+  protected readonly _AvatarOnly = computed(() =>
+    this.ShowAvatar() && !this.ShowEllipsis()
+    && this._InlineActions().length === 0
+    && this.CollaboratorAvatarUrls().length === 0);
 
   /** JwiftIcons glyph name shown when `AvatarUrl` is null. */
   readonly AvatarFallbackIcon = input<string>('person.fill');
@@ -316,6 +332,7 @@ export class GlassActionGroup implements OnDestroy {
     afterNextRender(() => {
       const tick = (): void => {
         this._UpdateInlineFit();
+        this._CloseIfEmptied();
         this._rafId = requestAnimationFrame(tick);
       };
       this._rafId = requestAnimationFrame(tick);
@@ -324,6 +341,18 @@ export class GlassActionGroup implements OnDestroy {
 
   ngOnDestroy(): void {
     if (this._rafId) cancelAnimationFrame(this._rafId);
+  }
+
+  /** The open menu's mirror of _CanOpenRoot: widening the toolbar un-folds
+   *  items back inline, and a menu whose rows evaporate beneath it is left as
+   *  a wide, flat, empty glass that answers nothing until an outside click.
+   *  The moment the open page has no rows, close through the real path so the
+   *  geometry, page state and avatar all restore together. Rides the same rAF
+   *  the fit measurement uses — resize is exactly when both matter. */
+  private _CloseIfEmptied(): void {
+    const dd = this._Dd;
+    if (!dd || !dd.IsOpen()) return;
+    if (this._OpenItems(dd.Page()).length === 0) dd.Close();
   }
 
   Open(): void { this._Dd?.Open(); }

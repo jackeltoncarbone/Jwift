@@ -45,9 +45,16 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   private readonly _canvasRef = inject(Jaui, { optional: true });
   private _unbindDoc: (() => void) | null = null;
 
+  /** Extra class ANDed onto the closed pill — how the action group marks the
+   *  avatar-only sink so the avatar can fill the glass. */
+  readonly closedVariant = input<string | null>(null);
+
   constructor() {
-    super('GlassDropdown', GlassDropdownJss, 'Jwift_GlassDropdown_Closed', () =>
-      this._open() ? 'Jwift_GlassDropdown_Open' : 'Jwift_GlassDropdown_Closed');
+    super('GlassDropdown', GlassDropdownJss, 'Jwift_GlassDropdown_Closed', () => {
+      if (this._open()) return 'Jwift_GlassDropdown_Open';
+      const extra = this.closedVariant();
+      return extra ? `Jwift_GlassDropdown_Closed ${extra}` : 'Jwift_GlassDropdown_Closed';
+    });
   }
 
   ngOnInit(): void {

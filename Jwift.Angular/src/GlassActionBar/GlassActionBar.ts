@@ -142,6 +142,7 @@ export interface ActionGroup {
         [Menu]="_SinkMenu()"
         [Pages]="Pages()"
         [AvatarUrl]="AvatarUrl()"
+        [AvatarInitials]="AvatarInitials()"
         [AvatarFallbackIcon]="AvatarFallbackIcon()"
         [CollaboratorAvatarUrls]="CollaboratorAvatarUrls()"
         [ShowEllipsis]="false"
@@ -163,6 +164,7 @@ export class GlassActionBar implements OnDestroy {
   readonly Pages = input<Record<string, readonly GlassAction[]>>({});
 
   readonly AvatarUrl = input<string | null>(null);
+  readonly AvatarInitials = input<string | null>(null);
   readonly AvatarFallbackIcon = input<string>('person.fill');
   readonly CollaboratorAvatarUrls = input<readonly string[]>([]);
 
