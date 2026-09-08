@@ -45,6 +45,7 @@ export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret
         [LineHeightRatio]="_lineHeightRatio()"
         [RowGapPx]="_rowGapPx()"
         [InputMode]="InputMode()"
+        [Autocorrect]="Autocorrect()"
         [EnterKeyHint]="EnterKeyHint()"
         [PlaceholderFontStyle]="PlaceholderFontStyle()"
         (PositionClicked)="PositionClicked.emit($event)"
@@ -81,6 +82,8 @@ export class TextInput {
   /** Keyboard identity, straight through to the jinput: plain text, and what
    *  the return key claims to do. */
   readonly InputMode = input<'text' | 'search' | 'none'>('text');
+  /** Opt in to native QuickType suggestions + autocorrect (see Jinput.Autocorrect). */
+  readonly Autocorrect = input(false);
   readonly EnterKeyHint = input<'enter' | 'done' | 'go' | 'search' | 'send'>('enter');
 
   // ── Outputs (pass-through) ───────────────────────────────────────
