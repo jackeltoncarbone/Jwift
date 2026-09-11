@@ -30,11 +30,11 @@ Jwift_TabBar : JwiftGlass {
   Direction: Row
   Justify: Start
   Align: Stretch
-  Gap: 0pt
-  Padding: 4pt
-  Width: 640pt
+  Gap: 3.5pt
+  Padding: 5.3pt
+  Width: 540pt
   MaxWidth: 100%
-  Height: 46pt
+  Height: 55pt
   BorderRadius: 999pt
 }
 
@@ -52,7 +52,8 @@ Jwift_TabItem {
   Direction: Column
   Justify: Center
   Align: Center
-  Gap: 2pt
+  Gap: 0.5pt
+  Padding: 0pt 7.8pt
   // Between the indicator's two states: ABOVE the resting pill (Layer 0) so the
   // label is crisp at rest, but BELOW the pressed pill (Layer 2) so the press-
   // glass lifts over and magnifies it.
@@ -75,7 +76,10 @@ Jwift_TabItemExpanded : Jwift_TabItem {
   Direction: Row
   Justify: Center
   Align: Center
-  Gap: 8pt
+  Gap: 6.5pt
+  Padding: 0pt 16pt
+  // Content-sized like the shipped bar: a long label never shrinks under its glyph.
+  FlexBasis: Auto
 }
 
 Jwift_TabItemExpandedActive : Jwift_TabItemExpanded {
@@ -113,21 +117,22 @@ Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
 
 Jwift_TabLabel {
   FontFamily: Inter
-  FontSize: 11pt
-  FontWeight: 500
+  FontSize: 9pt
+  FontWeight: 700
   Color: rgba(255, 255, 255, 0.6)
   TextAlign: Center
   LetterSpacing: 0.1pt
-  Margin: 2pt 0pt 0pt 0pt
+  Margin: 0pt
 }
 
 Jwift_TabLabelActive : Jwift_TabLabel {
-  FontWeight: 600
+  FontWeight: 700
   Color: rgba(255, 255, 255, 0.95)
 }
 
 Jwift_TabLabelExpanded : Jwift_TabLabel {
-  FontSize: 15pt
+  FontSize: 13pt
+  FontWeight: 600
   LineHeight: 1.2
 }
 
