@@ -29,15 +29,15 @@ JwiftGlass {
   // No brightness lift: black stays black, only lit content behind the glass lifts it.
   BackdropFilter: Blur(7pt) Saturate(1.4) Contrast(0.9)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
-  BorderWidth: 1.6pt
-  BorderBlur: 0.6pt
+  BorderWidth: 1pt
+  BorderBlur: 0.4pt
   BorderColor: rgba(255, 255, 255, 0.22)
   BorderFilter: Blur(-0.5pt) Brightness(1.9) Saturate(1.3)
   BorderLayer: 10
-  BorderVariance: 0.8
-  BorderAlphaVariance: 0.6
+  BorderVariance: 0.6
+  BorderAlphaVariance: 0.85
   BorderFresnelBrightness: 0.7
-  FresnelStrength: 0.5
+  FresnelStrength: 0.3
   LightAngle: 135
   LightIntensity: 1
   SpecularIntensity: 0.8
