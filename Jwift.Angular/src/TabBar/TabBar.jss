@@ -35,10 +35,11 @@ Jwift_TabBar : JwiftGlass {
   Width: MaxContent
   MaxWidth: 100%
   Height: 44pt
+  // A phone wears the iPhone tab bar as measured on an iPhone Air: a 65pt bar around 58pt items. The
+  // consumer sets the width (the dock shares it with a search button).
   @If (Width < 700) {
-    Padding: 5pt 5.7pt
-    Width: 100%
-    Height: 52.5pt
+    Padding: 3.6pt
+    Height: 65pt
   }
   BorderRadius: 999pt
 }
@@ -97,14 +98,14 @@ Jwift_TabItemExpandedActive : Jwift_TabItemExpanded {
 
 Jwift_TabIcon {
   FontFamily: JwiftIcons
-  FontSize: 15pt
+  FontSize: 24pt
   FontWeight: 400
   Color: rgba(255, 255, 255, 0.6)
   TextAlign: Center
 }
 
 Jwift_TabIconActive : Jwift_TabIcon {
-  FontSize: 15pt
+  FontSize: 24pt
   FontWeight: 600
   Color: rgba(255, 255, 255, 0.95)
 }
@@ -123,8 +124,8 @@ Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
 
 Jwift_TabLabel {
   FontFamily: Inter
-  FontSize: 9.7pt
-  FontWeight: 600
+  FontSize: 10pt
+  FontWeight: 500
   Color: rgba(255, 255, 255, 0.6)
   TextAlign: Center
   LetterSpacing: 0.1pt
@@ -132,7 +133,7 @@ Jwift_TabLabel {
 }
 
 Jwift_TabLabelActive : Jwift_TabLabel {
-  FontWeight: 600
+  FontWeight: 500
   Color: rgba(255, 255, 255, 0.95)
 }
 
