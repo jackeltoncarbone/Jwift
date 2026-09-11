@@ -99,7 +99,7 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     return items[this.EffectiveSelected()]?.Node ?? null;
   });
 
-  private static readonly _ExpandThreshold = 560;
+  private static readonly _ExpandThreshold = 700;
 
   private _canvasRef = inject(Jaui, { optional: true });
   private _rafId = 0;
@@ -129,7 +129,8 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     this._attachOnInit();
     // Width-based expand flip.
     const tick = (): void => {
-      const next = this.Node.Width > TabBar._ExpandThreshold;
+      // Expanded beside a wide viewport (the concept's top dock); stacked on a phone.
+      const next = (typeof window !== 'undefined' ? window.innerWidth : this.Node.Width) >= TabBar._ExpandThreshold;
       if (next !== this.Expanded()) this.Expanded.set(next);
       this._rafId = requestAnimationFrame(tick);
     };

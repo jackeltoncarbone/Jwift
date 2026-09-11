@@ -44,15 +44,14 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
    *  stays in layout — for "nothing to do yet" affordances that should read as present-but-unavailable
    *  rather than disappear. */
   readonly disabled = input<boolean>(false);
+  /** App classes merged after the shape class, for a consumer-sized button. */
+  readonly Class = input<string>('');
 
   constructor() {
     super('GlassButton', GlassButtonJss, 'Jwift_GlassBtn_Round', () => {
       // Called lazily from the reactive effect — by then `this` is real.
-      switch (this.shape()) {
-        case 'pill':   return 'Jwift_GlassBtn_Pill';
-        case 'square': return 'Jwift_GlassBtn_Square';
-        default:       return 'Jwift_GlassBtn_Round';
-      }
+      const shape = this.shape() === 'pill' ? 'Jwift_GlassBtn_Pill' : this.shape() === 'square' ? 'Jwift_GlassBtn_Square' : 'Jwift_GlassBtn_Round';
+      return `${shape} ${this.Class()}`.trim();
     });
     // Disabled = dimmed + inert. Routed through the JivHost style-override channel (not a JSS pseudo) so
     // it layers over whichever shape class is active. Interactive:false is the important half — it stops

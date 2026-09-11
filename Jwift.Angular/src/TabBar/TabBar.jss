@@ -31,10 +31,15 @@ Jwift_TabBar : JwiftGlass {
   Justify: Start
   Align: Stretch
   Gap: 3.5pt
-  Padding: 5.3pt
-  Width: 540pt
+  Padding: 4.3pt
+  Width: MaxContent
   MaxWidth: 100%
-  Height: 55pt
+  Height: 44pt
+  @If (Width < 700) {
+    Padding: 5pt 5.7pt
+    Width: 100%
+    Height: 52.5pt
+  }
   BorderRadius: 999pt
 }
 
@@ -52,8 +57,8 @@ Jwift_TabItem {
   Direction: Column
   Justify: Center
   Align: Center
-  Gap: 0.5pt
-  Padding: 0pt 7.8pt
+  Gap: 2.4pt
+  Padding: 0pt 4.4pt
   // Between the indicator's two states: ABOVE the resting pill (Layer 0) so the
   // label is crisp at rest, but BELOW the pressed pill (Layer 2) so the press-
   // glass lifts over and magnifies it.
@@ -76,9 +81,10 @@ Jwift_TabItemExpanded : Jwift_TabItem {
   Direction: Row
   Justify: Center
   Align: Center
-  Gap: 6.5pt
-  Padding: 0pt 16pt
-  // Content-sized like the shipped bar: a long label never shrinks under its glyph.
+  Gap: 6pt
+  Padding: 0pt 13.3pt
+  // Content-sized: the bar hugs its items.
+  FlexGrow: 0
   FlexBasis: Auto
 }
 
@@ -91,20 +97,20 @@ Jwift_TabItemExpandedActive : Jwift_TabItemExpanded {
 
 Jwift_TabIcon {
   FontFamily: JwiftIcons
-  FontSize: 22pt
+  FontSize: 15pt
   FontWeight: 400
   Color: rgba(255, 255, 255, 0.6)
   TextAlign: Center
 }
 
 Jwift_TabIconActive : Jwift_TabIcon {
-  FontSize: 22pt
+  FontSize: 15pt
   FontWeight: 600
   Color: rgba(255, 255, 255, 0.95)
 }
 
 Jwift_TabIconExpanded : Jwift_TabIcon {
-  FontSize: 18pt
+  FontSize: 16pt
   LineHeight: 1.2
 }
 
@@ -117,8 +123,8 @@ Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
 
 Jwift_TabLabel {
   FontFamily: Inter
-  FontSize: 9pt
-  FontWeight: 700
+  FontSize: 9.7pt
+  FontWeight: 600
   Color: rgba(255, 255, 255, 0.6)
   TextAlign: Center
   LetterSpacing: 0.1pt
@@ -126,12 +132,12 @@ Jwift_TabLabel {
 }
 
 Jwift_TabLabelActive : Jwift_TabLabel {
-  FontWeight: 700
+  FontWeight: 600
   Color: rgba(255, 255, 255, 0.95)
 }
 
 Jwift_TabLabelExpanded : Jwift_TabLabel {
-  FontSize: 13pt
+  FontSize: 13.3pt
   FontWeight: 600
   LineHeight: 1.2
 }

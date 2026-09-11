@@ -27,6 +27,8 @@ import SelectionIndicatorJss from './SelectionIndicator.jss';
 export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   readonly target = input<JivCore | null>(null);
   readonly pressed = input<boolean | null>(null);
+  /** App classes merged after the base look, so a consumer can tint the pill. */
+  readonly Class = input<string>('');
 
   // A `<selection-indicator>` declared inside a `<tab-bar>` injects it and reads its authoritative
   // drag/press flag automatically — so the GLASS press state "just works" without the consumer having
@@ -72,7 +74,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('SelectionIndicator', SelectionIndicatorJss, 'Jwift_SelectionIndicator', () =>
-      this._resolvePressed() ? 'Jwift_SelectionIndicator_Pressed' : 'Jwift_SelectionIndicator');
+      `${this._resolvePressed() ? 'Jwift_SelectionIndicator_Pressed' : 'Jwift_SelectionIndicator'} ${this.Class()}`.trim());
   }
 
   /** The effective press state: an explicit `pressed` input wins; else the parent TabBar's drag flag
