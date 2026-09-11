@@ -37,12 +37,12 @@ JwiftGlass {
   BorderVariance: 0.6
   BorderAlphaVariance: 0.85
   BorderFresnelBrightness: 0.7
-  FresnelStrength: 0.3
+  FresnelStrength: 0.22
   LightAngle: 135
   LightIntensity: 1
-  SpecularIntensity: 0.8
-  SpecularSharpness: 18
-  EdgeLightTop: 0.26
+  SpecularIntensity: 0.5
+  SpecularSharpness: 32
+  EdgeLightTop: 0.12
   EdgeLightBottom: 0.04
   ChromaticAberration: 0.25
   InnerBlur: 0.2
