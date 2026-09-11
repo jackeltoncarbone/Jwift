@@ -18,32 +18,39 @@
 // refraction shows through; consumers that want a tinted glass can
 // override Background after this class.
 JwiftGlass {
-  Background: rgba(255, 255, 255, 0)
-
-  BorderWidth: 1pt
-  BorderBlur: 1pt
-  BorderColor: rgba(255, 255, 255, 0.15)
-  BorderFilter: Brightness(1.25) Saturate(1.25)
+  Background: rgba(255, 255, 255, 0.04)
+  // The face is FLAT (Fillet is the dome): Apple's panel never magnifies what is behind it. Only the
+  // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
+  Thickness: 2.5
+  Fillet: 0
+  BezelWidth: 10
+  BezelScale: 0.4
+  Refraction: 14
+  // No brightness lift: black stays black, only lit content behind the glass lifts it.
+  BackdropFilter: Blur(7pt) Saturate(1.4) Contrast(0.9)
+  // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
+  BorderWidth: 1.6pt
+  BorderBlur: 0.6pt
+  BorderColor: rgba(255, 255, 255, 0.22)
+  BorderFilter: Blur(-0.5pt) Brightness(1.9) Saturate(1.3)
   BorderLayer: 10
-
+  BorderVariance: 0.8
+  BorderAlphaVariance: 0.6
+  BorderFresnelBrightness: 0.7
+  FresnelStrength: 0.5
+  LightAngle: 135
+  LightIntensity: 1
+  SpecularIntensity: 0.8
+  SpecularSharpness: 18
+  EdgeLightTop: 0.26
+  EdgeLightBottom: 0.04
+  ChromaticAberration: 0.25
+  InnerBlur: 0.2
   ShadowColor: rgba(0, 0, 0, 0.18)
   ShadowBlur: 22pt
   ShadowOffsetY: 6pt
-
-  BackdropFilter: Contrast(0.65) Blur(5pt) Brightness(1.5) Saturate(1.5) 
-
-  Thickness: 6
-  Fillet: 0.25
-  BezelWidth: 6
-  BezelScale: 0.5
-  Refraction: 20
-
-  LightAngle: 135
-  LightIntensity: 1
-  FresnelStrength: 0.5
-  ChromaticAberration: 0.3
-  EdgeLightBottom: 0.2
 }
+
 
 // ── JwiftSolidGlass ─────────────────────────────────────────────────
 // A SOLID content surface that carries the iOS-26 glass RIM — beveled,
