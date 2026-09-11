@@ -29,6 +29,10 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   readonly pressed = input<boolean | null>(null);
   /** App classes merged after the base look, so a consumer can tint the pill. */
   readonly Class = input<string>('');
+  /** How far the resting pill reaches past its item on each side, in CSS px. The iPhone tab bar's pill
+   *  is its slot plus about 2px a side, spilling into the neighbours' slots, while the bar's long-side
+   *  padding grows by the same amount so an end pill keeps its inset. */
+  readonly reach = input<number>(0);
 
   // A `<selection-indicator>` declared inside a `<tab-bar>` injects it and reads its authoritative
   // drag/press flag automatically — so the GLASS press state "just works" without the consumer having
@@ -262,7 +266,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     const padL = padLRaw * pressAmount;
     const pressBoostY = 6 * pressAmount;
     const pressBoostX = t.Height > 0 ? pressBoostY * (t.Width / t.Height) : 0;
-    const baseWidth = t.Width + padL + padR + pressBoostX * 2;
+    const baseWidth = t.Width + padL + padR + pressBoostX * 2 + this.reach() * 2;
     const baseHeight = t.Height + padT + padB + pressBoostY * 2;
 
     let centerX = t.X + t.Width / 2;
