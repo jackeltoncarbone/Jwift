@@ -35,11 +35,11 @@ Jwift_TabBar : JwiftGlass {
   Width: MaxContent
   MaxWidth: 100%
   Height: 44pt
-  // A phone wears the iPhone tab bar as measured on an iPhone Air: a 65pt bar around 58pt items. The
-  // consumer sets the width (the dock shares it with a search button).
+  // A phone wears the iPhone tab bar as measured on an iPhone Air, in CSS px over 1.125: a 64px bar with
+  // 3px padding around 58px items. The consumer sets the width (the dock shares it with a search button).
   @If (Width < 700) {
-    Padding: 3.6pt
-    Height: 65pt
+    Padding: 2.7pt
+    Height: 56.9pt
   }
   BorderRadius: 999pt
 }
@@ -58,8 +58,8 @@ Jwift_TabItem {
   Direction: Column
   Justify: Center
   Align: Center
-  Gap: 2.4pt
-  Padding: 0pt 4.4pt
+  Gap: 3.5pt
+  Padding: 0pt 4pt
   // Between the indicator's two states: ABOVE the resting pill (Layer 0) so the
   // label is crisp at rest, but BELOW the pressed pill (Layer 2) so the press-
   // glass lifts over and magnifies it.
@@ -98,14 +98,14 @@ Jwift_TabItemExpandedActive : Jwift_TabItemExpanded {
 
 Jwift_TabIcon {
   FontFamily: JwiftIcons
-  FontSize: 24pt
+  FontSize: 22.2pt
   FontWeight: 400
   Color: rgba(255, 255, 255, 0.6)
   TextAlign: Center
 }
 
 Jwift_TabIconActive : Jwift_TabIcon {
-  FontSize: 24pt
+  FontSize: 22.2pt
   FontWeight: 600
   Color: rgba(255, 255, 255, 0.95)
 }
@@ -124,7 +124,7 @@ Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
 
 Jwift_TabLabel {
   FontFamily: Inter
-  FontSize: 10pt
+  FontSize: 9.3pt
   FontWeight: 500
   Color: rgba(255, 255, 255, 0.6)
   TextAlign: Center

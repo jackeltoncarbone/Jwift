@@ -23,8 +23,9 @@ JwiftGlass {
   // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
   Thickness: 2.5
   Fillet: 0
-  BezelWidth: 10
-  BezelScale: 0.4
+  // The bend is a 4pt band at the outline, as the iPhone's: the body inside it is flat and quiet.
+  BezelWidth: 4
+  BezelScale: 0.5
   Refraction: 14
   // No brightness lift: black stays black, only lit content behind the glass lifts it.
   BackdropFilter: Blur(7pt) Saturate(1.4) Contrast(0.9)
@@ -37,13 +38,15 @@ JwiftGlass {
   BorderVariance: 0.6
   BorderAlphaVariance: 0.85
   BorderFresnelBrightness: 0.7
-  FresnelStrength: 0.22
+  // No inner glow, edge light or catchlight: on the iPhone the body of the glass is one even tone and
+  // only the outline is lit.
+  FresnelStrength: 0
   LightAngle: 135
   LightIntensity: 1
-  SpecularIntensity: 0.5
+  SpecularIntensity: 0
   SpecularSharpness: 32
-  EdgeLightTop: 0.12
-  EdgeLightBottom: 0.04
+  EdgeLightTop: 0
+  EdgeLightBottom: 0
   ChromaticAberration: 0.25
   InnerBlur: 0.2
   ShadowColor: rgba(0, 0, 0, 0.18)
