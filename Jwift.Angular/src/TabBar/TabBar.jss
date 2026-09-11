@@ -26,19 +26,15 @@ Jwift_TabBar : JwiftGlass {
   ShadowBlur: 28pt
   ShadowOffsetY: 8pt
 
-  BezelScale: 0.25
-  SpecularIntensity: 0
-  SpecularSharpness: 10
-  EdgeLightTop: 0
 
   Direction: Row
   Justify: Start
   Align: Stretch
   Gap: 0pt
-  Padding: 6pt
+  Padding: 4pt
   Width: 640pt
   MaxWidth: 100%
-  Height: 60pt
+  Height: 46pt
   BorderRadius: 999pt
 }
 
@@ -66,7 +62,7 @@ Jwift_TabItem {
   // default Auto basis each item starts at its label width and only shares the leftover space, so wider
   // labels (e.g. "Center" vs "End", "Scale" vs "Spin") stayed wider → uneven, off-centre segments.
   FlexBasis: 0pt
-  BorderRadius: 56pt
+  BorderRadius: 999pt
   Interactive: true
   Cursor: Pointer
 }
@@ -91,14 +87,14 @@ Jwift_TabItemExpandedActive : Jwift_TabItemExpanded {
 
 Jwift_TabIcon {
   FontFamily: JwiftIcons
-  FontSize: 24pt
+  FontSize: 22pt
   FontWeight: 400
   Color: rgba(255, 255, 255, 0.6)
   TextAlign: Center
 }
 
 Jwift_TabIconActive : Jwift_TabIcon {
-  FontSize: 20pt
+  FontSize: 22pt
   FontWeight: 600
   Color: rgba(255, 255, 255, 0.95)
 }
@@ -117,12 +113,12 @@ Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
 
 Jwift_TabLabel {
   FontFamily: Inter
-  FontSize: 10pt
+  FontSize: 11pt
   FontWeight: 500
   Color: rgba(255, 255, 255, 0.6)
   TextAlign: Center
   LetterSpacing: 0.1pt
-  Margin: 5pt 0pt 0pt 0pt
+  Margin: 2pt 0pt 0pt 0pt
 }
 
 Jwift_TabLabelActive : Jwift_TabLabel {

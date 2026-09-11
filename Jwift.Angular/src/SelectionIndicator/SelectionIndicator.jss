@@ -10,7 +10,7 @@ Jwift_SelectionIndicator {
   // (Brightness 1.28, Saturate 1.1, not 1.5/1.25). The thin/bright version amplified whatever was
   // behind it, so an uneven backdrop (e.g. a bright streak crossing one side) made the pill glow
   // lopsided. The heavier even fill keeps it reading as one balanced bright-glass pill.
-  Background: rgba(255, 255, 255, 0.18)
+  Background: rgba(255, 255, 255, 0.12)
   BorderRadius: 100pt
   // NEUTRAL backdrop at rest (Brightness/Saturate = 1). The pill's highlight comes
   // from the white Background fill, NOT a backdrop boost — so on release the
@@ -18,7 +18,7 @@ Jwift_SelectionIndicator {
   // the time the layer drops below the text the glass has ZERO effect on it → the
   // layer swap is invisible (seamless). A non-1.0 resting filter left a residual
   // tint that popped off the instant the layer dropped.
-  BackdropFilter: Brightness(1) Saturate(1) Contrast(1) Blur(0)
+  BackdropFilter: Brightness(1.2) Saturate(1.3) Contrast(1) Blur(6pt)
 
   // Real bevel glass (was flat Thickness 0/Refraction 0). The flat interior
   // (inside the bezel) samples the backdrop ~1:1 so the active label's CENTRE
@@ -26,9 +26,9 @@ Jwift_SelectionIndicator {
   // the rim (the Liquid-Glass distortion). Refraction kept low (~5): the pill is
   // glass NESTED inside the nav bar's glass, where high refraction over-displaces
   // and reads see-through past the bar. Pressed state deepens this (Thickness 8).
-  Thickness: 5
+  Thickness: 0
   Fillet: 0            // flat centre — no central dome scaling the whole label
-  Refraction: 5
+  Refraction: 0
   BezelWidth: 4        // thin rim band → large 1:1 centre stays true-size + crisp
   BezelScale: 0.25
   FresnelStrength: 0
@@ -87,9 +87,9 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   // release — the resting label is crisp again.
   Layer: 2
 
-  Background: rgba(255, 255, 255, 0)
+  Background: rgba(255, 255, 255, 0.06)
 
-  BackdropFilter: Brightness(1.5) Saturate(1.5) Contrast(1) Blur(0)
+  BackdropFilter: Brightness(1.45) Saturate(1.5) Contrast(1) Blur(6pt)
 
   // BezelWidth stays close to the base 8: the refraction's flat inner region is the rounded shape inset
   // by BezelWidth (inner corner radius ≈ outerRadius − BezelWidth), so a wide bezel on this small pill
@@ -107,9 +107,9 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   //  • CLIPPING (the "sliver" / off-pill clamp) ≈ Thickness × |Refraction| — keep
   //    Thickness LOW so the edge displacement never runs off the pill.
   // So: low Thickness, higher Fillet, moderate Refraction = strong bulge, no clip.
-  Thickness: 2
-  Fillet: 0.5
-  Refraction: -3
+  Thickness: 0
+  Fillet: 0
+  Refraction: 0
   BezelWidth: 4
   BezelScale: 0.25
   FresnelStrength: 0.35
