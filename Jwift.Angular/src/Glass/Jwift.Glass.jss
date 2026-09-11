@@ -31,14 +31,16 @@ JwiftGlass {
   // No brightness lift: black stays black, only lit content behind the glass lifts it.
   BackdropFilter: Blur(7pt) Saturate(1.4) Contrast(0.9)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
-  // The rim is a sharp bright stroke at the outline, thick where the light hits and thinning to nothing
-  // on the far side. It lifts the backdrop only: a saturation of its own drew a darker ring inside it.
-  BorderWidth: 1.25pt
-  BorderBlur: 0.5pt
+  // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
+  // the light hits and thinning to nothing on the far side. It lifts the backdrop only: a saturation of
+  // its own drew a darker ring inside it.
+  BorderWidth: 0.6pt
+  BorderBlur: 0.35pt
+  BorderFade: 2pt
   BorderColor: rgba(255, 255, 255, 0.25)
   BorderFilter: Blur(-0.5pt) Brightness(1.8)
   BorderLayer: 10
-  BorderVariance: 0.8
+  BorderVariance: 0.6
   BorderAlphaVariance: 0.95
   BorderFresnelBrightness: 0.7
   // No inner glow, edge light or catchlight: on the iPhone the body of the glass is one even tone and
