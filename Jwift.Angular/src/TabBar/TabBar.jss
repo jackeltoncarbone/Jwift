@@ -30,16 +30,17 @@ Jwift_TabBar : JwiftGlass {
   Direction: Row
   Justify: Start
   Align: Stretch
-  // Slots touch; the active pill reaches 2px into its neighbours, so the long sides pad 3px + 2px.
+  // Slots touch; the active pill reaches about 3px into its neighbours, so the long sides pad more than
+  // the short ones (the iPhone: 7.7px ends, 3px top and bottom) and an end pill keeps its inset.
   Gap: 0pt
-  Padding: 4.3pt 6.3pt
+  Padding: 4.3pt 7pt
   Width: MaxContent
   MaxWidth: 100%
   Height: 44pt
   // A phone wears the iPhone tab bar as measured on an iPhone Air, in CSS px over 1.125: a 64px bar with
   // 3px padding around 58px items. The consumer sets the width (the dock shares it with a search button).
   @If (Width < 700) {
-    Padding: 2.7pt 4.7pt
+    Padding: 2.7pt 6.8pt
     Height: 56.9pt
   }
   BorderRadius: 999pt

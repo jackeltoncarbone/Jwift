@@ -23,20 +23,23 @@ JwiftGlass {
   // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
   Thickness: 2.5
   Fillet: 0
-  // The bend is a 4pt band at the outline, as the iPhone's: the body inside it is flat and quiet.
-  BezelWidth: 4
-  BezelScale: 0.5
-  Refraction: 14
+  // The bend as the iPhone's: about 12px wide, most of it in the first few px, easing to flat with no
+  // seam, and the backdrop pulled about 12px at the peak. The body inside it is flat and quiet.
+  BezelWidth: 10.7
+  BezelScale: 0.35
+  Refraction: 10
   // No brightness lift: black stays black, only lit content behind the glass lifts it.
   BackdropFilter: Blur(7pt) Saturate(1.4) Contrast(0.9)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
-  BorderWidth: 1pt
-  BorderBlur: 0.4pt
-  BorderColor: rgba(255, 255, 255, 0.22)
-  BorderFilter: Blur(-0.5pt) Brightness(1.9) Saturate(1.3)
+  // The rim is a sharp bright stroke at the outline, thick where the light hits and thinning to nothing
+  // on the far side. It lifts the backdrop only: a saturation of its own drew a darker ring inside it.
+  BorderWidth: 1.25pt
+  BorderBlur: 0.5pt
+  BorderColor: rgba(255, 255, 255, 0.25)
+  BorderFilter: Blur(-0.5pt) Brightness(1.8)
   BorderLayer: 10
-  BorderVariance: 0.6
-  BorderAlphaVariance: 0.85
+  BorderVariance: 0.8
+  BorderAlphaVariance: 0.95
   BorderFresnelBrightness: 0.7
   // No inner glow, edge light or catchlight: on the iPhone the body of the glass is one even tone and
   // only the outline is lit.
