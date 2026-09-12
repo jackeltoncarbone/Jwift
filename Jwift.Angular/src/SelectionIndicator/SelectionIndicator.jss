@@ -10,7 +10,8 @@ Jwift_SelectionIndicator {
   // (Brightness 1.28, Saturate 1.1, not 1.5/1.25). The thin/bright version amplified whatever was
   // behind it, so an uneven backdrop (e.g. a bright streak crossing one side) made the pill glow
   // lopsided. The heavier even fill keeps it reading as one balanced bright-glass pill.
-  Background: rgba(255, 255, 255, 0.12)
+  // The iPhone's active pill: 58 grey over a 24 grey bar, a 15% white.
+  Background: rgba(255, 255, 255, 0.15)
   BorderRadius: 100pt
   // NEUTRAL backdrop at rest (Brightness/Saturate = 1). The pill's highlight comes
   // from the white Background fill, NOT a backdrop boost — so on release the

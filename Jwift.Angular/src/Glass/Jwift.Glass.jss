@@ -18,30 +18,38 @@
 // refraction shows through; consumers that want a tinted glass can
 // override Background after this class.
 JwiftGlass {
-  Background: rgba(255, 255, 255, 0.04)
+  // Measured off the iPhone (Photos and the App Store bars, 3x): the body is the blurred backdrop
+  // mixed two thirds into rgb(36, 36, 36) with its colour drained, so it reads 24 grey over black and a
+  // flat 70 grey over a bright orange icon.
+  Background: rgba(36, 36, 36, 0.67)
   // The face is FLAT (Fillet is the dome): Apple's panel never magnifies what is behind it. Only the
   // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
   Thickness: 2.5
   Fillet: 0
   // The bend as the iPhone's: about 12px wide, most of it in the first few px, easing to flat with no
   // seam, and the backdrop pulled about 12px at the peak. The body inside it is flat and quiet.
-  BezelWidth: 10.7
-  BezelScale: 0.35
-  Refraction: 10
+  // The outline is a lens: the first quarter of the bezel shows what lies outside the panel, the rest
+  // pulls the interior to the edge, and the bend dies within a dozen px (Thickness x Refraction = the
+  // outward reach in px; the shader gives the inward half 0.4 of it).
+  BezelWidth: 10
+  BezelScale: 0.25
+  Refraction: 5
   // No brightness lift: black stays black, only lit content behind the glass lifts it.
-  BackdropFilter: Blur(7pt) Saturate(1.4) Contrast(0.9)
+  BackdropFilter: Blur(16pt) Saturate(0.15)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
   // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
   // the light hits and thinning to nothing on the far side. It lifts the backdrop only: a saturation of
   // its own drew a darker ring inside it.
-  BorderWidth: 0.6pt
-  BorderBlur: 0.35pt
-  BorderFade: 2pt
-  BorderColor: rgba(255, 255, 255, 0.25)
-  BorderFilter: Blur(-0.5pt) Brightness(1.8)
+  // Over black the rim peaks 38 above the body for one device px and is gone two px later; over content
+  // it lifts what it shows by about 1.4.
+  BorderWidth: 0.45pt
+  BorderBlur: 0.3pt
+  BorderFade: 0.7pt
+  BorderColor: rgba(255, 255, 255, 0.35)
+  BorderFilter: Blur(-0.5pt) Brightness(1.4)
   BorderLayer: 10
-  BorderVariance: 0.6
-  BorderAlphaVariance: 0.95
+  BorderVariance: 0.5
+  BorderAlphaVariance: 0.9
   BorderFresnelBrightness: 0.7
   // No inner glow, edge light or catchlight: on the iPhone the body of the glass is one even tone and
   // only the outline is lit.
@@ -54,9 +62,9 @@ JwiftGlass {
   EdgeLightBottom: 0
   ChromaticAberration: 0.25
   InnerBlur: 0.2
-  ShadowColor: rgba(0, 0, 0, 0.18)
-  ShadowBlur: 22pt
-  ShadowOffsetY: 6pt
+  ShadowColor: rgba(0, 0, 0, 0.3)
+  ShadowBlur: 10pt
+  ShadowOffsetY: 3pt
 }
 
 

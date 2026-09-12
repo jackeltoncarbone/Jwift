@@ -102,7 +102,8 @@ Jwift_TabIcon {
   FontFamily: JwiftIcons
   FontSize: 22.2pt
   FontWeight: 400
-  Color: rgba(255, 255, 255, 0.6)
+  // The iPhone's resting glyphs and labels are white; only the active one takes the tint.
+  Color: rgba(255, 255, 255, 0.95)
   TextAlign: Center
 }
 
@@ -128,7 +129,7 @@ Jwift_TabLabel {
   FontFamily: Inter
   FontSize: 9.3pt
   FontWeight: 500
-  Color: rgba(255, 255, 255, 0.6)
+  Color: rgba(255, 255, 255, 0.95)
   TextAlign: Center
   LetterSpacing: 0.1pt
   Margin: 0pt
