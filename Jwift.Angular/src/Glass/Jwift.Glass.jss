@@ -21,7 +21,7 @@ JwiftGlass {
   // Measured off the iPhone (Photos and the App Store bars, 3x): 26 grey over black, and over the bright
   // part of an orange icon a warm (131, 118, 103), so the body keeps its colour: about 55% of a 46 grey
   // over the blurred backdrop, the colour halved, the blur heavy enough that text behind it is a shape.
-  Background: rgba(46, 46, 46, 0.55)
+  Background: rgba(65, 65, 65, 0.4)
   // The face is FLAT (Fillet is the dome): Apple's panel never magnifies what is behind it. Only the
   // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
   Thickness: 2.5
@@ -31,11 +31,11 @@ JwiftGlass {
   // The outline is a lens: the first quarter of the bezel shows what lies outside the panel, the rest
   // pulls the interior to the edge, and the bend dies within a dozen px (Thickness x Refraction = the
   // outward reach in px; the shader gives the inward half 0.4 of it).
-  BezelWidth: 10
+  BezelWidth: 12
   BezelScale: 0.25
-  Refraction: 5
+  Refraction: 8
   // No brightness lift: black stays black, only lit content behind the glass lifts it.
-  BackdropFilter: Blur(9pt) Saturate(0.55)
+  BackdropFilter: Blur(5pt) Saturate(0.8)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
   // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
   // the light hits and thinning to nothing on the far side. It lifts the backdrop only: a saturation of
