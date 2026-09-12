@@ -35,7 +35,8 @@ JwiftGlass {
   BezelScale: 0.25
   Refraction: 8
   // No brightness lift: black stays black, only lit content behind the glass lifts it.
-  BackdropFilter: Blur(5pt) Saturate(0.8)
+  // The backdrop comes through lifted and vivid, so glass over the field reads as lit glass, not a tint.
+  BackdropFilter: Blur(5pt) Brightness(1.35) Saturate(1.5)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
   // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
   // the light hits and thinning to nothing on the far side. It lifts the backdrop only: a saturation of
