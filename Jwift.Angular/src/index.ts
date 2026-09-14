@@ -9,7 +9,7 @@ export { Drawer } from './Drawer/Drawer';
 export { Slider, type SliderScrubEvent } from './Slider/Slider';
 export { GlassButton, type GlassButtonShape } from './GlassButton/GlassButton';
 export { GlassDropdown } from './GlassDropdown/GlassDropdown';
-export { GlassDropdownItem, type GlassDropdownItemVariant } from './GlassDropdown/GlassDropdownItem';
+export { GlassDropdownItem } from './GlassDropdown/GlassDropdownItem';
 export { GlassActionGroup, type GlassAction } from './GlassActionGroup/GlassActionGroup';
 export { GlassActionBar, type ActionGroup } from './GlassActionBar/GlassActionBar';
 export { Toolbar } from './Toolbar/Toolbar';
@@ -49,3 +49,7 @@ export {
 // layout, padding, or BorderRadius.
 // @ts-ignore — vite handles .jss imports as default-export strings
 export { default as JwiftGlassJss } from './Glass/Jwift.Glass.jss';
+export { List } from './List/List';
+export { ListRow } from './List/ListRow';
+export { ListSeparator } from './List/ListSeparator';
+export { Toggle } from './Toggle/Toggle';
