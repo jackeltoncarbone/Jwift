@@ -139,9 +139,9 @@ Jwift_TabIcon {
   // drops to 10px, and an em glyph fell to ~15px with it, far under Apple's tab-bar proportion.
   FontSize: 25pt
   FontWeight: 400
-  // Apple's resting glyphs and labels are the secondary ink rung; only the selected one rises to
-  // primary, or to the accent when the consumer opts in.
-  Color: @InkSoft
+  // Resting glyphs and labels take @TabInk, a rung that holds over whatever colour is behind the glass;
+  // only the selected one rises to primary, or to the accent when the consumer opts in.
+  Color: @TabInk
   TextAlign: Center
 }
 
@@ -169,7 +169,7 @@ Jwift_TabLabel {
   // The condensed cell: 0.625em = 10px at weight 700, and no tracking of its own.
   FontSize: 10pt
   FontWeight: 700
-  Color: @InkSoft
+  Color: @TabInk
   TextAlign: Center
   LetterSpacing: 0pt
   Margin: 0pt

@@ -48,6 +48,9 @@ export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret
         [Autocorrect]="Autocorrect()"
         [EnterKeyHint]="EnterKeyHint()"
         [PlaceholderFontStyle]="PlaceholderFontStyle()"
+        [Ink]="Ink()"
+        [PlaceholderInk]="PlaceholderInk()"
+        [CaretInk]="CaretInk()"
         (PositionClicked)="PositionClicked.emit($event)"
         (PositionHovered)="PositionHovered.emit($event)"
         (FocusChanged)="FocusChanged.emit($event)"
@@ -72,6 +75,10 @@ export class TextInput {
   /** Placeholder slant — 'Italic' (house default) or 'Normal' for straight
    *  placeholder text. */
   readonly PlaceholderFontStyle = input<'Normal' | 'Italic'>('Italic');
+  /** Text, placeholder and caret inks over the jinput's defaults; any colour or `@Var`. */
+  readonly Ink = input<string | null>(null);
+  readonly PlaceholderInk = input<string | null>(null);
+  readonly CaretInk = input<string | null>(null);
 
   /** Optional font overrides. Left at house defaults when not provided. */
   readonly FontFamily = input<string | null>(null);

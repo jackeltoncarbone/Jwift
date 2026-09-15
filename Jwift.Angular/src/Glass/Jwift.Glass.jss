@@ -35,6 +35,13 @@
 @JwiftSheetSaturate: 1.6 * @Dark + 1.8 * @Light
 @JwiftSheetContrast: 0.5 * @Dark + 1 * @Light
 
+// ── THE SCREEN CORNER ───────────────────────────────────────────────
+// The app's outer corner (the iPhone's own, 52 CSS px) and the one floating sheet's corner. Chrome inside
+// the screen is concentric with it: inset = @JwiftScreenRadius - the element's own radius.
+@JwiftScreenRadius: 52pt
+@JwiftSheetRadius: 38pt
+@JwiftSheetInset: @JwiftScreenRadius - @JwiftSheetRadius
+
 // ── JwiftGlass ──────────────────────────────────────────────────────
 // Universal Liquid-Glass look: the small-control material. A control with a colour of its own (an accent
 // CTA) sets `Tint: 0` and paints its Background; everything else takes its colour from what is behind it.
