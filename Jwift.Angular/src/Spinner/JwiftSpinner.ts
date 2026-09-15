@@ -116,7 +116,7 @@ export class JwiftSpinner implements OnDestroy {
     // Read the per-frame ticker so Angular re-evaluates this computed each
     // frame; the rotation value itself is read off `this._rotationDeg`.
     this._tick.get();
-    return { Transform: `rotate(${this._rotationDeg.toFixed(2)}deg)` };
+    return { Transform: `rotate(${this._rotationDeg.toFixed(2)})` };
   });
 
   protected _TickPos = (i: number): Record<string, string> => {
@@ -143,7 +143,7 @@ export class JwiftSpinner implements OnDestroy {
     return {
       Opacity: opacity.toFixed(3),
       Background: this.color(),
-      Transform: `rotate(${angle}deg)`,
+      Transform: `rotate(${angle})`,
     };
   };
 }
