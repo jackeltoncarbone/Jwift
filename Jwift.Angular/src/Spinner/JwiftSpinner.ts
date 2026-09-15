@@ -15,7 +15,7 @@ import JwiftSpinnerJss from './JwiftSpinner.jss';
  * Usage:
  *   <jwift-spinner />                       — 20pt (medium)
  *   <jwift-spinner [size]="24" />           — 24pt
- *   <jwift-spinner [color]="'rgb(0,0,0)'" /> — black on light glass
+ *   <jwift-spinner [color]="'@GoldInk'" /> — any colour or theme token
  *
  * Mount it as a regular Jiv inside an existing JSS class (e.g. inside a
  * `Jwift_GlassDropdownCell` to occupy a 40pt cell — the cell centers it).
@@ -43,9 +43,8 @@ export class JwiftSpinner implements OnDestroy {
    *  reads well inside a 40pt action cell; 14pt for inline text. */
   readonly size = input<number>(20);
 
-  /** Tick color. Default opaque white. Pair with a JSS Style override on a
-   *  glass cell; for light backgrounds pass `'rgb(0,0,0)'` etc. */
-  readonly color = input<string>('rgb(255, 255, 255)');
+  /** Tick colour: a colour or a theme token. Default the theme's ink. */
+  readonly color = input<string>('@Ink');
 
   /** Full rotations per second. Default 1.0 matches iOS cadence. */
   readonly speed = input<number>(1.0);

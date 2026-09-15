@@ -77,7 +77,7 @@ export class NumberTicker {
   protected readonly _fontFamily = (): string => this.FontFamily() ?? 'Inter, system-ui, sans-serif';
   protected readonly _fontSizePx = (): number => this.FontSizePx() ?? 14;
   protected readonly _fontWeight = (): number => this.FontWeight() ?? 500;
-  protected readonly _color = (): string => this.Color() ?? 'rgba(255, 255, 255, 1)';
+  protected readonly _color = (): string => this.Color() ?? '@Ink';
   protected readonly _lineHeightRatio = (): number => this.LineHeightRatio() ?? 1.2;
   protected readonly _cellWidthRatio = (): number => this.CellWidthRatio() ?? 0.7;
 

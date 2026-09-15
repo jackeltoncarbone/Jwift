@@ -43,5 +43,5 @@ JwiftSpinnerTick {
   Width: 7%
   Height: 25%
   BorderRadius: 999pt
-  Background: rgba(255, 255, 255, 1)
+  Background: @Ink
 }

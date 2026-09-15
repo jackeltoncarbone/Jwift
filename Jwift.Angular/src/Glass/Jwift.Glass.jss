@@ -13,19 +13,35 @@
 // same shadow, same backdrop blur, same refraction across every
 // floating glass surface in the app.
 
+// ── THE GLASS OPTICS, once per material, per theme ─────────────────
+// "By default, Liquid Glass has no inherent color, and instead takes on colors from the content directly
+// behind it." So a glass body paints no fill of its own. What you see is the backdrop run through one
+// physical chain, in this order whatever order a filter is written in:
+//   contrast   compresses the backdrop around 0.5, the readability guarantee
+//   saturate   puts back the colour the compression took, the vibrancy
+//   brightness 1 here, so it is left out
+//   Tint       pulls the result toward the theme's ground: black in dark, white in light
+// Calibrated against Apple's own material images. Dark glass is not black: over black its floor is
+// (1 - tint)(1 - contrast) / 2, which holds 26 to 28 of 255 as Apple's does. Light glass settles at white.
+// @Dark / @Light are the 0/1 theme twins <jaui> publishes, so each line is both themes' value.
+// A larger size is more opaque (WWDC25 session 284), so a sheet tints harder than a control.
+//
+// Small controls, bars, the tab pill:
+@JwiftControlTint: 0.45 * @Dark + 0.5 * @Light
+@JwiftControlSaturate: 1.6 * @Dark + 1.8 * @Light
+@JwiftControlContrast: 0.6 * @Dark + 1 * @Light
+// Partial-height sheets, drawers, menus, panels:
+@JwiftSheetTint: 0.6 * @Dark + 0.65 * @Light
+@JwiftSheetSaturate: 1.6 * @Dark + 1.8 * @Light
+@JwiftSheetContrast: 0.5 * @Dark + 1 * @Light
+
 // ── JwiftGlass ──────────────────────────────────────────────────────
-// Universal Liquid-Glass look. Background is transparent so the glass
-// refraction shows through; consumers that want a tinted glass can
-// override Background after this class.
+// Universal Liquid-Glass look: the small-control material. A control with a colour of its own (an accent
+// CTA) sets `Tint: 0` and paints its Background; everything else takes its colour from what is behind it.
 JwiftGlass {
-  // Measured off the iPhone (Photos and the App Store bars, 3x): 26 grey over black, and over the bright
-  // part of an orange icon a warm (131, 118, 103), so the body keeps its colour: about 55% of a 46 grey
-  // over the blurred backdrop, the colour halved, the blur heavy enough that text behind it is a shape.
-  // Colour stable, as the iPhone's toolbars are: more of its own neutral and a wider blur that averages
-  // what is behind it, so a pill over green and a pill over gold read as the same material.
-  // A thin light tint, so the boosted backdrop is what you see: 24 over black, brighter and more
-  // saturated than the content behind it everywhere else.
-  Background: rgba(120, 120, 124, 0.2)
+  Background: rgba(0, 0, 0, 0)
+  Tint: @JwiftControlTint
+  TintTone: Ground
   // The face is FLAT (Fillet is the dome): Apple's panel never magnifies what is behind it. Only the
   // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
   Thickness: 2.5
@@ -38,9 +54,8 @@ JwiftGlass {
   BezelWidth: 12
   BezelScale: 0.25
   Refraction: 8
-  // No brightness lift: black stays black, only lit content behind the glass lifts it.
-  // The backdrop comes through lifted and vivid, so glass over the field reads as lit glass, not a tint.
-  BackdropFilter: Blur(8pt) Brightness(1.5) Saturate(1.4)
+  // A soft blur, about 8% of a 48pt control's short side, so what is behind stays a recognisable shape.
+  BackdropFilter: Blur(4pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
   // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
   // the light hits and thinning to nothing on the far side. It lifts the backdrop only: a saturation of
@@ -133,18 +148,14 @@ JwiftSectionTitle {
   FontFamily: Inter
   FontSize: 17pt
   FontWeight: 700
-  Color: rgba(255, 255, 255, 0.85)
+  Color: @Ink
   LetterSpacing: -0.3pt
 }
 
 // ── JwiftHeroGlass ──────────────────────────────────────────────────
-// Hero / CTA variant of JwiftGlass — heavier shadow + tinted fill so
-// the surface reads as the page's primary action button against in-
-// flow content. Inherits everything else (border luminosity, backdrop
-// blur, refraction, etc.) so it stays in the design-system family —
-// just with more visual weight than the standard floating glass.
+// Hero / CTA variant of JwiftGlass: a heavier shadow so it reads as the page's primary action. The
+// material's own tint is its colour, as on every other glass.
 JwiftHeroGlass : JwiftGlass {
-  Background: rgba(255, 255, 255, 0.1)
   ShadowColor: rgba(0, 0, 0, 0.2)
   ShadowBlur: 28pt
   ShadowOffsetY: 8pt
@@ -159,8 +170,9 @@ JwiftHeroGlass : JwiftGlass {
 // elements (menus, popovers, sheets, sidebars) never flip light or dark. Buttons and bars stay on
 // JwiftGlass; anything that opens out of one extends this.
 JwiftGlassThick : JwiftGlass {
-  Background: rgba(120, 120, 124, 0.38)
-  BackdropFilter: Blur(14pt) Brightness(1.4) Saturate(1.3)
+  // More opaque, as a larger size is: a harder tint and a wider blur, with the same no-grey chain.
+  Tint: @JwiftSheetTint
+  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
   Thickness: 3
   Refraction: 10
   BezelWidth: 14
@@ -170,17 +182,13 @@ JwiftGlassThick : JwiftGlass {
 }
 
 // ── JwiftGlassThickVivid ────────────────────────────────────────────
-// The thick material that keeps the colour of what it sits on. Hand-tuned on the tab bar, and shared
-// because a sheet over a hero has the same problem: a mid-grey tint lays a flat grey floor over the
-// backdrop that no Saturate can climb past, and a brightened, heavily blurred backdrop reads as fog.
-//
-// A DARK tint, so the colour behind is most of what you see, kept off black so the surface still reads
-// on an unlit page. The backdrop is knocked down and enriched rather than lifted and washed: Saturate
-// puts the colour back, Brightness sinks it under the ink, and a short blur keeps it legible rather than
-// smeared. Everything else (rim, bevel, lensing, shadow) is the thick material's.
+// A BAR: the thick body (rim, bevel, lensing, deep shadow) with a small control's optics. A tab bar is a
+// small element in Apple's terms, so it is as clear as a control, and its short blur (about 8% of a 64pt
+// bar) keeps the colour of what it floats over legible rather than smeared to fog. It never lays a grey
+// floor over that colour: the tint pulls toward the theme's ground instead.
 JwiftGlassThickVivid : JwiftGlassThick {
-  Background: rgba(70, 72, 80, 0.45)
-  BackdropFilter: Blur(5pt) Saturate(3.5) Contrast(0.7) Brightness(0.7)
+  Tint: @JwiftControlTint
+  BackdropFilter: Blur(5pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
 }
 
 // ── JwiftScrollEdge ─────────────────────────────────────────────────
@@ -216,15 +224,8 @@ JwiftScrollEdgeTop : JwiftScrollEdge {
 // The ONE press treatment. Every control that answers a finger extends this, so a press
 // reads the same on a button, a cell and an avatar, and the numbers live in one place.
 //
-// It changes what the element OWNS: a white fill over whatever it is resting on. A
-// BackdropFilter brightens only what is BEHIND the glass, and the page ground is solid
-// black, so a backdrop-only press is invisible on a page and shows only over content.
-// The fill reads on any ground, black included.
-//
-// No glass on glass: the fill is a fill, not a second material, so a cell sitting on a
-// glass pill stays a tinted shape.
-@JwiftHoverFill: rgba(255, 255, 255, 0.14)
-@JwiftPressFill: rgba(255, 255, 255, 0.22)
+// It changes what the element OWNS: a fill over whatever it rests on, the theme's @HoverFill / @PressFill
+// (white over dark, black over light). No glass on glass: the fill is a fill, not a second material.
 // The rim lift, for the glass half below. The glass border paints above the panel's own
 // content (BorderLayer), so this is the part of a press that still reads when a photo or
 // a glyph covers the fill.
@@ -249,7 +250,7 @@ JwiftPressMotion:Active {
   VisualScale: 0.92
 }
 
-// The NEUTRAL press: the motion above plus a white fill over whatever the control rests on.
+// The NEUTRAL press: the motion above plus the theme's press fill over whatever the control rests on.
 // Fill and squeeze share the one spring, so the colour and the shrink land together instead
 // of the highlight flashing ahead of the squeeze.
 JwiftPress : JwiftPressMotion {
@@ -257,11 +258,11 @@ JwiftPress : JwiftPressMotion {
 }
 
 JwiftPress:Hover {
-  Background: @JwiftHoverFill
+  Background: @HoverFill
 }
 
 JwiftPress:Active {
-  Background: @JwiftPressFill
+  Background: @PressFill
 }
 
 // ── JwiftPressGlass ─────────────────────────────────────────────────
@@ -304,8 +305,7 @@ JwiftPressGlass:Active {
 // The grade cascades to children, which is what keeps a label with its button: black ink stays
 // black under a multiply, white ink stays white, and neither drifts off the pill.
 //
-// Filter takes no vars (the resolver resolves vars for colours, not for filter lists), so the
-// numbers are literal, in the one place that owns them.
+// The numbers are literal, in the one place that owns them: a press lifts the same in both themes.
 JwiftPressTint : JwiftPressMotion {
   @Transition Filter { Duration: 140ms }
 }

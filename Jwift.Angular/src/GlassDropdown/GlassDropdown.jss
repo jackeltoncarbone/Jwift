@@ -1,10 +1,9 @@
 // Inherits the canonical Liquid-Glass look from JwiftGlass. Overrides
 // only the heavier floating shadow (the dropdown lifts above content)
 // and its own radius + interactive springs.
-// Runtime theme vars (set from JS via registry.SetVar). Defaults = the authored look, so an unthemed
-// app is unchanged; a themed scope sets @GlassTint (accent fill) and @GlassInk (foreground text/icon).
-@GlassTint: rgba(120, 120, 124, 0.2)
-@GlassInk: rgba(255, 255, 255, 0.85)
+// @GlassTint is the accent fill a themed scope can set; by default the glass's own tint is the colour.
+// Ink on the glass is the theme's @Ink.
+@GlassTint: rgba(0, 0, 0, 0)
 
 Jwift_GlassDropdown : JwiftGlass {
   Background: @GlassTint
@@ -81,7 +80,7 @@ Jwift_GlassDropdownCell : JwiftPress {
 // The SELECTED cell wears the press fill at rest — same token, so a held-open cell and a
 // pressed one read as the same state.
 Jwift_GlassDropdownCell_Active : Jwift_GlassDropdownCell {
-  Background: @JwiftPressFill
+  Background: @PressFill
 }
 
 // Disabled inline cell — dimmed + inert (e.g. Undo with nothing to undo). The
@@ -217,17 +216,15 @@ Jwift_GlassDropdownItemIcon {
   FontFamily: JwiftIcons
   FontSize: 15pt
   FontWeight: 500
-  Color: @GlassInk
+  Color: @Ink
   TextAlign: Center
   Width: 22pt
 }
 
 // A consequential row reads as consequential BEFORE it is pressed, so the glyph
-// takes the same red as the label below. The house red is one value, already
-// owned by Jwift_ContextMenuItemLabel_Destructive; stated literally because JSS
-// resolves no cross-file refs, never re-picked.
+// takes the same red as the label below: the theme's @Danger.
 Jwift_GlassDropdownItemIcon_Destructive : Jwift_GlassDropdownItemIcon {
-  Color: rgb(255, 100, 100)
+  Color: @Danger
 }
 
 // Fed by `[image]`, which is Cover-fit: the sugar in Jaui's Jiv.ts writes
@@ -244,7 +241,7 @@ Jwift_GlassDropdownItemLabel {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 500
-  Color: @GlassInk
+  Color: @Ink
   LetterSpacing: 0.1pt
   TextAlign: Left
   MaxLines: 1
@@ -255,7 +252,7 @@ Jwift_GlassDropdownItemLabel {
 // exactly what the single-press rewrite retired. Same red as the context menu's
 // destructive label, so the two menus say danger with one voice.
 Jwift_GlassDropdownItemLabel_Destructive : Jwift_GlassDropdownItemLabel {
-  Color: rgb(255, 100, 100)
+  Color: @Danger
 }
 
 // Non-interactive section header — labels a consolidated overflow section in
@@ -266,7 +263,7 @@ Jwift_GlassDropdownSectionHeader {
   FontSize: 10pt
   FontWeight: 700
   LetterSpacing: 0.6pt
-  Color: rgba(255, 255, 255, 0.45)
+  Color: @InkFaint
   Padding: 8pt 14pt 4pt 14pt
   MaxLines: 1
 }
@@ -276,7 +273,7 @@ Jwift_GlassDropdownSectionHeader {
 Jwift_GlassDropdownDivider {
   Width: 100%
   Height: 1pt
-  Background: rgba(255, 255, 255, 0.08)
+  Background: @Line
 }
 
 // The one shared highlight for every row of an open menu. Placed inside the
@@ -288,7 +285,7 @@ Jwift_GlassDropdownIndicator {
   Position: Placed
   Layer: 0
   BorderRadius: 100pt
-  Background: @JwiftHoverFill
+  Background: @HoverFill
   Opacity: 0
 
   @Transition Y { Duration: 220ms }
@@ -304,6 +301,6 @@ Jwift_GlassDropdownIndicator_On : Jwift_GlassDropdownIndicator {
 }
 
 Jwift_GlassDropdownIndicator_Pressed : Jwift_GlassDropdownIndicator_On {
-  Background: @JwiftPressFill
+  Background: @PressFill
 }
 

@@ -72,14 +72,12 @@ Jwift_ToolbarTrailing {
 // Canonical chevron-left glyph used inside `<glass-button shape="round">`
 // for back buttons. Consumer toolbars apply this directly so they don't
 // have to re-declare the icon font / size / color per page.
-// @GlassInk: runtime foreground var (set from JS via registry.SetVar); default = the authored look.
-@GlassInk: rgba(255, 255, 255, 0.92)
 
 Jwift_ToolbarBackGlyph {
   FontFamily: JwiftIcons
   FontSize: 14pt
   FontWeight: 600
-  Color: @GlassInk
+  Color: @Ink
   TextAlign: Center
 }
 
@@ -89,7 +87,7 @@ Jwift_ToolbarTitle {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.96)
+  Color: @Ink
   LetterSpacing: -0.05pt
   // `Start` is a CSS logical keyword, not a JSS TextAlign — it was dropped and
   // the title fell back to the default, Left. Same result, stated legally.
@@ -115,7 +113,7 @@ Jwift_Avatar : JwiftPress {
   Height: 48pt
   BorderRadius: 999pt
   Overflow: Hidden
-  Background: rgba(255, 255, 255, 0.12)
+  Background: @WashStrong
   Direction: Row
   Justify: Center
   Align: Center

@@ -20,21 +20,14 @@ Jwift_TabBarRow {
 Jwift_TabBar : JwiftGlassThickVivid {
   UserSelect: None
 
-  // The tint and the backdrop grade live in JwiftGlassThickVivid (Jwift.Glass.jss), tuned here first and
-  // shared so the sheet wears the same colour-keeping material. Tune them there.
+  // The tint and the backdrop grade live in JwiftGlassThickVivid and the control optics above it
+  // (Jwift.Glass.jss). Tune them there, never here.
   //
-  // Why a DARK tint, not the thick material's mid grey: the composite is fill over backdrop, so a neutral
-  // rgba(120,120,124,0.38) lays a flat 46 across all three channels before the backdrop is even added:
-  // that grey floor is what desaturates the bar, and no amount of Saturate on the backdrop can climb
-  // past it (2.4 and 2.6 both stall around 0.58). Dropping the tint dark lets the hero's own colour be
-  // most of what you see. Kept off black (70,72,80 at 0.45 = a 32 grey on an unlit page) so the bar is
-  // still a visible surface on the drill field, which is the job the mid grey was doing.
-  //
-  // Why the backdrop is KNOCKED DOWN AND ENRICHED, not lifted and washed: JwiftGlass brightens what is
-  // behind it (1.5), which over a bright hero is exactly what bleaches the bar and takes the labels
-  // with it. Saturate puts the colour back, so the hero reads as deepened teal instead of grey haze;
-  // Brightness sinks it under the ink; and a short 5pt blur keeps what is behind the glass legible
-  // rather than smeared to fog. Apple's bar keeps the colour of what it sits on.
+  // Why no grey fill: the composite is fill over backdrop, so a neutral grey lays a flat floor across all
+  // three channels that no Saturate can climb past, and that floor is what desaturated the bar. The body
+  // paints no fill; its tint pulls the enriched backdrop toward the theme's ground, black in dark and white
+  // in light, so the hero's own colour is most of what you see. Dark glass still floors near 28 of 255
+  // over black, so the bar stays a visible surface on an unlit page.
 
   // A tab bar's height is intrinsic — it must NEVER be vertically compressed by sibling flex content.
   // Without this, dropping a <tab-bar> into a flex column (a modal header, a settings panel) lets a
@@ -148,14 +141,14 @@ Jwift_TabIcon {
   FontWeight: 400
   // Apple's resting glyphs and labels are the secondary ink rung; only the selected one rises to
   // primary, or to the accent when the consumer opts in.
-  Color: rgba(255, 255, 255, 0.64)
+  Color: @InkSoft
   TextAlign: Center
 }
 
 Jwift_TabIconActive : Jwift_TabIcon {
   FontSize: 25pt
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @Ink
 }
 
 Jwift_TabIconExpanded : Jwift_TabIcon {
@@ -166,7 +159,7 @@ Jwift_TabIconExpanded : Jwift_TabIcon {
 
 Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @Ink
 }
 
 // ─── Tab label ───
@@ -176,7 +169,7 @@ Jwift_TabLabel {
   // The condensed cell: 0.625em = 10px at weight 700, and no tracking of its own.
   FontSize: 10pt
   FontWeight: 700
-  Color: rgba(255, 255, 255, 0.64)
+  Color: @InkSoft
   TextAlign: Center
   LetterSpacing: 0pt
   Margin: 0pt
@@ -184,7 +177,7 @@ Jwift_TabLabel {
 
 Jwift_TabLabelActive : Jwift_TabLabel {
   FontWeight: 700
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @Ink
 }
 
 Jwift_TabLabelExpanded : Jwift_TabLabel {
@@ -196,7 +189,7 @@ Jwift_TabLabelExpanded : Jwift_TabLabel {
 
 Jwift_TabLabelExpandedActive : Jwift_TabLabelExpanded {
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @Ink
 }
 
 // Label-only item (no icon) — the label IS the tab, at full reading size in any bar width.
@@ -208,5 +201,5 @@ Jwift_TabLabelSolo : Jwift_TabLabel {
 
 Jwift_TabLabelSoloActive : Jwift_TabLabelSolo {
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @Ink
 }

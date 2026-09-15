@@ -47,12 +47,12 @@ Jwift_WheelSelectionBand {
   VisualTranslate: 0 -17pt
   Layer: 0
   BorderRadius: 12pt
-  Background: rgba(255, 255, 255, 0.12)
+  Background: @WashStrong
   BackdropFilter: Brightness(1.5) Saturate(1.25)
   // Hairline edge so the pill stays legible on a dark sheet (Brightness(1.5)
   // of a near-black backdrop barely lifts) — defines the band like iOS.
   BorderWidth: 1pt
-  BorderColor: rgba(255, 255, 255, 0.16)
+  BorderColor: @Line
 }
 
 // Every row fills the viewport and centers its content; the row's drum
@@ -84,6 +84,6 @@ Jwift_WheelItemLabel {
   FontFamily: Inter, system-ui, sans-serif
   FontSize: 19pt
   FontWeight: 500
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @Ink
   TextAlign: Center
 }

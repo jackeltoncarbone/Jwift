@@ -3,9 +3,9 @@
 // app-wide press from JwiftPressGlass (fill + rim + backdrop + squeeze).
 // Only the differences are set below: crisper bevel + no specular for the
 // small pill edge.
-// Runtime theme vars (set from JS via registry.SetVar). Defaults = the authored look, so an
-// unthemed app is unchanged; a themed scope (the drill page) sets @GlassTint to the accent fill.
-@GlassTint: rgba(120, 120, 124, 0.2)
+// @GlassTint is the accent fill a themed scope can set. By default the button paints no fill: its colour
+// is the glass's own, the backdrop tinted toward the theme's ground (JwiftGlass).
+@GlassTint: rgba(0, 0, 0, 0)
 
 Jwift_GlassBtn : JwiftGlass, JwiftPressGlass {
   Background: @GlassTint

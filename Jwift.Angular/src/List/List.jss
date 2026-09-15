@@ -15,9 +15,8 @@
 // tall and half of 63 is 31.5, the same number. Comfort therefore decides the corner; `radius` only
 // overrides it when a section nests inside another shape and must stay concentric with THAT instead.
 //
-// Row height is the 44pt hit floor the HIG states for every control. Ink is the measured App Store
-// ladder (Design/Apple.Measured.Spec.md): primary 0.92 for the label, secondary 0.64 for the value,
-// tertiary 0.40 for the chevron. The default fill is opaque, as Apple's grouped background is, so page
+// Row height is the 44pt hit floor the HIG states for every control. Ink is the theme's ladder: @Ink for
+// the label, @InkSoft for the value, @InkFaint for the chevron. The default fill is opaque, as Apple's grouped background is, so page
 // content can never read through the rows; a section on glass takes the translucent variant below.
 
 Jwift_List {
@@ -28,7 +27,7 @@ Jwift_List {
   Width: 100%
   BorderRadius: 31.5pt
   Overflow: Hidden
-  Background: rgb(28, 28, 30)
+  Background: @Panel
 }
 
 // A section that floats on its own over content rather than sitting on a page ground.
@@ -44,12 +43,11 @@ Jwift_List_Glass : JwiftGlass {
 
 // A section that sits ON a glass surface (a sheet, a panel). The opaque grouped fill would block every
 // colour the glass lets through, and a second material would be glass on glass, so it is a translucent
-// FILL: the tab bar's resting selection indicator, a dark veil over a backdrop that is enriched and sunk.
-// The section reads as recessed into the glass and keeps the colour behind it. Rows, separators and press
-// fills are white over dark here exactly as on the opaque ground, so they read the same.
+// FILL: a veil toward the theme's ground over a backdrop that is enriched (and in dark, sunk). The section
+// reads as recessed into the glass and keeps the colour behind it.
 Jwift_List_Translucent : Jwift_List {
-  Background: rgba(0, 0, 0, 0.25)
-  BackdropFilter: Saturate(2) Brightness(0.75)
+  Background: @Recess
+  BackdropFilter: Saturate(2) Brightness(0.75 * @Dark + 1 * @Light)
 }
 
 Jwift_ListRow {
@@ -68,11 +66,11 @@ Jwift_ListRow {
 }
 
 Jwift_ListRow:Hover {
-  Background: rgba(255, 255, 255, 0.06)
+  Background: @Wash
 }
 
 Jwift_ListRow:Active {
-  Background: rgba(255, 255, 255, 0.12)
+  Background: @WashStrong
 }
 
 // A row that only reports, so it must not light up under the pointer.
@@ -93,7 +91,7 @@ Jwift_ListLabel {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 500
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @Ink
   LetterSpacing: 0.1pt
   TextAlign: Left
   MaxLines: 1
@@ -105,7 +103,7 @@ Jwift_ListValue {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 400
-  Color: rgba(255, 255, 255, 0.64)
+  Color: @InkSoft
   TextAlign: Right
   MaxLines: 1
   FlexShrink: 0
@@ -116,7 +114,7 @@ Jwift_ListFootnote {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 400
-  Color: rgba(255, 255, 255, 0.64)
+  Color: @InkSoft
   TextAlign: Left
   MaxLines: 2
 }
@@ -133,7 +131,7 @@ Jwift_ListIcon {
   FontFamily: JwiftIcons
   FontSize: 17pt
   FontWeight: 400
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @Ink
   Width: 24pt
   TextAlign: Center
   FlexShrink: 0
@@ -143,7 +141,7 @@ Jwift_ListChevron {
   FontFamily: JwiftIcons
   FontSize: 13pt
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.4)
+  Color: @InkFaint
   Width: 12pt
   TextAlign: Center
   FlexShrink: 0
@@ -154,7 +152,7 @@ Jwift_ListChevron {
 Jwift_ListSeparator {
   Width: 100%
   Height: 1pt
-  Background: rgba(255, 255, 255, 0.1)
+  Background: @Line
   FlexShrink: 0
 }
 
@@ -168,7 +166,7 @@ Jwift_ListSectionHeader {
   FontFamily: Inter
   FontSize: 11pt
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.64)
+  Color: @InkSoft
   LetterSpacing: 0.6pt
   TextAlign: Left
   Padding: 0pt 16pt 6pt 16pt
@@ -178,7 +176,7 @@ Jwift_ListSectionFooter {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 400
-  Color: rgba(255, 255, 255, 0.64)
+  Color: @InkSoft
   TextAlign: Left
   Padding: 6pt 16pt 0pt 16pt
   MaxLines: 4

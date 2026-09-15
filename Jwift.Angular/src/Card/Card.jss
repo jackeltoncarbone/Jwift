@@ -4,7 +4,7 @@ Jwift_Card {
   Align: Stretch
   BorderRadius: 48pt
   BorderWidth: 1pt
-  BorderColor: rgba(255, 255, 255, 0.08)
+  BorderColor: @Line
   ShadowColor: rgba(0, 0, 0, 0.45)
   ShadowBlur: 24pt
   ShadowOffsetY: 10pt
@@ -19,7 +19,7 @@ Jwift_Card {
   // <placeholder>)` per instance from its `[src]` input. While the bitmap
   // is in flight the placeholder color paints; when ready the engine swaps
   // the resolved Background to the texture.
-  Background: rgba(0, 0, 0, 0.55)
+  Background: @Fill
 }
 
 Jwift_Card_Compact : Jwift_Card {
@@ -152,5 +152,6 @@ Jwift_CardFooter {
   Gap: 8pt
   ProgressiveBlurDirection: ToBottom
   BackdropFilter: Blur(32pt)
+  // A scrim over the cover image, dark in both themes: the footer ink over it stays white.
   Background: rgba(0, 0, 0, 0.55)
 }

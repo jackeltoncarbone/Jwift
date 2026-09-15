@@ -14,7 +14,8 @@ import CardJss from './Card.jss';
 
 export type CardSize = 'default' | 'compact' | 'hero';
 
-const _CARD_PLACEHOLDER = 'rgba(0, 0, 0, 0.55)';
+// The fill an image card shows until its image lands, a theme token.
+const _CARD_PLACEHOLDER = '@Fill';
 
 /**
  * `<card>` — a fixed-size image card with a rounded overflow clip and

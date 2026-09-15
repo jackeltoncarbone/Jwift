@@ -12,7 +12,7 @@ Jwift_ModalScrim {
   Width: 100%
   Height: 100vh
   Layer: 50
-  Background: rgba(0, 0, 0, 0.45)
+  Background: @Scrim
   BackdropFilter: Blur(24pt)
   Interactive: true
 }

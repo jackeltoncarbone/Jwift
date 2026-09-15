@@ -6,20 +6,15 @@ Jwift_SelectionIndicator {
   // magnifies the label. Layer isn't animated, so it flips instantly on press.
   Layer: 0
 
-  // A more UNIFORM frosted-white fill (0.18, not a thin 0.1 lens) with gentler amplification
-  // (Brightness 1.28, Saturate 1.1, not 1.5/1.25). The thin/bright version amplified whatever was
-  // behind it, so an uneven backdrop (e.g. a bright streak crossing one side) made the pill glow
-  // lopsided. The heavier even fill keeps it reading as one balanced bright-glass pill.
-  // The iPhone's active pill: 58 grey over a 24 grey bar, a 15% white.
-  Background: rgba(0, 0, 0, 0.25)
+  // The small-control optics (Jwift.Glass.jss), regraded over the bar it rests on: no fill of its own,
+  // the bar's backdrop compressed, enriched and tinted toward the theme's ground. Over a dark bar the
+  // compression lifts the pill a step above the bar's floor, as the iPhone's active pill sits above its
+  // bar; over bright content the tint sinks it below. The values live once, in the glass sheet.
+  Background: rgba(0, 0, 0, 0)
+  Tint: @JwiftControlTint
+  TintTone: Ground
   BorderRadius: 100pt
-  // NEUTRAL backdrop at rest (Brightness/Saturate = 1). The pill's highlight comes
-  // from the white Background fill, NOT a backdrop boost — so on release the
-  // pressed Brightness(1.5)/Saturate(1.5) animates all the way back to 1.0, and by
-  // the time the layer drops below the text the glass has ZERO effect on it → the
-  // layer swap is invisible (seamless). A non-1.0 resting filter left a residual
-  // tint that popped off the instant the layer dropped.
-  BackdropFilter: Saturate(2) Brightness(0.75) 
+  BackdropFilter: Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
 
   // Real bevel glass (was flat Thickness 0/Refraction 0). The flat interior
   // (inside the bezel) samples the backdrop ~1:1 so the active label's CENTRE
@@ -49,6 +44,7 @@ Jwift_SelectionIndicator {
   ShadowBlur: 0
 
   @Transition Background { Duration: 300ms }
+  @Transition Tint { Duration: 300ms }
   @Transition BackdropFilter { Duration: 300ms }
   @Transition Thickness { Duration: 300ms }
   @Transition Fillet { Duration: 300ms }
@@ -101,9 +97,12 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   // release — the resting label is crisp again.
   Layer: 2
 
-  Background: rgba(255, 255, 255, 0.06)
+  Background: @Wash
 
-  BackdropFilter: Brightness(1) Saturate(1)
+  // Pressed, the pill is a clear lens over the label: no tint and a neutral grade, so it magnifies what is
+  // under it rather than dimming it.
+  Tint: 0
+  BackdropFilter: Brightness(1) Saturate(1) Contrast(1)
 
   // BezelWidth stays close to the base 8: the refraction's flat inner region is the rounded shape inset
   // by BezelWidth (inner corner radius ≈ outerRadius − BezelWidth), so a wide bezel on this small pill

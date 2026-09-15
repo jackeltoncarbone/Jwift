@@ -47,7 +47,7 @@ Jwift_Toggle {
   Width: 69.5pt
   Height: 31pt
   BorderRadius: 999pt
-  Background: rgba(120, 120, 128, 0.32)
+  Background: @WashStrong
   Interactive: true
   Cursor: Pointer
   UserSelect: None

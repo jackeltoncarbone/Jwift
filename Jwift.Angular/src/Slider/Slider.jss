@@ -21,7 +21,7 @@ Jwift_SliderTrack {
   Width: 100%
   Height: 6pt
   BorderRadius: 999pt
-  Background: rgba(255, 255, 255, 0.18)
+  Background: @WashStrong
   Overflow: Hidden
   @Transition Height { Duration: 200ms }
   @Transition Top { Duration: 200ms }
@@ -38,7 +38,7 @@ Jwift_SliderFill {
   Left: 0pt
   Height: 100%
   Width: 0%
-  Background: rgba(255, 255, 255, 0.85)
+  Background: @Ink
 }
 
 Jwift_SliderHit {

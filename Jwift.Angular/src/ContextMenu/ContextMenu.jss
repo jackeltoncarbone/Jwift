@@ -72,21 +72,21 @@ Jwift_ContextMenuItemLabel {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 500
-  Color: rgba(255, 255, 255, 0.95)
+  Color: @Ink
   FlexGrow: 1
   FlexShrink: 1
   MinWidth: 0pt
 }
 
 Jwift_ContextMenuItemLabel_Destructive : Jwift_ContextMenuItemLabel {
-  Color: rgb(255, 100, 100)
+  Color: @Danger
 }
 
 Jwift_ContextMenuItemIcon {
   FontFamily: JwiftIcons
   FontSize: 12pt
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.75)
+  Color: @InkSoft
   TextAlign: Center
   Width: 16pt
   FlexShrink: 0
@@ -95,7 +95,7 @@ Jwift_ContextMenuItemIcon {
 Jwift_ContextMenuDivider {
   Width: 100%
   Height: 1pt
-  Background: rgba(255, 255, 255, 0.1)
+  Background: @Line
   // Sits flush against the rows' inner padding band — small vertical
   // breathing room so the hairline doesn't touch the row above / below.
   // (4pt panel padding + this 1pt divider = 5pt before next row's 6pt.)

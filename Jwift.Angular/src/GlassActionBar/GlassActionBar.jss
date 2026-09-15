@@ -29,6 +29,6 @@ Jwift_GlassActionGlyph_Warn {
   FontFamily: JwiftIcons
   FontSize: 14pt
   FontWeight: 700
-  Color: rgba(255, 196, 64, 0.98)
+  Color: @Warning
   TextAlign: Center
 }

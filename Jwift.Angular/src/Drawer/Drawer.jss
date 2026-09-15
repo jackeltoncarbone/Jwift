@@ -10,11 +10,11 @@
 // and rides up from below on [entered] via the same VisualTranslate the app's
 // SheetEnter used.
 //
-// The material is the shared one, not a private mix. A sheet is a large element, so it is Apple's thick
-// material, and it wears the colour-keeping thickness the tab bar was tuned on (JwiftGlassThickVivid):
-// a dark tint and a short, saturated backdrop, so the page's colour reads through the card instead of
-// fogging under it. Rim, bevel, lensing and shadow all come from the glass family.
-Jwift_DrawerCard : JwiftGlassThickVivid {
+// The material is the shared one, not a private mix. A partial-height sheet is a large element, so it is
+// Apple's thick material (JwiftGlassThick): more opaque than a control, tinted toward the theme's ground
+// rather than a grey, so the page's colour still reads through the card. Rim, bevel, lensing and shadow
+// all come from the glass family.
+Jwift_DrawerCard : JwiftGlassThick {
   Layer: 25
   Position: Flow
   Width: 660pt
@@ -48,7 +48,7 @@ Jwift_DrawerHandle {
   Width: 38pt
   Height: 5pt
   BorderRadius: 5pt
-  Background: rgba(255, 255, 255, 0.3)
+  Background: @InkFaint
   Margin: 2pt 0pt 0pt 0pt
   FlexShrink: 0
 }
@@ -60,7 +60,7 @@ Jwift_DrawerTitle {
   FontSize: 22pt
   FontWeight: 700
   LetterSpacing: -0.4pt
-  Color: rgba(255, 255, 255, 0.96)
+  Color: @Ink
   Margin: 0pt 0pt 2pt 0pt
   FlexShrink: 0
 }
@@ -77,13 +77,13 @@ Jwift_DrawerClose : JwiftPress {
   Direction: Row
   Justify: Center
   Align: Center
-  Background: rgba(255, 255, 255, 0.10)
+  Background: @Wash
 }
 
 Jwift_DrawerCloseGlyph {
   FontFamily: JwiftIcons
   FontSize: 12pt
   FontWeight: 600
-  Color: rgba(255, 255, 255, 0.85)
+  Color: @InkSoft
   TextAlign: Center
 }
