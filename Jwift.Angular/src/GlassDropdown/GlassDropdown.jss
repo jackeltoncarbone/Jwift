@@ -145,7 +145,6 @@ Jwift_GlassDropdownCellAvatarImage {
   Height: 100%
   BorderRadius: 999pt
   Overflow: Hidden
-  FitMode: Cover
 }
 
 // Open state pops out of flow so the expanded menu doesn't reflow siblings —
@@ -231,10 +230,14 @@ Jwift_GlassDropdownItemIcon_Destructive : Jwift_GlassDropdownItemIcon {
   Color: rgb(255, 100, 100)
 }
 
+// Fed by `[image]`, which is Cover-fit: the sugar in Jaui's Jiv.ts writes
+// `Url("<src>", Cover)` and takes no fit argument, so this image is cropped to
+// fill its 22pt box. A dead `FitMode: Contain` line sat here asking for the
+// opposite and never did anything; stating Contain properly needs a fit option
+// on `[image]` in Jaui, which does not exist yet.
 Jwift_GlassDropdownItemImage {
   Width: 22pt
   Height: 22pt
-  FitMode: Contain
 }
 
 Jwift_GlassDropdownItemLabel {

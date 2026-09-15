@@ -91,7 +91,9 @@ Jwift_ToolbarTitle {
   FontWeight: 600
   Color: rgba(255, 255, 255, 0.96)
   LetterSpacing: -0.05pt
-  TextAlign: Start
+  // `Start` is a CSS logical keyword, not a JSS TextAlign — it was dropped and
+  // the title fell back to the default, Left. Same result, stated legally.
+  TextAlign: Left
 }
 
 // Avatar — flat round 48pt cell. No glass material; the photo (or
@@ -117,6 +119,5 @@ Jwift_Avatar : JwiftPress {
   Direction: Row
   Justify: Center
   Align: Center
-  FitMode: Cover
 }
 

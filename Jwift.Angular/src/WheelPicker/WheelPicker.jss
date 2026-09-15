@@ -38,7 +38,13 @@ Jwift_WheelSelectionBand {
   Left: 10pt
   Right: 10pt
   Height: 34pt
-  TranslateY: -50%
+  // Pull the band up by HALF ITS OWN HEIGHT so `Top: 50%` centres it on the drum
+  // axis. This was `TranslateY: -50%` — not a JSS property, so it never ran and
+  // the band has been sitting a half-height BELOW the centred row all along.
+  // `VisualTranslate` is the real property, and its `%` resolves against the
+  // PARENT box (the 180pt viewport), not this element, so the offset is stated
+  // as the absolute half of the 34pt height above.
+  VisualTranslate: 0 -17pt
   Layer: 0
   BorderRadius: 12pt
   Background: rgba(255, 255, 255, 0.12)

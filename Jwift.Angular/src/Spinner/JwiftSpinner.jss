@@ -9,8 +9,11 @@
 // concrete size via [style]; this is the JSS-level identity. Position:Placed
 // on the wrapper so ticks land at absolute offsets from the wrapper's
 // top-left rather than flexing the wrapper.
+// No Position here: `Placed` on a child is already resolved against its direct
+// parent, so Jaui needs no CSS-style `position: relative` to make this box the
+// containing block. This said `Position: Relative`, which is not a PositionMode
+// — the value was dropped and the box has always been `Flow`, which is correct.
 JwiftSpinner {
-  Position: Relative
   Direction: Row
   Justify: Center
   Align: Center
