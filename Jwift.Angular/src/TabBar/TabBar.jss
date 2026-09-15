@@ -17,23 +17,24 @@ Jwift_TabBarRow {
 // TopBlur Brightness(0.5), BottomBlur 0.34 black under a 120pt blur). The dock has no such veil:
 // DockEdge is JwiftScrollEdgeBottom, which blurs but is fully transparent. So the bar carries the veil
 // itself, in its own backdrop, and is legible on any page rather than on one page.
-Jwift_TabBar : JwiftGlassThick {
+Jwift_TabBar : JwiftGlassThickVivid {
   UserSelect: None
 
-  // A DARK tint, not the thick material's mid grey. The composite is fill over backdrop, so a neutral
+  // The tint and the backdrop grade live in JwiftGlassThickVivid (Jwift.Glass.jss), tuned here first and
+  // shared so the sheet wears the same colour-keeping material. Tune them there.
+  //
+  // Why a DARK tint, not the thick material's mid grey: the composite is fill over backdrop, so a neutral
   // rgba(120,120,124,0.38) lays a flat 46 across all three channels before the backdrop is even added:
   // that grey floor is what desaturates the bar, and no amount of Saturate on the backdrop can climb
   // past it (2.4 and 2.6 both stall around 0.58). Dropping the tint dark lets the hero's own colour be
   // most of what you see. Kept off black (70,72,80 at 0.45 = a 32 grey on an unlit page) so the bar is
   // still a visible surface on the drill field, which is the job the mid grey was doing.
-  Background: rgba(70, 72, 80, 0.45)
-
-  // The backdrop is KNOCKED DOWN AND ENRICHED, not lifted and washed. JwiftGlass brightens what is
+  //
+  // Why the backdrop is KNOCKED DOWN AND ENRICHED, not lifted and washed: JwiftGlass brightens what is
   // behind it (1.5), which over a bright hero is exactly what bleaches the bar and takes the labels
-  // with it. Saturate 3 puts the colour back, so the hero reads as deepened teal instead of grey haze;
-  // Brightness 0.6 sinks it under the ink; and a short 5pt blur keeps what is behind the glass
-  // legible rather than smeared to fog. Apple's bar keeps the colour of what it sits on.
-  BackdropFilter: Blur(5pt) Saturate(3.5) Contrast(0.7) Brightness(0.7) 
+  // with it. Saturate puts the colour back, so the hero reads as deepened teal instead of grey haze;
+  // Brightness sinks it under the ink; and a short 5pt blur keeps what is behind the glass legible
+  // rather than smeared to fog. Apple's bar keeps the colour of what it sits on.
 
   // A tab bar's height is intrinsic — it must NEVER be vertically compressed by sibling flex content.
   // Without this, dropping a <tab-bar> into a flex column (a modal header, a settings panel) lets a

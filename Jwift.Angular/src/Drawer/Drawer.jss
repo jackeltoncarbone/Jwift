@@ -9,8 +9,12 @@
 // default (a shape gallery) or fills tall when [sheetFill] (a library browser),
 // and rides up from below on [entered] via the same VisualTranslate the app's
 // SheetEnter used.
-
-Jwift_DrawerCard {
+//
+// The material is the shared one, not a private mix. A sheet is a large element, so it is Apple's thick
+// material, and it wears the colour-keeping thickness the tab bar was tuned on (JwiftGlassThickVivid):
+// a dark tint and a short, saturated backdrop, so the page's colour reads through the card instead of
+// fogging under it. Rim, bevel, lensing and shadow all come from the glass family.
+Jwift_DrawerCard : JwiftGlassThickVivid {
   Layer: 25
   Position: Flow
   Width: 660pt
@@ -21,18 +25,6 @@ Jwift_DrawerCard {
   Padding: 12pt 20pt 0pt 20pt
   Gap: 14pt
   BorderRadius: 38pt
-  Background: rgba(27, 31, 27, 0.72)
-  BackdropFilter: Blur(34pt) Saturate(1.8) Contrast(1.1)
-  BorderColor: rgba(255, 255, 255, 0.12)
-  BorderFilter: Brightness(1.1) Saturate(1.1)
-  FresnelStrength: 0.3
-  LightIntensity: 0.7
-  Thickness: 1.5
-  BezelWidth: 2
-  Refraction: 4
-  ShadowColor: rgba(0, 0, 0, 0.5)
-  ShadowBlur: 60pt
-  ShadowOffsetY: -18pt
   Interactive: true
   @Transition VisualTranslate { Duration: 380ms }
   @Transition Opacity { Duration: 240ms }

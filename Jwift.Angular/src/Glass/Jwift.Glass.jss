@@ -169,6 +169,20 @@ JwiftGlassThick : JwiftGlass {
   ShadowOffsetY: 12pt
 }
 
+// ── JwiftGlassThickVivid ────────────────────────────────────────────
+// The thick material that keeps the colour of what it sits on. Hand-tuned on the tab bar, and shared
+// because a sheet over a hero has the same problem: a mid-grey tint lays a flat grey floor over the
+// backdrop that no Saturate can climb past, and a brightened, heavily blurred backdrop reads as fog.
+//
+// A DARK tint, so the colour behind is most of what you see, kept off black so the surface still reads
+// on an unlit page. The backdrop is knocked down and enriched rather than lifted and washed: Saturate
+// puts the colour back, Brightness sinks it under the ink, and a short blur keeps it legible rather than
+// smeared. Everything else (rim, bevel, lensing, shadow) is the thick material's.
+JwiftGlassThickVivid : JwiftGlassThick {
+  Background: rgba(70, 72, 80, 0.45)
+  BackdropFilter: Blur(5pt) Saturate(3.5) Contrast(0.7) Brightness(0.7)
+}
+
 // ── JwiftScrollEdge ─────────────────────────────────────────────────
 // Apple's soft scroll edge effect: content passing under a floating bar dissolves out rather than
 // cutting off at a hard line. Applied like an overlay, one per view, only where a scroll view sits
