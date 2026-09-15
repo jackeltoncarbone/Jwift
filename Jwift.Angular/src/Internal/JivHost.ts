@@ -314,6 +314,7 @@ export abstract class JivHost {
       PredicateStyles:   fromClass?.PredicateStyles   as ReadonlyArray<Record<string, unknown>> | undefined,
       Springs:           fromClass?.Springs           as Record<string, Record<string, unknown>> | undefined,
       ElementProps:      Object.keys(elementProps).length > 0 ? elementProps : undefined,
+      Classes:           className.split(/\s+/).filter(Boolean),
     };
   }
 }
