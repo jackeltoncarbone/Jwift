@@ -17,6 +17,7 @@ export { ToolbarTitle } from './ToolbarTitle/ToolbarTitle';
 export { ToolbarCompactDef } from './ToolbarTitle/ToolbarCompactDef';
 export { TabBar } from './TabBar/TabBar';
 export { TabItem } from './TabBar/TabItem';
+export { TabBarAccessory } from './TabBar/TabBarAccessory';
 export { SelectionIndicator } from './SelectionIndicator/SelectionIndicator';
 export { MorphSurface, MorphFace, MorphContent } from './Morph/MorphSurface';
 export { ModalHost, ModalOutletService, JWIFT_MODAL_OUTLET } from './Modal/ModalHost';

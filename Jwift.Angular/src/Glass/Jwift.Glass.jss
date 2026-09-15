@@ -89,9 +89,13 @@ JwiftGlass {
   EdgeLightBottom: 0
   ChromaticAberration: 0.25
   InnerBlur: 0.2
-  ShadowColor: rgba(0, 0, 0, 0.3)
-  ShadowBlur: 10pt
-  ShadowOffsetY: 3pt
+  // The shadow as Apple's: soft, wide and barely lifted, its strength set by what is behind the glass, never
+  // by the theme. ShadowColor's alpha is the shadow over text and busy content; over a flat light ground
+  // ShadowAdaptive takes 85% of it away, and over black no shadow can show anyway.
+  ShadowColor: rgba(0, 0, 0, 0.28)
+  ShadowBlur: 16pt
+  ShadowOffsetY: 2pt
+  ShadowAdaptive: 0.85
 }
 
 
@@ -183,9 +187,10 @@ JwiftGlassThick : JwiftGlass {
   Thickness: 3
   Refraction: 10
   BezelWidth: 14
-  ShadowColor: rgba(0, 0, 0, 0.35)
-  ShadowBlur: 36pt
-  ShadowOffsetY: 12pt
+  // Deeper and richer than a control's, still soft and low. The adaptive share comes from JwiftGlass.
+  ShadowColor: rgba(0, 0, 0, 0.34)
+  ShadowBlur: 32pt
+  ShadowOffsetY: 4pt
 }
 
 // ── JwiftGlassThickVivid ────────────────────────────────────────────
@@ -196,6 +201,9 @@ JwiftGlassThick : JwiftGlass {
 JwiftGlassThickVivid : JwiftGlassThick {
   Tint: @JwiftControlTint
   BackdropFilter: Blur(5pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
+  ShadowColor: rgba(0, 0, 0, 0.3)
+  ShadowBlur: 24pt
+  ShadowOffsetY: 3pt
 }
 
 // ── JwiftScrollEdge ─────────────────────────────────────────────────

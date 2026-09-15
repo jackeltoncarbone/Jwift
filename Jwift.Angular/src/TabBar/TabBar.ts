@@ -5,7 +5,6 @@ import {
   OnInit,
   computed,
   contentChildren,
-  effect,
   forwardRef,
   inject,
   input,
@@ -15,18 +14,22 @@ import {
 import { Jaui, Jiv } from 'jaui-angular';
 import { JivHandle as JivCore } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
+import { CanvasPress } from '../Internal/CanvasPress';
 import { TabItem } from './TabItem';
 import TabBarJss from './TabBar.jss';
 
 /**
  * `<tab-bar>` — glass-pill horizontal container for `<tab-item>` children.
  *
- *   <tab-bar [selected]="Selected()" (selectedChange)="Select($event)" #tb>
- *     <selection-indicator [target]="tb.ActiveNode()" />
- *     @for (t of Tabs(); track t.Label; let i = $index) {
- *       <tab-item [icon]="t.Icon" [iconFill]="t.IconFill" [label]="t.Label" />
- *     }
- *   </tab-bar>
+ *   <jiv class="Dock">
+ *     <tab-bar [selected]="Selected()" (selectedChange)="Select($event)" #tb>
+ *       <selection-indicator [target]="tb.ActiveNode()" />
+ *       @for (t of Tabs(); track t.Label; let i = $index) {
+ *         <tab-item [icon]="t.Icon" [iconFill]="t.IconFill" [label]="t.Label" />
+ *       }
+ *     </tab-bar>
+ *     <tab-bar-accessory icon="magnifyingglass" [selected]="SearchActive()" (activate)="Search()" />
+ *   </jiv>
  *
  * Owns the tap/drag gesture — listens to pointerdown/move/up on the
  * Jaui canvas, hit-tests the pointer against the TabItem rects, and
@@ -35,6 +38,9 @@ import TabBarJss from './TabBar.jss';
  * (which reflect the drag-in-progress index), so the pill follows the
  * pointer smoothly during a press-and-drag via the existing layout
  * springs.
+ *
+ * `selected` null means no tab is selected (a trailing accessory owns the selection): every item
+ * takes its resting ink and the indicator hides until a tab is selected again.
  */
 @Component({
   selector: 'tab-bar',
@@ -47,7 +53,7 @@ import TabBarJss from './TabBar.jss';
   ],
 })
 export class TabBar extends JivHost implements OnInit, OnDestroy {
-  readonly selected = input<number>(0);
+  readonly selected = input<number | null>(0);
 
   // ── Accent settings (master) ──────────────────────────────────────────────
   // The bar is the GATE: each item carries its own accent + opt-ins regardless,
@@ -93,10 +99,10 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
    *  authoritative drag flag here instead). */
   readonly IsPressed = computed(() => this._dragIndex() !== null);
 
-  /** Selected tab's underlying JivCore — drives `<selection-indicator>`. */
+  /** Selected tab's underlying JivCore — drives `<selection-indicator>`. Null when nothing is selected. */
   readonly ActiveNode = computed<JivCore | null>(() => {
-    const items = this.Items();
-    return items[this.EffectiveSelected()]?.Node ?? null;
+    const index = this.EffectiveSelected();
+    return index === null ? null : this.Items()[index]?.Node ?? null;
   });
 
   // The HTML bar condensed (icon stacked over label) at 880px and expanded above it. Matches the
@@ -106,18 +112,12 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
 
   private _canvasRef = inject(Jaui, { optional: true });
   private _rafId = 0;
-  /** The id of the pointer/finger currently driving the gesture — a PointerEvent `pointerId` for
-   *  mouse/pen, or a Touch `identifier` for touch. `null` when idle. */
-  private _activePointer: number | null = null;
-  /** Whether the active gesture came in via the touch-event path (so the pointer-event handlers ignore
-   *  it, and vice-versa). */
-  private _activeIsTouch = false;
-  private _unbind: (() => void) | null = null;
+  private readonly _gesture = new CanvasPress();
   private _pressLatchTimer: ReturnType<typeof setTimeout> | null = null;
   // Hold the press latch through the indicator's slide-to-new-tab.
   // SelectionIndicator.jss @Transition X/Y/Width/Height = 260ms; we cover
-  // that plus the press-prop springs (200-280ms).
-  private static readonly _SlideLatchMs = 280;
+  // that plus the press-prop springs (200-280ms). Shared with the accessory's press.
+  static readonly SlideLatchMs = 280;
 
   constructor() {
     // Jwift_TabBar_Pressed is ADDITIVE and sets only VisualScale, so it swells the bar while the
@@ -126,11 +126,6 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     // post-release slide latch. The consumer's Class still resolves last and wins.
     super('TabBar', TabBarJss, 'Jwift_TabBar', () =>
       `Jwift_TabBar ${this.IsPressed() ? 'Jwift_TabBar_Pressed' : ''} ${this.Class()}`.replace(/\s+/g, ' ').trim());
-    // Keep TabItem's view of the active index in sync while dragging so
-    // icon-swap (active glyph vs default glyph) follows the pointer.
-    // Items re-read `selected()` via our EffectiveSelected override —
-    // bounded via the computed above, not a direct signal.
-    effect(() => { this._dragIndex(); this.selected(); });
   }
 
   ngOnInit(): void {
@@ -143,41 +138,40 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
       this._rafId = requestAnimationFrame(tick);
     };
     this._rafId = requestAnimationFrame(tick);
-    this._wireDragGesture();
+    const el = this._canvasRef?.Canvas?.Element;
+    if (el) {
+      this._gesture.Wire(el, {
+        Press: (x, y) => this._press(x, y),
+        Move: (x, y) => this._drag(x, y),
+        Release: () => this._release(),
+        Cancel: () => this._dragIndex.set(null),
+      });
+    }
   }
 
   ngOnDestroy(): void {
     if (this._rafId) cancelAnimationFrame(this._rafId);
     if (this._pressLatchTimer) clearTimeout(this._pressLatchTimer);
-    this._unbind?.();
+    this._gesture.Unwire();
     this._detachOnDestroy();
   }
 
   /** Hit-test against TabItem rects using their post-layout X/Y/W/H
    *  (CSS px in canvas space). Cheaper than walking ScrollManager.
    *  Returns -1 if the pointer is outside every tab's rect. */
-  private _hitIndex(canvasX: number, canvasY: number): number {
+  private _hitIndex(clientX: number, clientY: number): number {
+    const [x, y] = CanvasPress.ToNode(this._canvasRef?.Canvas, clientX, clientY);
     const items = this.Items();
     for (let i = 0; i < items.length; i++) {
       const n = items[i].Node;
-      if (canvasX >= n.X && canvasX < n.X + n.Width
-          && canvasY >= n.Y && canvasY < n.Y + n.Height) return i;
+      if (x >= n.X && x < n.X + n.Width && y >= n.Y && y < n.Y + n.Height) return i;
     }
     return -1;
   }
 
-  // ── Gesture core (input-source-agnostic) ──────────────────────────
-  // Pointer → node space (CSS px, canvas-origin) via the canvas's single source of truth, matching the
-  // CSS-px rects the worker emits for each TabItem. See CanvasProxy.ClientToNodePoint.
-  private _toNode(clientX: number, clientY: number): [number, number] {
-    return this._canvasRef?.Canvas?.ClientToNodePoint(clientX, clientY) ?? [clientX, clientY];
-  }
-
-  /** Begin tracking a press at a client point. `id` is a pointerId (mouse/pen) or a touch identifier.
-   *  Returns true if the point landed on a tab (so the caller can capture the pointer). */
-  private _press(clientX: number, clientY: number, id: number, isTouch: boolean): boolean {
-    const [x, y] = this._toNode(clientX, clientY);
-    const idx = this._hitIndex(x, y);
+  /** Begin tracking a press. Returns true if the point landed on a tab (the gesture is then ours). */
+  private _press(clientX: number, clientY: number): boolean {
+    const idx = this._hitIndex(clientX, clientY);
     if (idx < 0) return false;
     // Cancel any pending press-latch release from a previous gesture so a fresh tap takes over cleanly
     // instead of being cleared mid-press.
@@ -185,16 +179,13 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
       clearTimeout(this._pressLatchTimer);
       this._pressLatchTimer = null;
     }
-    this._activePointer = id;
-    this._activeIsTouch = isTouch;
     this._dragIndex.set(idx);
     return true;
   }
 
   /** Update the drag-in-progress index as the pointer/finger moves. */
   private _drag(clientX: number, clientY: number): void {
-    const [x, y] = this._toNode(clientX, clientY);
-    const idx = this._hitIndex(x, y);
+    const idx = this._hitIndex(clientX, clientY);
     if (idx < 0 || idx === this._dragIndex()) return;
     this._dragIndex.set(idx);
   }
@@ -202,7 +193,6 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
   /** Commit the gesture: emit if it landed on a different tab, then release with the press latch. */
   private _release(): void {
     const finalIdx = this._dragIndex();
-    this._activePointer = null;
     if (finalIdx !== null && finalIdx !== this.selected()) {
       // Emit BEFORE clearing _dragIndex so the consumer's selected() update lands before
       // EffectiveSelected falls back to selected().
@@ -213,91 +203,10 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
       // as a flat pill moving.
       this._pressLatchTimer = setTimeout(() => {
         this._pressLatchTimer = null;
-        if (this._activePointer === null) this._dragIndex.set(null);
-      }, TabBar._SlideLatchMs);
+        if (!this._gesture.Tracking) this._dragIndex.set(null);
+      }, TabBar.SlideLatchMs);
     } else {
       this._dragIndex.set(null);
     }
-  }
-
-  private _wireDragGesture(): void {
-    const el = this._canvasRef?.Canvas?.Element;
-    if (!el) return;
-
-    // ── Mouse / pen — real PointerEvents fire normally. We ignore touch-type pointers here because, in
-    // Jaui's worker-mode input bridge, the canvas `touchstart` handler calls preventDefault(), which
-    // suppresses the browser's synthesis of PointerEvents for touches (see Bridge.Main.ts). Touch is
-    // handled via the touch-event path below — without it EVERY tab bar is dead on touch devices.
-    const onDown = (e: PointerEvent): void => {
-      if (e.pointerType === 'touch') return;
-      if (this._press(e.clientX, e.clientY, e.pointerId, false)) {
-        // Optimistic capture so pointermove reaches us even if the pointer slips outside the canvas —
-        // we re-hit-test each move and clamp.
-        try { el.setPointerCapture(e.pointerId); } catch {}
-      }
-    };
-    const onMove = (e: PointerEvent): void => {
-      if (this._activeIsTouch || this._activePointer !== e.pointerId) return;
-      this._drag(e.clientX, e.clientY);
-    };
-    const onUp = (e: PointerEvent): void => {
-      if (this._activeIsTouch || this._activePointer !== e.pointerId) return;
-      try { el.releasePointerCapture(e.pointerId); } catch {}
-      this._release();
-    };
-    const onCancel = (e: PointerEvent): void => {
-      if (this._activeIsTouch || this._activePointer !== e.pointerId) return;
-      this._activePointer = null;
-      this._dragIndex.set(null);
-      try { el.releasePointerCapture(e.pointerId); } catch {}
-    };
-
-    // ── Touch — the only path that reaches us on touch devices (pointer events are suppressed; see
-    // above). Mirrors Jaui's own bridge: read clientX/Y straight off the Touch. Passive (we never
-    // preventDefault — Jaui's touchstart handler already does, and `touch-action: none` kills scroll).
-    const activeTouch = (e: TouchEvent): Touch | undefined => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const t = e.changedTouches[i];
-        if (t.identifier === this._activePointer) return t;
-      }
-      return undefined;
-    };
-    const onTouchStart = (e: TouchEvent): void => {
-      if (this._activePointer !== null) return; // already tracking a finger
-      const t = e.changedTouches[0];
-      if (t) this._press(t.clientX, t.clientY, t.identifier, true);
-    };
-    const onTouchMove = (e: TouchEvent): void => {
-      const t = this._activeIsTouch ? activeTouch(e) : undefined;
-      if (t) this._drag(t.clientX, t.clientY);
-    };
-    const onTouchEnd = (e: TouchEvent): void => {
-      if (this._activeIsTouch && activeTouch(e)) this._release();
-    };
-    const onTouchCancel = (e: TouchEvent): void => {
-      if (this._activeIsTouch && activeTouch(e)) {
-        this._activePointer = null;
-        this._dragIndex.set(null);
-      }
-    };
-
-    el.addEventListener('pointerdown', onDown);
-    el.addEventListener('pointermove', onMove);
-    el.addEventListener('pointerup', onUp);
-    el.addEventListener('pointercancel', onCancel);
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchmove', onTouchMove, { passive: true });
-    el.addEventListener('touchend', onTouchEnd, { passive: true });
-    el.addEventListener('touchcancel', onTouchCancel, { passive: true });
-    this._unbind = () => {
-      el.removeEventListener('pointerdown', onDown);
-      el.removeEventListener('pointermove', onMove);
-      el.removeEventListener('pointerup', onUp);
-      el.removeEventListener('pointercancel', onCancel);
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchmove', onTouchMove);
-      el.removeEventListener('touchend', onTouchEnd);
-      el.removeEventListener('touchcancel', onTouchCancel);
-    };
   }
 }

@@ -64,6 +64,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   // the JSS @Transition durations on the glass props (280ms).
   private _pressAmount = new Spring(0, 220, 26, 1);
   private _firstValid = false;
+  private _hidden = false;
   /** Whether we're currently holding the Layer:2 override (pill above the text)
    *  through a press + its release settle. Tracked so we only set/clear the
    *  override on transitions, not every frame. */
@@ -132,6 +133,18 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     this._watchedParent = parent;
     if (target) target.WatchRect(true);
     if (parent && parent !== target) parent.WatchRect(true);
+  }
+
+  /** No target, no lens: it fades where it was, then snaps onto the next target as it fades back in. */
+  private _setHidden(hidden: boolean): void {
+    if (hidden === this._hidden) return;
+    this._hidden = hidden;
+    if (hidden) {
+      this._firstValid = false;
+      this.SetStyleOverride({ Opacity: '0' });
+    } else {
+      this.ClearStyleOverride('Opacity');
+    }
   }
 
   private _unwatchTargets(): void {
@@ -208,6 +221,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
   private _sync(): void {
     const t = this.target();
+    this._setHidden(!t);
     if (!t) {
       this._unwatchTargets();
       return;

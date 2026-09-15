@@ -43,6 +43,7 @@ Jwift_SelectionIndicator {
   ShadowColor: rgba(0, 0, 0, 0)
   ShadowBlur: 0
 
+  @Transition Opacity { Duration: 200ms }
   @Transition Background { Duration: 300ms }
   @Transition Tint { Duration: 300ms }
   @Transition BackdropFilter { Duration: 300ms }

@@ -34,13 +34,8 @@ Jwift_TabBar : JwiftGlassThickVivid {
   // FlexGrow neighbour squish it to a different height per layout. Pin it.
   FlexShrink: 0
 
-  // The shadow is what separates a floating bar from bright content: with none, a light backdrop runs
-  // straight into the bar's edge and the pill loses its outline. Deeper than the standard floating
-  // shadow because the body above it is thicker.
-  ShadowColor: rgba(0, 0, 0, 0.45)
-  ShadowBlur: 36pt
-  ShadowOffsetY: 12pt
-
+  // The shadow is JwiftGlassThickVivid's adaptive one: present over text and imagery, near gone over a
+  // flat light ground. Tune it there, never here.
 
   Direction: Row
   Justify: Start
@@ -76,6 +71,28 @@ Jwift_TabBar : JwiftGlassThickVivid {
 // cannot cover (a pointermove past 10px of slop clears Active while the pill is still travelling).
 Jwift_TabBar_Pressed {
   VisualScale: 1.02
+}
+
+// ─── Trailing accessory (the round button beside the bar) ───
+// The bar itself, squared to a circle: same material, shadow, inset and swell, its diameter the bar's
+// height so the two share a centreline. The circle wears Jwift_TabBar_Pressed too.
+Jwift_TabAccessory : Jwift_TabBar {
+  Justify: Center
+  Width: 56pt
+  @If (Width < 880) {
+    Width: 64pt
+  }
+}
+
+// The one cell inside the bar's inset, so a selected lens is concentric: 32pt - 6pt = 26pt, half its 52pt.
+Jwift_TabAccessoryCell {
+  Direction: Column
+  Justify: Center
+  Align: Center
+  FlexGrow: 1
+  FlexBasis: 0pt
+  BorderRadius: 999pt
+  Layer: 1
 }
 
 // ─── Tab items (stacked = icon above label, expanded = icon beside label) ───
@@ -158,6 +175,19 @@ Jwift_TabIconExpanded : Jwift_TabIcon {
 }
 
 Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
+  FontWeight: 600
+  Color: @Ink
+}
+
+// The accessory glyph follows the bar's glyph size: the expanded cell's size, the phone cell's below 880.
+Jwift_TabAccessoryIcon : Jwift_TabIcon {
+  FontSize: 19.03pt
+  @If (Width < 880) {
+    FontSize: 25pt
+  }
+}
+
+Jwift_TabAccessoryIconActive : Jwift_TabAccessoryIcon {
   FontWeight: 600
   Color: @Ink
 }
