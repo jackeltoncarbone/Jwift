@@ -10,10 +10,8 @@ import {
 } from '@angular/core';
 import { Jiv } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
-import { GlassDropdown } from './GlassDropdown';
+import { GlassDropdown, type GlassDropdownRow } from './GlassDropdown';
 import GlassDropdownJss from './GlassDropdown.jss';
-
-export type GlassDropdownItemVariant = 'default' | 'danger';
 
 @Component({
   selector: 'glass-dropdown-item',
@@ -26,8 +24,7 @@ export type GlassDropdownItemVariant = 'default' | 'danger';
   ],
   host: { '(click)': '_onClick($event)' },
 })
-export class GlassDropdownItem extends JivHost implements OnInit, OnDestroy {
-  readonly variant = input<GlassDropdownItemVariant>('default');
+export class GlassDropdownItem extends JivHost implements OnInit, OnDestroy, GlassDropdownRow {
   readonly keepOpen = input(false, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
 
@@ -38,15 +35,25 @@ export class GlassDropdownItem extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('GlassDropdownItem', GlassDropdownJss, 'Jwift_GlassDropdownItem', () => {
-      if (this.disabled()) return 'Jwift_GlassDropdownItem_Disabled';
-      return this.variant() === 'danger'
-        ? 'Jwift_GlassDropdownItem_Danger'
-        : 'Jwift_GlassDropdownItem';
+      return this.disabled() ? 'Jwift_GlassDropdownItem_Disabled' : 'Jwift_GlassDropdownItem';
     });
   }
 
-  ngOnInit(): void { this._attachOnInit(); }
-  ngOnDestroy(): void { this._detachOnDestroy(); }
+  IsDisabled(): boolean { return this.disabled(); }
+
+  ngOnInit(): void {
+    this._attachOnInit();
+    // The dropdown hit-tests its shared indicator against this row's rect,
+    // which only reaches main while the worker is asked to report it.
+    this.Node.WatchRect(true);
+    this._dropdown?.RegisterRow(this);
+  }
+
+  ngOnDestroy(): void {
+    this._dropdown?.UnregisterRow(this);
+    this.Node.WatchRect(false);
+    this._detachOnDestroy();
+  }
 
   protected _onClick(e: MouseEvent): void {
     e.stopPropagation();

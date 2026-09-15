@@ -106,28 +106,17 @@ Jwift_ToolbarTitle {
 //       <icon class="ToolbarGlyph" Name="person.fill" />
 //     }
 //   </jiv>
-Jwift_Avatar {
+// Flat fill, no material, so it takes the plain JwiftPress: the same fill and the same
+// 0.92 squeeze the glass button wears.
+Jwift_Avatar : JwiftPress {
   Width: 48pt
   Height: 48pt
   BorderRadius: 999pt
   Overflow: Hidden
   Background: rgba(255, 255, 255, 0.12)
-  Cursor: Pointer
-  Interactive: true
-  UserSelect: None
   Direction: Row
   Justify: Center
   Align: Center
   FitMode: Cover
-  @Transition Background { Duration: 160ms }
-  @Transition VisualScale { Duration: 160ms }
-}
-
-Jwift_Avatar:Hover {
-  Background: rgba(255, 255, 255, 0.2)
-}
-
-Jwift_Avatar:Active {
-  VisualScale: 0.94
 }
 

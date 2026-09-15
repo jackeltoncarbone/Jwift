@@ -5,6 +5,7 @@ import {
   ViewChild,
   afterNextRender,
   computed,
+  inject,
   input,
   output,
   signal,
@@ -13,8 +14,9 @@ import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { type ChildLayout } from 'jaui';
 import { Icon } from '../Icon/Icon';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
-import { GlassDropdownItem, type GlassDropdownItemVariant } from '../GlassDropdown/GlassDropdownItem';
+import { GlassDropdownItem } from '../GlassDropdown/GlassDropdownItem';
 import { JwiftSpinner } from '../Spinner/JwiftSpinner';
+import { GLASS_ACTION_ACCOUNT } from './GlassActionAccount';
 import GlassActionGroupJss from './GlassActionGroup.jss';
 
 /** Single source of truth for both inline cells and dropdown items. Most
@@ -131,7 +133,7 @@ export interface GlassAction {
           </jiv>
         }
         @if (ShowAvatar()) {
-          @let url = AvatarUrl();
+          @let url = _AvatarUrl();
           <!-- Always include the on-top z-bump class so the cell DOM
                doesn't get destroyed/recreated when collaborators arrive
                (which would re-trigger Jaui's mount-fade). z-index only
@@ -143,7 +145,7 @@ export interface GlassAction {
                  : 'Jwift_GlassDropdownCell_Avatar Jwift_GlassDropdownCell_Avatar_OnTop'" (click)="_OnAvatarClick($event)">
             @if (url) {
               <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="url" />
-            } @else if (AvatarInitials(); as initials) {
+            } @else if (_AvatarInitials(); as initials) {
               <jext class="Jwift_GlassActionAvatarInitials" [text]="initials" />
             } @else {
               <icon class="Jwift_GlassActionGlyph" [Name]="AvatarFallbackIcon()" />
@@ -159,17 +161,16 @@ export interface GlassAction {
             <jext class="Jwift_GlassDropdownSectionHeader" [text]="item.Label ?? ''" />
           } @else {
             <glass-dropdown-item
-              [variant]="_ItemVariant(item)"
               [disabled]="!!item.Disabled"
               [keepOpen]="!!item.KeepOpen || !!item.Page"
               (click)="_OnItemClick(item)">
               @if (item.Image) {
                 <jiv class="Jwift_GlassDropdownItemImage" [image]="item.Image" />
               } @else if (item.Icon) {
-                <icon [class]="_ItemIconClass(item)" [Name]="item.Icon" />
+                <icon class="Jwift_GlassDropdownItemIcon" [Name]="item.Icon" />
               }
               @if (item.Label) {
-                <jext [class]="_ItemLabelClass(item)" [text]="item.Label" />
+                <jext class="Jwift_GlassDropdownItemLabel" [text]="item.Label" />
               }
             </glass-dropdown-item>
           }
@@ -187,8 +188,20 @@ export class GlassActionGroup implements OnDestroy {
   readonly Actions = input<readonly GlassAction[]>([]);
 
   /** Always-in-the-menu items. Rendered after any auto-promoted overflow.
-   *  Use Divider items to group sections. */
-  readonly Menu = input<readonly GlassAction[]>([]);
+   *  Use Divider items to group sections. Left UNSET (null), a group that
+   *  draws an avatar inherits the ambient account menu from
+   *  GLASS_ACTION_ACCOUNT; pass `[]` to carry no menu rows at all. */
+  readonly Menu = input<readonly GlassAction[] | null>(null);
+
+  /** The ambient account sink, when the host app provides one. Optional, so a
+   *  group with no provider behaves exactly as it always did. */
+  private readonly _Account = inject(GLASS_ACTION_ACCOUNT, { optional: true });
+
+  /** What the menu actually renders. An explicit `[Menu]` wins; unset inherits
+   *  the account rows, and only on a group that draws the avatar to carry them
+   *  (an avatar-less group is somebody's inline cell cluster, not a sink). */
+  protected readonly _Menu = computed<readonly GlassAction[]>(() =>
+    this.Menu() ?? (this.ShowAvatar() ? this._Account?.Menu() ?? [] : []));
 
   /** Per-sub-page item lists. Reached when a click target carries Page,
    *  or when a consumer calls `grp.PushPage(id)` directly. */
@@ -200,6 +213,14 @@ export class GlassActionGroup implements OnDestroy {
   /** Initials shown when there is no AvatarUrl — a person is their monogram
    *  before they are a generic glyph. Falls through to the icon when null. */
   readonly AvatarInitials = input<string | null>(null);
+
+  /** The avatar's two inputs, each falling through to the ambient account when
+   *  the caller states nothing. A page states neither and still wears the
+   *  signed-in person; signed out both are null and the glyph stands. */
+  protected readonly _AvatarUrl = computed<string | null>(() =>
+    this.AvatarUrl() ?? this._Account?.AvatarUrl() ?? null);
+  protected readonly _AvatarInitials = computed<string | null>(() =>
+    this.AvatarInitials() ?? this._Account?.Initials() ?? null);
 
   /** The sink's special case: nothing inline but the avatar, so the avatar
    *  fills the whole glass and the pill itself takes the button squeeze. */
@@ -313,7 +334,7 @@ export class GlassActionGroup implements OnDestroy {
   /** Items rendered when the dropdown is open. Root page = overflow + Menu;
    *  sub-pages = whatever Pages[id] returns. */
   protected _OpenItems(page: string | null): readonly GlassAction[] {
-    if (page === null) return [...this._OverflowActions(), ...this.Menu()];
+    if (page === null) return [...this._OverflowActions(), ...this._Menu()];
     return this.Pages()[page] ?? [];
   }
 
@@ -323,7 +344,7 @@ export class GlassActionGroup implements OnDestroy {
    *  panel. Avatar/ellipsis paths that push a specific Page open programmatically
    *  and are unaffected. */
   protected readonly _CanOpenRoot = computed(() =>
-    this._OverflowActions().length + this.Menu().length > 0
+    this._OverflowActions().length + this._Menu().length > 0
   );
 
   private _rafId = 0;
@@ -442,17 +463,8 @@ export class GlassActionGroup implements OnDestroy {
     return classes.join(' ');
   }
 
-  protected _ItemVariant(action: GlassAction): GlassDropdownItemVariant {
-    return action.Destructive ? 'danger' : 'default';
-  }
 
-  protected _ItemIconClass(action: GlassAction): string {
-    return action.Destructive ? 'Jwift_GlassDropdownItemIcon_Danger' : 'Jwift_GlassDropdownItemIcon';
-  }
 
-  protected _ItemLabelClass(action: GlassAction): string {
-    return action.Destructive ? 'Jwift_GlassDropdownItemLabel_Danger' : 'Jwift_GlassDropdownItemLabel';
-  }
 
   protected _OnCellClick(action: GlassAction, event: MouseEvent): void {
     event.stopPropagation();
@@ -472,6 +484,10 @@ export class GlassActionGroup implements OnDestroy {
       this._Dd?.PushPage(action.Page);
       return;
     }
+    // An account id goes where the account provider sends it, so a page that
+    // wired no handler still reaches support. Ids it does not claim fall
+    // through to the caller untouched.
+    if (this._Account?.Handle(action.Id)) return;
     this.ActionClick.emit(action.Id);
   }
 

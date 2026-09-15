@@ -21,7 +21,11 @@ JwiftGlass {
   // Measured off the iPhone (Photos and the App Store bars, 3x): 26 grey over black, and over the bright
   // part of an orange icon a warm (131, 118, 103), so the body keeps its colour: about 55% of a 46 grey
   // over the blurred backdrop, the colour halved, the blur heavy enough that text behind it is a shape.
-  Background: rgba(65, 65, 65, 0.4)
+  // Colour stable, as the iPhone's toolbars are: more of its own neutral and a wider blur that averages
+  // what is behind it, so a pill over green and a pill over gold read as the same material.
+  // A thin light tint, so the boosted backdrop is what you see: 24 over black, brighter and more
+  // saturated than the content behind it everywhere else.
+  Background: rgba(120, 120, 124, 0.2)
   // The face is FLAT (Fillet is the dome): Apple's panel never magnifies what is behind it. Only the
   // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
   Thickness: 2.5
@@ -36,7 +40,7 @@ JwiftGlass {
   Refraction: 8
   // No brightness lift: black stays black, only lit content behind the glass lifts it.
   // The backdrop comes through lifted and vivid, so glass over the field reads as lit glass, not a tint.
-  BackdropFilter: Blur(5pt) Brightness(1.35) Saturate(1.5)
+  BackdropFilter: Blur(8pt) Brightness(1.5) Saturate(1.4)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
   // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
   // the light hits and thinning to nothing on the far side. It lifts the backdrop only: a saturation of
@@ -50,7 +54,7 @@ JwiftGlass {
   BorderFilter: Blur(-0.5pt) Brightness(1.4)
   BorderLayer: 10
   BorderVariance: 0.5
-  BorderAlphaVariance: 0.9
+  BorderAlphaVariance: 0.75
   BorderFresnelBrightness: 0.7
   // No inner glow, edge light or catchlight: on the iPhone the body of the glass is one even tone and
   // only the outline is lit.
@@ -144,4 +148,211 @@ JwiftHeroGlass : JwiftGlass {
   ShadowColor: rgba(0, 0, 0, 0.2)
   ShadowBlur: 28pt
   ShadowOffsetY: 8pt
+}
+
+
+// ── JwiftGlassThick ─────────────────────────────────────────────────
+// Apple's one material at its second thickness. Session 219: when glass "morphs to larger sizes, like
+// when presenting a menu from a toolbar button, its material characteristics change to simulate a
+// thicker, more substantial material. It casts deeper, richer shadows, has more pronounced lensing and
+// refraction effects, and a softer scattering of light." UIKit: "A larger size is more opaque." Big
+// elements (menus, popovers, sheets, sidebars) never flip light or dark. Buttons and bars stay on
+// JwiftGlass; anything that opens out of one extends this.
+JwiftGlassThick : JwiftGlass {
+  Background: rgba(120, 120, 124, 0.38)
+  BackdropFilter: Blur(14pt) Brightness(1.4) Saturate(1.3)
+  Thickness: 3
+  Refraction: 10
+  BezelWidth: 14
+  ShadowColor: rgba(0, 0, 0, 0.35)
+  ShadowBlur: 36pt
+  ShadowOffsetY: 12pt
+}
+
+// ── JwiftScrollEdge ─────────────────────────────────────────────────
+// Apple's soft scroll edge effect: content passing under a floating bar dissolves out rather than
+// cutting off at a hard line. Applied like an overlay, one per view, only where a scroll view sits
+// behind floating chrome. A strip that
+// blurs progressively toward the screen edge; the bar it protects is its child, so the strip's own
+// padding is the bar's inset. The blur material takes one flat colour, and that colour stays clear.
+JwiftScrollEdge {
+  Direction: Column
+  Align: Center
+  Width: 100%
+  ProgressiveBlurFeather: 0pt
+  BackdropFilter: Blur(12pt) Saturate(1.1)
+  Background: rgba(0, 0, 0, 0)
+  PointerEvents: None
+}
+
+JwiftScrollEdgeBottom : JwiftScrollEdge {
+  Justify: End
+  ProgressiveBlurDirection: ToBottom
+  Height: 140pt
+}
+
+JwiftScrollEdgeTop : JwiftScrollEdge {
+  Justify: Start
+  ProgressiveBlurDirection: ToTop
+  Height: 140pt
+}
+
+
+// ── JwiftPress ──────────────────────────────────────────────────────
+// The ONE press treatment. Every control that answers a finger extends this, so a press
+// reads the same on a button, a cell and an avatar, and the numbers live in one place.
+//
+// It changes what the element OWNS: a white fill over whatever it is resting on. A
+// BackdropFilter brightens only what is BEHIND the glass, and the page ground is solid
+// black, so a backdrop-only press is invisible on a page and shows only over content.
+// The fill reads on any ground, black included.
+//
+// No glass on glass: the fill is a fill, not a second material, so a cell sitting on a
+// glass pill stays a tinted shape.
+@JwiftHoverFill: rgba(255, 255, 255, 0.14)
+@JwiftPressFill: rgba(255, 255, 255, 0.22)
+// The rim lift, for the glass half below. The glass border paints above the panel's own
+// content (BorderLayer), so this is the part of a press that still reads when a photo or
+// a glyph covers the fill.
+@JwiftHoverEdge: rgba(255, 255, 255, 0.55)
+@JwiftPressEdge: rgba(255, 255, 255, 0.85)
+
+// The GESTURE, with nothing said about colour: the hit state, the swell, the squeeze, and the
+// one critically damped 140ms spring they ride. Every press in the app is this motion; what
+// differs is only what the control does with its own paint, which is the two classes below.
+JwiftPressMotion {
+  Interactive: true
+  Cursor: Pointer
+  UserSelect: None
+  @Transition VisualScale { Duration: 140ms }
+}
+
+JwiftPressMotion:Hover {
+  VisualScale: 1.06
+}
+
+JwiftPressMotion:Active {
+  VisualScale: 0.92
+}
+
+// The NEUTRAL press: the motion above plus a white fill over whatever the control rests on.
+// Fill and squeeze share the one spring, so the colour and the shrink land together instead
+// of the highlight flashing ahead of the squeeze.
+JwiftPress : JwiftPressMotion {
+  @Transition Background { Duration: 140ms }
+}
+
+JwiftPress:Hover {
+  Background: @JwiftHoverFill
+}
+
+JwiftPress:Active {
+  Background: @JwiftPressFill
+}
+
+// ── JwiftPressGlass ─────────────────────────────────────────────────
+// The same press on a control made OF glass: the fill and the squeeze above, plus the two
+// things only glass can say, a brighter rim and a brighter backdrop. The backdrop half is
+// what shows over content; the fill and the rim are what carry the press on black.
+// Filters merge by function, so naming Brightness here keeps the resting blur and saturate.
+JwiftPressGlass : JwiftPress {
+  @Transition BorderColor { Duration: 140ms }
+  @Transition BackdropFilter { Duration: 140ms }
+  @Transition BorderFilter { Duration: 140ms }
+}
+
+JwiftPressGlass:Hover {
+  BorderColor: @JwiftHoverEdge
+  BackdropFilter: Brightness(1.85)
+  BorderFilter: Brightness(1.5)
+}
+
+JwiftPressGlass:Active {
+  BorderColor: @JwiftPressEdge
+  BackdropFilter: Brightness(2.5)
+  BorderFilter: Brightness(1.7)
+}
+
+// ── JwiftPressTint ──────────────────────────────────────────────────
+// The press on a control that HAS a colour: a gold CTA, a cyan pill, a brand accent. The white
+// fill above is wrong here. Laid over gold it only walks the pill toward white, and the button
+// stops being its own colour at the moment it answers you.
+//
+// So a tinted control grades its OWN paint instead of wearing a veil. Filter multiplies the
+// element's finished pixels, after the fill, the lensed backdrop, the rim and the label, so the
+// whole button responds as one object and the hue it was given survives the press.
+//
+// Hover lifts it, the way a lamp coming up reads, and press lifts it FURTHER: pressed glass
+// brightens, it never darkens, so the control answers the finger by coming toward you. Press sits
+// above hover (1.12 over 1.08) so the two never reverse direction under a held finger. Same 1.06
+// swell, same 0.92 squeeze, same 140ms spring as everything else.
+//
+// The grade cascades to children, which is what keeps a label with its button: black ink stays
+// black under a multiply, white ink stays white, and neither drifts off the pill.
+//
+// Filter takes no vars (the resolver resolves vars for colours, not for filter lists), so the
+// numbers are literal, in the one place that owns them.
+JwiftPressTint : JwiftPressMotion {
+  @Transition Filter { Duration: 140ms }
+}
+
+JwiftPressTint:Hover {
+  Filter: Brightness(1.08) Saturate(1.06)
+}
+
+JwiftPressTint:Active {
+  Filter: Brightness(1.12) Saturate(1.08)
+}
+
+// ── JwiftPressTintGlass ─────────────────────────────────────────────
+// A tinted control that is also made of glass: an accent pill still lensing what sits behind it.
+// The grade carries the body; this adds the one thing only glass can say, a brighter rim.
+// No backdrop brightness here. The foreground grade already moves the lensed backdrop along with
+// the fill, and lifting it a second time is exactly what washes a tinted pill out.
+JwiftPressTintGlass : JwiftPressTint {
+  @Transition BorderColor { Duration: 140ms }
+  @Transition BorderFilter { Duration: 140ms }
+}
+
+JwiftPressTintGlass:Hover {
+  BorderColor: @JwiftHoverEdge
+  BorderFilter: Brightness(1.5)
+}
+
+JwiftPressTintGlass:Active {
+  BorderColor: @JwiftPressEdge
+  BorderFilter: Brightness(1.7)
+}
+
+// ── JwiftWater ──────────────────────────────────────────────────────
+// The reusable water physics. Extend it and anything gains Apple's described response:
+// interactive glass "reacts to user interaction by scaling, bouncing, and shimmering", and
+// sliders "preserve momentum and stretch when they are moved".
+//
+// It is a SPRING, not a duration. A duration can only ease in and stop; bouncing needs a
+// spring that overshoots and settles. Stiffness 900 with Damping 18 is well under the
+// critical damping of 60 for this mass, so it overshoots and wobbles, and omega of 30 rad/s
+// makes that wobble quick rather than floaty.
+//
+// VisualScale is render-time, so the wobble never disturbs layout or a control's travel
+// maths. Reduce Motion should drop the :Active rule: Apple's own note is that it
+// "decreases the intensity of some effects and disables any elastic properties".
+JwiftWater {
+  VisualScale: 1
+  @Spring VisualScale { Stiffness: 900, Damping: 18, Mass: 1 }
+}
+
+// The pull. Scaling UP on press is the "pull toward your finger" read; the spring's
+// overshoot on release is what makes it feel like water rather than a resize.
+JwiftWater:Active {
+  VisualScale: 1.06
+}
+
+// A heavier body wobbles less and settles slower. For large glass (menus, sheets) that
+// should feel more substantial than a tab pill.
+JwiftWater_Heavy : JwiftWater {
+  @Spring VisualScale { Stiffness: 520, Damping: 22, Mass: 1 }
+}
+JwiftWater_Heavy:Active {
+  VisualScale: 1.03
 }

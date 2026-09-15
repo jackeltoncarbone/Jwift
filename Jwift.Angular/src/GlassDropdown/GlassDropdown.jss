@@ -3,10 +3,8 @@
 // and its own radius + interactive springs.
 // Runtime theme vars (set from JS via registry.SetVar). Defaults = the authored look, so an unthemed
 // app is unchanged; a themed scope sets @GlassTint (accent fill) and @GlassInk (foreground text/icon).
-@GlassTint: rgba(255, 255, 255, 0)
+@GlassTint: rgba(120, 120, 124, 0.2)
 @GlassInk: rgba(255, 255, 255, 0.85)
-@GlassHover: rgba(255, 255, 255, 0.14)
-@GlassActive: rgba(255, 255, 255, 0.22)
 
 Jwift_GlassDropdown : JwiftGlass {
   Background: @GlassTint
@@ -63,13 +61,14 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
 }
 
 // Closed-state cell — flat 40pt round hit-target inside a closed dropdown.
-// No own glass material (the wrapping dropdown owns the glass). Hover/
-// active tints lift the background. Consumers stop click propagation
-// when the cell should fire a direct action without toggling the
-// dropdown; let it bubble when the cell is the open/close trigger
-// (e.g. ellipsis). One canonical class — drill, picture, page-chrome
-// all share it.
-Jwift_GlassDropdownCell {
+// No own glass material (the wrapping dropdown owns the glass), so it takes the plain
+// JwiftPress: a fill and the squeeze, no second material on top of the pill's. A cell in
+// a group and a button on its own are the same control at two densities, and JwiftPress
+// is why they answer a finger identically. Consumers stop click propagation when the cell
+// should fire a direct action without toggling the dropdown; let it bubble when the cell
+// is the open/close trigger (e.g. ellipsis). One canonical class — drill, picture,
+// page-chrome all share it.
+Jwift_GlassDropdownCell : JwiftPress {
   Width: 40pt
   Height: 40pt
   BorderRadius: 999pt
@@ -77,28 +76,12 @@ Jwift_GlassDropdownCell {
   Justify: Center
   Align: Center
   Background: rgba(255, 255, 255, 0)
-  Cursor: Pointer
-  Interactive: true
-  UserSelect: None
-  @Transition Background { Duration: 140ms }
-  // The same 140ms squeeze the single glass button wears — a cell in a group
-  // and a button on its own are the same control at two densities, and they
-  // must answer a finger identically.
-  @Transition VisualScale { Duration: 140ms }
 }
 
-Jwift_GlassDropdownCell:Hover {
-  Background: @GlassHover
-  VisualScale: 1.06
-}
-
-Jwift_GlassDropdownCell:Active {
-  Background: @GlassActive
-  VisualScale: 0.92
-}
-
+// The SELECTED cell wears the press fill at rest — same token, so a held-open cell and a
+// pressed one read as the same state.
 Jwift_GlassDropdownCell_Active : Jwift_GlassDropdownCell {
-  Background: @GlassActive
+  Background: @JwiftPressFill
 }
 
 // Disabled inline cell — dimmed + inert (e.g. Undo with nothing to undo). The
@@ -106,7 +89,7 @@ Jwift_GlassDropdownCell_Active : Jwift_GlassDropdownCell {
 // can't be used reads as unavailable instead of identical to an active one.
 // Hover/active are flattened so it doesn't light up under the pointer.
 Jwift_GlassDropdownCell_Disabled : Jwift_GlassDropdownCell {
-  Opacity: 0.3
+  Opacity: 0.5
   Cursor: Default
 }
 Jwift_GlassDropdownCell_Disabled:Hover {
@@ -131,18 +114,10 @@ Jwift_GlassDropdownCell_Avatar : Jwift_GlassDropdownCell {
 // pill's padding so the avatar fills the whole glass — a true circle, not a
 // ring around a smaller circle — and the PILL takes the button squeeze while
 // the cell inside stays still (two nested squeezes read as a flinch).
-Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed {
+// The pill is glass, so it takes the glass press, and its rim paints above the avatar
+// (BorderLayer), which is what keeps the press legible when a photo fills the circle.
+Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGlass {
   Padding: 0pt
-  @Transition VisualScale { Duration: 140ms }
-  @Transition BackdropFilter { Duration: 140ms }
-}
-Jwift_GlassDropdown_ClosedAvatarOnly:Hover {
-  BackdropFilter: Brightness(1.85)
-  VisualScale: 1.06
-}
-Jwift_GlassDropdown_ClosedAvatarOnly:Active {
-  BackdropFilter: Brightness(2.5)
-  VisualScale: 0.92
 }
 Jwift_GlassDropdownCell_Avatar_Fill : Jwift_GlassDropdownCell_Avatar {
   Width: 48pt
@@ -188,7 +163,8 @@ Jwift_GlassDropdownCellAvatarImage {
 // Direction/Justify/Align re-stated explicitly: when the resolver swaps
 // from _Closed to _Open it rebuilds Layout from defaults, so anything not
 // declared on _Open falls back to default (Direction: Row), not the base.
-Jwift_GlassDropdown_Open : Jwift_GlassDropdown {
+// The open menu is a large element, so it takes the thick material (later base wins).
+Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
   Position: Placed
   Top: 0pt
   Right: 0pt
@@ -198,7 +174,9 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown {
   Justify: Start
   Align: Stretch
   Padding: 6pt
-  Gap: 0pt
+  // Rows sit 6pt apart, the same 6pt the glass keeps around them, so the
+  // shared hover pill never touches a neighbour or a divider hairline.
+  Gap: 6pt
   BorderRadius: 28pt
 }
 
@@ -209,6 +187,9 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown {
 // half-Height (22pt visible). The concentric chain still treats the
 // effective radius as Height/2 = 22pt, and the open glass adds 6pt
 // padding on top of that to land at 28pt.
+// Rows draw nothing of their own: the hover / press highlight is ONE
+// shared Jwift_GlassDropdownIndicator owned by the dropdown that springs
+// between rows, so a row is only a hit target and a layout slot.
 Jwift_GlassDropdownItem {
   Direction: Row
   Justify: Start
@@ -222,51 +203,11 @@ Jwift_GlassDropdownItem {
   Interactive: true
   Cursor: Pointer
   UserSelect: None
-
-  @Transition BackdropFilter { Duration: 180ms }
-  @Transition Background { Duration: 180ms }
-}
-
-Jwift_GlassDropdownItem:Hover {
-  BackdropFilter: Brightness(1.6)
-}
-
-Jwift_GlassDropdownItem:Active {
-  BackdropFilter: Brightness(2.4)
-}
-
-Jwift_GlassDropdownItem_Danger : Jwift_GlassDropdownItem {
-}
-
-Jwift_GlassDropdownItem_Danger:Hover {
-  Background: rgba(255, 80, 80, 0.15)
-  BackdropFilter: Brightness(1.3)
-}
-
-Jwift_GlassDropdownItem_Danger:Active {
-  Background: rgba(255, 80, 80, 0.25)
-  BackdropFilter: Brightness(1.6)
 }
 
 Jwift_GlassDropdownItem_Disabled : Jwift_GlassDropdownItem {
   Opacity: 0.75
   Cursor: Default
-}
-
-Jwift_GlassDropdownItem_Disabled:Hover {
-  BackdropFilter: Brightness(1)
-}
-
-Jwift_GlassDropdownItem_Disabled:Active {
-  BackdropFilter: Brightness(1)
-}
-
-Jwift_GlassDropdownItem_Danger:Hover {
-  Background: rgba(255, 100, 100, 0.16)
-}
-
-Jwift_GlassDropdownItem_Danger:Active {
-  Background: rgba(255, 100, 100, 0.26)
 }
 
 // Icon size matches label FontSize so both glyphs share the same line-
@@ -288,10 +229,6 @@ Jwift_GlassDropdownItemImage {
   FitMode: Contain
 }
 
-Jwift_GlassDropdownItemIcon_Danger : Jwift_GlassDropdownItemIcon {
-  Color: rgba(255, 110, 110, 0.95)
-}
-
 Jwift_GlassDropdownItemLabel {
   FontFamily: Inter
   FontSize: 15pt
@@ -300,10 +237,6 @@ Jwift_GlassDropdownItemLabel {
   LetterSpacing: 0.1pt
   TextAlign: Left
   MaxLines: 1
-}
-
-Jwift_GlassDropdownItemLabel_Danger : Jwift_GlassDropdownItemLabel {
-  Color: rgba(255, 110, 110, 0.95)
 }
 
 // Non-interactive section header — labels a consolidated overflow section in
@@ -319,12 +252,39 @@ Jwift_GlassDropdownSectionHeader {
   MaxLines: 1
 }
 
-// Thin separator between groups of menu items (e.g. between "Cameras" and
-// "Rename" in the drill menu). Hairline only — sits flush against the
-// rows above/below so the divider is a visual cut, not a wide gap.
+// Hairline between large sections of a menu. It lives inside the 6pt row
+// gap (6pt clear above and below), so no row pill can ever touch it.
 Jwift_GlassDropdownDivider {
   Width: 100%
   Height: 1pt
-  Background: rgba(255, 255, 255, 0.1)
+  Background: rgba(255, 255, 255, 0.08)
+}
+
+// The one shared highlight for every row of an open menu. Placed inside the
+// open glass; the dropdown springs its Top/Height onto whichever row the
+// pointer is over and fades it out when the pointer is on no row.
+// A fill, not a material: Apple puts no glass on glass, and things on the glass are "fills,
+// transparency, and vibrancy". A backdrop filter here would re-brighten the thick menu under it.
+Jwift_GlassDropdownIndicator {
+  Position: Placed
+  Layer: 0
+  BorderRadius: 100pt
+  Background: @JwiftHoverFill
+  Opacity: 0
+
+  @Transition Y { Duration: 220ms }
+  @Transition X { Duration: 220ms }
+  @Transition Width { Duration: 220ms }
+  @Transition Height { Duration: 220ms }
+  @Transition Opacity { Duration: 140ms }
+  @Transition Background { Duration: 140ms }
+}
+
+Jwift_GlassDropdownIndicator_On : Jwift_GlassDropdownIndicator {
+  Opacity: 1
+}
+
+Jwift_GlassDropdownIndicator_Pressed : Jwift_GlassDropdownIndicator_On {
+  Background: @JwiftPressFill
 }
 

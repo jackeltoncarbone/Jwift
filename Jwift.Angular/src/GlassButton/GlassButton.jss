@@ -1,49 +1,24 @@
 // Inherits the canonical Liquid-Glass look from JwiftGlass (border
-// luminosity + flat 0.15 outline, backdrop, refraction, fresnel). Only
-// the differences are set below: crisper bevel + no specular for the
-// small pill edge, plus the interactive press/hover springs.
+// luminosity + flat 0.15 outline, backdrop, refraction, fresnel) and the
+// app-wide press from JwiftPressGlass (fill + rim + backdrop + squeeze).
+// Only the differences are set below: crisper bevel + no specular for the
+// small pill edge.
 // Runtime theme vars (set from JS via registry.SetVar). Defaults = the authored look, so an
 // unthemed app is unchanged; a themed scope (the drill page) sets @GlassTint to the accent fill.
-@GlassTint: rgba(255, 255, 255, 0)
+@GlassTint: rgba(120, 120, 124, 0.2)
 
-Jwift_GlassBtn : JwiftGlass {
+Jwift_GlassBtn : JwiftGlass, JwiftPressGlass {
   Background: @GlassTint
   BezelScale: 0.25
   SpecularIntensity: 0
   SpecularSharpness: 10
   EdgeLightTop: 0
 
-  Interactive: true
-  Cursor: Pointer
-  // Unified press/hover transition. All four channels run on the same
-  // critically-damped spring so the highlight blooms in lockstep with the
-  // squeeze instead of flashing ahead of it. 140ms lands snappy on :Active
-  // and light on :Hover without giving up the iOS-glass cushion.
-  @Transition BackdropFilter { Duration: 140ms }
-  @Transition BorderFilter { Duration: 140ms }
-  // Background springs too so a chrome-theme accent GLOW (added on :Hover/:Active by the
-  // ChromeThemeService overlay) blooms in lockstep. No-op when untinted (no Background change).
-  @Transition Background { Duration: 140ms }
+  // Hover, press, squeeze and their 140ms spring all come from JwiftPressGlass.
+  // PointScale is the button's own: it cascades through the layout solver, shrinking the
+  // pill AND every pt-based property in its subtree, so a consumer that springs it takes
+  // the glyph along, like a CSS font-size change cascading through em units.
   @Transition PointScale { Duration: 140ms }
-  @Transition VisualScale { Duration: 140ms }
-}
-
-// PointScale cascades through the layout solver — shrinks the button
-// AND every `pt`-based property in its subtree (children's FontSize,
-// Padding, etc.) by the same factor. Width/Height re-resolve and
-// JivAnimator springs the new sizes; the glyph caret inside rides
-// along proportionally, like a CSS `font-size` change cascading
-// through `em` units.
-Jwift_GlassBtn:Hover {
-  BackdropFilter: Brightness(1.85)
-  BorderFilter: Brightness(1.5)
-  VisualScale: 1.06
-}
-
-Jwift_GlassBtn:Active {
-  BackdropFilter: Brightness(2.5)
-  BorderFilter: Brightness(1.7)
-  VisualScale: 0.92
 }
 
 Jwift_GlassBtn_Round : Jwift_GlassBtn {

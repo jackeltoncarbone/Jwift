@@ -73,7 +73,8 @@ Jwift_DrawerTitle {
   FlexShrink: 0
 }
 
-Jwift_DrawerClose {
+// A flat fill on the drawer's glass, so it takes the shared neutral press.
+Jwift_DrawerClose : JwiftPress {
   Layer: 26
   Position: Placed
   Top: 20pt
@@ -85,13 +86,7 @@ Jwift_DrawerClose {
   Justify: Center
   Align: Center
   Background: rgba(255, 255, 255, 0.10)
-  Interactive: true
-  Cursor: Pointer
-  @Transition Background { Duration: 140ms }
 }
-
-Jwift_DrawerClose:Hover { Background: rgba(255, 255, 255, 0.18) }
-Jwift_DrawerClose:Active { VisualScale: 0.94 }
 
 Jwift_DrawerCloseGlyph {
   FontFamily: JwiftIcons

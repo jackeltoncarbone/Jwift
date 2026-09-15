@@ -17,14 +17,12 @@ import { Jiv } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
 import ToggleJss from './Toggle.jss';
 
-/** Knob travel, in points, MATCHING Toggle.jss.
+/** Knob travel while HELD, in points, MATCHING Toggle.jss.
  *
- *  Two ranges, because the thumb grows when held: 40.5 wide at rest travelling 2.5 -> 26.5,
- *  and 63.5 wide when held travelling -8.5 -> 14.5. A drag is always in the held state, so it
- *  clamps to the HELD pair; clamping a held thumb to the resting range offsets it by the
- *  difference, which reads as the thumb sitting wrong for the mode being toggled to. */
-const KNOB_REST_MIN = 2.5;
-const KNOB_REST_MAX = 26.5;
+ *  The resting thumb is 40.5 wide and travels 2.5 -> 26.5, but the sheet owns that and a drag
+ *  never sees it: the thumb swells to 63.5 the moment it is held, so a drag clamps to the held
+ *  pair below. Clamping a held thumb to the resting range offsets it by the difference, which
+ *  reads as the thumb sitting wrong for the mode being toggled to. */
 const KNOB_PRESSED_MIN = -8.5;
 const KNOB_PRESSED_MAX = 14.5;
 
@@ -34,12 +32,6 @@ const KNOB_PRESSED_MAX = 14.5;
  * MOVEMENT BASED, like the slider: the thumb follows the pointer while held rather than
  * jumping between two positions. Releasing ALWAYS toggles, wherever the thumb happens to
  * be, so a drag is a way of feeling the control rather than a way of choosing a value.
- *
- * KNOWN INCOMPLETE: the toggle-on-release half works, and the pointer handlers fire with
- * the right coordinates, but the thumb does NOT yet follow the pointer. `_dragLeft` is
- * written on every move while `KnobLayout` only ever recomputes as null, so the signal
- * write is not reaching this instance's template binding. The position is therefore still
- * coming from the class. Do not describe the drag as working until that is fixed.
  *
  * The press begins on any part of the switch and ends on a pointer up ANYWHERE on the
  * document, so dragging off the control and releasing still completes the interaction.
@@ -122,7 +114,6 @@ export class Toggle extends JivHost implements OnInit, OnDestroy {
 
   private _onMove(e: PointerEvent): void {
     if (!this._pressed()) return;
-    // PointScale is 1, so a CSS pixel of pointer travel is a point of knob travel.
     // PointScale is 1, so a CSS pixel of pointer travel is a point of knob travel, 1:1.
     const next = this._startLeft + (e.clientX - this._startX);
     this._dragLeft.set(Math.max(KNOB_PRESSED_MIN, Math.min(KNOB_PRESSED_MAX, next)));

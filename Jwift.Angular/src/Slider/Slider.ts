@@ -79,8 +79,9 @@ export class Slider extends JivHost implements OnInit, OnDestroy {
       this._active() ? 'Jwift_Slider Jwift_Slider_Active' : 'Jwift_Slider');
   }
 
-  ngOnInit(): void { this._attachOnInit(); }
-  ngOnDestroy(): void { this._detachOnDestroy(); }
+  // The pointer math below reads this node's on-screen rect, which only arrives while the rect is watched.
+  ngOnInit(): void { this._attachOnInit(); this.Node.WatchRect(true); }
+  ngOnDestroy(): void { this.Node.WatchRect(false); this._detachOnDestroy(); }
 
   protected onPointerDown = (event: PointerEvent): void => {
     const start = this._valueAtPointer(event);

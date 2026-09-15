@@ -11,7 +11,7 @@ Jwift_SelectionIndicator {
   // behind it, so an uneven backdrop (e.g. a bright streak crossing one side) made the pill glow
   // lopsided. The heavier even fill keeps it reading as one balanced bright-glass pill.
   // The iPhone's active pill: 58 grey over a 24 grey bar, a 15% white.
-  Background: rgba(255, 255, 255, 0.15)
+  Background: rgba(0, 0, 0, 0.25)
   BorderRadius: 100pt
   // NEUTRAL backdrop at rest (Brightness/Saturate = 1). The pill's highlight comes
   // from the white Background fill, NOT a backdrop boost — so on release the
@@ -19,7 +19,7 @@ Jwift_SelectionIndicator {
   // the time the layer drops below the text the glass has ZERO effect on it → the
   // layer swap is invisible (seamless). A non-1.0 resting filter left a residual
   // tint that popped off the instant the layer dropped.
-  BackdropFilter: Brightness(1.2) Saturate(1.3) Contrast(1) Blur(6pt)
+  BackdropFilter: Saturate(2) Brightness(0.75) 
 
   // Real bevel glass (was flat Thickness 0/Refraction 0). The flat interior
   // (inside the bezel) samples the backdrop ~1:1 so the active label's CENTRE
@@ -48,25 +48,25 @@ Jwift_SelectionIndicator {
   ShadowColor: rgba(0, 0, 0, 0)
   ShadowBlur: 0
 
-  @Transition Background { Duration: 200ms }
-  @Transition BackdropFilter { Duration: 200ms }
-  @Transition Thickness { Duration: 280ms }
-  @Transition Fillet { Duration: 280ms }
-  @Transition Refraction { Duration: 280ms }
-  @Transition BezelWidth { Duration: 280ms }
-  @Transition BezelScale { Duration: 280ms }
-  @Transition FresnelStrength { Duration: 280ms }
-  @Transition ChromaticAberration { Duration: 280ms }
-  @Transition LightAngle { Duration: 200ms }
-  @Transition LightIntensity { Duration: 200ms }
-  @Transition EdgeLightTop { Duration: 200ms }
-  @Transition EdgeLightBottom { Duration: 200ms }
-  @Transition BorderWidth { Duration: 200ms }
-  @Transition BorderBlur { Duration: 200ms }
-  @Transition BorderFilter { Duration: 200ms }
-  @Transition BorderColor { Duration: 200ms }
-  @Transition ShadowColor { Duration: 200ms }
-  @Transition ShadowBlur { Duration: 200ms }
+  @Transition Background { Duration: 300ms }
+  @Transition BackdropFilter { Duration: 300ms }
+  @Transition Thickness { Duration: 300ms }
+  @Transition Fillet { Duration: 300ms }
+  @Transition Refraction { Duration: 300ms }
+  @Transition BezelWidth { Duration: 300ms }
+  @Transition BezelScale { Duration: 300ms }
+  @Transition FresnelStrength { Duration: 300ms }
+  @Transition ChromaticAberration { Duration: 300ms }
+  @Transition LightAngle { Duration: 300ms }
+  @Transition LightIntensity { Duration: 300ms }
+  @Transition EdgeLightTop { Duration: 300ms }
+  @Transition EdgeLightBottom { Duration: 300ms }
+  @Transition BorderWidth { Duration: 300ms }
+  @Transition BorderBlur { Duration: 300ms }
+  @Transition BorderFilter { Duration: 300ms }
+  @Transition BorderColor { Duration: 300ms }
+  @Transition ShadowColor { Duration: 300ms }
+  @Transition ShadowBlur { Duration: 300ms }
 
   // X/Y and Width/Height MUST share the same duration. Press-in/out grows
   // baseWidth symmetrically about centerX — so target_X moves left while
@@ -76,13 +76,26 @@ Jwift_SelectionIndicator {
   // the slower spring (visibly LEFT on release, RIGHT on press-in).
   // Matching ω makes the left/right edge lags cancel, keeping the visible
   // center on the tab.
-  @Transition X      { Duration: 260ms }
-  @Transition Y      { Duration: 260ms }
-  @Transition Width  { Duration: 260ms }
-  @Transition Height { Duration: 260ms }
+  // Four behaviours, each timed for what it actually is:
+  //   POSITION (X/Y) 85ms      - snappy; the indicator arrives with the tap
+  //   SIZE (Width/Height) 220ms - the liquid stretch; slow is what makes it read as liquid
+  //   MATERIAL (above) 300ms    - flat pill -> glass. Apple materializes glass by ramping
+  //                               the lensing, so this is the SLOW one, not a snap.
+  //   WOBBLE (VisualScale)      - a fast spring that overshoots. Duration cannot express
+  //                               a bounce; only a spring can.
+  // The wobble. A fast, underdamped spring so the pill overshoots and settles like water
+  // instead of easing to a stop. Critical damping here is 60, so 18 is deliberately loose.
+  VisualScale: 1
+  @Spring VisualScale { Stiffness: 900, Damping: 18, Mass: 1 }
+
+  @Transition X      { Duration: 85ms }
+  @Transition Y      { Duration: 85ms }
+  @Transition Width  { Duration: 220ms }
+  @Transition Height { Duration: 220ms }
 }
 
 Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
+  VisualScale: 1.06
   // ABOVE the tab text (text is Layer 1) ONLY while pressed, so the press-glass
   // lifts over the label and magnifies it. Drops back to Layer 0 (below text) on
   // release — the resting label is crisp again.
@@ -90,7 +103,7 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
 
   Background: rgba(255, 255, 255, 0.06)
 
-  BackdropFilter: Brightness(1.45) Saturate(1.5) Contrast(1) Blur(6pt)
+  BackdropFilter: Brightness(1) Saturate(1)
 
   // BezelWidth stays close to the base 8: the refraction's flat inner region is the rounded shape inset
   // by BezelWidth (inner corner radius ≈ outerRadius − BezelWidth), so a wide bezel on this small pill
@@ -108,24 +121,28 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   //  • CLIPPING (the "sliver" / off-pill clamp) ≈ Thickness × |Refraction| — keep
   //    Thickness LOW so the edge displacement never runs off the pill.
   // So: low Thickness, higher Fillet, moderate Refraction = strong bulge, no clip.
-  Thickness: 0
+  Thickness: 2.5
   Fillet: 0
-  Refraction: 0
-  BezelWidth: 4
+  Refraction: 8
+  BezelWidth: 12
   BezelScale: 0.25
-  FresnelStrength: 0.35
-  ChromaticAberration: 0.3
+  FresnelStrength: 0
+  ChromaticAberration: 0.25
 
   LightAngle: 135
   LightIntensity: 1
   EdgeLightTop: 0
-  EdgeLightBottom: 0.02
+  EdgeLightBottom: 0
 
-  BorderWidth: 1pt
-  BorderBlur: 0.5pt
-  BorderFilter: Brightness(1.5) Saturate(1.5)
-  BorderColor: rgba(255, 255, 255, 0.25)
+  BorderWidth: 0.45pt
+  BorderBlur: 0.3pt
+  BorderFilter: Blur(-0.5pt) Brightness(1.4)
+  BorderColor: rgba(255, 255, 255, 0.35)
 
   ShadowColor: rgba(0, 0, 0, 0.15)
   ShadowBlur: 40pt
+  BorderFade: 0.7pt
+  BorderVariance: 0.5
+  BorderAlphaVariance: 0.75
+  BorderFresnelBrightness: 0.7
 }

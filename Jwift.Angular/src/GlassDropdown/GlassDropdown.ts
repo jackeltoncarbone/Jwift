@@ -3,19 +3,35 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  computed,
   forwardRef,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
+import type { JivHandle } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import GlassDropdownJss from './GlassDropdown.jss';
+
+/** A row of an open menu, as the dropdown sees it: a hit rect plus the two
+ *  facts that change how the shared indicator draws over it. */
+export interface GlassDropdownRow {
+  readonly Node: JivHandle;
+  IsDisabled(): boolean;
+}
 
 @Component({
   selector: 'glass-dropdown',
   standalone: true,
-  template: '<ng-content></ng-content>',
+  imports: [Jiv],
+  template: `
+    @if (IsOpen()) {
+      <jiv #indicator [class]="_IndicatorClass()" [childLayout]="_IndicatorLayout()" />
+    }
+    <ng-content></ng-content>
+  `,
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
@@ -28,6 +44,60 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   private readonly _page = signal<string | null>(null);
   readonly IsOpen = this._open.asReadonly();
   readonly Page   = this._page.asReadonly();
+
+  // The open menu has ONE highlight, shared by every row. Rows register
+  // here; the dropdown hit-tests the pointer against their rects and
+  // springs the indicator onto the row under it, so moving down a menu
+  // slides one pill instead of lighting rows one by one.
+  private readonly _indicator = viewChild<Jiv>('indicator');
+  private readonly _rows = new Set<GlassDropdownRow>();
+  private readonly _hovered = signal<GlassDropdownRow | null>(null);
+  private readonly _pressed = signal(false);
+  protected readonly _IndicatorLayout = signal<{ Left: string; Top: string; Width: string; Height: string } | undefined>(undefined);
+  protected readonly _IndicatorClass = computed(() => {
+    const row = this._hovered();
+    if (!row) return 'Jwift_GlassDropdownIndicator';
+    return this._pressed() ? 'Jwift_GlassDropdownIndicator_Pressed' : 'Jwift_GlassDropdownIndicator_On';
+  });
+
+  RegisterRow(row: GlassDropdownRow): void { this._rows.add(row); }
+  UnregisterRow(row: GlassDropdownRow): void {
+    this._rows.delete(row);
+    if (this._hovered() === row) this._hovered.set(null);
+  }
+
+  private _rowAt(clientX: number, clientY: number): GlassDropdownRow | null {
+    const canvas = this._canvasRef?.Canvas;
+    if (!canvas) return null;
+    const [x, y] = canvas.ClientToNodePoint(clientX, clientY);
+    for (const row of this._rows) {
+      if (row.IsDisabled()) continue;
+      const n = row.Node;
+      if (n.Width <= 0 || n.Height <= 0) continue;
+      if (x >= n.X && x < n.X + n.Width && y >= n.Y && y < n.Y + n.Height) return row;
+    }
+    return null;
+  }
+
+  private _hover(row: GlassDropdownRow | null): void {
+    const was = this._hovered();
+    if (row === was) return;
+    this._hovered.set(row);
+    if (!row) { this._pressed.set(false); return; }
+    // Placed: Left/Top are relative to the dropdown's own box.
+    this._IndicatorLayout.set({
+      Left: `${row.Node.X - this.Node.X}px`,
+      Top: `${row.Node.Y - this.Node.Y}px`,
+      Width: `${row.Node.Width}px`,
+      Height: `${row.Node.Height}px`,
+    });
+    // Arriving from nowhere: land on the row and fade in. Between rows: slide.
+    const ind = this._indicator()?.Node;
+    if (ind && !was) {
+      ind.SnapLayout = true;
+      requestAnimationFrame(() => { ind.SnapLayout = false; });
+    }
+  }
 
   /** Guards opening via a host (glass-background) click. A glass dropdown that
    *  would open to NO content renders as a flat empty sliver, which is the bug
@@ -91,10 +161,32 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
         else this.Close();
       }
     };
+    const onDocMove = (e: PointerEvent) => {
+      if (!this._open()) return;
+      this._hover(this._rowAt(e.clientX, e.clientY));
+    };
+    const onDocPress = (e: PointerEvent) => {
+      if (!this._open()) return;
+      const row = this._rowAt(e.clientX, e.clientY);
+      this._hover(row);
+      this._pressed.set(row !== null);
+    };
+    const onDocRelease = () => { if (this._pressed()) this._pressed.set(false); };
+    const onDocLeave = () => this._hover(null);
     document.addEventListener('pointerdown', onDocDown, true);
+    document.addEventListener('pointerdown', onDocPress, true);
+    document.addEventListener('pointermove', onDocMove, true);
+    document.addEventListener('pointerup', onDocRelease, true);
+    document.addEventListener('pointercancel', onDocRelease, true);
+    document.addEventListener('pointerleave', onDocLeave, true);
     document.addEventListener('keydown', onKey);
     this._unbindDoc = () => {
       document.removeEventListener('pointerdown', onDocDown, true);
+      document.removeEventListener('pointerdown', onDocPress, true);
+      document.removeEventListener('pointermove', onDocMove, true);
+      document.removeEventListener('pointerup', onDocRelease, true);
+      document.removeEventListener('pointercancel', onDocRelease, true);
+      document.removeEventListener('pointerleave', onDocLeave, true);
       document.removeEventListener('keydown', onKey);
     };
   }
@@ -105,7 +197,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   }
 
   Open():   void { this._open.set(true); }
-  Close():  void { this._open.set(false); this._page.set(null); }
+  Close():  void { this._open.set(false); this._page.set(null); this._hovered.set(null); this._pressed.set(false); }
   Toggle(): void { if (this._open()) this.Close(); else this.Open(); }
 
   PushPage(id: string): void { this._page.set(id); }

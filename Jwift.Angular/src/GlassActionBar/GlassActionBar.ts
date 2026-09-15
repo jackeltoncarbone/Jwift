@@ -5,6 +5,7 @@ import {
   ViewChild,
   afterNextRender,
   computed,
+  inject,
   input,
   output,
   signal,
@@ -13,8 +14,9 @@ import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { type ChildLayout } from 'jaui';
 import { Icon } from '../Icon/Icon';
 import { GlassActionGroup, type GlassAction } from '../GlassActionGroup/GlassActionGroup';
+import { GLASS_ACTION_ACCOUNT } from '../GlassActionGroup/GlassActionAccount';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
-import { GlassDropdownItem, type GlassDropdownItemVariant } from '../GlassDropdown/GlassDropdownItem';
+import { GlassDropdownItem } from '../GlassDropdown/GlassDropdownItem';
 import { JwiftSpinner } from '../Spinner/JwiftSpinner';
 import GlassActionBarJss from './GlassActionBar.jss';
 
@@ -103,17 +105,16 @@ export interface ActionGroup {
                   <jext class="Jwift_GlassDropdownSectionHeader" [text]="item.Label ?? ''" />
                 } @else {
                   <glass-dropdown-item
-                    [variant]="_ItemVariant(item)"
                     [disabled]="!!item.Disabled"
                     [keepOpen]="!!item.KeepOpen || !!item.Page"
                     (click)="_OnItemClick(item, gd)">
                     @if (item.Image) {
                       <jiv class="Jwift_GlassDropdownItemImage" [image]="item.Image" />
                     } @else if (item.Icon) {
-                      <icon [class]="_ItemIconClass(item)" [Name]="item.Icon" />
+                      <icon class="Jwift_GlassDropdownItemIcon" [Name]="item.Icon" />
                     }
                     @if (item.Label) {
-                      <jext [class]="_ItemLabelClass(item)" [text]="item.Label" />
+                      <jext class="Jwift_GlassDropdownItemLabel" [text]="item.Label" />
                     }
                   </glass-dropdown-item>
                 }
@@ -157,8 +158,19 @@ export class GlassActionBar implements OnDestroy {
 
   /** Items appended to the sink menu AFTER all consolidated overflow (e.g. the
    *  account/auth section). A leading divider is inserted automatically when
-   *  there's overflow above. */
-  readonly Menu = input<readonly GlassAction[]>([]);
+   *  there's overflow above. Left UNSET (null) the bar appends the ambient
+   *  account menu from GLASS_ACTION_ACCOUNT, which is what makes the avatar a
+   *  real sink on a page that states nothing; pass `[]` to append nothing. */
+  readonly Menu = input<readonly GlassAction[] | null>(null);
+
+  /** The ambient account sink, when the host app provides one. */
+  private readonly _Account = inject(GLASS_ACTION_ACCOUNT, { optional: true });
+
+  /** Explicit rows win; unset inherits the account rows. The bar resolves this
+   *  ITSELF rather than leaving it to the sink group, because the rows have to
+   *  land UNDER the consolidated overflow with a divider above them. */
+  protected readonly _EffectiveMenu = computed<readonly GlassAction[]>(() =>
+    this.Menu() ?? this._Account?.Menu() ?? []);
 
   /** Sink sub-page item lists (e.g. auth providers), forwarded to the sink. */
   readonly Pages = input<Record<string, readonly GlassAction[]>>({});
@@ -245,7 +257,7 @@ export class GlassActionBar implements OnDestroy {
       if (g.Label) out.push({ Id: `__hdr_${g.Id}`, Header: true, Label: g.Label });
       out.push(...shed);
     });
-    const appended = this.Menu();
+    const appended = this._EffectiveMenu();
     if (appended.length) {
       if (out.length) out.push({ Id: '__div_menu', Divider: true });
       out.push(...appended);
@@ -312,17 +324,8 @@ export class GlassActionBar implements OnDestroy {
     this.ActionClick.emit(item.Id);
   }
 
-  protected _ItemVariant(a: GlassAction): GlassDropdownItemVariant {
-    return a.Destructive ? 'danger' : 'default';
-  }
 
-  protected _ItemIconClass(a: GlassAction): string {
-    return a.Destructive ? 'Jwift_GlassDropdownItemIcon_Danger' : 'Jwift_GlassDropdownItemIcon';
-  }
 
-  protected _ItemLabelClass(a: GlassAction): string {
-    return a.Destructive ? 'Jwift_GlassDropdownItemLabel_Danger' : 'Jwift_GlassDropdownItemLabel';
-  }
 
   // ── collapse solver ───────────────────────────────────────────────────────
 

@@ -49,7 +49,10 @@ Jwift_GlassDropdownCell_AvatarPeer {
   Align: Center
   Background: rgba(255, 255, 255, 0)
   Overflow: Hidden
-  Border: 2pt rgba(255, 255, 255, 0.92)
+  // Was `Border: 2pt rgba(...)`, a CSS shorthand that is not a JSS property: SlotFor filed it under
+  // Style and the applier dropped it, so this ring never drew. Stated as the two real properties.
+  BorderWidth: 2pt
+  BorderColor: rgba(255, 255, 255, 0.92)
   Order: 195
   Margin: 0pt -28pt 0pt 0pt
   Layer: 0

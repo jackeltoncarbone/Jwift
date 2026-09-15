@@ -99,7 +99,10 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     return items[this.EffectiveSelected()]?.Node ?? null;
   });
 
-  private static readonly _ExpandThreshold = 700;
+  // The HTML bar condensed (icon stacked over label) at 880px and expanded above it. Matches the
+  // `@If (Width < 880)` in TabBar.jss — a bare Width predicate is the VIEWPORT, the same axis
+  // window.innerWidth reports, so the two flip together.
+  private static readonly _ExpandThreshold = 880;
 
   private _canvasRef = inject(Jaui, { optional: true });
   private _rafId = 0;
@@ -117,7 +120,12 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
   private static readonly _SlideLatchMs = 280;
 
   constructor() {
-    super('TabBar', TabBarJss, 'Jwift_TabBar', () => `Jwift_TabBar ${this.Class()}`.trim());
+    // Jwift_TabBar_Pressed is ADDITIVE and sets only VisualScale, so it swells the bar while the
+    // indicator is engaged without touching the geometry. It rides IsPressed() — the same signal the
+    // <selection-indicator> reads — so bar and pill engage and release as one, including through the
+    // post-release slide latch. The consumer's Class still resolves last and wins.
+    super('TabBar', TabBarJss, 'Jwift_TabBar', () =>
+      `Jwift_TabBar ${this.IsPressed() ? 'Jwift_TabBar_Pressed' : ''} ${this.Class()}`.replace(/\s+/g, ' ').trim());
     // Keep TabItem's view of the active index in sync while dragging so
     // icon-swap (active glyph vs default glyph) follows the pointer.
     // Items re-read `selected()` via our EffectiveSelected override —

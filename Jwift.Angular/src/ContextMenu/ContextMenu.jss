@@ -24,10 +24,9 @@ Jwift_ContextMenuBackdrop {
   PointerEvents: Auto
 }
 
-// Inherits the canonical Liquid-Glass look from JwiftGlass. Overrides
-// only the popover specifics: a heavier drop shadow and slightly stronger
-// frost/saturation than the standard floating surface.
-Jwift_ContextMenuPanel : JwiftGlass {
+// A menu is a large glass element, so it wears the thick material (JwiftGlassThick): heavier body,
+// wider blur, deeper shadow. Only the panel's own geometry is declared here.
+Jwift_ContextMenuPanel : JwiftGlassThick {
   Position: Placed
   Direction: Column
   Justify: Start
@@ -37,12 +36,6 @@ Jwift_ContextMenuPanel : JwiftGlass {
   MinWidth: 180pt
   MaxWidth: 280pt
   PointerEvents: Auto
-
-  ShadowColor: rgba(0, 0, 0, 0.28)
-  ShadowBlur: 32pt
-  ShadowOffsetY: 10pt
-
-  BackdropFilter: Blur(12pt) Saturate(1.4) Contrast(0.8)
 
   BorderRadius: 12pt
 }

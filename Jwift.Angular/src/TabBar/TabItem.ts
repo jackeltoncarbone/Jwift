@@ -37,7 +37,7 @@ import TabBarJss from './TabBar.jss';
   imports: [Jext, Icon],
   template: `
     @if (icon()) {
-      <icon [class]="IconClass()" [Name]="_active() && iconFill() ? iconFill() : icon()" [color]="AppliedAccent()" />
+      <icon [class]="IconClass()" [Name]="iconFill() || icon()" [color]="AppliedAccent()" />
     }
     <jext [class]="LabelClass()" [text]="label()" [textStyle]="LabelTextStyle()" />
   `,
