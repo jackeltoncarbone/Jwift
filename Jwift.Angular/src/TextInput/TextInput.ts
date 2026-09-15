@@ -48,9 +48,9 @@ export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret
         [Autocorrect]="Autocorrect()"
         [EnterKeyHint]="EnterKeyHint()"
         [PlaceholderFontStyle]="PlaceholderFontStyle()"
-        [Ink]="Ink()"
-        [PlaceholderInk]="PlaceholderInk()"
-        [CaretInk]="CaretInk()"
+        [Ink]="_ink()"
+        [PlaceholderInk]="_placeholderInk()"
+        [CaretInk]="_caretInk()"
         (PositionClicked)="PositionClicked.emit($event)"
         (PositionHovered)="PositionHovered.emit($event)"
         (FocusChanged)="FocusChanged.emit($event)"
@@ -75,7 +75,7 @@ export class TextInput {
   /** Placeholder slant — 'Italic' (house default) or 'Normal' for straight
    *  placeholder text. */
   readonly PlaceholderFontStyle = input<'Normal' | 'Italic'>('Italic');
-  /** Text, placeholder and caret inks over the jinput's defaults; any colour or `@Var`. */
+  /** Text, placeholder and caret inks; any colour or `@Var`. Unset, they follow the theme (see House defaults). */
   readonly Ink = input<string | null>(null);
   readonly PlaceholderInk = input<string | null>(null);
   readonly CaretInk = input<string | null>(null);
@@ -118,6 +118,11 @@ export class TextInput {
   protected readonly _fontWeight = (): number => this.FontWeight() ?? 400;
   protected readonly _lineHeightRatio = (): number => this.LineHeightRatio() ?? 1.6;
   protected readonly _rowGapPx = (): number => this.RowGapPx() ?? 5;
+  // Theme inks, passed inline because jinput re-merges its own white sheet on every mount, so a page
+  // sheet cannot outrank it. Text and caret are @Ink, the placeholder @InkFaint; span colours still win.
+  protected readonly _ink = (): string => this.Ink() ?? '@Ink';
+  protected readonly _placeholderInk = (): string => this.PlaceholderInk() ?? '@InkFaint';
+  protected readonly _caretInk = (): string => this.CaretInk() ?? '@Ink';
 
   // ── Imperative API ───────────────────────────────────────────────
   private readonly _jinput = viewChild<Jinput>('jinput');

@@ -70,5 +70,5 @@ Jwift_GlassDropdownCell_Avatar_OnTop {
 Jwift_GlassActionAvatarInitials {
   FontSize: 12pt
   FontWeight: 700
-  Color: rgba(255, 255, 255, 0.92)
+  Color: @Ink
 }

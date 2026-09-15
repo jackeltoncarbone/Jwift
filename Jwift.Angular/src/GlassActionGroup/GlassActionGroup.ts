@@ -143,12 +143,14 @@ export interface GlassAction {
           <jiv [class]="_AvatarOnly()
                  ? 'Jwift_GlassDropdownCell_Avatar Jwift_GlassDropdownCell_Avatar_Fill Jwift_GlassDropdownCell_Avatar_OnTop'
                  : 'Jwift_GlassDropdownCell_Avatar Jwift_GlassDropdownCell_Avatar_OnTop'" (click)="_OnAvatarClick($event)">
+            <!-- The monogram sits under the photo, so a photo still loading or failed reads as the person. -->
+            @if (_AvatarInitials(); as initials) {
+              <jext class="Jwift_GlassActionAvatarInitials" [text]="initials" />
+            } @else if (!url) {
+              <icon class="Jwift_GlassActionGlyph" [Name]="AvatarFallbackIcon()" />
+            }
             @if (url) {
               <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="url" />
-            } @else if (_AvatarInitials(); as initials) {
-              <jext class="Jwift_GlassActionAvatarInitials" [text]="initials" />
-            } @else {
-              <icon class="Jwift_GlassActionGlyph" [Name]="AvatarFallbackIcon()" />
             }
           </jiv>
         }
