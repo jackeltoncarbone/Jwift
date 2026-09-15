@@ -40,29 +40,49 @@
 // the negative Top/Left are what let it stand proud of the track. BezelWidth
 // stays small against a 23pt thumb: a wide bezel leaves no flat face and the pill reads as a dome.
 
+// The hit box reaches the 48pt floor around the 31pt track; the margins take the reach back out, so a
+// row is no taller for holding a switch.
+@ToggleReach: (48pt - 31pt) / 2
 Jwift_Toggle {
   Direction: Row
   Justify: Start
   Align: Center
   Width: 69.5pt
-  Height: 31pt
-  BorderRadius: 999pt
-  Background: @WashStrong
+  Height: 48pt
+  Margin: (0pt - @ToggleReach) 0pt (0pt - @ToggleReach) 0pt
   Interactive: true
   Cursor: Pointer
   UserSelect: None
   FlexShrink: 0
-  @Transition Background { Duration: 200ms }
-}
-
-Jwift_Toggle_On : Jwift_Toggle {
-  Background: rgb(48, 209, 88)
 }
 
 Jwift_Toggle_Disabled : Jwift_Toggle {
-  Opacity: 0.5
   Interactive: false
   Cursor: Default
+}
+
+Jwift_ToggleTrack {
+  Direction: Row
+  Justify: Start
+  Align: Center
+  Width: 100%
+  Height: 31pt
+  BorderRadius: 999pt
+  Background: @WashStrong
+  FlexShrink: 0
+  @Transition Background { Duration: 200ms }
+}
+
+Jwift_ToggleTrack_On : Jwift_ToggleTrack {
+  Background: rgb(48, 209, 88)
+}
+
+Jwift_ToggleTrack_Disabled : Jwift_ToggleTrack {
+  Opacity: 0.5
+}
+
+Jwift_ToggleTrack_OnDisabled : Jwift_ToggleTrack_On {
+  Opacity: 0.5
 }
 
 Jwift_ToggleKnob {

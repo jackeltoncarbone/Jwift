@@ -6,7 +6,6 @@ import {
   OnInit,
   booleanAttribute,
   computed,
-  effect,
   forwardRef,
   inject,
   input,
@@ -41,7 +40,7 @@ const KNOB_PRESSED_MAX = 14.5;
   selector: 'toggle',
   standalone: true,
   imports: [Jiv],
-  template: '<jiv [class]="KnobClass()" [childLayout]="KnobLayout()" />',
+  template: '<jiv [class]="TrackClass()" [jivStyle]="TrackTint()"><jiv [class]="KnobClass()" [childLayout]="KnobLayout()" /></jiv>',
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
@@ -66,6 +65,17 @@ export class Toggle extends JivHost implements OnInit, OnDestroy {
   private _moveHandler: ((e: PointerEvent) => void) | null = null;
   private _upHandler: ((e: PointerEvent) => void) | null = null;
 
+  protected readonly TrackClass = computed(() => {
+    const on = this.checked();
+    if (this.disabled()) return on ? 'Jwift_ToggleTrack_OnDisabled' : 'Jwift_ToggleTrack_Disabled';
+    return on ? 'Jwift_ToggleTrack_On' : 'Jwift_ToggleTrack';
+  });
+
+  protected readonly TrackTint = computed(() => {
+    const t = this.tint();
+    return t && this.checked() ? { Background: t } : undefined;
+  });
+
   protected readonly KnobClass = computed(() => {
     const on = this.checked();
     if (this._pressed() && !this.disabled()) {
@@ -81,15 +91,7 @@ export class Toggle extends JivHost implements OnInit, OnDestroy {
   });
 
   constructor() {
-    super('Toggle', ToggleJss, 'Jwift_Toggle', () => {
-      if (this.disabled()) return 'Jwift_Toggle_Disabled';
-      return this.checked() ? 'Jwift_Toggle_On' : 'Jwift_Toggle';
-    });
-    effect(() => {
-      const t = this.tint();
-      if (t && this.checked()) this.SetStyleOverride({ Background: t });
-      else this.ClearStyleOverride('Background');
-    });
+    super('Toggle', ToggleJss, 'Jwift_Toggle', () => (this.disabled() ? 'Jwift_Toggle_Disabled' : 'Jwift_Toggle'));
     inject(DestroyRef).onDestroy(() => this._teardown());
   }
 

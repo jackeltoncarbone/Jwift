@@ -4,3 +4,7 @@ import { InjectionToken, type Signal } from '@angular/core';
  *  corner too, because a container is concentric with the control it holds only when the padding is the
  *  same on every side: radius = control radius + comfort. Provided by `List`, consumed by `ListRow`. */
 export const LIST_COMFORT = new InjectionToken<Signal<number>>('LIST_COMFORT');
+
+/** Jwift_ListRow's Gap and Jwift_ListIcon's Width, in points: where an inset separator starts. */
+export const JWIFT_LIST_ROW_GAP = 12;
+export const JWIFT_LIST_ICON_WIDTH = 24;

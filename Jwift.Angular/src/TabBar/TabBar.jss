@@ -48,8 +48,8 @@ Jwift_TabBar : JwiftGlassThickVivid {
   Padding: 6pt
   Width: MaxContent
   MaxWidth: 100%
-  // Expanded: the 44px touch floor (max(--TapMin, --MinTouch)) inside the 6px inset = a 56px bar.
-  Height: 56pt
+  // Expanded: the 48pt interactive floor inside the 6pt inset = a 60pt bar, radius 30, cells 24.
+  Height: 60pt
   // A phone wears the iPhone tab bar: the condensed cell is 3.25rem = 52px (anchored in rem so the
   // shrunken label font cannot undercut it), inside the same 6px inset = a 64px bar.
   @If (Width < 880) {
@@ -78,7 +78,7 @@ Jwift_TabBar_Pressed {
 // height so the two share a centreline. The circle wears Jwift_TabBar_Pressed too.
 Jwift_TabAccessory : Jwift_TabBar {
   Justify: Center
-  Width: 56pt
+  Width: 60pt
   @If (Width < 880) {
     Width: 64pt
   }
