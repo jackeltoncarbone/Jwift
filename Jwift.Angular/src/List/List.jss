@@ -17,8 +17,8 @@
 //
 // Row height is the 44pt hit floor the HIG states for every control. Ink is the measured App Store
 // ladder (Design/Apple.Measured.Spec.md): primary 0.92 for the label, secondary 0.64 for the value,
-// tertiary 0.40 for the chevron. The fill is opaque, as Apple's grouped background is, so page content
-// can never read through the rows.
+// tertiary 0.40 for the chevron. The default fill is opaque, as Apple's grouped background is, so page
+// content can never read through the rows; a section on glass takes the translucent variant below.
 
 Jwift_List {
   Direction: Column
@@ -40,6 +40,16 @@ Jwift_List_Glass : JwiftGlass {
   Width: 100%
   BorderRadius: 31.5pt
   Overflow: Hidden
+}
+
+// A section that sits ON a glass surface (a sheet, a panel). The opaque grouped fill would block every
+// colour the glass lets through, and a second material would be glass on glass, so it is a translucent
+// FILL: the tab bar's resting selection indicator, a dark veil over a backdrop that is enriched and sunk.
+// The section reads as recessed into the glass and keeps the colour behind it. Rows, separators and press
+// fills are white over dark here exactly as on the opaque ground, so they read the same.
+Jwift_List_Translucent : Jwift_List {
+  Background: rgba(0, 0, 0, 0.25)
+  BackdropFilter: Saturate(2) Brightness(0.75)
 }
 
 Jwift_ListRow {

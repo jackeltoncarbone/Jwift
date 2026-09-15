@@ -13,6 +13,17 @@ import { JivHost } from '../Internal/JivHost';
 import DrawerJss from './Drawer.jss';
 
 /**
+ * The sheet outlet: the one layer that presents sheets ABOVE the app's chrome. Layer is sibling-local, so a
+ * scrim and dock declared inside a page are sealed under any chrome that is a later sibling of the page
+ * (the tab bar). The app mounts one full-viewport jiv with `[TeleportId]="JWIFT_SHEET_OUTLET"` after its
+ * chrome; an app-wide sheet mounts inside it, and a page-scoped sheet teleports its scrim and dock there:
+ *
+ *   <jiv class="LibScrim" [TeleportTo]="SheetOutlet" ... />
+ *   <jiv class="SheetDock" [TeleportTo]="SheetOutlet"> <drawer ...> </jiv>
+ */
+export const JWIFT_SHEET_OUTLET = 'Jwift_Sheet';
+
+/**
  * `<drawer>` — the app's floating-sheet CARD: one Liquid-Glass surface that owns
  * the grabber, the centered title, the top-left close, the concentric radius,
  * and the rise motion, so every bottom sheet looks and moves identically.

@@ -33,7 +33,9 @@ export const JWIFT_LIST_COMFORT = 16;
  *
  * `radius` overrides the derived default when a surface nests the section inside something else and needs
  * to stay concentric with THAT: pass the parent's radius minus the gap you inset the list by. Add `glass`
- * when the section floats over content instead of sitting on a page ground.
+ * when the section floats over content instead of sitting on a page ground. Add `translucent` when it
+ * sits ON a glass surface such as a sheet: a translucent fill that carries the glass's colour, never a
+ * second material.
  */
 @Component({
   selector: 'list',
@@ -48,13 +50,16 @@ export const JWIFT_LIST_COMFORT = 16;
 })
 export class List extends JivHost implements OnInit, OnDestroy {
   readonly glass = input(false, { transform: booleanAttribute });
+  /** A section resting on glass: a translucent fill instead of the opaque grouped ground. */
+  readonly translucent = input(false, { transform: booleanAttribute });
   /** Uniform row padding, in points. It decides the corner: radius = control radius + comfort. */
   readonly comfort = input(JWIFT_LIST_COMFORT, { transform: numberAttribute });
   /** Overrides the derived corner, for a section nested inside another shape. */
   readonly radius = input<number | null>(null, { transform: (v: unknown) => (v == null || v === '' ? null : numberAttribute(v)) });
 
   constructor() {
-    super('List', ListJss, 'Jwift_List', () => (this.glass() ? 'Jwift_List_Glass' : 'Jwift_List'));
+    super('List', ListJss, 'Jwift_List', () =>
+      this.glass() ? 'Jwift_List_Glass' : this.translucent() ? 'Jwift_List_Translucent' : 'Jwift_List');
     effect(() => {
       const override = this.radius();
       const r = (override === null || Number.isNaN(override))

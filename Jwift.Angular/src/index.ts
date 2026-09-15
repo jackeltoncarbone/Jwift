@@ -5,7 +5,7 @@
  */
 
 export { Icon } from './Icon/Icon';
-export { Drawer } from './Drawer/Drawer';
+export { Drawer, JWIFT_SHEET_OUTLET } from './Drawer/Drawer';
 export { Slider, type SliderScrubEvent } from './Slider/Slider';
 export { GlassButton, type GlassButtonShape } from './GlassButton/GlassButton';
 export { GlassDropdown } from './GlassDropdown/GlassDropdown';
