@@ -16,10 +16,12 @@ import {
   Jiv,
   JAUI_HOST_EL,
   JSS_REGISTRY,
+  StampProbeHost,
   WireTeleportInputs,
 } from 'jaui-angular';
 import {
   JivHandle,
+  SlotFor,
   type JivApplyOpts,
   type PointerPayload,
 } from 'jaui';
@@ -254,6 +256,7 @@ export abstract class JivHost {
 
   private _apply(): void {
     this.Node.Apply(this._buildOpts(this._className()));
+    StampProbeHost(this._host.nativeElement, this.Node.Id, this._className());
   }
 
   private _buildOpts(className: string): JivApplyOpts {
@@ -265,9 +268,16 @@ export abstract class JivHost {
     // _flush path on the worker side, which only ships the override and
     // resets the rest of core.Style to engine defaults (wiping the JSS
     // class's Width/Height/Padding/etc.).
+    // An override lands in the slot its property belongs to, as the JSS parser files it: the worker
+    // reads Padding from Layout and Margin/Height from ChildLayout, never from Style.
+    const overrides: Record<'Style' | 'Layout' | 'ChildLayout' | 'TextStyle', Record<string, unknown>> =
+      { Style: {}, Layout: {}, ChildLayout: {}, TextStyle: {} };
+    for (const [key, value] of Object.entries(this._styleOverride())) overrides[SlotFor(key)][key] = value;
+    const hasLayout = Object.keys(overrides.Layout).length > 0;
+    const hasChildLayout = Object.keys(overrides.ChildLayout).length > 0;
     const styleBag = {
       ...fromClass?.Style,
-      ...this._styleOverride(),
+      ...overrides.Style,
     } as Record<string, unknown>;
     // Semantics is mirror-only data (Jaui.Angular SEO projection) — the
     // render engine must never see it.
@@ -288,12 +298,14 @@ export abstract class JivHost {
 
     return {
       Style:         styleBag,
-      Layout:        fromClass?.Layout        ? ({ ...fromClass.Layout }      as Record<string, unknown>) : undefined,
-      ChildLayout:   fromClass?.ChildLayout
-        ? ({ ...this.Node.ChildLayout, ...fromClass.ChildLayout } as Record<string, unknown>)
+      Layout:        (fromClass?.Layout || hasLayout)
+        ? ({ ...fromClass?.Layout, ...overrides.Layout } as Record<string, unknown>)
         : undefined,
-      TextStyle:     (fromClass?.TextStyle || Object.keys(this._textStyleOverride()).length > 0)
-        ? ({ ...fromClass?.TextStyle, ...this._textStyleOverride() } as Record<string, unknown>)
+      ChildLayout:   (fromClass?.ChildLayout || hasChildLayout)
+        ? ({ ...this.Node.ChildLayout, ...fromClass?.ChildLayout, ...overrides.ChildLayout } as Record<string, unknown>)
+        : undefined,
+      TextStyle:     (fromClass?.TextStyle || Object.keys(overrides.TextStyle).length > 0 || Object.keys(this._textStyleOverride()).length > 0)
+        ? ({ ...fromClass?.TextStyle, ...overrides.TextStyle, ...this._textStyleOverride() } as Record<string, unknown>)
         : undefined,
       // Pseudo-selector rules — both `:Foo` and `:(expr)` from JSS —
       // ride PredicateStyles as one consolidated list. The legacy 10
