@@ -167,10 +167,10 @@ export interface GlassAction {
               @if (item.Image) {
                 <jiv class="Jwift_GlassDropdownItemImage" [image]="item.Image" />
               } @else if (item.Icon) {
-                <icon class="Jwift_GlassDropdownItemIcon" [Name]="item.Icon" />
+                <icon [class]="_ItemIconClass(item)" [Name]="item.Icon" />
               }
               @if (item.Label) {
-                <jext class="Jwift_GlassDropdownItemLabel" [text]="item.Label" />
+                <jext [class]="_ItemLabelClass(item)" [text]="item.Label" />
               }
             </glass-dropdown-item>
           }
@@ -463,8 +463,16 @@ export class GlassActionGroup implements OnDestroy {
     return classes.join(' ');
   }
 
+  // Destructive is COLOUR, on the two children that carry paint. The row itself
+  // draws nothing now that one shared indicator owns hover and press, so a row
+  // variant would have nothing left to say.
+  protected _ItemIconClass(action: GlassAction): string {
+    return action.Destructive ? 'Jwift_GlassDropdownItemIcon_Destructive' : 'Jwift_GlassDropdownItemIcon';
+  }
 
-
+  protected _ItemLabelClass(action: GlassAction): string {
+    return action.Destructive ? 'Jwift_GlassDropdownItemLabel_Destructive' : 'Jwift_GlassDropdownItemLabel';
+  }
 
   protected _OnCellClick(action: GlassAction, event: MouseEvent): void {
     event.stopPropagation();

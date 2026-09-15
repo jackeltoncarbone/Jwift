@@ -111,10 +111,10 @@ export interface ActionGroup {
                     @if (item.Image) {
                       <jiv class="Jwift_GlassDropdownItemImage" [image]="item.Image" />
                     } @else if (item.Icon) {
-                      <icon class="Jwift_GlassDropdownItemIcon" [Name]="item.Icon" />
+                      <icon [class]="_ItemIconClass(item)" [Name]="item.Icon" />
                     }
                     @if (item.Label) {
-                      <jext class="Jwift_GlassDropdownItemLabel" [text]="item.Label" />
+                      <jext [class]="_ItemLabelClass(item)" [text]="item.Label" />
                     }
                   </glass-dropdown-item>
                 }
@@ -300,6 +300,16 @@ export class GlassActionBar implements OnDestroy {
 
   protected _GlyphClass(a: GlassAction): string {
     return a.Tint === 'warn' ? 'Jwift_GlassActionGlyph_Warn' : 'Jwift_GlassActionGlyph';
+  }
+
+  // Same two class pickers the single pill uses — the sink menu renders its rows
+  // here, and Sign out arrives through it on every page that states no menu.
+  protected _ItemIconClass(item: GlassAction): string {
+    return item.Destructive ? 'Jwift_GlassDropdownItemIcon_Destructive' : 'Jwift_GlassDropdownItemIcon';
+  }
+
+  protected _ItemLabelClass(item: GlassAction): string {
+    return item.Destructive ? 'Jwift_GlassDropdownItemLabel_Destructive' : 'Jwift_GlassDropdownItemLabel';
   }
 
   protected _OnCell(a: GlassAction, event: MouseEvent): void {

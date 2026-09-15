@@ -223,6 +223,14 @@ Jwift_GlassDropdownItemIcon {
   Width: 22pt
 }
 
+// A consequential row reads as consequential BEFORE it is pressed, so the glyph
+// takes the same red as the label below. The house red is one value, already
+// owned by Jwift_ContextMenuItemLabel_Destructive; stated literally because JSS
+// resolves no cross-file refs, never re-picked.
+Jwift_GlassDropdownItemIcon_Destructive : Jwift_GlassDropdownItemIcon {
+  Color: rgb(255, 100, 100)
+}
+
 Jwift_GlassDropdownItemImage {
   Width: 22pt
   Height: 22pt
@@ -237,6 +245,14 @@ Jwift_GlassDropdownItemLabel {
   LetterSpacing: 0.1pt
   TextAlign: Left
   MaxLines: 1
+}
+
+// Sign out, Delete, Remove. Colour only: the row still wears the one shared
+// indicator for hover and press, because a second press treatment per variant is
+// exactly what the single-press rewrite retired. Same red as the context menu's
+// destructive label, so the two menus say danger with one voice.
+Jwift_GlassDropdownItemLabel_Destructive : Jwift_GlassDropdownItemLabel {
+  Color: rgb(255, 100, 100)
 }
 
 // Non-interactive section header — labels a consolidated overflow section in
