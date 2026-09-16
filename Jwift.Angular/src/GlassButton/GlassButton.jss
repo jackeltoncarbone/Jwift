@@ -49,3 +49,39 @@ Jwift_GlassBtn_Square : Jwift_GlassBtn {
   Height: 48pt
   BorderRadius: 14pt
 }
+
+// ── The prominent variant ───────────────────────────────────────────
+// `variant="prominent"`: the ONE action a screen leads with, drawn as the inverted solid defined once
+// in JwiftProminent. Not glass — a solid plate has no backdrop to lens, so the bezel, the refraction,
+// the frost and the fresnel rim are all deliberately absent, and what is left is the fill, the label
+// and the shared squeeze. The three shapes below carry the same geometry as their glass twins, so a
+// screen can promote a button without moving it a single point.
+//
+// `glass` stays the default, which is why these are separate classes rather than a change to
+// Jwift_GlassBtn: every button that exists today keeps exactly the look it has.
+Jwift_GlassBtn_Prominent : JwiftProminent {
+  Direction: Row
+  Justify: Center
+  Align: Center
+  // PointScale cascades through the layout solver like a CSS font-size through em units, so a
+  // consumer that springs it takes the glyph along. Same as the glass button's.
+  @Transition PointScale { Duration: 140ms }
+}
+
+Jwift_GlassBtn_Prominent_Round : Jwift_GlassBtn_Prominent {
+  Width: 48pt
+  Height: 48pt
+  BorderRadius: 24pt
+}
+
+Jwift_GlassBtn_Prominent_Pill : Jwift_GlassBtn_Prominent {
+  MinHeight: 48pt
+  Padding: 0pt 22pt
+  BorderRadius: 999pt
+}
+
+Jwift_GlassBtn_Prominent_Square : Jwift_GlassBtn_Prominent {
+  Width: 48pt
+  Height: 48pt
+  BorderRadius: 14pt
+}

@@ -7,7 +7,7 @@
 export { Icon } from './Icon/Icon';
 export { Drawer, JWIFT_SHEET_OUTLET } from './Drawer/Drawer';
 export { Slider, type SliderScrubEvent } from './Slider/Slider';
-export { GlassButton, type GlassButtonShape } from './GlassButton/GlassButton';
+export { GlassButton, type GlassButtonShape, type GlassButtonVariant } from './GlassButton/GlassButton';
 export { GlassDropdown } from './GlassDropdown/GlassDropdown';
 export { GlassDropdownItem } from './GlassDropdown/GlassDropdownItem';
 export { GlassActionGroup, type GlassAction } from './GlassActionGroup/GlassActionGroup';

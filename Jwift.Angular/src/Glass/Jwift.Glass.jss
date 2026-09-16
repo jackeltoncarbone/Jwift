@@ -353,6 +353,67 @@ JwiftPressTintGlass:Active {
   BorderFilter: Brightness(1.7)
 }
 
+// ── JwiftProminent ──────────────────────────────────────────────────
+// THE ONE PROMINENT ACTION ON A SCREEN, and the only filled button the design system draws.
+//
+// Glass is the default for a button, because glass takes its colour from what is behind it and is
+// therefore always right. Prominence is the exception a screen authors ONCE, for the single action
+// that is the point of the screen: the label colour becomes the fill and the label inverts. White
+// plate under black ink in dark, black plate under white ink in light. Both halves are theme tokens
+// (`@Prominent` / `@OnProminent`), so nothing here is a literal and nothing here is a hue: a hue
+// would have to argue with the per-item accents the app derives from artwork, and an inverted solid
+// never does.
+//
+// THE STATES. It extends `JwiftPressMotion`, which is the app's one press gesture — the hit state,
+// the 1.06 swell, the 0.92 squeeze and the single critically damped 140ms spring they all ride — so
+// a prominent button answers a finger exactly as every glass button, cell and avatar does. What it
+// cannot inherit is the PAINT half of either shared press:
+//
+//   * `JwiftPress` lays @HoverFill / @PressFill over the control, which are white over dark and
+//     black over light. Over a white plate in dark, white at 14% is invisible; over a black plate in
+//     light, black at 6% is invisible. The neutral veil has nothing to say on an inverted solid.
+//   * `JwiftPressTint` grades the finished pixels with Brightness/Saturate. On an achromatic extreme
+//     that is a no-op in one theme and the wrong direction in the other: brightening a near-black
+//     plate in light theme spends the contrast that makes it prominent.
+//
+// So the fill steps instead, along the one ladder the tokens declare, and it only ever moves AWAY
+// from the page's ground — brighter in dark, denser in light. That is the same "comes toward you"
+// direction as every other press in this sheet; it is simply the only axis an inverted solid has.
+// The step is small (about 4% of headroom in dark), which is why the squeeze above is doing most of
+// the talking. The Background transition is the shared 140ms, so the plate and the squeeze land
+// together rather than the colour flashing ahead of the shrink.
+//
+// DISABLED is the consumer's (`<glass-button [disabled]>` fades the whole node, label included, so
+// the contrast INSIDE the pill survives the fade). `JwiftProminentOff` is here for the app classes
+// that are not glass buttons and need the same read.
+JwiftProminent : JwiftPressMotion {
+  Background: @Prominent
+  @Transition Background { Duration: 140ms }
+}
+
+JwiftProminent:Hover {
+  Background: @ProminentHover
+}
+
+JwiftProminent:Active {
+  Background: @ProminentPress
+}
+
+// Present but not available: it keeps its footprint and stops taking taps, rather than vanishing and
+// moving everything under it. The fade carries the label with it, so the pill reads as one dimmed
+// object instead of losing its ink.
+JwiftProminentOff : JwiftProminent {
+  Opacity: 0.4
+  Interactive: false
+  Cursor: Default
+}
+
+// The label and the glyph that sit on a prominent fill. Colour only: the size and the weight belong
+// to the screen, because a 17pt hero pill and a 15pt sheet action are the same variant at two scales.
+JwiftProminentInk {
+  Color: @OnProminent
+}
+
 // ── JwiftWater ──────────────────────────────────────────────────────
 // The reusable water physics. Extend it and anything gains Apple's described response:
 // interactive glass "reacts to user interaction by scaling, bouncing, and shimmering", and
