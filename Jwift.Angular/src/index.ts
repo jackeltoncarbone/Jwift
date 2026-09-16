@@ -8,6 +8,9 @@ export { Icon } from './Icon/Icon';
 // THE person mark — one canvas primitive, one fallback ladder, a named size scale. Nothing else in the
 // app may draw an initials disc; `Design/Avatar.Conformance.spec.ts` holds the tree to that.
 export { Avatar } from './Avatar/Avatar';
+// The caller's own bottom rung: `<ng-template avatarFallback>`, shown INSTEAD of the monogram when the
+// ladder bottoms out. Exported beside the primitive because it is useless without it.
+export { AvatarFallback } from './Avatar/Avatar.Fallback';
 export {
   type AvatarSize,
   AvatarDiameter,

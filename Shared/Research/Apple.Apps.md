@@ -241,3 +241,48 @@ call site (`Jwift.Angular/src/Avatar/Avatar.ts`).
 **What Apple would explicitly NOT do:** tint a monogram with the app accent; use a rounded SQUARE for a
 person; derive initials from the first two words of a display name; choose the photo because a URL exists
 rather than because it loaded; or show an empty disc when a photo fails.
+
+### An ACCOUNT ROW is not a person: it wears the service's own mark
+
+Written 2026-09-16, the day after the section above, because the ladder it describes gave a wrong answer on
+a real screen and the reason was that the ladder had nothing to say about a row whose subject is a SERVICE.
+
+**What Apple does.** An account is listed by the mark of the service it belongs to. Mail's add-account
+chooser is the clearest published case: Apple's own support article says a person "might be asked to choose
+from a list of email providers, such as iCloud, Google, yahoo!, and Outlook.com", under the figure caption
+"List of email account providers on iPhone"
+([support.apple.com/en-us/102088](https://support.apple.com/en-us/102088), read 2026-09-16). Note the
+spelling **yahoo!** — lower case, with the bang. Apple is not setting those rows in its own type at all; it
+is drawing each service's own wordmark, which is why the brand's own casing survives into the list. The same
+holds once an account exists rather than being added: iOS Settings' account lists and macOS System Settings'
+Internet Accounts identify each account by its service's mark, and Mail's sidebar groups mailboxes under it.
+
+**What this rules out, and it is the rule we got wrong:** a monogram of a BRAND. Apple draws initials for
+people, from a contact's given and family name, and nowhere in any first-party app does it take the first
+letter of a company and set it in a grey disc. A service Apple has no mark for gets a generic glyph, never
+its initial. So "G" in a circle is not a weaker version of Google's mark; it is a category error, a face
+treatment applied to a thing that has no face. It reads as a bug, and on our own linked-accounts screen it
+read as one two sections above the same brand's full-color mark.
+
+**The brand guidelines say the same thing from the other side.** Google's, Microsoft's and Apple's
+sign-in branding rules all require their own mark on a control that means "sign in with us", with Apple's
+required to take the row's ink and the other two their mandated fills. A linked-account row IS a sign-in
+method, so the mark is not merely preferable there, it is what the provider's own rules ask for. Our
+`Authentication/SignIn.Providers.ts` already carried that reasoning for the chooser; it applies equally to
+the list of methods already linked.
+
+**What it changed here.** The avatar's ladder gained a rung the CALLER writes, because the call site can see
+whether a URL is present and can never see that it failed - only the primitive knows that. So:
+
+    photo -> what the caller projects -> monogram -> silhouette
+
+`<avatar>` takes an `<ng-template avatarFallback>` and renders it, instead of the monogram, when the photo
+is absent or FAILED; `Loading` is untouched and still shows the bare plate. The linked-accounts row projects
+the provider's mark, so a throttled Google photo now falls to Google's mark at the same size the add-a-method
+rows draw it. A person's monogram stays what it always was: a fact about a PERSON.
+
+**What could not be read, said plainly.** Apple's HIG page "Managing accounts", the iPhone and Mac user
+guides' account pages and the HIG's DocC data endpoints all returned no body text through the tools
+available here (they render client-side; the DocC JSON 404s). The published citation above is therefore the
+support article, and the Settings/Mail/System Settings behavior is recorded as first-party-app observation
+in the same way the rest of this section's measurements are, not as a quotation.
