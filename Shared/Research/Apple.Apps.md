@@ -286,3 +286,51 @@ guides' account pages and the HIG's DocC data endpoints all returned no body tex
 available here (they render client-side; the DocC JSON 404s). The published citation above is therefore the
 support article, and the Settings/Mail/System Settings behavior is recorded as first-party-app observation
 in the same way the rest of this section's measurements are, not as a quotation.
+
+### The DEFAULT ACCOUNT: how Apple lets a person say which account is the one
+
+Written 2026-09-16, the same day as the account-row section above, because the row told us what an account
+LOOKS like and said nothing about the one setting an account list actually carries: which of several
+accounts is the one the app uses by default. Our linked-accounts screen had answered that question with a
+three-way mode per account (Automatic / Ask me / Off), and a mode is not what Apple ships.
+
+**What Apple ships is a NAMED SETTING THAT HOLDS ONE ACCOUNT, chosen from a list of the accounts.** In
+Contacts the setting is called **Default Account**, it lives at the app level rather than on any one
+account, and it is set by choosing an account from a list: Settings > Apps > Contacts > **Default
+Account**, then the account you want
+([support.apple.com/guide/iphone/add-or-remove-accounts-iph7edacccf9/ios](https://support.apple.com/guide/iphone/add-or-remove-accounts-iph7edacccf9/ios)).
+Mail carries the same setting for the address a new message is sent from.
+
+Two things follow from that shape, and both are the opposite of a per-account mode:
+
+- **The choice belongs to the SET, not to a member of it.** There is one Default Account setting, not a
+  switch on every account. A per-account control has to be read N times and reconciled by the person; a
+  single-valued setting cannot contradict itself.
+- **The current holder is MARKED, not described.** The list is a picker and the chosen row carries the
+  system's checkmark, which is the same mark every other iOS chooser uses for the current value. Nothing
+  on the other rows says what they are not.
+
+**The one verbatim line the tools could read**, and it is from the web client rather than the phone: on
+iCloud.com, "**Select the Default Send Address pop-up menu, then choose an option.**"
+([support.apple.com/guide/icloud/choose-a-default-email-address-mmbffbba6600/icloud](https://support.apple.com/guide/icloud/choose-a-default-email-address-mmbffbba6600/icloud),
+read 2026-09-16). Worth keeping because it shows the same setting taking the shape of its platform: a
+pop-up menu on the web, a pushed list with a checkmark on the phone. The concept is "one named setting
+holding one account"; the picker is whatever that platform's choosers are.
+
+**Our inference, marked as ours rather than Apple's:** a setting whose value is one of the accounts has
+exactly one possible value when there is one account, so it has nothing to ask. Apple publishes no
+sentence about hiding Default Account for a single account, and this was not read off a device. It is
+stated here as the reasoning our own screens follow, not as a quotation.
+
+**How Show Studio translates it.** `/settings/accounts` now marks which linked account is PRIMARY (the
+one your profile's name and picture come from) and offers a neutral-glass **Change primary** control that
+turns the account list itself into the checkmark picker. The affordance appears only from two accounts up.
+It needed no new server state: the API already keeps at most one identity at an auto-sync slot and demotes
+the previous holder when a new one is set, so "primary" is that slot said in a word a person can read. The
+three-way mode is gone from the list; the one part of it that is not a question about WHICH account
+("stop offering me changes from this account") moved onto the prompt that raises it.
+
+**What could not be read, said plainly.** The iPhone and Mac user guides render client-side, so the
+Contacts page above returns navigation and no body text through the tools available here; the step wording
+quoted from it is what a search of that page surfaces, not a body read. That is the same blindness
+recorded in the account-row section, and it has not changed.
