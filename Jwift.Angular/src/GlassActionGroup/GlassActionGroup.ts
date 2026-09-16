@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { type ChildLayout } from 'jaui';
+import { Avatar } from '../Avatar/Avatar';
 import { Icon } from '../Icon/Icon';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
 import { GlassDropdownItem } from '../GlassDropdown/GlassDropdownItem';
@@ -95,7 +96,7 @@ export interface GlassAction {
   standalone: true,
   imports: [
     Jiv, Jext, Jyle,
-    Icon,
+    Avatar, Icon,
     GlassDropdown, GlassDropdownItem,
     JwiftSpinner,
   ],
@@ -129,7 +130,7 @@ export interface GlassAction {
         }
         @for (peerUrl of CollaboratorAvatarUrls(); track $index) {
           <jiv class="Jwift_GlassDropdownCell_AvatarPeer">
-            <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="peerUrl" />
+            <avatar Size="Fill" [Photo]="peerUrl" />
           </jiv>
         }
         @if (ShowAvatar()) {
@@ -143,15 +144,12 @@ export interface GlassAction {
           <jiv [class]="_AvatarOnly()
                  ? 'Jwift_GlassDropdownCell_Avatar Jwift_GlassDropdownCell_Avatar_Fill Jwift_GlassDropdownCell_Avatar_OnTop'
                  : 'Jwift_GlassDropdownCell_Avatar Jwift_GlassDropdownCell_Avatar_OnTop'" (click)="_OnAvatarClick($event)">
-            <!-- The monogram sits under the photo, so a photo still loading or failed reads as the person. -->
-            @if (_AvatarInitials(); as initials) {
-              <jext class="Jwift_GlassActionAvatarInitials" [text]="initials" />
-            } @else if (!url) {
-              <icon class="Jwift_GlassActionGlyph" [Name]="AvatarFallbackIcon()" />
-            }
-            @if (url) {
-              <jiv class="Jwift_GlassDropdownCellAvatarImage" [image]="url" />
-            }
+            <!-- ONE avatar primitive, filling the cell the pill has already sized. This used to stack a
+                 monogram UNDER an [image] jiv and rely on the image painting nothing when it failed,
+                 which is a fallback by accident: it flashed the monogram on every load and had no idea
+                 whether the photo ever arrived. The avatar primitive fetches once, knows, and drops to
+                 the same monogram on a FAILURE as on an absence. -->
+            <avatar Size="Fill" [Photo]="url" [Initials]="_AvatarInitials()" [Glyph]="AvatarFallbackIcon()" />
           </jiv>
         }
       } @else {

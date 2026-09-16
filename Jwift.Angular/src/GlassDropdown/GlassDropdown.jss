@@ -136,19 +136,8 @@ Jwift_GlassDropdownCell_Ellipsis : Jwift_GlassDropdownCell {
   Order: 100
 }
 
-// Image inside an avatar cell. Fills the cell entirely so the photo IS
-// the cell (no inner padding showing the cell's own background as a
-// ring around a smaller photo). Cell already provides the round clip.
-// Placed, so it covers the monogram drawn under it until the photo lands.
-Jwift_GlassDropdownCellAvatarImage {
-  Position: Placed
-  Top: 0pt
-  Left: 0pt
-  Width: 100%
-  Height: 100%
-  BorderRadius: 999pt
-  Overflow: Hidden
-}
+// The photo inside an avatar cell belongs to `<avatar Size="Fill">` (Avatar.jss's Jwift_AvatarPhoto),
+// which fills the cell the same way and additionally knows whether the photo actually arrived.
 
 // Open state pops out of flow so the expanded menu doesn't reflow siblings —
 // anchors top-right against the nearest Placed ancestor (typically

@@ -182,3 +182,62 @@ Inner radius = parent radius - padding at each nesting level. Creates perfectly 
 8. **Floating tab bar** — glass material, minimizes on scroll down
 9. **Cards: subtle depth** — soft shadows, rounded corners, not heavy gradients
 10. **Dark mode first** — near-black bg, off-white text, semantic colors
+
+---
+
+## The Avatar (Contacts, Mail, Messages, the App Store account sheet)
+
+Written 2026-09-16, because our research carried nothing about the one mark that appears on more screens
+than any other, and fourteen files in the app had each invented it. Sourced from the first-party apps
+rather than apple.com, per the "where they disagree, the app wins" rule.
+
+**The shape is a TRUE circle.** Not a squircle. Apple's squircle is for a container that holds content
+(an app icon, a card, a sheet); a person's face is a disc. Contacts, Mail's list rows, Messages' chat
+rows, the App Store's account button and Music's profile are all circles, and Apple uses the circle
+*because* it distinguishes a person from a thing: on the App Store's account sheet the person is a circle
+and everything else on the same sheet is a rounded rectangle.
+
+**The fallback ladder has exactly three rungs, and no app skips one.**
+
+1. **The photo.**
+2. **The MONOGRAM.** Contacts takes the GIVEN NAME's initial and the FAMILY NAME's initial — first and
+   last, never the first two words. Mail's rows and Messages' chat list take the same two letters from the
+   contact card. One letter only when there is one name.
+3. **The SILHOUETTE.** `person.fill` inside the disc — what Contacts draws for a contact that is only a
+   phone number, what Mail draws for an unknown sender, and what the App Store's account button is when
+   nobody is signed in. The system symbol for the whole unit is `person.crop.circle.fill`.
+
+**The material is NEUTRAL and the ink is the label colour.** Contacts draws the monogram in white on
+system grey. Apple does not tint a monogram with the app's accent colour anywhere — a face is identity,
+and identity is not a brand. (Messages is the one app that colours the disc, and what it colours it with
+is a per-contact hue from a fixed palette, still not the app accent. That is a deliberately social
+treatment; a productivity app's list stays grey.) Translated to a two-theme token system, "white on grey"
+is the maximum-contrast label colour on the neutral control fill, because white on light mode's grey is
+illegible — so it is `@Ink` on `@Fill`, not `rgb(255,255,255)` on `@Fill`.
+
+**The silhouette is quieter than the monogram.** The App Store's account glyph is the secondary label
+colour while a monogram is the primary one: a monogram is a fact about a person, and the silhouette is
+the absence of one.
+
+**The proportions, measured off the apps rather than published by Apple:** the monogram fills about
+**40% of the diameter** and the silhouette about **55%**. Both are read off the DISC, never off an
+inherited page font, so a 96pt header disc and a 24pt byline mark wear the same mark at different scales.
+
+**The sizes Apple actually uses**, for the four places a face appears:
+
+| Where | Apple | App analogue |
+|---|---|---|
+| Inside a line of text (a byline) | 20–24pt | `Byline`, 24pt |
+| A list row's leading mark | **40pt** (Contacts, Mail, Messages) | `Row`, 40pt |
+| A toolbar / navigation-bar account control | 28–32pt in the bar, filling its tap target | `Fill`, 100% of the cell |
+| A profile or account HEADER | 100pt-ish (Contacts' card, the App Store's sheet) | `Header`, 96pt |
+
+**Apple shows the monogram UNDER a loading photo** — Contacts and Messages both paint the monogram
+immediately and cross-fade the photo over it. We deliberately do not: the disc shows its bare plate while
+the photo is in flight, because a photo that lands 80ms later would otherwise flash two letters on every
+first paint. That is the one place this app argues with the reference, and the reason is written at the
+call site (`Jwift.Angular/src/Avatar/Avatar.ts`).
+
+**What Apple would explicitly NOT do:** tint a monogram with the app accent; use a rounded SQUARE for a
+person; derive initials from the first two words of a display name; choose the photo because a URL exists
+rather than because it loaded; or show an empty disc when a photo fails.

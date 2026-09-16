@@ -5,6 +5,25 @@
  */
 
 export { Icon } from './Icon/Icon';
+// THE person mark — one canvas primitive, one fallback ladder, a named size scale. Nothing else in the
+// app may draw an initials disc; `Design/Avatar.Conformance.spec.ts` holds the tree to that.
+export { Avatar } from './Avatar/Avatar';
+export {
+  type AvatarSize,
+  AvatarDiameter,
+  AvatarInitialsFraction,
+  AvatarGlyphFraction,
+  AvatarFallbackGlyph,
+  providerAvatarUrl,
+  deriveInitials,
+} from './Avatar/Avatar.Name';
+export {
+  AvatarPhoto,
+  AvatarPhotoBlob,
+  ResetAvatarPhotos,
+  type AvatarPhotoVerdict,
+  type AvatarPhotoState,
+} from './Avatar/Avatar.Photo';
 export { Drawer, JWIFT_SHEET_OUTLET } from './Drawer/Drawer';
 export { Slider, type SliderScrubEvent } from './Slider/Slider';
 export { GlassButton, type GlassButtonShape, type GlassButtonVariant } from './GlassButton/GlassButton';

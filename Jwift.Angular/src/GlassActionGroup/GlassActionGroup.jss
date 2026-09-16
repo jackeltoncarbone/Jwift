@@ -67,8 +67,5 @@ Jwift_GlassDropdownCell_Avatar_OnTop {
   Layer: 100
 }
 
-Jwift_GlassActionAvatarInitials {
-  FontSize: 12pt
-  FontWeight: 700
-  Color: @Ink
-}
+// The sink's monogram belongs to `<avatar Size="Fill">` now, at 40% of the cell rather than a fixed 12pt
+// on a cell that is 40pt or 48pt depending on what else is inline with it.
