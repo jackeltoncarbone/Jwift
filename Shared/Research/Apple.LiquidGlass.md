@@ -290,6 +290,23 @@ Apple's SHAPE and derive the two inks per theme so both clear AA. See `ShowStudi
 - One effect per view; never stacked or mixed; only where a scroll view sits behind floating elements.
   Custom bars register with `safeAreaBar` or `UIScrollEdgeElementContainerInteraction`.
 
+**The choosing rule, which the pages above jointly imply and none of them states.** Three things kept
+being read wrong in this app, so they are written down here.
+
+1. **Soft has no plateau.** Soft is a *dissolve*: "gently dissolves the content into the background". It
+   is HARD that is "applied uniformly across the height of the toolbar and the pinned accessory view". So
+   a soft edge ramps across its whole strip; holding the region behind the bar at full blur and ramping
+   only below it is the hard form wearing the soft form's name. The consequence for geometry is that a
+   soft strip has to be LONGER than the bar it protects, or the dissolve has nowhere to finish and hands
+   the content back sharp on exactly the line the effect exists to hide.
+2. **The dimming is part of soft, not a third form.** "When dark content scrolls under and the glass goes
+   dark, the effect switches to apply a subtle dimming instead" is a behaviour OF the soft effect. A bar
+   over live imagery therefore still gets one soft edge; it just grades rather than only blurring. It is
+   not licence for a per-page brightness.
+3. **"One per view" is about one EDGE of one view, not one per screen.** A page with a floating top bar
+   and a floating bottom dock has two views' worth of floating chrome and takes an edge at each. Stacking
+   is two effects on the same edge, which is what "never stacked or mixed" forbids.
+
 ### Search (HIG Search fields, session 323, 284)
 
 - iPhone: in the bottom toolbar (expanded field or a button that expands above the keyboard), in the
@@ -392,8 +409,8 @@ rectangle on iOS, iPadOS and macOS, circle on watchOS, built in Icon Composer.
 | Pressed indicator magnifies its label rather than frosting it | before, a held tab's label kept 19% of its resting edge sharpness; after, 186% | done 2026-09-14 |
 | Pressed indicator stays inside its bar | it overflows the bar's left edge by 17.6 css px, from `reach` plus the press boost in SelectionIndicator's physics | open |
 | "Prefer a monochromatic appearance for tab bars" when the content layer is bright and colourful | the accent is gold and the content layer is field video full of gold and yellow, which is the case Apple warns about; kept as the brand colour, Jack's call | open, product |
-| Soft scroll edge under floating bars | `JwiftScrollEdge`, `JwiftScrollEdgeBottom`: a progressive blur strip; the app's dock sits in one | done 2026-09-14 |
-| Hard scroll edge | none | open |
+| Soft scroll edge under floating bars | `JwiftScrollEdge` / `JwiftScrollEdgeBottom` (the dock sits in one) and, since 2026-09-16, `JwiftScrollEdgeTop` plus its dimming form `JwiftScrollEdgeTopScene`. The top strip's length and blur are DERIVED from the bar (92pt band, 184pt strip, 14.72pt radius) rather than picked per page, and `Design/ScrollEdge.Conformance.spec.ts` is the latch | done 2026-09-16 |
+| Hard scroll edge | none. It would be a uniform band the height of the bar with no ramp, and the engine's progressive blur has no uniform mode -- `ProgressiveBlurFeather` ramps from the clear edge and `Easing` only reshapes that ramp, so the hard form needs either a plain `BackdropFilter` band or a new shader mode, not a tuned scroll edge. Nothing in the app is a pinned header or text outside glass yet, which is the only case Apple hands it | open |
 | Sheets inset and concentric with the display, opaque at full height | `Modal`, `Drawer` are their own materials | open |
 | Background extension under sidebars | none | open |
 | Sliders: glass thumb on touch, ticks, neutral value | `Slider` has a plain thumb | open |
@@ -423,3 +440,22 @@ rectangle on iOS, iPadOS and macOS, circle on watchOS, built in Icon Composer.
 - Two new sweeps in the app, `Design/DangerRole.Conformance.spec.ts` and
   `Design/PrimaryAction.Conformance.spec.ts`. Both say in their own headers what a static count is
   blind to, because one file is only a PROXY for one screen.
+
+## 7. Changes made in this pass (2026-09-16): the top scroll edge
+
+- Section "Scroll edge effects" gained **"The choosing rule"**: soft has no plateau, the dimming is a
+  behaviour of soft rather than a third form, and "one per view" means one per EDGE. All three are
+  consequences of sentences already quoted in that section, and all three had been read the other way by
+  someone in this repo.
+- The audit table's hard-edge row now says what building one would actually take, instead of "none".
+- `Glass/Jwift.Glass.jss`: `JwiftScrollEdgeTop` is derived rather than picked, and
+  `JwiftScrollEdgeTopScene` is the dimming form. Six tokens carry the arithmetic:
+  `@JwiftScrollEdgeRow` / `BarPad` / `HeadPad` are the bar's own measurements from `Toolbar.jss`,
+  `@JwiftScrollEdgeBar` adds them to 92pt, `@JwiftScrollEdgeHeight` doubles it so the dissolve finishes
+  clear of the bar, and `@JwiftScrollEdgeBlur` takes this sheet's own 8%-of-the-short-side ratio.
+- Five app sites stopped hand-rolling the treatment (`Drill.jss` `TopBlur`, `Designer.jss`
+  `Dsn_TopVeil`, `Camera.jss` `Cam_TopVeil`, `Item.jss` `Itm_TopEdge` and `Itm_StageVeil`) and a sixth
+  (`Dev/JivGallery.ts`) stopped naming a class that only another page's scoped sheet declared, which had
+  left it painting nothing at all.
+- One new sweep, `Design/ScrollEdge.Conformance.spec.ts`. Its header says what a text sweep is blind to,
+  because none of it can see a strip.

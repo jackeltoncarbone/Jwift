@@ -212,6 +212,12 @@ JwiftGlassThickVivid : JwiftGlassThick {
 // behind floating chrome. A strip that
 // blurs progressively toward the screen edge; the bar it protects is its child, so the strip's own
 // padding is the bar's inset. The blur material takes one flat colour, and that colour stays clear.
+//
+// Apple's own words for why it is not decoration: the effect exists to "maintain that crucial separation
+// between the UI and content layers", and "scroll edge effects are not decorative. They don't block or
+// darken like overlays" (HIG Scroll views / ScrollEdgeEffectStyle / WWDC25 session 219, carried in
+// Shared/Research/Apple.LiquidGlass.md, "Scroll edge effects"). ONE effect per view; never stacked,
+// never mixed.
 JwiftScrollEdge {
   Direction: Column
   Align: Center
@@ -228,10 +234,58 @@ JwiftScrollEdgeBottom : JwiftScrollEdge {
   Height: 140pt
 }
 
+// THE TOP EDGE, DERIVED.
+// Five pages had each picked a strip height (120, 170, 190, 190, 240pt) and a blur radius (12, 18, 20,
+// 20, 24pt) for the SAME treatment, and none of them said where its numbers came from. These do.
+//
+// THE BAR BAND is not a taste: it is the floating header's own geometry, added up. Jwift_PageHeader pads
+// 18pt (Toolbar.jss), Jwift_Toolbar pads 4pt inside that, and Jwift_ToolbarLeading / Trailing both pin to
+// a 48pt row. So a bar occupies 18 + 4 + 48 + 4 + 18 = 92pt. Three pages corroborate it independently:
+// Admin.jss, Classroom.jss and Commerce.jss each inset their scroller 92 to 96pt "to clear the placed
+// header". ScrollEdge.Conformance.spec.ts pins these three numbers to Toolbar.jss, so moving the bar's
+// geometry fails the spec instead of silently leaving the strip the wrong length.
+@JwiftScrollEdgeRow: 48pt
+@JwiftScrollEdgeBarPad: 4pt
+@JwiftScrollEdgeHeadPad: 18pt
+@JwiftScrollEdgeBar: @JwiftScrollEdgeRow + 2 * @JwiftScrollEdgeBarPad + 2 * @JwiftScrollEdgeHeadPad
+
+// THE STRIP IS TWO BANDS. Apple's soft form is a DISSOLVE, so the ramp spans the whole strip and nothing
+// is held at full strength -- the plateau-behind-the-bar reading belongs to the HARD form, which is
+// "applied uniformly across the height of the toolbar and the pinned accessory view". A one-band strip
+// would therefore hand the content back sharp at the bar's own bottom edge, on exactly the line the
+// effect exists to hide. Two bands give the dissolve a whole further band of free content to finish in:
+// 184pt, the bar over the top half of the ramp and the run-out below it. That is within 6pt of the two
+// heights (190, 190) Designer.jss and Camera.jss arrived at separately, which is the number both were
+// reaching for.
+@JwiftScrollEdgeHeight: 2 * @JwiftScrollEdgeBar
+
+// THE BLUR IS THE HOUSE RATIO, stated twice already in this sheet: about 8% of the element's short side
+// (JwiftGlass, 4pt on a 48pt control; JwiftGlassThickVivid, 5pt on a 64pt bar). A full-width strip's
+// short side is its height, so 14.72pt -- the middle of the five radii that were picked by hand.
+@JwiftScrollEdgeBlur: 0.08 * @JwiftScrollEdgeHeight
+
+// The SOFT edge, for a bar over the page's own ground. Easing is deliberately absent: the engine default
+// is 1 (Jiv.Defaults.ts; ramp = pow(smoothstep(t), Easing)), and four sheets wrote
+// ProgressiveBlurEasing: 1 out longhand, which is what made a no-op look like a tuned value.
 JwiftScrollEdgeTop : JwiftScrollEdge {
   Justify: Start
   ProgressiveBlurDirection: ToTop
-  Height: 140pt
+  Height: @JwiftScrollEdgeHeight
+  BackdropFilter: Blur(@JwiftScrollEdgeBlur) Saturate(1.1)
+}
+
+// The DIMMING edge: the same geometry with Apple's second behaviour of the soft form, "when dark content
+// scrolls under and the glass goes dark, the effect switches to apply a subtle dimming instead". Every
+// bar in this app that floats over LIVE imagery needs it -- the drill field, the designer and uniform
+// stages, the camera viewfinder -- because blur alone cannot buy white ink its contrast over sunlit turf.
+// The grade pulls the backdrop toward the theme's ground, darker in dark and lighter in light, and puts
+// back the colour that pull takes, which is the vibrancy the material section above describes. A
+// CALIBRATED pair, like @JwiftControlTint, not a derivation: Apple publishes the behaviour, not the
+// numbers. The strip's flat colour stays the consumer's, because a page's paper is the page's.
+@JwiftScrollEdgeDim: 0.45 * @Dark + 1.05 * @Light
+@JwiftScrollEdgeVivid: 1 * @Dark + 1.8 * @Light
+JwiftScrollEdgeTopScene : JwiftScrollEdgeTop {
+  BackdropFilter: Brightness(@JwiftScrollEdgeDim) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
 }
 
 
