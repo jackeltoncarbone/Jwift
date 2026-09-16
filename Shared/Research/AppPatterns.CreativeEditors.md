@@ -277,6 +277,88 @@ My opinionated recommendations:
 
 ---
 
+## The Document Verbs — what an editor owes a document, not a canvas
+
+Everything above is about LAYOUT: where the chrome goes, what the inspector holds, how much of the screen
+the canvas gets. None of it says what happens to the user's WORK. That gap was expensive: the picture
+editor shipped with a persist step that simply returned for any picture it did not own, so a user could
+describe, tune and draw over a built-in formation for an hour and lose all of it on navigation, and
+nothing on screen had ever said the editor was not keeping it. The layout was fine. The document model
+did not exist. So this section is the other half, and it is a small, closed set of verbs.
+
+### There is no Save, and that is a decision Apple already made for us
+
+Every app in the study above autosaves. None of them has a Save button on the canvas. Apple removed the
+verb from its own document surfaces and replaced it with three others, and the replacement set is the
+part worth copying, because each one exists to cover a case that Save used to handle badly:
+
+- **Rename**, on the title. Not in a menu: you rename a document by tapping its name, in the place the
+  name already is. The title is therefore a CONTROL, and it needs the hit target of one.
+- **Duplicate**, in place of "Save As". "Save As" existed because the open document might not be saved
+  yet; once it always is, the only remaining meaning of "Save As" is "branch from here", which is
+  Duplicate. An editor with autosave and no Duplicate has removed a capability rather than a button.
+- **Revert to a version**, in place of "reopen the file and lose today". This is the one our own
+  version-adoption model already implements server-side and no editing surface exposes.
+
+### Undo is a document guarantee, and the gesture set is the proof it must be a stack
+
+`AppPatterns.iPadCreative.md` records the gestures: two-finger tap undoes, three-finger tap redoes, and
+**two-finger tap-and-hold steps back until you let go**. That third one is the load-bearing observation,
+and it is easy to read past. A hold that keeps stepping back is meaningless over a stored "last change";
+it only exists over a HISTORY. Concepts spends two of the eight slices of its Tool Wheel on undo and
+redo, and Procreate spends three of the handful of gestures it expects you to memorize. On a surface with
+no keyboard, undo is not a convenience, it is the only way back, and these apps price it accordingly.
+
+Two rules come out of that which no amount of layout study would have produced:
+
+- **A step is an ACT, not a mutation.** A typed word is one undo, not one per letter; a held stepper is
+  one undo, not one per tap; a drawn stroke is one undo, not one per sampled point. So a history needs
+  COALESCING, grouped by which control is being used and broken by a pause. Get this wrong in either
+  direction and the feature is unusable: per-keystroke undo nobody taps twice, and coalesce-everything
+  undoes work the user meant to keep.
+- **Undo restores the whole authored state**, not the one field that changed. Where a surface keeps two
+  representations of the same document in step (ours keeps a sentence and the segments it describes),
+  restoring one without the other leaves the editor describing something it is not showing.
+
+### A template is copied on the first edit, never refused and never silently dropped
+
+The case the layout studies never raise: what an editor does when the document is not the user's to
+change. A built-in formation, a picture someone else published, a document opened from a library.
+
+There are exactly three possible behaviors and two of them are wrong. Silently discarding the edits is
+the worst outcome available and is what we shipped. Refusing the gesture is hostile on a creative
+surface, where the user is mid-thought and a modal "make a copy first?" is an interruption that answers
+a question they did not ask. The third is Apple's, and it is what stationery files, locked documents and
+template pickers have all done for years: **the first edit makes it theirs.** A new document appears, the
+address changes to it, and a notice says what happened AND that the original is untouched. That last
+clause is what stops it reading as a mistake, because a user who edits a built-in usually did not intend
+to change it for everybody.
+
+Two details that are easy to get wrong and both cost correctness:
+
+- **A copy must not inherit the names the original is known by.** Where other documents reference a
+  picture by a vanity name, two documents answering to one name is how a reference stops meaning one
+  thing: it resolves to whichever a lookup map happened to build last.
+- **The copy's history starts at the copy.** Its first undo should land on "this copy, before I changed
+  it", not walk back into the template's own past, which the user never edited and cannot return to.
+
+### A destructive action is offered only where it can run, and it carries its own way back
+
+Two rules, and the second is the one usually missed:
+
+- **Do not render a control that can never be pressed.** A delete that the domain cannot perform is
+  worse dimmed than absent, because a dimmed control is a promise. Where the lifecycle belongs to
+  something else (ours archives rather than destroys, and the archive has no client-reachable route),
+  the honest surface has no delete on it at all.
+- **A delete a user cannot take back is the same defect as an edit silently lost**, arriving by a
+  different door, and worse because they pressed the button. Apple pairs destruction with recovery
+  everywhere it can: Recently Deleted, Undo Send, the undo step after a Photos delete. Where a full
+  trash is too much machinery, the notice that confirms the delete is the right home for the one action
+  that reverses it.
+
+
+---
+
 ## Sources
 
 ### Figma
