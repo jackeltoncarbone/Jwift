@@ -15,31 +15,24 @@ import ListJss from './List.jss';
 import { LIST_COMFORT } from './List.Comfort';
 
 /**
- * Half the ROUNDEST control a row can hold, which is what the section's corner has to stay concentric
- * with: `radius = JWIFT_CONTROL_RADIUS + comfort`.
+ * Half the switch, which is a 31pt capsule: `radius = JWIFT_CONTROL_RADIUS + comfort` = 31.5pt.
  *
- * It was 15.5 - half the 31pt switch capsule - with a comment calling the switch "the roundest thing a
- * row can hold". That stopped being true and nobody noticed, because the arithmetic here stayed right
- * while its input went stale. A concentricity audit over the laid-out tree
- * (Tooling/SiteShot/concentric-audit.mjs) measured what rows ACTUALLY hold on /settings/accounts:
+ * I raised this to 22 to make the section concentric with the tallest thing its rows carry (an 87x44 row
+ * button), and it was WRONG - it took the corner to 38pt, which on a one-row section is most of the box
+ * and reads as a giant capsule. Jack, looking at Linked accounts: "the radius of the list is way too big
+ * ... before it was actually proportioned to like Apple". Reverted.
  *
- *     Jwift_Avatar_Row   40x40  -> a circle of 20
- *     Set_Disc           40x40  -> a circle of 20
- *     Set_RowBtnOff      87x44  -> a pill of 22
+ * THE RULE THAT ACTUALLY APPLIES. Concentricity governs a shape nested AT a corner and inset uniformly -
+ * a menu's full-width items, an alert's action row, a card's action pill. It does NOT govern a small
+ * control sitting inside a row: a 40pt avatar 16pt from the edge of a 620pt section is not nesting in
+ * that section's corner, and Apple does not size a list's corner to its switches or its avatars. The
+ * list's corner is the list's own, and the switch is simply the roundest thing it has ever had to sit
+ * beside - which is what this 15.5 has always meant.
  *
- * All rounder than the switch, so every one of that surface's six nested corners broke the invariant,
- * the row button worst at 6.5pt out. 22 is the real maximum, giving 22 + 16 = 38pt.
- *
- * WHY THE LARGEST AND NOT AN AVERAGE: a container has ONE radius and its children have several, so
- * exactly one pair can be exact. The largest child wins because it is the one whose corner comes closest
- * to the container's and therefore the one whose misfit is visible; the 20pt discs sit 2pt shy, which is
- * the residual a single radius cannot remove.
- *
- * These controls SATURATE - they author `BorderRadius: 999pt` and `Jaui.ts` clamps a corner to half the
- * box - so their radii are fixed by their heights and cannot be tuned to suit. Only this number and
- * `comfort` can move. Raise this if a row ever carries something rounder than a 44pt pill.
+ * So a row control that is rounder than this is NOT a defect to chase, and the concentricity audit
+ * should not report it as one. See Documentation/Design/Concentricity.Audit.md.
  */
-export const JWIFT_CONTROL_RADIUS = 22;
+export const JWIFT_CONTROL_RADIUS = 15.5;
 /** Default comfort: the uniform padding a row sits at. */
 export const JWIFT_LIST_COMFORT = 16;
 

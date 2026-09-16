@@ -25,23 +25,9 @@ Jwift_List {
   Align: Stretch
   Gap: 0pt
   Width: 100%
-  // CONCENTRIC WITH THE TALLEST CONTROL A ROW CARRIES. Measured on /settings/accounts, where a row
-  // holds both a 40pt disc (a circle of 20) and an 87x44 row button (a pill of 22) at the same 16pt
-  // inset. Those two want different container radii - 36 and 38 - and a container has one, so the rule
-  // is the LARGEST child wins: 22 + 16 = 38. The disc then sits 2pt shy, which is the residual a single
-  // radius cannot remove and is below what reads at a corner.
-  //
-  // This replaced 31.5pt, which was concentric with nothing: it left the button 6.5pt out and the disc
-  // 4.5pt, so six of six nested corners on that surface broke the invariant.
-  //
-  // Both children author `BorderRadius: 999pt` and are SATURATED - `Jaui.ts` clamps a corner to half the
-  // box - so their radii are fixed by their heights and cannot be tuned. Only this number or the inset
-  // can move. See Documentation/Design/Concentricity.Audit.md and Tooling/SiteShot/concentric-audit.mjs.
-  //
-  // A list shorter than 76pt saturates and paints as a capsule. That is intended: the house rule is that
-  // a panel whose concentric radius makes it a capsule is pill mode working correctly, and a panel's
-  // radius must never be shrunk to fit its box.
-  BorderRadius: 38pt
+  // The section's own corner, 31.5pt = the switch's 15.5 plus 16pt of comfort (see List.ts). Not derived
+  // from the tallest control a row happens to carry: a 38pt corner from that idea read as a capsule.
+  BorderRadius: 31.5pt
   Overflow: Hidden
   Background: @Panel
 }
@@ -53,10 +39,9 @@ Jwift_List_Glass : JwiftGlass {
   Align: Stretch
   Gap: 0pt
   Width: 100%
-  // Same 38pt as Jwift_List above, and for the same reason: it carries the same rows, so it owes them
-  // the same concentric corner. It does not inherit Jwift_List (it takes JwiftGlass instead), so the
-  // number has to be repeated here rather than falling through.
-  BorderRadius: 38pt
+  // Same 31.5pt as Jwift_List. It does not inherit it (it composes JwiftGlass instead), so the number
+  // is repeated here rather than falling through.
+  BorderRadius: 31.5pt
   Overflow: Hidden
 }
 
