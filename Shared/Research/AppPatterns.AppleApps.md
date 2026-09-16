@@ -160,6 +160,37 @@ The tab bar became a floating glass capsule that shrinks when you scroll (major 
 ### Takeaway for Show Studio
 The **docked-mini / expanded-sheet** pattern is gold for the drill editor's playback controls. A thin strip at the bottom of the canvas showing play/pause/scrubber/current time, which expands into a full timeline scrubber with all drill commands when tapped. This is exactly how Music handles the Now Playing → full player transition.
 
+### The Library, from Apple's own guides (read 2026-09-16)
+What Apple's support documentation actually says about the two libraries Show Studio's Library is modelled on.
+The iPhone guide pages render only their table of contents to a fetch; the Mac and tvOS articles carry the
+text, and the rules are the same across platforms.
+
+- **A library is organized by CATEGORY, and filtering is picking a category.** TV app (tvOS, "View your
+  library"): "The Library screen ... includes your purchases and rentals, organized by category", and you
+  "select a category or genre in the Library sidebar to filter items". Music on Mac: the Library sidebar's
+  categories are editable (Edit, check what shows, drag to reorder), including a "Recent Updates" entry.
+- **Sort is its own control, and recency is a sort.** Music on iPhone: in Playlists, Albums or Songs, Sort
+  offers title, artist, **recently added** and **recently played**. So "recent" is an ordering of the library,
+  not a separate shelf of different things.
+- **Continue is "started and not finished".** TV app on Mac ("Start watching"): the Continue Watching row
+  "displays content you've already started to watch or plan to watch", in "the order you're most likely to
+  want to watch them", and a finished episode is replaced by the next one. Pick up where you left off is one
+  click on the thumbnail. Progress syncs across devices signed in to the same account.
+- **Library items can be hidden or recategorized, not only deleted.** TV app on Mac ("Manage your library"):
+  Mark as Watched / Unwatched recategorizes; "Delete from Library" HIDES a purchased item and deletes only an
+  imported one.
+- **Moving artwork is a user setting.** Music on iPhone: Settings > Apps > Music > **Animated Art**, with
+  options, and animated covers exist only where the album ships one. Motion is opt-out, per person, never
+  forced, and a still is the honest fallback.
+
+### Takeaway for Show Studio's Library
+The Library is the viewer's own work, never a second market: no prices on it. Continue is unfinished work
+ordered by the last time you opened or anyone edited it; "unfinished" has to be a real measure (Show Studio's
+is how much of its music a drill's recording covers), and a work nothing measures stays in Continue rather
+than vanishing on a guess. The filter narrows by kind (Apple's category); sort is separate. A moving cover
+holds its still under reduced motion. Owed and not yet built: Apple's per-person Animated Art switch, an
+editable category list, and hide-from-library.
+
 ---
 
 ## Photos — Grid, Detail, Edit
