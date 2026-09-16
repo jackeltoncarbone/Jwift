@@ -334,3 +334,48 @@ three-way mode is gone from the list; the one part of it that is not a question 
 Contacts page above returns navigation and no body text through the tools available here; the step wording
 quoted from it is what a search of that page surfaces, not a body read. That is the same blindness
 recorded in the account-row section, and it has not changed.
+
+---
+
+## A publisher's page (the App Store developer page, the Apple Music artist page)
+
+Written 2026-09-16 for the public channel page (`/@handle`). Our research described Browse and Today but
+never the page a PUBLISHER gets, which is the one a channel is.
+
+**Measured, not recalled.** The public web renders of both pages were read the same day and their section
+headings listed in order:
+
+- **App Store developer page** (`apps.apple.com/us/developer/apple/id284417353`): Latest Release, Built-In
+  Apps, iPad & iPhone, Mac, Apple Vision, Apple TV, Apple Watch, iMessage.
+- **Apple Music artist page** (`music.apple.com/us/artist/taylor-swift/159260351`): Latest Release, Top Songs,
+  Essential Albums, Albums, Music Videos, Artist Playlists, Singles & EPs, Live Albums, Compilations, Appears
+  On, More To Hear, More To See, Similar Artists.
+
+**Three rules fall out of that, and both pages obey all three.**
+
+1. **The TIMELY thing leads.** Both open on Latest Release, directly under the identity, above the durable
+   catalogue. What is happening now outranks what has always been there.
+2. **A shelf exists because it holds something.** The headings are a union over what the publisher HAS. An
+   artist with no music videos has no Music Videos shelf, not an empty one; a visitor is never shown a heading
+   followed by nothing. (Our inference, marked as ours: the person who OWNS the page is a different reader, who
+   needs to learn the shelf exists in order to fill it. Apple's own owner-side tools live in separate apps,
+   App Store Connect and Apple Music for Artists, so Apple publishes no owner view of these pages to copy.)
+3. **The follow control belongs to the identity.** Apple's support article: "On an artist's page, tap the
+   Favorite button," which sits at the top with the name
+   ([support.apple.com/en-us/111118](https://support.apple.com/en-us/111118), read 2026-09-16).
+
+**Time-boxed campaigns are EVENTS, and the product page shows only the live ones.** Apple's in-app events
+page: the product page "displays all of your currently published events", each card carrying an image or
+video, the event name, a short description and a badge, and an event "can last up to 31 days"
+([developer.apple.com/app-store/in-app-events](https://developer.apple.com/app-store/in-app-events/), read
+2026-09-16). An ended event is not on the page.
+
+**How Show Studio translates it.** The channel page is identity, then the channel's live FUNDRAISERS (a
+time-boxed campaign, so it takes rule 1's slot and the events rule's filter: open campaigns only), then its
+SERVICES, then the blocks the publisher authored. For a visitor both commerce sections are absent when empty
+(rule 2); for the owner the fundraiser section offers "Start a fundraiser" and the services section states
+that it is empty.
+
+**What could not be read, said plainly.** The HIG has no page for a profile or publisher page, and the Apple
+Music and iPhone user-guide pages render client-side and returned only navigation through the tools
+available. The section orders above are the public WEB renders; the native apps were not observed.
