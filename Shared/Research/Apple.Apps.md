@@ -113,6 +113,39 @@ Inner radius = parent radius - padding at each nesting level. Creates perfectly 
 - iPhone: single column. iPad: alternating 2-column layout
 - 16pt spacing between cards
 
+### App Store (Apps Tab, and where search, the balance and categories live)
+Read from Apple's own user guides, September 2026. Quoted where the wording decides something.
+
+- **The tabs, iPhone** (support.apple.com/guide/iphone/get-apps-iphc90580097/ios): Today ("Browse featured
+  stories, apps, and in-app events"), Games, **Apps ("Explore new releases, see the top charts, or browse by
+  category")**, Arcade, and Search. So the Apps tab is three things only: what is new, ranked charts, and
+  categories. It carries no search field and no sort control of its own.
+- **Search is its own tab**, and it is where categories are also explorable: "You can search by app name,
+  category, developer, and more. You can also explore different categories or browse the suggested apps."
+  One search for the whole store, never a second per-tab field.
+- **Filtering and sorting belong to search, not to browse.** HIG Searching
+  (developer.apple.com/design/human-interface-guidelines/searching): "In apps that use tab bars, like Photos
+  and Apple TV, search is a dedicated tab", and "people appreciate the ability to scope a search or filter
+  the results. For example, people might want to search for items by specifying attributes like creation
+  date, file size, or file type." Also: "Clearly display the current scope of a search."
+- **The balance is not chrome on the browse page.** Apple Account balance (support.apple.com/en-us/119902):
+  "In the App Store, tap your photo, initials, or the My Account button" and "If you have a balance, the
+  amount appears below your name". Mac is the same, at the bottom of the sidebar. Adding money
+  (support.apple.com/en-us/118297): "tap your photo or initials, then tap Add Money". So the store surfaces
+  a balance only once there is one, and the way to top up sits beside it.
+- **Mac App Store sidebar** (support.apple.com/guide/app-store, the Categories page caption): "The sidebar on
+  the left also includes links to other pages: Discover, Arcade, Create, Work, Play, Develop, and Updates."
+  The sidebar items are DESTINATIONS, separate pages, not jump links to anchors on one long page.
+- **Sellers are not served from the store front.** Nothing in the App Store's shopper guides offers listing
+  your own work; that lives in a separate tool. A marketplace whose buyers are also sellers has to decide
+  where Sell goes; Apple gives no in-store precedent.
+
+Show Studio's reading (the Market lane, 2026-09-16): the Market keeps its curated blocks; filter and sort
+went onto the one Search tab; the points balance sits on the Market's large-title row only for a signed-in
+viewer whose balance has resolved, beside Sell, because points are the currency every rail is priced in
+rather than an account detail; a section rail, if it returns, should follow the Mac sidebar and be
+destinations rather than anchors.
+
 ### Apple TV+
 - Hero: cinematic poster artwork (2:3 portrait or 16:9)
 - Content rows: horizontal scroll below hero
