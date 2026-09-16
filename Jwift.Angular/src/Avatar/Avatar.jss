@@ -26,10 +26,17 @@
 // One base class the five rungs inherit their geometry from. Same-sheet inheritance only: JSS does not
 // resolve a class reference across sheets (GlassActionGroup.jss learned that the hard way and had to
 // restate its geometry verbatim), so everything the avatar is lives in this one file.
-Jwift_Avatar {
+// THE PLATE IS GLASS, the same material as every other control, and the photo fills it when there is one.
+// Jack: "That avatar should be the same material as the glass, just filled with the image when there is
+// one ... when I'm logged in, and when I'm logged out, it should just be a liquid glass like everything
+// else." It had never carried a material in any variant - an opaque @Fill disc among controls that all
+// compose JwiftGlass - so on the item page it read as a flat swatch beside a glass chevron and pill.
+//
+// The rim still shows through a photo: JwiftGlass draws its border at BorderLayer 10, above the content,
+// so the bezel and Fresnel edge survive `Overflow: Hidden` clipping the image to the disc.
+Jwift_Avatar : JwiftGlass {
   BorderRadius: 999pt
   Overflow: Hidden
-  Background: @Fill
   Direction: Row
   Justify: Center
   Align: Center
@@ -48,7 +55,6 @@ Jwift_Avatar {
 Jwift_Avatar_Byline : Jwift_Avatar {
   Width: 24pt
   Height: 24pt
-  Background: @WashStrong
 }
 
 // Row — the mark that leads a list row, and a chrome control's face. 40pt is Apple's own list-row avatar
@@ -149,18 +155,18 @@ Jwift_AvatarGlyph_Fill : Jwift_AvatarGlyph {
 // it: the same circle, emptier, because there is no one there yet. The account surface had this already
 // and it is right; it becomes the primitive's `Empty` flag rather than a second class in a page's sheet.
 Jwift_Avatar_BylineEmpty : Jwift_Avatar_Byline {
-  Background: @Wash
+  Tint: 0.28 * @Dark + 0.32 * @Light
 }
 
 Jwift_Avatar_RowEmpty : Jwift_Avatar_Row {
-  Background: @Wash
+  Tint: 0.28 * @Dark + 0.32 * @Light
 }
 Jwift_Avatar_GroupEmpty : Jwift_Avatar_Group {
-  Background: @Wash
+  Tint: 0.28 * @Dark + 0.32 * @Light
 }
 Jwift_Avatar_HeaderEmpty : Jwift_Avatar_Header {
-  Background: @Wash
+  Tint: 0.28 * @Dark + 0.32 * @Light
 }
 Jwift_Avatar_FillEmpty : Jwift_Avatar_Fill {
-  Background: @Wash
+  Tint: 0.28 * @Dark + 0.32 * @Light
 }
