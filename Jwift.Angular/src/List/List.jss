@@ -87,6 +87,9 @@ Jwift_ListRow_Static:Active {
   Background: rgba(255, 255, 255, 0)
 }
 
+// A label longer than its row TRUNCATES. MaxLines alone only stops the second line being painted, so a
+// long name laid out two lines tall lost its tail with nothing to say it had been cut — the system draws
+// an ellipsis there, and a row is the one place a name is routinely too long for the space it has.
 Jwift_ListLabel {
   FontFamily: Inter
   FontSize: 15pt
@@ -95,6 +98,7 @@ Jwift_ListLabel {
   LetterSpacing: 0.1pt
   TextAlign: Left
   MaxLines: 1
+  TextOverflow: Ellipsis
   FlexGrow: 1
 }
 
@@ -106,6 +110,7 @@ Jwift_ListValue {
   Color: @InkSoft
   TextAlign: Right
   MaxLines: 1
+  TextOverflow: Ellipsis
   FlexShrink: 0
 }
 
@@ -117,6 +122,7 @@ Jwift_ListFootnote {
   Color: @InkSoft
   TextAlign: Left
   MaxLines: 2
+  TextOverflow: Ellipsis
 }
 
 Jwift_ListText {
