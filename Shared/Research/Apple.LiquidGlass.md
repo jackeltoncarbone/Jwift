@@ -164,6 +164,49 @@ Apple publishes rules and a few sizes. The rest is measured.
   primary (accent), cancel, destructive (system red; never primary).
 - visionOS sizes, published as a reference for scale: mini 28, small 32, regular 44, large 52, extra
   large 64 pt.
+- **One prominent action per view.** The Buttons page itself only says to mark the preferred option by
+  style; the count comes from HIG Color, which is explicit twice over: "refrain from adding color to the
+  background of multiple controls", and one or two prominent buttons per view. HIG Toolbars says the
+  same thing about a bar: exactly one prominent (tinted) primary action, on the trailing edge. Written
+  out here because it is a rule about the BUTTON and a lane reading the Buttons section alone would
+  never find it.
+
+### Destructive actions, and the one place red is a fill
+
+Read 2026-09-16 across HIG Buttons, Menus, Context menus, Action sheets and Alerts, because the three
+sentences that decide this were scattered over four pages and the shape they make was not written down
+anywhere. Apple never states it as one rule, so this is the rule the four pages jointly imply, with each
+half attributed:
+
+- **In a list, a menu, a toolbar or an action sheet, a destructive action is a red LABEL on the ordinary
+  control.** HIG Buttons puts it in the role list — "Roles: normal, primary (accent), cancel, destructive
+  (system red; **never primary**)" — so `destructive` and `primary` are alternatives and a destructive
+  action cannot be the accent-tinted plate. HIG Menus: "destructive items last, red, confirmed by an
+  action sheet (iOS) or popover (iPadOS)", and a menu row has no plate at all. HIG Action sheets:
+  "Destructive choices at the top", again as a row of red text. The plate stays plain or glass and it is
+  the INK that carries the meaning.
+- **The one place a destructive action is a FILLED red button is the confirming action of the ask it
+  raised.** This is the other half of the menu sentence: the red row is "confirmed by an action sheet",
+  and inside that action sheet or alert the confirm is the button the reader came to press. HIG Alerts:
+  "up to three buttons; default on the trailing side; Cancel leading", and the default button is the
+  filled one. So the filled red exists, and it exists exactly once per ask, at the end of a two-step.
+- **The two are not a style choice, they are two different moments.** Red ink on glass says "this is the
+  destructive option among several". A red plate says "this is the press that does it". A screen that
+  fills the first one has spent the plate before the reader has been asked anything, and a screen that
+  inks the second one has made the commit look like one more option.
+- **"Never primary" and "a filled red confirm" do not contradict.** `primary` in Apple's role list is
+  the ACCENT-tinted plate — the app's own colour, the "go" — and a destructive action must never wear
+  it, because the accent means the recommended path. The filled red is a third thing: the system's
+  destructive colour as a plate, drawn only where the whole purpose of the surface is to take that one
+  press.
+
+**What Apple does NOT publish**, and so has to be measured or decided: the contrast of the ink on the
+filled red plate. macOS draws its destructive default button as white on the system red, and iOS's
+`.borderedProminent` with `role: .destructive` does the same, which computes at about 3.4:1 in dark mode
+and fails WCAG AA — Apple gets away with it because its controls carry vibrancy that a token system does
+not. Show Studio therefore follows the precedent the avatar lane set with "white on system grey": keep
+Apple's SHAPE and derive the two inks per theme so both clear AA. See `ShowStudio.App/src/Ui/Theme.Tokens.ts`
+(`DangerProminent` / `OnDangerProminent`) for the measured pair and the ladder.
 
 ### Menus (HIG Menus, Context menus, Pull-down buttons, session 356, 323, 284)
 
@@ -335,7 +378,9 @@ rectangle on iOS, iPadOS and macOS, circle on watchOS, built in Icon Composer.
 | 44 pt hit region | Jwift buttons are 48; the app's surface pills are 40 by the concept; Jaui has no hit slop | open, product call |
 | Capsule buttons by default | `Jwift_GlassBtn_Pill`, `_Round`; `_Square` is the rounded rectangle | done |
 | Control sizes mini to extra large | one size | open |
-| Prominent tinted primary action | `PillTint` at 0.75 accent | done |
+| Prominent primary action, one per view | `JwiftProminent`, reached by `<glass-button variant="prominent">`. The row used to say "`PillTint` at 0.75 accent", which was the accent-plate era and is gone: the plate is the label colour inverted, because our accent is a saturated yellow that can only carry dark ink. The COUNT is enforced statically per file by `ShowStudio.App/src/Design/PrimaryAction.Conformance.spec.ts` | done 2026-09-16 |
+| Destructive as a red label on a plain or glass control | `variant="danger"`: the glass plate is untouched and the call site's label class carries `@Danger`. The plate deliberately paints nothing — the variant exists so the ROLE is declared where a sweep can read it | done 2026-09-16 |
+| Destructive as a filled plate, only as a confirm | `variant="danger-prominent"` over `JwiftDangerProminent`, held to a shrink-only ledger with a stated reason per site in `Design/DangerRole.Conformance.spec.ts`. Four sheets (`Adm_Red`, `Set_Red`, `Cm_Red`, `Prompt_Red`) had each hand-rolled this as `Background: @Danger` with the hover and press states restated to the same value, so a red plate had NO press feedback in its paint at all | done 2026-09-16 |
 | Menu rows 44 pt, icons leading, groups by gap or hairline | 44 pt rows, 6 pt gap, hairline divider inside the gap, one shared indicator | done |
 | Menu small and medium layouts | large only | open |
 | Toolbar grouping, text apart from symbols, one prominent | `GlassActionGroup` and `GlassActionBar` group cells in one pill; text items are not yet forced into their own container | partly |
@@ -364,3 +409,17 @@ rectangle on iOS, iPadOS and macOS, circle on watchOS, built in Icon Composer.
   heavier numbers.
 - App `Navigation`: the dock sits in a `JwiftScrollEdgeBottom` strip so content dissolves under it.
 - App account menu: no icon on a group where only one row had one; "Sign Out" in title style.
+
+## 6. Changes made in this pass (2026-09-16): the destructive role
+
+- Section 3 gained **"Destructive actions, and the one place red is a fill"**, which is the rule four
+  HIG pages jointly imply and none of them states. It is the citation the `danger` /
+  `danger-prominent` variants rest on.
+- Section 3's Buttons list gained the **one-prominent-action-per-view** count, which was only ever
+  written on the Color and Toolbars pages, where a lane building a button would not look for it.
+- `Glass/Jwift.Glass.jss`: `JwiftDangerProminent` (the filled confirm plate and its three-step
+  ladder), `JwiftDangerProminentOff`, `JwiftDangerProminentInk`, `JwiftDangerInk`.
+- `GlassButton`: `variant` gained `danger` and `danger-prominent`.
+- Two new sweeps in the app, `Design/DangerRole.Conformance.spec.ts` and
+  `Design/PrimaryAction.Conformance.spec.ts`. Both say in their own headers what a static count is
+  blind to, because one file is only a PROXY for one screen.

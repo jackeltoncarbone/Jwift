@@ -414,6 +414,71 @@ JwiftProminentInk {
   Color: @OnProminent
 }
 
+// ── The destructive role ────────────────────────────────────────────
+// APPLE'S PATTERN, AND IT IS TWO THINGS RATHER THAN ONE STYLE. In a list, a menu, a toolbar or an
+// action sheet a destructive action is a red LABEL on the ordinary control: HIG Buttons lists the roles
+// as "normal, primary (accent), cancel, destructive (system red; never primary)", so destructive and
+// primary are ALTERNATIVES and a destructive action can never wear the accent plate; HIG Menus puts
+// the destructive row last, "red, confirmed by an action sheet", and a menu row has no plate at all.
+// The FILLED red is the other half of that sentence: the confirming press inside the action sheet or
+// alert the red label raised. Red ink says "this is the destructive option among several"; a red plate
+// says "this is the press that does it". Written up in full, with the attribution per half, in
+// Shared/Research/Apple.LiquidGlass.md section 3, "Destructive actions, and the one place red is a
+// fill".
+//
+// SO THERE IS NO CLASS HERE FOR THE INK-ON-GLASS CASE, and that is deliberate rather than an omission:
+// the plate for a destructive glass button is the ORDINARY glass plate, unchanged, and the only thing
+// that differs is the label's colour, which belongs to the label. `JwiftDangerInk` below is that
+// colour; `Jwift_GlassBtn_Danger_*` in GlassButton.jss is the glass twin under it, and it adds no
+// paint of its own on purpose, so that the ROLE is declared somewhere a sweep can read it.
+
+// The filled destructive CONFIRM. A solid plate, so — exactly as JwiftProminent — there is no backdrop
+// to lens and the bezel, the refraction, the frost and the fresnel rim are all deliberately absent.
+// It extends JwiftPressMotion for the app's one press gesture (the hit state, the 1.06 swell, the 0.92
+// squeeze, the critically damped 140ms spring) and steps the FILL for the paint half, because neither
+// shared press paint works on a saturated plate: JwiftPress lays a white or black veil that washes the
+// red out, which is precisely why the four sheets this replaces had to restate their fill on :Hover and
+// :Active, and JwiftPressTint grades the finished pixels, which on a fill this saturated slides the hue
+// rather than reading as a press.
+//
+// The ladder only ever moves AWAY from the page's ground, the same "the control comes toward you"
+// direction as every other press in this sheet: brighter in dark, denser in light. Both halves are
+// theme tokens, measured so the label clears WCAG AA on the resting plate in both themes (Apple's own
+// white-on-system-red computes at 3.4:1 in dark and does not) — see Ui/Theme.Tokens.ts.
+JwiftDangerProminent : JwiftPressMotion {
+  Background: @DangerProminent
+  @Transition Background { Duration: 140ms }
+}
+
+JwiftDangerProminent:Hover {
+  Background: @DangerProminentHover
+}
+
+JwiftDangerProminent:Active {
+  Background: @DangerProminentPress
+}
+
+// Present but not available, as JwiftProminentOff is: it keeps its footprint and stops taking presses
+// rather than vanishing and moving everything under it.
+JwiftDangerProminentOff : JwiftDangerProminent {
+  Opacity: 0.4
+  Interactive: false
+  Cursor: Default
+}
+
+// The label and the glyph on a filled destructive confirm. Colour only: the size and the weight belong
+// to the screen, because a 17pt sheet action and a 14pt inline commit are the same variant at two
+// scales.
+JwiftDangerProminentInk {
+  Color: @OnDangerProminent
+}
+
+// The destructive label on an ORDINARY control: the whole of what `variant="danger"` means, since the
+// plate underneath does not change. Sized and weighted by the screen, as the ink classes above are.
+JwiftDangerInk {
+  Color: @Danger
+}
+
 // ── JwiftWater ──────────────────────────────────────────────────────
 // The reusable water physics. Extend it and anything gains Apple's described response:
 // interactive glass "reacts to user interaction by scaling, bouncing, and shimmering", and
