@@ -451,6 +451,69 @@ iOS 26 design system tokens. Exact values may vary by device.
 
 ---
 
+## 11b. THE CAPTURE SURFACE, which is not the player surface
+
+Added 2026-09-16 by the `camera` lane, because this file was the nearest thing we had to research for a
+RECORDING surface and it turned out to carry none. Everything above is PLAYBACK: Now Playing, the mini
+player, the scrubber, the video overlay. A camera is a different surface family with a different grammar,
+and building one off the transport research alone gets four things wrong. Recorded here so the next lane
+does not have to find that out the way this one did.
+
+### The shutter is ONE button. The mode is a separate control.
+
+Apple's Camera app has exactly one shutter. What that shutter DOES is set elsewhere: the mode selector
+(the Photo / Video swap, with the remaining modes behind a swipe) and the controls strip above it, where
+flash, timer, aspect and Live Photo live. There is never a second and third shutter beside the first.
+
+This matters because a "Photo · RECORD · Live Photo" row of three shutters reads as three unrelated
+verbs of equal weight, and the middle one being bigger does not fix that — it says "two of these are
+lesser recordings", which is not what they are. The Apple shape is: one shutter, and the thing it
+produces is a MODE you set before you press it.
+
+### Live Photo is a TOGGLE, and it is a paired asset, not a short video
+
+A Live Photo is a still plus roughly three seconds of motion — **1.5 s either side of the shutter** —
+stored as a PAIR (an HEIC and a MOV) and presented as one item. The 1.5 s is the number, and it is
+symmetric around the press, which is why the shutter can produce motion from BEFORE you pressed it: the
+camera is already buffering.
+
+Two consequences for us:
+
+- The pairing is a **Photos library** capability. There is no web container for a paired asset, so a web
+  camera can produce the still and the clip and keep them together in its own store, but it cannot hand
+  the platform a Live Photo. Say that if it ever matters; do not fake the container.
+- The control is a toggle with a **stated state**, badged with a slash when off. It does not disappear
+  when unavailable and it does not fail after the press. Which leads to the rule below.
+
+### A capability is stated BEFORE the shutter, never after
+
+Apple's Camera does not accept a press and then explain. A mode the hardware cannot do is not on the
+selector; a toggle that cannot engage shows its off badge. The limit is visible while you are deciding.
+
+The house consequence, and it is stronger than "no dead controls": **a control whose refusal is
+permanent should not be on the surface at all**, and a control whose refusal is conditional should state
+the condition where it stands. A button that renders normally and answers a press with a banner is the
+one shape Apple's capture surface never has.
+
+### Render progress belongs in the chrome, not over the work
+
+Apple's own creative apps (Final Cut, iMovie, Photos' own export) run a long render as a **determinate
+progress in the toolbar or the background-tasks list, with a cancel**, and leave the work visible and
+usable. They do not scrim the document. The share sheet appears only once the file exists.
+
+A full-screen scrim over an export is therefore a house deviation, not a house pattern. It is defensible
+on a capture surface that cannot be edited mid-render (ours seeks the engine frame by frame, so the
+stage genuinely is not the director's while it runs) — but it should be a decision someone made, not a
+default that arrived because a modal was easier. Worth revisiting if the render ever moves off the
+stage.
+
+### What is still NOT researched here
+
+- The capture-settings sheet's own grammar (Apple's is a Settings-level "Preserve Settings" pane, not an
+  in-camera panel), so our Recording panel has no first-party reference yet.
+- The mode carousel's gesture and haptics.
+- Whether iOS 26 changed the Live Photo toggle's state count (older versions carried an Auto).
+
 ## 12. WWDC25 Sessions (Reference)
 
 Relevant sessions for deeper implementation reference:
