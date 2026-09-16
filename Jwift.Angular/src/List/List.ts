@@ -14,8 +14,32 @@ import { JivHost } from '../Internal/JivHost';
 import ListJss from './List.jss';
 import { LIST_COMFORT } from './List.Comfort';
 
-/** Half the switch, which is a 31pt capsule. The roundest thing a row can hold. */
-export const JWIFT_CONTROL_RADIUS = 15.5;
+/**
+ * Half the ROUNDEST control a row can hold, which is what the section's corner has to stay concentric
+ * with: `radius = JWIFT_CONTROL_RADIUS + comfort`.
+ *
+ * It was 15.5 - half the 31pt switch capsule - with a comment calling the switch "the roundest thing a
+ * row can hold". That stopped being true and nobody noticed, because the arithmetic here stayed right
+ * while its input went stale. A concentricity audit over the laid-out tree
+ * (Tooling/SiteShot/concentric-audit.mjs) measured what rows ACTUALLY hold on /settings/accounts:
+ *
+ *     Jwift_Avatar_Row   40x40  -> a circle of 20
+ *     Set_Disc           40x40  -> a circle of 20
+ *     Set_RowBtnOff      87x44  -> a pill of 22
+ *
+ * All rounder than the switch, so every one of that surface's six nested corners broke the invariant,
+ * the row button worst at 6.5pt out. 22 is the real maximum, giving 22 + 16 = 38pt.
+ *
+ * WHY THE LARGEST AND NOT AN AVERAGE: a container has ONE radius and its children have several, so
+ * exactly one pair can be exact. The largest child wins because it is the one whose corner comes closest
+ * to the container's and therefore the one whose misfit is visible; the 20pt discs sit 2pt shy, which is
+ * the residual a single radius cannot remove.
+ *
+ * These controls SATURATE - they author `BorderRadius: 999pt` and `Jaui.ts` clamps a corner to half the
+ * box - so their radii are fixed by their heights and cannot be tuned to suit. Only this number and
+ * `comfort` can move. Raise this if a row ever carries something rounder than a 44pt pill.
+ */
+export const JWIFT_CONTROL_RADIUS = 22;
 /** Default comfort: the uniform padding a row sits at. */
 export const JWIFT_LIST_COMFORT = 16;
 
@@ -52,7 +76,8 @@ export class List extends JivHost implements OnInit, OnDestroy {
   readonly glass = input(false, { transform: booleanAttribute });
   /** A section resting on glass: a translucent fill instead of the opaque grouped ground. */
   readonly translucent = input(false, { transform: booleanAttribute });
-  /** Uniform row padding, in points. It decides the corner: radius = control radius + comfort. */
+  /** Uniform row padding, in points. It decides the corner: radius = control radius + comfort, so the
+   *  section stays concentric with the roundest control its rows carry. */
   readonly comfort = input(JWIFT_LIST_COMFORT, { transform: numberAttribute });
   /** Overrides the derived corner, for a section nested inside another shape. */
   readonly radius = input<number | null>(null, { transform: (v: unknown) => (v == null || v === '' ? null : numberAttribute(v)) });
