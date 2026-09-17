@@ -486,3 +486,63 @@ rectangle on iOS, iPadOS and macOS, circle on watchOS, built in Icon Composer.
   left it painting nothing at all.
 - One new sweep, `Design/ScrollEdge.Conformance.spec.ts`. Its header says what a text sweep is blind to,
   because none of it can see a strip.
+
+## 8. Changes made in this pass (2026-09-17): the settings family reads its own citations
+
+The account-and-settings design lane. Nothing new was fetched from Apple; what this pass adds is the
+consequence of three sentences already quoted above, none of which the app had applied, plus the
+translations they force. Jack, looking at these screens: *"although these pages look pretty clean, they
+don't look like something Apple would make."*
+
+**The section header, and the one quoted sentence nobody had acted on.** Section 3's "Lists, forms and
+sidebars" has carried this since the material was first read: *"Lists, tables, and forms have a larger row
+height and padding. Sections have an increased corner radius to match the curvature of controls across the
+system. **Section headers are title-style, no longer all capitals.**"* Every settings screen in this app
+was still setting its group headers in CAPITALS at 13pt/700 with **+0.6pt of tracking** — the iOS 12
+grouped-table caption. `Apple.Measured.Spec`'s tracking table condemns the same class from the other side:
+apple.com tracks NEGATIVE at every rung 17px and below (−0.0218em at 17, −0.0157em at 14, −0.010em at 12),
+and +0.6pt at 13pt is **+0.046em**, the wrong sign and three times the largest positive value measured
+anywhere on that site. The house's own proof page had the answer already: `Item.jss` heads a section with
+22pt / 700 / −0.4pt / `@Ink` in Title Case and carries no micro-cap. The settings family is that now, and
+`ShowStudio.App/src/Design/SectionHeaderCase.Conformance.spec.ts` holds it at the CALL SITES, because JSS
+has no text-transform — every shout in this app is a string an author typed, so fixing the class without
+sweeping the callers would have made the screens worse, not better.
+
+**The library still disagrees with this file, deliberately unfixed.** `Jwift.Angular/src/List/List.jss`
+declares `Jwift_ListSectionHeader` as, in its own words, *"the small uppercase caption above a section"* —
+11pt / 600 / +0.6pt / `@InkSoft`. That is the shape this section says Apple retired. It is named here
+rather than changed because a shared-registry class belongs to a lane that owns the whole blast radius,
+and the app's own settings family does not use it. Whoever takes it: the replacement is the same
+title-style rung, and the conformance spec above already guards the class by name.
+
+**One box radius per page, and Apple's actual answer to nesting.** `Apple.Measured.Spec` RULE R1 ("a page
+has ONE box radius plus the pill") and RULE R3 ("zero uniformly-inset rounded-child-in-rounded-parent pairs
+on any of them — they sidestep the problem rather than solving it") together retire four near-miss corners
+from these screens. The settings sheet was drawing the grouped list's derived **31.5** alongside cards,
+tiles and stand-in rows at **26** — 5.5pt apart in one column, which reads as three near-misses rather than
+one shape. All of them are 31.5 now, so the family has one box and the pill. Two consequences worth
+recording because both are arithmetic rather than taste:
+
+- A theme tile's inner window WAS at a corner and WAS uniformly inset (12pt), so it is genuinely
+  concentric and moved with its parent: 31.5 − 12 = **19.5**.
+- A 56pt-tall branching row at a 31.5 corner **saturates to a capsule**, since a shape is saturated once
+  its radius passes half its height. That is the same arithmetic that makes a one-row grouped list a true
+  pill (63pt tall, 31.5 corner), so the row reads as the list of one that it is.
+
+**Where the accent is allowed to be, counted rather than felt.** Section 3's Colour rules — *"refrain from
+adding color to the background of multiple controls"*, *"one or two prominent buttons per view"* — were
+being broken by counting on one screen: the OAuth consent card spent the accent **four times** (the client
+mark, every scope disc, the confirm block, the Allow plate). Only the plate keeps it. The same count
+retired a four-peer-pill button bar on `/settings/accounts`, against Section 3's alert grammar (*"title,
+optional message, **up to three buttons**; default on the trailing side"*): four equal answers in one
+wrapping row is a decision tree flattened into a button bar, so it is three controls and one plain-text
+way off the notice now.
+
+**A sheet is not a bottom drawer above compact width**, which closes the first of the two items the
+migration checklist records as "already in frame and unfixed". `Design/HIG/Sheets.md` quotes the HIG page
+directly for iPadOS: *"Prefer using the page or form sheet presentation styles, each centering content on a
+dimmed background at a default size."* The sign-in chooser was docked to the bottom edge at every width. It
+centres at ≥768 now — the crossover `Apple.Measured.Spec` RULE G3 puts the model's inversion at — and keeps
+the drawer below it, where the window really is a phone and the bottom edge is where a thumb is. It needed
+no library change: the card is the shared `<drawer>`, and what was wrong was the dock's cross-axis
+alignment.

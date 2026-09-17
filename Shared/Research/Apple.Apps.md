@@ -320,6 +320,37 @@ available here (they render client-side; the DocC JSON 404s). The published cita
 support article, and the Settings/Mail/System Settings behavior is recorded as first-party-app observation
 in the same way the rest of this section's measurements are, not as a quotation.
 
+**The rule reaches further than an account row, and it took a second lane to find out where.** Written
+2026-09-17 by the account-and-settings design lane. The section above was aimed at a LINKED ACCOUNT - a
+sign-in method whose provider publishes a mark - and it was read narrowly, as a rule about providers. It is
+not. It is a rule about the difference between a PERSON and a THING, and two screens were still breaking it
+on a subject that has no provider mark at all: an **OAuth client application**.
+
+The consent screen drew the requesting app's first letter in a gold plate, and the connected-apps list drew
+each authorized agent's first letter in a grey CIRCLE. Both were admitted to
+`Design/Avatar.Conformance.spec.ts`'s monogram ledger, with a reason: "an app has no photo to fall back
+from and no given/family name to take two letters from, so it wears one letter of its client name". That
+reasoning stops one step early. The absence of a mark is not a licence to invent a face for something that
+has none; this section's own words are "a service Apple has no mark for gets a generic glyph, NEVER its
+initial", and it says why in the next breath - "it is a category error, a face treatment applied to a thing
+that has no face. It reads as a bug." The circle made it worse, because the circle is the one shape this
+file says Apple reserves *because* it distinguishes a person from a thing.
+
+So the ladder's last rung reads the same for a company, a provider and an app:
+
+    photo -> what the caller projects (the service's own mark) -> a GENERIC GLYPH -> never an initial
+
+Both screens now draw the generic app glyph they already used for their own empty state
+(`square.grid.3x3`) on a **squircle**, and the monogram ledger is EMPTY for the first time - thirteen
+classes have been through it and none is left. The app is named in the headline and in the row label,
+where a name belongs.
+
+**The corner of that mark is derived, not chosen**, and it is worth recording because it is the one place
+this family gets to use the concentricity law properly. A 40pt mark leads a grouped-list row at the list's
+16pt comfort, uniformly inset, so it is concentric with the section when its radius is the section's minus
+that inset: 31.5 - 16 = **15.5** - which is the radius of the control the list's own corner was derived
+from, so the arithmetic closes.
+
 ### The DEFAULT ACCOUNT: how Apple lets a person say which account is the one
 
 Written 2026-09-16, the same day as the account-row section above, because the row told us what an account
