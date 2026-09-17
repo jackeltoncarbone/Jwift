@@ -218,6 +218,80 @@ destinations rather than anchors.
 
 ---
 
+## Text over artwork on a card
+
+Written 2026-09-17 for the surface's item card (`Surface.jss` WidgetFoot), whose title sat on a light
+wordmark in its cover. The points above describe Today cards as "full-bleed background images" and say
+nothing about how the words stay readable on them, which is where the card went wrong.
+
+What Apple states, fetched from the HIG's own JSON (developer.apple.com/tutorials/data/design/...):
+
+- **Contrast, by size and weight** (HIG Accessibility, the minimum contrast table): "Up to 17 pts | All |
+  4.5:1", "18 pts | All | 3:1", "All | Bold | 3:1". "If your app supports dark mode, make sure to check the
+  minimum contrast in both light and dark appearances." Text over a cover has to meet this against the
+  BRIGHTEST cover it may land on, not the one in the mockup.
+- **Dimming bright content** (HIG Materials, Liquid Glass clear variant): "If the underlying content is
+  bright, consider adding a dark dimming layer of 35% opacity", and "If the underlying content is
+  sufficiently dark ... you don't need to apply a dimming layer." So a dim is Apple's own answer to bright
+  media, and it is a floor for bold, bright glyphs rather than a fixed value.
+- **What a blur edge does** (HIG Scroll views): "Scroll edge effects further enhance legibility by blurring
+  and reducing the opacity of background content." The SOFT style "applies a variable blur that provides a
+  softer fade"; the HARD style "a more opaque blur with a defined edge", which Apple prefers for "text that
+  appears outside of Liquid Glass controls". Blur and a reduced range together, never blur alone.
+- **Content is not glass** (HIG Materials, carried in Apple.LiquidGlass.md): "Don't use Liquid Glass in the
+  content layer." A card's legibility gutter is a grade on its own art, not a glass slab laid on it.
+
+What Apple does NOT state anywhere we have read: the height of the ramp on a Today card, a TV tile or an
+album tile. "Roughly the lower third" is observation, not documentation. The house rule below is derived,
+and is labelled as ours:
+
+- **The words sit in the settled part, never in the ramp.** The ramp's length equals the foot's lead above
+  the first line, so the blur, dim and grade have all arrived by the title's top. A longer feather than lead
+  puts the title where the blur has barely begun (Jaui samples LOD = ramp squared), which was the defect.
+- **The settled part is the text block**, because the foot hugs its words: title alone is a short gutter,
+  title, byline and two lines of description a tall one.
+- **The ramp is two of the title's line boxes, down to the 4pt grid** (22pt x 1.15 x 2 = 50.6, so 48pt):
+  long enough to read as the soft variable blur, short enough that the art above stays the card.
+- **The settled grade is sized for a WHITE cover under white words.** Compress contrast first so dark art
+  keeps its depth, then darken and dim: Contrast 0.7, Brightness 0.72, a 45% dark ground takes white to
+  0.345 sRGB, 4.65:1 for 209-grey 15pt and 6.5:1 for the bold title. The dim is heavier than Apple's 35%
+  because the byline is regular weight under 17pt, which the 35% (sized for bold, bright glyphs) does not
+  cover. The card's ink is the same in both app themes because the ground under it is the art, not the page.
+
+## The content shelf: a row that scrolls, at every size
+
+Written 2026-09-17 for the surface's Rail, Grid and Spotlight blocks, which WRAPPED above a phone width, so
+a row of four drew as three and an orphan. Every seeded row happened to hold a multiple of three, which is
+why nobody saw it. The points above say "horizontal scroll rows" and "swipeable card rows" but say nothing
+about width, the pointer or the edge, which is where the build went wrong.
+
+- **A shelf is one row at every width, never a grid that reflows.** Apple Music, Apple TV and the App Store
+  draw the same horizontal row on a phone and on a Mac; a wider window shows more of the row, not a second
+  line of it. So "a rail of N" is N cards in a line whatever N is, and the page-width breakpoints only change
+  how many cards a screen holds (three on a desktop, two on a tablet, one and a peek on a phone).
+- **The row's title is the way to see all of it.** Apple TV app on Mac, "Start watching"
+  (support.apple.com/guide/tvapp-mac/start-watching-atv7bf64f99/mac): "Click a row title to see all of the
+  items in that category or view more information about the collection." Our `SectionHeadLink` with its
+  chevron is that title. The row scrolling is for browsing; it is not the only way to reach the end.
+- **On a pointer, arrows; on touch, the row itself.** Apple's Mac guides describe the Next button on the
+  featured area and scrolling the page, but do not spell out the row arrows. The behaviour is stated plainly
+  by a user in Apple Community (discussions.apple.com/thread/255089728, an Apple Community answer, NOT Apple's
+  own documentation): "Most rows are scrollable horizontally, to list more shows for that row. Find the
+  arrow on the right side when hovering over any row." That matches the Mac apps: arrows appear only while
+  the pointer is over the row, only on a side with somewhere to go, and a press steps a page of whole cards.
+  A touch device shows no arrows at all and the row is dragged directly, with the scroll view's rubber-band at
+  the ends. Our build: the arrows are UNMOUNTED rather than faded when absent, because an invisible control
+  still takes a tap on a canvas (see the house trap about invisible cells).
+- **A page is whole cards.** The card cut off at the trailing edge becomes the first card, on the column's
+  line; going back, the card cut off at the leading edge becomes the last. A page never leaves a card half
+  seen at the edge it moved from. (Engine: `Jaui/src/Scroll/Scroll.Page.ts`, `PageTarget`.)
+- **The row runs to the window's edge and is clipped there.** The first card sits on the page's content
+  line, and the row continues past the column to the edge of the window, so the cut card reads as the row
+  continuing rather than the row stopping short. Same rule as the App Store's category pills
+  (`Surface/Search.jss`, `SearchFacets`).
+
+---
+
 ## The Avatar (Contacts, Mail, Messages, the App Store account sheet)
 
 Written 2026-09-16, because our research carried nothing about the one mark that appears on more screens
