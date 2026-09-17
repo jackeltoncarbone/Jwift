@@ -220,7 +220,34 @@ Apple's SHAPE and derive the two inks per theme so both clear AA. See `ShowStudi
   Context menus: no more than about three groups. Submenus: one level; more than about five items in a
   submenu means a new menu.
 - Order: important and frequent first; destructive items last, red, confirmed by an action sheet
-  (iOS) or popover (iPadOS). Show Studio keeps every option white by Jack's decision.
+  (iOS) or popover (iPadOS).
+
+  **ONE INK INSIDE A MENU; RED WHERE YOU CONFIRM** (settled 2026-09-17). An older note here said "Show
+  Studio keeps every option white by Jack's decision", which read as a blanket divergence and is not the
+  rule. The rule is about WHERE, not whether. Jack: "if delete a pic is in a drop down keep it the same
+  color otherwise it stands out. if delete this section is a modal/dialog then it can stay in that one."
+
+  So a menu row wears the house ink whatever it does - Delete reads like every other option until you
+  pick it - and the red arrives in the CONFIRM that follows. That keeps Apple's own pairing intact, since
+  the HIG line above couples red to a confirmation in the same breath, while refusing to shout at someone
+  still reading the list. `Destructive` keeps both of its jobs: it orders the row last, and it raises the
+  confirm on the danger plate (`JwiftDangerProminent` / `JwiftDangerInk`).
+
+  A row that is REVERSIBLE should not claim the flag at all. Sign Out was marked destructive and reddened;
+  signing out is reversible - you sign back in - and Apple never reds it. That flag is gone from both Sign
+  Out rows.
+
+  Two gates, because each wrong fix was attempted on the way here:
+  `ShowStudio.App/src/Design/MenuInk.Conformance.spec.ts` keeps menu rows uniform AND keeps the confirm
+  plate red (painting both white leaves nothing marking an irreversible act), and
+  `Authentication/AccountMenu.spec.ts` keeps every account row off the flag. Both mutation-tested.
+
+  So the bug was never the colour; it was the `Destructive` flag on a reversible row. Red stays for what
+  it is for (Delete a picture, Delete this section) and nothing in the account menu claims it. Held by
+  two halves, deliberately - `ShowStudio.App/src/Design/MenuInk.Conformance.spec.ts` keeps @Danger on the
+  destructive variant, and `Authentication/AccountMenu.spec.ts` keeps every account row off it - because
+  either half alone invites the wrong fix: painting red white, or letting red creep back onto something
+  reversible. The ORDER half applies to Sign out regardless: it is last.
 - Labels: title-style capitalization, verbs, no articles, an ellipsis when more input follows.
 - The menu is the button's glass popped open; it stays where the finger tapped. As a large element it
   takes the thick material and never flips light or dark.

@@ -78,8 +78,25 @@ Jwift_ContextMenuItemLabel {
   MinWidth: 0pt
 }
 
+// ONE INK INSIDE A MENU. RED BELONGS WHERE YOU CONFIRM, NOT WHERE YOU CHOOSE.
+//
+// Jack, settling this: "if delete a pic is in a drop down keep it the same color otherwise it stands out.
+// if delete this section is a modal/dialog then it can stay in that one."
+//
+// So a menu row is a row - Delete reads like every other option until you pick it - and the red arrives
+// in the CONFIRM that follows, where it is about to mean something. That keeps Apple's pairing intact
+// ("destructive items last, red, CONFIRMED by an action sheet or popover") while refusing to shout at
+// somebody who is still reading the list.
+//
+// WHAT `Destructive` STILL DOES, because it is not decoration: it orders the row last, and it is what
+// raises the confirm with the danger plate (`JwiftDangerProminent` / `JwiftDangerInk`, untouched). So
+// Delete a picture and Delete this section keep the flag and keep their confirm; what they lose is the
+// red in the row itself. Sign Out never had a confirm to raise and is reversible anyway, so it no longer
+// claims the flag at all.
+//
+// Held by `ShowStudio.App/src/Design/MenuInk.Conformance.spec.ts`: menu rows uniform, confirm plate red.
 Jwift_ContextMenuItemLabel_Destructive : Jwift_ContextMenuItemLabel {
-  Color: @Danger
+  Color: @Ink
 }
 
 Jwift_ContextMenuItemIcon {
