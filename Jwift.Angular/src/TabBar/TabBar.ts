@@ -135,9 +135,14 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
       // Expanded beside a wide viewport (the concept's top dock); stacked on a phone.
       const next = (typeof window !== 'undefined' ? window.innerWidth : this.Node.Width) >= TabBar._ExpandThreshold;
       if (next !== this.Expanded()) this.Expanded.set(next);
+      // A per-frame width poll has no meaning where there are no frames. Under server rendering
+      // the width is evaluated ONCE — so the bar still serializes in its correct stacked/expanded
+      // form — and the loop simply never starts. Left unguarded, this threw out of ngOnInit on
+      // every route and took the whole navigation's semantics down with it.
+      if (typeof requestAnimationFrame === 'undefined') return;
       this._rafId = requestAnimationFrame(tick);
     };
-    this._rafId = requestAnimationFrame(tick);
+    tick();
     const el = this._canvasRef?.Canvas?.Element;
     if (el) {
       this._gesture.Wire(el, {

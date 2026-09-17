@@ -101,6 +101,11 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     // zero every frame and the shape springs target 1.0 forever
     // (no stretch, no squish, no perpendicular bulge).
     this.Node.WatchRect(true);
+    // This loop exists ONLY to drive the indicator's velocity-derived stretch and squish, and
+    // pointer tracking only matters where there is a pointer. Neither has meaning under server
+    // rendering, which has no frames at all — unguarded, this threw out of ngOnInit and cost the
+    // page every semantic node that would have been built after it.
+    if (typeof requestAnimationFrame === 'undefined') return;
     const tick = (): void => {
       this._sync();
       this._rafId = requestAnimationFrame(tick);

@@ -10,6 +10,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { Jaui, Jiv } from 'jaui-angular';
 import type { JivHandle } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
@@ -141,6 +142,10 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   readonly defaultPage = input<string | null>(null);
 
   private readonly _canvasRef = inject(Jaui, { optional: true });
+  /** INJECTED, never the global: this dropdown mounts inside surfaces that server-render, and the
+   *  document-level listeners below reached for a global that a server render does not define. On
+   *  the server they bind to the render's own document and simply never fire. */
+  private readonly _doc = inject(DOCUMENT);
   private _unbindDoc: (() => void) | null = null;
 
   /** Extra class ANDed onto the closed pill — how the action group marks the
@@ -201,21 +206,21 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     };
     const onDocRelease = () => { if (this._pressed()) this._pressed.set(false); };
     const onDocLeave = () => this._hover(null);
-    document.addEventListener('pointerdown', onDocDown, true);
-    document.addEventListener('pointerdown', onDocPress, true);
-    document.addEventListener('pointermove', onDocMove, true);
-    document.addEventListener('pointerup', onDocRelease, true);
-    document.addEventListener('pointercancel', onDocRelease, true);
-    document.addEventListener('pointerleave', onDocLeave, true);
-    document.addEventListener('keydown', onKey);
+    this._doc.addEventListener('pointerdown', onDocDown, true);
+    this._doc.addEventListener('pointerdown', onDocPress, true);
+    this._doc.addEventListener('pointermove', onDocMove, true);
+    this._doc.addEventListener('pointerup', onDocRelease, true);
+    this._doc.addEventListener('pointercancel', onDocRelease, true);
+    this._doc.addEventListener('pointerleave', onDocLeave, true);
+    this._doc.addEventListener('keydown', onKey);
     this._unbindDoc = () => {
-      document.removeEventListener('pointerdown', onDocDown, true);
-      document.removeEventListener('pointerdown', onDocPress, true);
-      document.removeEventListener('pointermove', onDocMove, true);
-      document.removeEventListener('pointerup', onDocRelease, true);
-      document.removeEventListener('pointercancel', onDocRelease, true);
-      document.removeEventListener('pointerleave', onDocLeave, true);
-      document.removeEventListener('keydown', onKey);
+      this._doc.removeEventListener('pointerdown', onDocDown, true);
+      this._doc.removeEventListener('pointerdown', onDocPress, true);
+      this._doc.removeEventListener('pointermove', onDocMove, true);
+      this._doc.removeEventListener('pointerup', onDocRelease, true);
+      this._doc.removeEventListener('pointercancel', onDocRelease, true);
+      this._doc.removeEventListener('pointerleave', onDocLeave, true);
+      this._doc.removeEventListener('keydown', onKey);
     };
   }
 

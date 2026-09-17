@@ -594,3 +594,112 @@ rows at a **≈51pt** pitch.
 **Against this repo's `Jwift_List`** (63pt minimum row, 15pt label, 31.5pt corner): our row is ~10pt taller than
 Apple's TOUCH row with a smaller label, and ~28pt taller than the Mac row. The 31.5pt corner was derived from a
 15.5pt control plus a 16pt inset; Apple's measured section is ≈26pt at the same 16pt inset.
+
+### The user guides ARE readable, through the Wayback Machine (added 2026-09-17, `settingsia` lane)
+
+The "Still blocked" line above is true of `support.apple.com` itself (403 to curl and WebFetch), but its guides
+are archived and current:
+
+- `https://web.archive.org/web/2026id_/https://support.apple.com/guide/<book>/<topic>/<ver>/<os>/<ver>`
+  (`id_` returns the raw page; follow redirects; the body is **gzip**, decompress before parsing). Books:
+  `iphone` (`/26/ios/26`), `ipad` (`/26/ipados/26`), `mac-help` (`/26/mac/26`, or the unversioned
+  `/<topic>/mac`).
+- `.../guide/<book>/toc` lists every topic URL of that book (986 for iPhone, 915 for iPad on 2026-08-06).
+- The article is the `<body class="... apd-topic ...">` block after the table of contents; iPhone pages carry a
+  2,000-line TOC first, Mac pages put the task in `class="Task"`.
+- Wayback rate-limits bursts (429); three seconds between fetches was enough. Not every topic is archived (the
+  Mac General and Language & Region reference pages 404 there).
+
+### Settings taxonomy, as the 26 guides document it
+
+The full treatment, with our mapping, is `ShowStudio.Documentation/Design/Settings.Design.md` Step 4. The Apple
+facts only:
+
+- **Appearance is in different places per platform.** iPhone and iPad: **Display & Brightness** > Light / Dark,
+  *"Turn on Automatic, then tap Options"*, alongside Liquid Glass (Clear / Tinted), Text Size, Bold Text, True Tone,
+  Night Shift, Display Zoom. Mac: a TOP-LEVEL **Appearance** area: Auto / Light / Dark, Liquid Glass, Color (the
+  accent), Text highlight color, Icon & widget style, Folder color. **Neither platform puts it in General.**
+- **Language is in General > Language & Region on all three.** iPhone lists language, region, calendar,
+  temperature unit, measurement system, first day of week, date and number format, Live Text; iPad adds *"preferred
+  form of address"*; the Mac adds **Applications**, a per-app language list inside the same pane.
+- **The HIG is stale on the Mac accent color**: HIG Color says *"General > Accent color settings"* and HIG Dark Mode
+  *"the graphite accent color in General settings"*, which is pre-Ventura System Preferences. macOS 26 has it at
+  Appearance > Color.
+- **Apple Account, Mac, in order**: picture; Personal Information (name, birthday); Sign-In & Security; Payment &
+  Shipping; iCloud; Family; Media & Purchases; Sign in with Apple (*"appears only after you use Sign in with
+  Apple"*); Devices; Contact Key Verification; Sign Out. iPhone adds a **Subscriptions** row (Cancel, Share with
+  Family, Renewal Receipt Emails) and puts Personal Information's *"preferences for communication from Apple, and
+  see how your data is managed"* in the same row.
+- **Family is a top-level row under the name** on iPhone (*"Tap Family ... If you don't see Family, set up Family
+  Sharing"*), and the guide's security topic says *"Don't let others use your Apple Account, even family members.
+  To share purchases, subscriptions ... without sharing Apple Accounts, set up Family Sharing."* Apple's model of a
+  group is membership, never a shared or switched identity.
+- **Sign in with Apple's settings** (Apple Account > Sign in with Apple) are a list of the apps using your account,
+  each with *"Stop Using"*: the precedent for a Connected Apps list.
+- **Mac System Settings has Back / Forward history** and search suggestions *"based on settings you access most
+  often"*; iOS 26 Settings has search in the bottom toolbar (HIG Search fields).
+
+
+## A directory of many things: Files on iPad in List view, and Finder
+
+Folded in 2026-09-17 by the admin-console lane. Jack pointed at the Files app's iCloud Drive list and said
+*"is this not similar to users but for other stuff. we are just doing a user one."* He is right, and this
+file carried nothing about it: the App-Specific Findings above cover Music, Photos, Mail and the App Store,
+all of which are lists of ONE thing with ONE attribute. Files is the reference for a list of many things
+each with SEVERAL attributes, in a window that already has a sidebar, which is the shape every admin and
+management surface actually has.
+
+**COLUMNS UNDER HEADERS, NOT DECORATED ROWS.** In List view Files heads the list `Name | Date Modified |
+Kind | Size | Tags` with a small overflow at the trailing end. The active sort column is marked (Date
+Modified reads brighter, with a direction chevron beside it) and the headings are pressable to re-sort.
+Finder is the same control with the same behaviour, and Apple writes it down there: *"Sort items, group
+icons and resize columns in the Finder on Mac"* (support.apple.com/guide/mac-help, mchlp1745) — click a
+column heading to sort by it, click again to reverse.
+
+**THE CONSEQUENCE, AND IT IS THE WHOLE POINT.** An attribute that EVERY row has is a column, aligned with
+the same attribute on every other row, under a heading that can order by it. It is not a pill at the
+trailing edge, not a chip, and not a clause in the row's subtitle. Three things follow:
+
+- **The trailing edge is one control.** In Files that is the disclosure chevron, and only on a row that
+  expands: *"To look deeper into a file hierarchy in List view, tap next to a folder to expand it"*
+  (support.apple.com/guide/ipad, Files basics). A chevron is a promise that something opens, so a row that
+  opens nothing does not wear one.
+- **Title plus ONE quiet secondary line.** Files' is *"Modified by Me"*. Anything more than one line is
+  columns' work being done by prose, unaligned with the row above it.
+- **A real icon or thumbnail per item**, never a stand-in derived from the item's own text.
+
+**NO STANDING SELECTION AFFORDANCE. SELECTION IS AN EDIT MODE.** Apple's words for the entire pattern:
+*"To modify multiple files or folders at the same time, tap Select, tap to select the files or folders you
+want to modify, then tap an option at the top of the screen (Share, Duplicate, Move, Delete, and so on)"*
+(support.apple.com/guide/ipad, "Modify files and folders in Files on iPad"). So: a plain list by default
+with nothing on the leading edge; **Select** reveals an empty ring per row which FILLS as you tap it; the
+verbs appear at the TOP, over the list, rather than floating over the rows being decided about; and Done
+puts both away. A permanent checkmark on every row of an unselected list is a mark that means nothing while
+being the first thing the eye lands on.
+
+**SEARCH IS A SMALL TRAILING CONTROL, NOT THE FURNITURE.** Files keeps search at the trailing end of the
+bar and filters as you type. A field that springs to fill the bar is the widest object on screen and reads
+as the subject of the page, which in a directory is the list.
+
+**THE SIDEBAR CARRIES GROUPED DESTINATIONS** with small title-style group labels (Favorites, Locations,
+Tags) and the detail area takes whatever is left — the same rule `AppPatterns.AppleApps.md` states for
+editors (*"sidebar and inspector keep their own widths, and the detail or canvas takes whatever is left"*).
+A list pane centred inside a reading measure leaves a gutter that reads as more sidebar.
+
+**WHAT THIS DOES NOT LICENSE.** A pane that is genuinely a settings form — grouped rows with one trailing
+control each — is not a table and gains nothing from columns. Files itself offers Icon, List and Column
+views because the right presentation depends on the content, and picking List for everything is the same
+mistake as picking cards for everything.
+
+### A Hide My Email relay is not a name
+
+Same lane, same audit, because it turned up in the Name column. Apple: Hide My Email generates *"unique,
+random email addresses"* that forward to your real inbox, and *"when you select this option in Sign in with
+Apple, the Hide My Email addresses created use the address domain @privaterelay.appleid.com"*
+(support.apple.com/en-us/105078; support.apple.com/guide/icloud, mme38e1602db). **Random is the point of
+the string.** `5rn964njy7@privaterelay.appleid.com` in a title slot asks a reader to tell two people apart
+by a value designed to carry no information, and a monogram derived from it is one meaningless character
+presented as if it were an initial. Say what the row IS, using Apple's own name for the thing so it stays
+searchable, keep the address on the quiet line where it can be read and copied, and let the avatar fall
+through to its glyph rather than stamping a disc with a random character.
+

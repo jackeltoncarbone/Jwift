@@ -433,9 +433,18 @@ JwiftPressTintGlass:Active {
 // So the fill steps instead, along the one ladder the tokens declare, and it only ever moves AWAY
 // from the page's ground — brighter in dark, denser in light. That is the same "comes toward you"
 // direction as every other press in this sheet; it is simply the only axis an inverted solid has.
-// The step is small (about 4% of headroom in dark), which is why the squeeze above is doing most of
-// the talking. The Background transition is the shared 140ms, so the plate and the squeeze land
-// together rather than the colour flashing ahead of the shrink.
+// The Background transition is the shared 140ms, so the plate and the squeeze land together rather
+// than the colour flashing ahead of the shrink.
+//
+// THE PLATE IS SLIGHTLY TRANSLUCENT (2026-09-17), and that is not glass creeping back in: there is
+// still no bezel, no refraction, no frost and no fresnel. An opaque near-white plate on a near-black
+// ground steps about 225 levels across one antialiased edge, and simultaneous contrast reads that
+// edge as a bright rim the fill does not contain. Letting 8% of the surround through drops the
+// boundary contrast (19.6:1 -> 16.1:1 in dark) and lets the plate take some of its colour from
+// whatever it sits on, so one button is not a flat cut-out over three different surfaces. The alpha
+// steps with the fill, which also doubles the press travel this comment used to apologise for: over
+// black the rungs resolve to 225 -> 237 -> 245 rather than 245 -> 252 -> 255. The measurement, and
+// the label contrast on each resting plate, are in `ShowStudio.App/src/Ui/Theme.Tokens.ts`.
 //
 // DISABLED is the consumer's (`<glass-button [disabled]>` fades the whole node, label included, so
 // the contrast INSIDE the pill survives the fade). `JwiftProminentOff` is here for the app classes
