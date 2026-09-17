@@ -79,18 +79,46 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     return null;
   }
 
+  /** The indicator's box, relative to the dropdown, from the CURRENT geometry of both. */
+  private _indicatorBoxFor(row: GlassDropdownRow): { Left: string; Top: string; Width: string; Height: string } {
+    return {
+      Left: `${row.Node.X - this.Node.X}px`,
+      Top: `${row.Node.Y - this.Node.Y}px`,
+      Width: `${row.Node.Width}px`,
+      Height: `${row.Node.Height}px`,
+    };
+  }
+
+  /**
+   * Re-place the indicator on the row it is already on.
+   *
+   * WHY THIS EXISTS. `Left` is `row.X - dropdown.X`, read ONCE when the pointer enters a row. The open
+   * menu animates Width and Height over 280ms and is anchored `Right: 0`, so while it grows the
+   * dropdown's own X is still travelling LEFT while the rows are already laid out at their final
+   * places. Hover a row inside that window and a stale offset is baked in, and the highlight sits off
+   * to one side for as long as it stays on that row - horizontally only, because only the width is
+   * animating. Jack: "sometimes the indicator is like offset the wrong way to the left ... I'm guessing
+   * it's because the menu's mid-growing. But it decides a position or something."
+   *
+   * So the box is recomputed while the menu is still moving rather than trusted from one frame.
+   */
+  private _replaceIndicator(): void {
+    const row = this._hovered();
+    if (!row) return;
+    const next = this._indicatorBoxFor(row);
+    const now = this._IndicatorLayout();
+    if (now && now.Left === next.Left && now.Top === next.Top
+        && now.Width === next.Width && now.Height === next.Height) return;
+    this._IndicatorLayout.set(next);
+  }
+
   private _hover(row: GlassDropdownRow | null): void {
     const was = this._hovered();
     if (row === was) return;
     this._hovered.set(row);
     if (!row) { this._pressed.set(false); return; }
     // Placed: Left/Top are relative to the dropdown's own box.
-    this._IndicatorLayout.set({
-      Left: `${row.Node.X - this.Node.X}px`,
-      Top: `${row.Node.Y - this.Node.Y}px`,
-      Width: `${row.Node.Width}px`,
-      Height: `${row.Node.Height}px`,
-    });
+    this._IndicatorLayout.set(this._indicatorBoxFor(row));
     // Arriving from nowhere: land on the row and fade in. Between rows: slide.
     const ind = this._indicator()?.Node;
     if (ind && !was) {
@@ -192,12 +220,53 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this._growRaf !== null) { cancelAnimationFrame(this._growRaf); this._growRaf = null; }
     this._unbindDoc?.();
     this._detachOnDestroy();
   }
 
-  Open():   void { this._open.set(true); }
-  Close():  void { this._open.set(false); this._page.set(null); this._hovered.set(null); this._pressed.set(false); }
+  Open(): void {
+    this._open.set(true);
+    this._trackWhileGrowing();
+  }
+
+  /**
+   * Follow the dropdown's box until it stops growing, re-placing the indicator each frame.
+   *
+   * The open transition runs Width and Height for 280ms and the menu is anchored `Right: 0`, so its X
+   * travels left the whole time while the rows are already at their final places. A highlight placed
+   * from one frame inside that window keeps a stale horizontal offset. `WatchRect` is already on (see
+   * ngOnInit), so the rects here are live; this just keeps asking until two frames agree, with a ceiling
+   * so a menu that never settles cannot leave a loop running.
+   */
+  private _trackWhileGrowing(): void {
+    if (this._growRaf !== null) return;
+    const started = Date.now();
+    let lastX = NaN, lastW = NaN, agreeing = 0;
+    const step = (): void => {
+      this._growRaf = null;
+      if (!this._open()) return;
+      const n = this.Node;
+      agreeing = (n.X === lastX && n.Width === lastW) ? agreeing + 1 : 0;
+      lastX = n.X; lastW = n.Width;
+      this._replaceIndicator();
+      // The transition is 280ms and does not necessarily move on the first frames, so "two agreeing
+      // frames" is true IMMEDIATELY after opening and would end the loop before the growth it exists to
+      // follow. Hold until the transition is certainly over, then let agreement end it; 600ms is the
+      // hard ceiling so a menu that never settles cannot leave a loop running.
+      const elapsed = Date.now() - started;
+      if ((elapsed > 320 && agreeing >= 2) || elapsed > 600) return;
+      this._growRaf = requestAnimationFrame(step);
+    };
+    this._growRaf = requestAnimationFrame(step);
+  }
+
+  private _growRaf: number | null = null;
+
+  Close(): void {
+    if (this._growRaf !== null) { cancelAnimationFrame(this._growRaf); this._growRaf = null; }
+    this._open.set(false); this._page.set(null); this._hovered.set(null); this._pressed.set(false);
+  }
   Toggle(): void { if (this._open()) this.Close(); else this.Open(); }
 
   PushPage(id: string): void { this._page.set(id); }
@@ -209,7 +278,11 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     // defaultPage so a single-page pill opens its page from any glass tap.
     if (this._open()) { this.Close(); return; }
     if (!this.canOpen()) return;
-    this._open.set(true);
+    // THROUGH `Open()`, not `_open.set(true)`. This path set the signal directly and so skipped the
+    // growth tracking that keeps the hover indicator aligned while the menu expands - which is why the
+    // fix for that looked inert: the tracking loop never ran on the path people actually use, because
+    // tapping the glass is how this menu opens. Two ways to open must not mean two behaviours.
+    this.Open();
     const dp = this.defaultPage();
     if (dp !== null) this._page.set(dp);
   }

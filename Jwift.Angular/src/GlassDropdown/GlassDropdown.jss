@@ -171,30 +171,51 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
   BorderRadius: 28pt
 }
 
-// A MENU IS NOT A BUTTON, and until now the open state could not tell the difference.
+// A MENU IS NOT A BUTTON, BUT IT IS STILL ALIVE UNDER THE POINTER - at a tenth of the strength.
 //
-// Jack: "just from hovering over the expanded drop-down, it has the same scaling effects that the
+// Jack, first: "just from hovering over the expanded drop-down, it has the same scaling effects that the
 // collapse button does, and it's very large for that ... It's closed when it's a button or a button
-// group and it's open when it's a menu."
+// group and it's open when it's a menu." Then, on the flat version that followed: "Can we maybe do like
+// 10% of the effect of the non-expanded one on the expanded one maybe? Because it felt good, it was just
+// very large."
 //
-// Measured: the open sink probes as `Jwift_GlassDropdown_Open.Jwift_GlassDropdown_Closed.
-// Jwift_GlassDropdown_ClosedAvatarOnly` - it is still wearing BOTH closed classes while open, and
-// `_ClosedAvatarOnly` composes JwiftPressGlass -> JwiftPress -> JwiftPressMotion, which sets
-// `VisualScale: 1.06` on hover, `0.92` on active, a @HoverFill background and a brightened backdrop and
-// rim. Those are a 48pt control's physics. Applied to a 220pt-wide menu they swell the whole panel and
-// light it up when the pointer merely crosses it, which is what a button does when you are about to
-// press it - and a menu is not something you press.
+// Measured cause: the open sink probes as `Jwift_GlassDropdown_Open.Jwift_GlassDropdown_Closed.
+// Jwift_GlassDropdown_ClosedAvatarOnly`, still wearing both closed classes, and `_ClosedAvatarOnly`
+// composes JwiftPressGlass -> JwiftPress -> JwiftPressMotion. So a 220x621 menu was taking a 48pt
+// control's physics whole.
 //
-// So the open state states its resting values as its own hover and active. That is deliberately
-// defensive rather than a matter of removing one class: whatever a consumer composes onto the closed
-// pill, the OPEN menu refuses the press. The values are JwiftGlassThick's and JwiftGlass's own, restated
-// because a state rule cannot inherit them.
+// The response is SCALED, not removed. Each value is the menu's own resting value moved a tenth of the
+// way toward what the closed pill does, so the gesture is the same gesture at a tenth of its amplitude:
+//
+//   property              resting   closed pill   here (10%)
+//   VisualScale           1.0       1.06          1.006
+//   backdrop Brightness   1.0       1.85          1.085
+//   border Brightness     1.4       1.5           1.41
+//   border alpha          0.35      0.55          0.37
+//
+// The backdrop KEEPS its blur, saturation and contrast and only gains the brightness. The closed pill's
+// rule replaces the whole filter with `Brightness(1.85)`, which is a second reason the open menu flared:
+// it lost the thick glass's blur at the same moment it brightened.
+//
+// Active is the same tenth of the press (0.992, 1.15, 1.43, 0.40). A menu's rows own the real press
+// feedback - one shared indicator springs between them - so this is only the panel acknowledging that it
+// is under the pointer at all.
+//
+// Stated as the OPEN state's own rules rather than by unpicking a class: whatever a consumer composes
+// onto the closed pill, the open menu answers with its own amplitude.
 Jwift_GlassDropdown_Open:Hover {
-  VisualScale: 1
+  VisualScale: 1.006
   Background: @GlassTint
-  BorderColor: rgba(255, 255, 255, 0.35)
-  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
-  BorderFilter: Blur(-0.5pt) Brightness(1.4)
+  BorderColor: rgba(255, 255, 255, 0.37)
+  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast) Brightness(1.085)
+  BorderFilter: Blur(-0.5pt) Brightness(1.41)
+}
+Jwift_GlassDropdown_Open:Active {
+  VisualScale: 0.992
+  Background: @GlassTint
+  BorderColor: rgba(255, 255, 255, 0.40)
+  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast) Brightness(1.15)
+  BorderFilter: Blur(-0.5pt) Brightness(1.43)
 }
 Jwift_GlassDropdown_Open:Active {
   VisualScale: 1
@@ -307,11 +328,32 @@ Jwift_GlassDropdownDivider {
 // pointer is over and fades it out when the pointer is on no row.
 // A fill, not a material: Apple puts no glass on glass, and things on the glass are "fills,
 // transparency, and vibrancy". A backdrop filter here would re-brighten the thick menu under it.
+// THE HIGHLIGHT IS A THIN FILL WITH THE COLOUR BEHIND IT AMPLIFIED - all three of Apple's terms.
+//
+// `Shared/Research/Apple.LiquidGlass.md`: "Always avoid glass on glass." Things placed on glass use
+// "fills, transparency, and vibrancy" so they read as "a thin overlay that is part of the material".
+// Three terms, not one. Vibrancy is specifically what "amplifies and adjusts the color of the content
+// layered behind", which is the half a flat fill can never do.
+//
+// This started as `Background: @HoverFill` alone - a white wash painted OVER the menu's glass, which
+// hides what is behind instead of lifting it. Jack: "Apple never does a background color. They always
+// bring the color forward ... we bring color through, not overlay with a tint." I then took the fill out
+// entirely, which drops a term Apple names: "We still have to honor the background color ... still that
+// slight tint but we need to bring more saturation through."
+//
+// So: the fill stays and stays thin (@HoverFill is 0.14 white in dark, 0.06 black in light - the same
+// token every pressable control wears), and the backdrop carries the saturation that brings the colour
+// under it forward. The brightness lift is deliberately small BECAUSE the fill already supplies part of
+// it; the two together are what the single 0.14 wash was trying to be.
+//
+// NOT the pressed-glass lens: no Thickness, Refraction, Fillet or bezel. A menu row is not a tab pill,
+// and "avoid glass on glass" is the rule that says so.
 Jwift_GlassDropdownIndicator {
   Position: Placed
   Layer: 0
   BorderRadius: 100pt
   Background: @HoverFill
+  BackdropFilter: Saturate(@JwiftControlSaturate) Brightness(1.06 * @Dark + 0.97 * @Light)
   Opacity: 0
 
   @Transition Y { Duration: 220ms }
@@ -319,14 +361,21 @@ Jwift_GlassDropdownIndicator {
   @Transition Width { Duration: 220ms }
   @Transition Height { Duration: 220ms }
   @Transition Opacity { Duration: 140ms }
+  // Fill and grade deepen together on press, so both cross-fade on the same 140ms.
   @Transition Background { Duration: 140ms }
+  @Transition BackdropFilter { Duration: 140ms }
 }
 
 Jwift_GlassDropdownIndicator_On : Jwift_GlassDropdownIndicator {
   Opacity: 1
 }
 
+// Pressed is the same grade, deeper: @PressFill's 0.22 dark / 0.12 light as a backdrop lift rather than
+// a heavier white. Still no lens - a menu row is not a tab pill.
+// Pressed deepens both halves together, the way the fill alone used to: @PressFill against @HoverFill,
+// and a touch more lift behind it. Still no lens.
 Jwift_GlassDropdownIndicator_Pressed : Jwift_GlassDropdownIndicator_On {
   Background: @PressFill
+  BackdropFilter: Saturate(@JwiftControlSaturate) Brightness(1.1 * @Dark + 0.94 * @Light)
 }
 
