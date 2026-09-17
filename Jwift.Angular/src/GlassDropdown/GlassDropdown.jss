@@ -171,6 +171,39 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
   BorderRadius: 28pt
 }
 
+// A MENU IS NOT A BUTTON, and until now the open state could not tell the difference.
+//
+// Jack: "just from hovering over the expanded drop-down, it has the same scaling effects that the
+// collapse button does, and it's very large for that ... It's closed when it's a button or a button
+// group and it's open when it's a menu."
+//
+// Measured: the open sink probes as `Jwift_GlassDropdown_Open.Jwift_GlassDropdown_Closed.
+// Jwift_GlassDropdown_ClosedAvatarOnly` - it is still wearing BOTH closed classes while open, and
+// `_ClosedAvatarOnly` composes JwiftPressGlass -> JwiftPress -> JwiftPressMotion, which sets
+// `VisualScale: 1.06` on hover, `0.92` on active, a @HoverFill background and a brightened backdrop and
+// rim. Those are a 48pt control's physics. Applied to a 220pt-wide menu they swell the whole panel and
+// light it up when the pointer merely crosses it, which is what a button does when you are about to
+// press it - and a menu is not something you press.
+//
+// So the open state states its resting values as its own hover and active. That is deliberately
+// defensive rather than a matter of removing one class: whatever a consumer composes onto the closed
+// pill, the OPEN menu refuses the press. The values are JwiftGlassThick's and JwiftGlass's own, restated
+// because a state rule cannot inherit them.
+Jwift_GlassDropdown_Open:Hover {
+  VisualScale: 1
+  Background: @GlassTint
+  BorderColor: rgba(255, 255, 255, 0.35)
+  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
+  BorderFilter: Blur(-0.5pt) Brightness(1.4)
+}
+Jwift_GlassDropdown_Open:Active {
+  VisualScale: 1
+  Background: @GlassTint
+  BorderColor: rgba(255, 255, 255, 0.35)
+  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
+  BorderFilter: Blur(-0.5pt) Brightness(1.4)
+}
+
 // Item geometry follows iOS 26 popover-menu proportions: 44pt-tall pill
 // rows with generous side padding and a comfortable icon→label gap.
 // BorderRadius is declared at full Height so the item is always a pill
