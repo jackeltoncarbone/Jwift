@@ -301,9 +301,43 @@ Apple's SHAPE and derive the two inks per theme so both clear AA. See `ShowStudi
 - "Lists, tables, and forms have a larger row height and padding. Sections have an increased corner
   radius to match the curvature of controls across the system." Section headers are title-style, no
   longer all capitals.
+- **Measured 2026-09-17 from the HIG's own figures** (settingsdesign lane; full numbers and method in
+  `Apple.Apps.md`, "Settings: the shape, the row and the group"): the iOS 26 grouped row is **≈53pt** with a
+  **≈26pt** section corner and separators inset 16pt at both ends; the macOS System Settings row is **≈35pt**, 13pt
+  sentence-case labels, a **≈10pt** section corner. "Title-style" governs CASE, not size: nothing in Apple's
+  material makes a form's section header a display heading, so Section 8's 22pt/700 header for the settings
+  family overshoots in the other direction (see `ShowStudio.Documentation/Design/Settings.Design.md` 1.5).
 - Sidebars are inset, float on glass, and content extends beneath them: the background extension
   effect "mirrors the adjacent content" and blurs it. Scroll views extend under sidebars by default.
 - Inspectors get "a more subtle layering".
+- **Superseded in the OS 27 cycle: sidebars are edge-to-edge again.** Apple's words for macOS 27 (apple.com/os/macos
+  and support.apple.com/en-us/127257): "Uniform toolbars, edge-to-edge sidebars, and updated window shapes and menu bar
+  icons deliver a more refined design." iPadOS 27 says the same. macOS 26 Music (Apple Newsroom, June 2025) shows the
+  inset floating panel; macOS 27 Mail (apple.com/os/macos) shows the sidebar running to the window edges. The HIG
+  Sidebars page (June 8, 2026) still says only that sidebars "can float above content in the Liquid Glass layer"
+  and hasn't restated the change. Read 2026-09-17 by the sidebarresearch lane; full evidence in
+  `ShowStudio.Documentation/Design/Sidebar.Research.md`.
+- **Sidebar icons use the accent colour.** HIG Sidebars (June 2026): "By default, sidebar icons use your app's accent
+  colors", with fixed colours allowed "sparingly" (Mail's yellow VIP). The monochrome rule is a TAB BAR rule and
+  doesn't carry over to sidebars. macOS 27 Mail shows blue sidebar icons.
+- **The toggle.** Apple names it `sidebarToggle` (SwiftUI, "added by default" by `NavigationSplitView`),
+  `NSToolbarItem.Identifier.toggleSidebar` (AppKit), "Show/Hide Sidebar" (the View menu), and "show/hide sidebar toolbar
+  buttons" (macOS 27 release notes). Placement:
+  - HIG Toolbars: "far leading edge". macOS 27 Mail draws it as a round glass button at the TRAILING end of the
+    sidebar's top row, beside the traffic lights.
+  - iPad `sidebarAdaptable`: "Both variations include a button that people can use to switch between them". It's
+    the first item of the top tab bar capsule, and top-trailing in the sidebar (HIG Tab bars art, Music).
+  - It hides the sidebar entirely or morphs it into the tab bar. No icons-only rail on iPad or Mac.
+- **The top of a native sidebar is a control row, never identity.** No first-party native sidebar seen (Mail and Siri
+  on macOS 27, Music on macOS 26, Music in the iPad HIG art) carries a logo or app name. Identity lives in the menu
+  bar's app menu, the window name, and the Dock.
+- **Apple's WEB apps put identity at the top of the sidebar.** music.apple.com leads with the "Apple Music" wordmark
+  (83x20 SVG, a 72px row, linking Home); apps.apple.com leads with the App Store glyph + "App Store" (a platform menu at
+  wide widths). Both are 260px wide, edge-to-edge, and fixed, with no desktop toggle. Below 484px they become a top bar
+  (hamburger "Open navigation" leading, wordmark centred). Measured from the live CSS, 2026-09-17.
+- **Named sidebar slots** (SwiftUI): `tabViewSidebarHeader` ("appears at the top of the sidebar before any tab
+  labels"), `tabViewSidebarFooter`, and `tabViewSidebarBottomBar` ("pinned at the bottom"; Apple's example is "an
+  account button").
 
 ### Scroll edge effects (HIG Scroll views, ScrollEdgeEffectStyle, session 219)
 
@@ -441,6 +475,8 @@ rectangle on iOS, iPadOS and macOS, circle on watchOS, built in Icon Composer.
 | Sheets inset and concentric with the display, opaque at full height | `Modal`, `Drawer` are their own materials | open |
 | Tab bar at regular width: "near the top on iPad, convertible to a sidebar"; the Mac renders a `sidebarAdaptable` tab set as a sidebar (Music, App Store, TV) | the phone bar used to float centred at the bottom of a desktop window. From 880 (the bar's own compact/regular flip) the five tabs render as a leading `JwiftGlassThick` sidebar, 220pt, concentric with the Screen (52 = 28 + 24, 28 = 20 + 8), the bar's selection indicator sliding between rows; the page pads by the published `@ChromeLeading`. Compact width keeps the bottom bar. Chosen over the iPad top bar because a browser window at desktop width is the Mac case. Pinned by `ShowStudio.App/src/Navigation/Navigation.Layout.spec.ts` | done 2026-09-17 |
 | Background extension under sidebars | none | open |
+| Edge-to-edge sidebars (macOS/iPadOS 27: "Uniform toolbars, edge-to-edge sidebars") | ours is the 26-era 24pt-inset floating panel | open, product (see `Design/Sidebar.Research.md`) |
+| Identity in a browser tab: Apple's web apps lead the sidebar with the wordmark (music.apple.com, apps.apple.com) | the sidebar starts at Home, with no wordmark and no toggle | open, product (see `Design/Sidebar.Research.md`) |
 | Sliders: glass thumb on touch, ticks, neutral value | `Slider` has a plain thumb | open |
 | Typography scale | Inter at the iOS sizes on the home surface | done |
 

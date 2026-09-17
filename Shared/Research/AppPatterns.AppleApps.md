@@ -355,6 +355,23 @@ Every nested container has a corner radius of `parent_radius - gap`. This is alr
 ### The Restraint Law
 No per-category colors. No decorative accents. Monochrome content, single accent color for interaction state only. This matches our [no per-category colors](../feedback_no_category_colors.md) rule.
 
+### The Width Law (layout by content kind)
+Folded in 2026-09-17 (desktoplayout lane). Until then these files had nothing on readable width, empty content or small choosers. The sources are Apple's own framework and HIG pages. Nobody has re-measured them in this repo.
+
+**A window getting wider does not mean one column getting wider. What grows depends on the kind of content:**
+- **Prose keeps a measure.** UIKit's `readableContentGuide` caps a text column at the readable width (about 672pt at the default Dynamic Type size) and centres it in a wide regular-width view. Only reading gets this cap.
+- **A settings list is one grouped column.** macOS System Settings is a single grouped form in a window you mostly can't widen. iPad Settings' detail pane is an inset grouped list that follows the pane. Neither splits a settings list into columns.
+- **A grid adds columns.** SwiftUI `LazyVGrid(.adaptive)`, the Photos grid and the App Store on Mac add a column as the window widens. The cells don't stretch.
+- **An editor gives the canvas the window.** `NavigationSplitView`, and the HIG pages on Split views and Inspectors: sidebar and inspector keep their own widths, and the detail or canvas takes whatever is left. See The Triad above. Photos' Edit mode is the same shape, with the image dominant and its Adjust sliders in a pane beside it. Done lives in the toolbar.
+
+**Missing content (HIG "Loading", SwiftUI `ContentUnavailableView`):** there is no placeholder box. An unavailable view is an icon, a title, a sentence and optional actions, centred in the pane it replaces. Mail's "No Message Selected" fills the detail pane with nothing drawn around it. In a stacked compact layout it is only as tall as what it says. Loading keeps the real layout's shape (`.redacted(.placeholder)`) or shows a spinner. It never shows a sized frame waiting for something that isn't coming.
+
+**A few exclusive choices:**
+- **Answers with pictures sit side by side**, with the chosen one ringed: System Settings > Appearance (Auto/Light/Dark), iOS Display & Brightness. They stay side by side even on a phone.
+- **Answers that are words stack as full-width rows:** iPhone setup ("Set Up for Myself / Set Up for a Family Member"), the account chooser (Apple.Apps.md, "choose from a list of email providers"), a picker with a checkmark. On a wide window the question becomes a form sheet ("page or form sheet presentation styles, each centering content… at a default size", Apple.LiquidGlass.md §8). UIKit's `formSheet` is 540pt wide.
+- **A segmented control switches modes or views, not settings.** Use radio buttons on macOS, or a pop-up once there are more than a handful of choices (HIG Segmented controls, Radio buttons).
+- **Never a tall card per answer with a blank picture area.** When the picture isn't there, the answer is a row.
+
 ---
 
 ## What Would Apple's Design Team Build for Show Studio?

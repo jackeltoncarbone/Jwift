@@ -392,7 +392,9 @@ rows draw it. A person's monogram stays what it always was: a fact about a PERSO
 guides' account pages and the HIG's DocC data endpoints all returned no body text through the tools
 available here (they render client-side; the DocC JSON 404s). The published citation above is therefore the
 support article, and the Settings/Mail/System Settings behavior is recorded as first-party-app observation
-in the same way the rest of this section's measurements are, not as a quotation.
+in the same way the rest of this section's measurements are, not as a quotation. (Corrected 2026-09-17: the
+DocC JSON does NOT 404 at the right path; see "How to read the HIG when the site renders client-side" at the end
+of this file. The user guides are still blocked.)
 
 **The rule reaches further than an account row, and it took a second lane to find out where.** Written
 2026-09-17 by the account-and-settings design lane. The section above was aimed at a LINKED ACCOUNT - a
@@ -517,3 +519,78 @@ that it is empty.
 **What could not be read, said plainly.** The HIG has no page for a profile or publisher page, and the Apple
 Music and iPhone user-guide pages render client-side and returned only navigation through the tools
 available. The section orders above are the public WEB renders; the native apps were not observed.
+
+---
+
+## Settings: the shape, the row and the group, read from Apple's own pages and pixels
+
+Written 2026-09-17 by the `settingsdesign` lane. The full design built on it is
+`ShowStudio.Documentation/Design/Settings.Design.md`; this section keeps only the Apple facts, so the next
+lane does not re-derive them.
+
+### How to read the HIG when the site renders client-side
+
+Earlier sections of this file (and `Apple.LiquidGlass.md`) record the HIG and DocC endpoints as unreadable. They
+are readable; the paths were wrong:
+
+- **Page text:** `https://developer.apple.com/tutorials/data/design/human-interface-guidelines/<page>.json`
+  (e.g. `settings`, `lists-and-tables`, `toggles`, `pop-up-buttons`, `sidebars`, `split-views`, `layout`,
+  `color`). DocC JSON: `primaryContentSections[].content` holds headings, paragraphs and lists; `references`
+  resolves inline links and images; the change log is the last table.
+- **Page figures:** `https://developer.apple.com/tutorials/images/com.apple.HIG/<name>@2x.png` (and
+  `<name>~dark@2x.png`). Image names are the `references` entries of `type: image`, each with an `alt` that says
+  what the figure shows. These are Apple's own pixels at a stated scale, so they can be MEASURED.
+- **API reference:** `https://developer.apple.com/tutorials/data/documentation/<framework>/<symbol>.json`
+  (e.g. `swiftui/groupedformstyle`, `swiftui/labeledcontent`, `uikit/uiview/readablecontentguide`).
+- **Still blocked:** `support.apple.com/guide/...` returns 403 to curl and to WebFetch alike.
+
+### What the HIG says settings is (HIG "Settings", change log June 10, 2024)
+
+- *"Minimize the number of settings you offer."*
+- *"Put general, infrequently changed settings in your custom settings area ... both apps and games might offer
+  options related to people's accounts."*
+- *"Respect people's systemwide settings and avoid including redundant versions of them in your custom settings
+  area"*, and *"an app can detect whether people are currently using Dark Mode."*
+- macOS: panes switched by a toolbar; *"a settings window accommodates the size of the current pane"*; *"Include
+  a settings item in the App menu"* with Command-Comma; *"Avoid adding settings buttons to a window's toolbar"*;
+  *"Update the window's title to reflect the currently visible pane"*; *"Restore the most recently viewed pane."*
+
+### The row and the group, in Apple's words
+
+- SwiftUI `GroupedFormStyle`: *"Rows in this form style have leading aligned labels and trailing aligned controls
+  within visually grouped sections."*
+- SwiftUI `LabeledContent`: a subtitle is *"a view builder that creates multiple Text views where the first text
+  represents the title and the second text represents the subtitle"*; read-only values are selectable.
+- Toggles, iOS: *"Use the switch toggle style only in a list row."* *"Outside of a list, use a button that behaves
+  like a toggle, not a switch."* macOS: *"Within a grouped form, consider using a mini switch to control the
+  setting in a single row. The height of a mini switch is similar to the height of buttons and other controls,
+  resulting in rows that have a consistent height."*
+- Pop-up buttons: *"a flat list of mutually exclusive options"*; iPadOS: *"consider using a pop-up button instead
+  of a disclosure indicator to present multiple options for a list item."*
+- Lists and tables: *"the grouped style uses headers, footers, and additional space to separate groups of data"*;
+  *"Use an info button only to reveal more information about a row's content"*; a disclosure indicator for
+  drilling in.
+- Adopting Liquid Glass (technology overview): *"lists, tables, and forms have a larger row height and padding.
+  Sections have an increased corner radius"*; section headers take *"title-style capitalization ... no longer
+  render entirely in capital letters."* **Note what it does not say: it does not make a section header large.**
+  A title-case header is still a small header.
+
+### Measured from Apple's figures
+
+**iOS 26, Calendar's New Event form** (`pop-up-button-closed@2x.png`, 536×1162 px = 402pt at 4/3):
+single-line row **≈53pt** (71–73 px); section inset from the screen edge **16pt**; label inset **16pt**;
+separators inset **16pt at BOTH ends**; section corner **≈26pt** (circle fit); **36pt** between sections, with
+no headers at all in that form; values and the up/down chooser glyph in secondary ink.
+
+**macOS, System Settings > Appearance** (`colors-accent-colors-picker-multicolor@2x.png` on the HIG Color page,
+926×222 px at 2x; the page was updated for Liquid Glass June 9, 2025): row label **13pt**, and in **sentence
+case** ("Text highlight color"); a pop-up row **≈35pt**; a swatch row **≈60pt** (the row grows for its control
+and stays one row); label inset **≈10pt**; section corner **≈10pt**; section fill a hair off the window with a
+hairline; accent swatches **24pt at a 36pt pitch**, the selected one ringed, its name in 11pt secondary UNDER it.
+
+**iPad sidebar** (`layout-background-extention-view@2x.png`, 1350×1012 px, ~1px per point): sidebar **≈334pt**,
+rows at a **≈51pt** pitch.
+
+**Against this repo's `Jwift_List`** (63pt minimum row, 15pt label, 31.5pt corner): our row is ~10pt taller than
+Apple's TOUCH row with a smaller label, and ~28pt taller than the Mac row. The 31.5pt corner was derived from a
+15.5pt control plus a 16pt inset; Apple's measured section is ≈26pt at the same 16pt inset.
