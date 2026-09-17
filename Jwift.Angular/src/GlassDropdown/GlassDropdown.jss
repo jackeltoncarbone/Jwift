@@ -159,7 +159,11 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
   Position: Placed
   Top: 0pt
   Right: 0pt
-  Width: 220pt
+  // 260pt, not 220pt. The rows carry leading icons now, and at 220 the icon plus its 12pt gap took enough
+  // of the line that "Marching Arts Collective" truncated to "Marching Arts" - a persona switcher that
+  // cannot say which persona. Apple's menus are content-width up to a max rather than a fixed narrow box;
+  // this is the same idea at one number, and it is the width the longest real row needs.
+  Width: 260pt
   Height: MinContent
   Direction: Column
   Justify: Start
