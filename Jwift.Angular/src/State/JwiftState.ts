@@ -61,7 +61,7 @@ export type JwiftStateTone = 'empty' | 'recovery';
                  nodes, and bare text projected into a canvas control renders nothing. -->
             @if (primaryLabel()) {
               <glass-button shape="pill" variant="prominent" (click)="primary.emit()">
-                <jext class="JwiftState_ActionLabel" [text]="primaryLabel()" />
+                <jext class="JwiftState_ActionLabelProminent" [text]="primaryLabel()" />
               </glass-button>
             }
             @if (secondaryLabel()) {

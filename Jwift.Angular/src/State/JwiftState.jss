@@ -87,6 +87,7 @@ JwiftState_Actions {
 }
 
 // The action labels. The button owns the plate and the press; this is only the ink on it.
+// The secondary action sits on glass, so it takes the page's ink.
 JwiftState_ActionLabel {
   FontFamily: Inter
   FontSize: 15pt
@@ -94,4 +95,12 @@ JwiftState_ActionLabel {
   Color: @Ink
   TextAlign: Center
   UserSelect: None
+}
+
+// The primary action sits on the INVERTED SOLID (`variant="prominent"`), whose plate IS the page's ink:
+// white in dark, black in light. @Ink on it is white on white, and all that survives of the glyphs is
+// their anti-aliased edges, which read as a ghosted double image rather than a missing label. The label
+// takes the plate's own inverse, the token every other prominent label in the app already uses.
+JwiftState_ActionLabelProminent : JwiftState_ActionLabel {
+  Color: @OnProminent
 }

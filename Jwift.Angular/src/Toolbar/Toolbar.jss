@@ -93,29 +93,3 @@ Jwift_ToolbarTitle {
   // the title fell back to the default, Left. Same result, stated legally.
   TextAlign: Left
 }
-
-// Avatar — flat round 48pt cell. No glass material; the photo (or
-// fallback person icon) IS the visual element. Sits in the toolbar
-// alongside <glass-button> pills WITHOUT a glass shell so we don't get
-// the "glass in glass" look (avatar inside glass-button → small image
-// inset inside a glass ring with padding between, even when the image
-// fills the button the glass rim still shows). Use directly:
-//
-//   <jiv class="Jwift_Avatar" [image]="avatarUrl" (click)="...">
-//     @if (!avatarUrl) {
-//       <icon class="ToolbarGlyph" Name="person.fill" />
-//     }
-//   </jiv>
-// Flat fill, no material, so it takes the plain JwiftPress: the same fill and the same
-// 0.92 squeeze the glass button wears.
-Jwift_Avatar : JwiftPress {
-  Width: 48pt
-  Height: 48pt
-  BorderRadius: 999pt
-  Overflow: Hidden
-  Background: @WashStrong
-  Direction: Row
-  Justify: Center
-  Align: Center
-}
-

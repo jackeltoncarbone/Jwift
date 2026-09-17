@@ -2,17 +2,15 @@
 //
 // THE MATERIAL IS NEUTRAL, AND THAT IS THE APPLE ANSWER. Contacts, Mail and Messages all draw a photoless
 // person as a monogram on a plain grey disc, and Apple never tints a monogram with an app's accent colour:
-// a face is identity, and identity is not a brand. So the plate is @Fill — the app's one control fill, the
-// same material a field or a quiet button wears — and the monogram is @Ink on top of it. That is the
-// token-correct translation of Apple's "white on grey", which cannot be taken literally: white initials on
-// light mode's rgb(229,229,234) plate are illegible, while @Ink is near-white in dark and near-black in
-// light and reads at full contrast in both.
+// a face is identity, and identity is not a brand. So the plate carries no colour of its own: it is the
+// control glass, which "has no inherent color, and instead takes on colors from the content directly behind
+// it", and the monogram is @Ink on top of it. @Ink rather than Apple's literal "white on grey" because
+// white initials are illegible over light content, while @Ink is near-white in dark and near-black in light.
 //
 // WHAT CHANGED, so the disagreements are on the record. The app drew this five ways and they disagreed on
 // every axis: the DOM component inked its monogram in the brand gold, the account header used @InkSoft on
 // @Fill, the item page's byline used @Ink on @WashStrong, the widget card used white on a 22% white wash,
-// and the list row used @InkSoft on @Fill. One of those is Apple's and the rest are not. @Ink on @Fill is
-// now the primitive's, everywhere.
+// and the list row used @InkSoft on @Fill. @Ink on the neutral plate is now the primitive's, everywhere.
 //
 // THE SILHOUETTE IS QUIETER THAN THE MONOGRAM (@InkSoft, not @Ink), because it means a different thing: a
 // monogram is a fact about a person, and the silhouette is the absence of one. Apple's account button in
@@ -23,18 +21,10 @@
 // old DOM disc 0.08px short of round at its default size. See Design/Avatar.ts's note on the same trap.
 
 // ── The disc ──────────────────────────────────────────────────────────────────────────────────────────
-// One base class the five rungs inherit their geometry from. Same-sheet inheritance only: JSS does not
-// resolve a class reference across sheets (GlassActionGroup.jss learned that the hard way and had to
-// restate its geometry verbatim), so everything the avatar is lives in this one file.
-// THE PLATE IS GLASS, the same material as every other control, and the photo fills it when there is one.
-// Jack: "That avatar should be the same material as the glass, just filled with the image when there is
-// one ... when I'm logged in, and when I'm logged out, it should just be a liquid glass like everything
-// else." It had never carried a material in any variant - an opaque @Fill disc among controls that all
-// compose JwiftGlass - so on the item page it read as a flat swatch beside a glass chevron and pill.
-//
-// The rim still shows through a photo: JwiftGlass draws its border at BorderLayer 10, above the content,
-// so the bezel and Fresnel edge survive `Overflow: Hidden` clipping the image to the disc.
-Jwift_Avatar : JwiftGlass {
+// The geometry every rung shares, with no material. Same-sheet inheritance only: a `: Base` is flattened
+// when THIS sheet is parsed, against this sheet and the globals tier, so everything the avatar is lives in
+// this one file and no other sheet can reach into a rung.
+Jwift_AvatarDisc {
   BorderRadius: 999pt
   Overflow: Hidden
   Direction: Row
@@ -43,15 +33,27 @@ Jwift_Avatar : JwiftGlass {
   FlexShrink: 0
 }
 
-// Byline — the mark beside a publisher's name under a title. The item page's own 24pt, which is the app's
-// quality bar and therefore wins over the widget card's 20pt.
+// THE PLATE IS GLASS, the same material as every other control, and the photo fills it when there is one.
+// Jack: "That avatar should be the same material as the glass, just filled with the image when there is
+// one ... when I'm logged in, and when I'm logged out, it should just be a liquid glass like everything
+// else." It had never carried a material in any variant - an opaque @Fill disc among controls that all
+// compose JwiftGlass - so on the item page it read as a flat swatch beside a glass chevron and pill.
 //
-// ITS PLATE IS A TRANSLUCENT WASH, not the opaque @Fill the other rungs wear, and that is not a lapse in
-// consistency — it is the one place the CONTEXT differs. A byline lives over MEDIA: the item page's hero
-// artwork, a widget card's cover. Both sites had independently reached for a translucent plate for
-// exactly that reason (@WashStrong on the item page, rgba(255,255,255,0.22) on the card), and an opaque
-// grey disc punched into a picture reads as a chip somebody forgot to style. Every other rung sits on a
-// SURFACE, where @Fill is the app's control fill and the right answer.
+// The rim still shows through a photo: JwiftGlass draws its border at BorderLayer 10, above the content,
+// so the bezel and Fresnel edge survive `Overflow: Hidden` clipping the image to the disc.
+//
+// THIS NAME HAS ONE OWNER. Toolbar.jss used to declare a second `Jwift_Avatar` (a flat @WashStrong press
+// cell nothing used). The registry FIELD-MERGES a name declared by two sheets, in whatever order their
+// components happened to mount, so the bare class was a hybrid of both. The rungs below never saw it (they
+// are flattened at parse), but the next consumer of the bare name would have. Design/
+// JssClassCollision.Conformance.spec.ts now fails on any name two Jwift sheets declare.
+Jwift_Avatar : JwiftGlass, Jwift_AvatarDisc {
+}
+
+// Byline — the mark beside a publisher's name under a title. The item page's own 24pt, which is the app's
+// quality bar and therefore wins over the widget card's 20pt. It lives over MEDIA (the item page's hero
+// artwork, a widget card's cover), which is exactly where Apple says glass belongs: a control floating
+// over media-rich content, taking its colour from what is behind it.
 Jwift_Avatar_Byline : Jwift_Avatar {
   Width: 24pt
   Height: 24pt
@@ -82,7 +84,13 @@ Jwift_Avatar_Header : Jwift_Avatar {
 // Fill — 100% of a cell the CALLER has already sized. The glass account sink is the case: a pill holding
 // only the avatar drops its padding so the face fills the whole glass, and the cell is 40pt or 48pt
 // depending on whether anything else is inline with it. Its type is sized for that 40–48pt range.
-Jwift_Avatar_Fill : Jwift_Avatar {
+//
+// SO FILL IS THE ONE RUNG WITH NO GLASS OF ITS OWN. Its cell is already glass (the sink pill composes
+// JwiftPressGlass), and a second glass disc exactly covering the first is glass on glass, which Apple says
+// to "always avoid": things on glass use "fills, transparency, and vibrancy" and the material goes on "the
+// control itself, not its inner views". The pill is the plate. What sits on it is transparent, the pill's
+// own saturate and contrast are the vibrancy, and the @Ink monogram or photo is the only thing drawn.
+Jwift_Avatar_Fill : Jwift_AvatarDisc {
   Width: 100%
   Height: 100%
 }
@@ -167,6 +175,7 @@ Jwift_Avatar_GroupEmpty : Jwift_Avatar_Group {
 Jwift_Avatar_HeaderEmpty : Jwift_Avatar_Header {
   Tint: 0.28 * @Dark + 0.32 * @Light
 }
+// Fill has no glass to tint (see Fill above), so its empty plate is the pill's own and the class only has
+// to exist for the component to resolve.
 Jwift_Avatar_FillEmpty : Jwift_Avatar_Fill {
-  Tint: 0.28 * @Dark + 0.32 * @Light
 }
