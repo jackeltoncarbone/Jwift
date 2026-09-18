@@ -146,6 +146,38 @@ viewer whose balance has resolved, beside Sell, because points are the currency 
 rather than an account detail; a section rail, if it returns, should follow the Mac sidebar and be
 destinations rather than anchors.
 
+**Settled, and built, 2026-09-18 (the `scrollto` lane).** Jack had already ruled the rail DESTINATIONS on
+2026-09-17; the first-party sentence that decides it was fetched the same day the rail was built and belongs
+in this file rather than only in a lane report:
+
+- **HIG Sidebars** (developer.apple.com/tutorials/data/design/human-interface-guidelines/sidebars.json;
+  change log *"June 8, 2026 | Updated guidance for sidebar icon colors, and clarified guidance for the
+  adaptable sidebar style"*, so this is the current OS-27-cycle text). The abstract, verbatim:
+  > "A sidebar appears on the leading side of a view and lets people navigate between **areas of your app or
+  > top-level collections of content**, like folders and playlists."
+
+  A section of one scrolling page is neither an area nor a collection — it is a POSITION. So the
+  jump-to-a-section rail the migration checklist assumed was never the Apple control; it was a table of
+  contents wearing a sidebar's clothes.
+- Other best practices from the same page, quoted, that shaped what got built: *"In general, show no more
+  than two levels of hierarchy in a sidebar"*; *"If you need to include two levels of hierarchy in a
+  sidebar, use succinct, descriptive labels to title each group"*; *"Consider using familiar symbols to
+  represent items in the sidebar"*; *"Extend visually rich content beneath the sidebar"* (artwork, not
+  text — so the reading column is inset by the rail's width rather than sliding under it).
+- **What the Market's rail therefore is**: the store's CATEGORIES, one group titled "Categories", each row a
+  page at `/explore?type=<kind>`. That is the Mac sidebar's "links to other pages" and the Apps tab's
+  *"or browse by category"* answered with the one Search tab, which is where Apple keeps categories
+  (*"You can also explore different categories"*). The rows are derived from the live catalog, so the rail
+  can no more advertise an empty category than the search facets can.
+- **`?type=` had to become real first.** The kind was client-only state, so a "destination" row would have
+  been an anchor by another name — no link, no share, no crawl, no back step. `Search.Store.ts` now carries
+  it in the URL beside `?q=`, which also means the SSR pass fetches the scoped answer.
+- **Open tension, for Jack**: our app keeps a five-tab dock at every width, and Apple's `sidebarAdaptable`
+  sidebar REPLACES the tab bar rather than sitting beside it. The rail built here is deliberately a
+  SECOND-level browse control (categories) and never repeats the dock's five destinations, which is the
+  shape App Store *web* has (a "Categories" sidebar under a top nav). If Jack wants the Apple-native
+  morph — dock becomes sidebar at a regular width — that is a navigation decision above this rail.
+
 ### Apple TV+
 - Hero: cinematic poster artwork (2:3 portrait or 16:9)
 - Content rows: horizontal scroll below hero
