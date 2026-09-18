@@ -63,8 +63,16 @@ Jwift_GlassDropdownCell_AvatarPeer {
 // geometry/border still comes from the original cell. NOT inheriting
 // because Jaui JSS doesn't resolve cross-file class refs (would error
 // at parse time).
+// 5, NOT 100, AND THE CEILING IS THE PILL'S RIM. `Layer` and `BorderLayer` are the SAME AXIS: Jaui
+// emits the border stroke just before the first child at or above `BorderLayer`, so a child above it
+// paints OVER the glass edge. `JwiftGlass` puts its rim at `BorderLayer: 10`, and at 100 this cell's
+// photo covered the sink pill's Fresnel edge entirely -- while a MONOGRAM disc, being transparent, let
+// the rim show through. So the edge vanished for exactly the people who have a picture, which is why
+// it read as an avatar bug and not a layering one. Peers sit at the default 0, so 5 still wins the
+// peer stack this class exists to win, and stays under the rim. Guarded by
+// ShowStudio.App/src/Design/Avatar.Conformance.spec.ts ("the glass edge survives a photo").
 Jwift_GlassDropdownCell_Avatar_OnTop {
-  Layer: 100
+  Layer: 5
 }
 
 // The sink's monogram belongs to `<avatar Size="Fill">` now, at 40% of the cell rather than a fixed 12pt
