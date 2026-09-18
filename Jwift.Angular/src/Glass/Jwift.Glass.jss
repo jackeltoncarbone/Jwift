@@ -35,6 +35,76 @@
 @JwiftSheetSaturate: 1.6 * @Dark + 1.8 * @Light
 @JwiftSheetContrast: 0.5 * @Dark + 1 * @Light
 
+// ── THE HERO CLARITY PAIR ───────────────────────────────────────────
+// A hero control does not stand on a plain ground; it stands on the page's own art. Apple's media-backed
+// controls are the clearest glass in the system for that reason — the App Store product page's GET pill
+// and Apple TV's Play button over key art read as a lens ON the picture, not a plate laid over it. The
+// HIG's materials guidance is the rule behind it: things on a rich background use "fills, transparency,
+// and vibrancy", and a hero is the richest background the app has. So a hero control gives up tint (the
+// transparency) and takes back colour (the vibrancy).
+//
+// Stated as a RATIO, not as a second set of absolute numbers, so a hero surface keeps whatever tone it
+// authored — the dark wash over art, the ground wash on a faded foot — and only becomes clearer. One
+// constant, so "how much clearer is a hero" is answered in exactly one place.
+@JwiftHeroClarity: 0.7
+@JwiftHeroTint: @JwiftControlTint * @JwiftHeroClarity
+// Vibrancy rises as the tint falls: with less pigment over the picture, the picture's own colour has to
+// carry the surface. Above the control's 1.6/1.8, below the point where skin tones in hero art go lurid.
+// Grade arguments must stay parenthesis-free — Style.Resolver's grade-arg regex is `[^()]*`, so a bare
+// var is the only safe form inside Saturate().
+@JwiftHeroSaturate: 2.2 * @Dark + 2.4 * @Light
+
+// ── THE RIM CARRY ───────────────────────────────────────────────────
+// How much of the backdrop's OWN colour the lit arc of the rim carries. One number, here, because five
+// sheets author BorderFresnelBrightness by hand (Surface's CardGlass, Editorial's EdCard,
+// SelectionIndicator, Toggle) and a rim law stated five times is a rim law that drifts — Cruft.Audit.md
+// row 6. Those copies are still literal on purpose; see the note at the foot of this block.
+//
+// WHAT THE PROPERTY NOW MEANS. It is `mix(BorderColor.rgb, fresnelTarget, pow(lightFacing,3) * this)` in
+// Jiv.Panel.frag. It used to drag the lit stroke toward the literal vec3(1.0), so it read as "how white
+// does the lit side get" and 0.7 was that dial. The mix TARGET is now the rim's own backdrop gather
+// driven to full value (RIM_CHROMA_GAIN), and over a neutral gather that target IS white and identical
+// to BorderColor — so over a neutral backdrop this number is a provable NO-OP and only decides how much
+// HUE a coloured backdrop pushes into the rim. 0.7 was calibrated for the job it no longer does.
+//
+// WHY 1. The target is value-normalised (max channel exactly 1.0), so carrying it in full cannot make
+// the rim dimmer than the white it replaces — it can only take the off-hue channels down, which IS the
+// colour being carried. `pow(lightFacing, 3)` still shapes the falloff, so 1 means "the single most
+// light-facing point of the bevel shows the backdrop's hue at full intensity", not "the whole outline is
+// coloured". That is the highlight Apple describes: light sources "shine on the material producing
+// highlights that respond to geometry" on a material whose defining act is to "bend, shape and
+// concentrate light" (WWDC25 session 219, Shared/Research/Apple.LiquidGlass.md, the layers table) —
+// concentrated light that came through a green field is green, and HIG Color's "Liquid Glass has no
+// inherent color, and instead takes on colors from the content directly behind it" forbids the rim
+// having a white one of its own.
+//
+// IN-HOUSE PRECEDENT, not a new idea. Toggle.jss already argues this exact case in its own words — "any
+// appreciable alpha paints a flat WHITE ring that overrides whatever the glass was bending, which is the
+// one part that never matched Apple" — and lands at BorderFresnelBrightness 1.1 with BorderColor alpha
+// 0.15. This sheet keeps alpha at 0.35 because that alpha is the over-black luminosity calibration (the
+// rim peaks 38 above the body); only the carry moves.
+//
+// MEASURED, 1440x900 @3x, home hero pill over a teal stadium photo, sampled ON the 135-degree arc —
+// the point of the bevel that faces LightAngle, where the Fresnel is fully engaged. (The top-centre of
+// a pill is only ~35% engaged: lightFacing there is cos 45 and the term is cubed. Measuring the rim at
+// 12 o'clock understates this knob by a factor of three and is how 0.7 survived.)
+//   dark   rim rgb(99,144,144) chroma 0.313 -> 0.7: rgb(30,158,156) 0.810 -> 1: rgb(6,158,155) 0.962
+//          body just inside  rgb(5,110,108) 0.955   backdrop just outside rgb(0,38,37) 1.000
+//   light  rim rgb(227,255,255)      0.110 -> 0.7: rgb(172,255,255) 0.325 -> 1: rgb(161,255,255) 0.369
+//          body just inside rgb(159,242,242) 0.343  backdrop just outside rgb(223,252,252) 0.115
+// The dominant channel does not move between 0.7 and 1 in either theme (158 and 255); only the off-hue
+// channel falls, 30->6 and 172->161. At 1 the rim is brighter than the body it rides AND at least as
+// chromatic, which is the "saturate and brighten" this block exists for; at 0.7 it was still the least
+// chromatic thing in its own neighbourhood. Over black, 1 versus 0.7 differs by 0 pixels at threshold 0
+// across the whole /dev/jiv glass row and the non-Fresnel SOLID row — the no-op above, measured.
+//
+// THE FOUR COPIES ARE DELIBERATELY NOT POINTED HERE. Surface/Editorial/SelectionIndicator still say 0.7
+// and Prose's DocCardGlass omits the property entirely. Repointing them would move card and indicator
+// rims this lane never photographed, and adding the property where it is absent is a behaviour change,
+// not a de-duplication. Consolidating those four is its own lane (Cruft.Audit.md row 6); this constant
+// exists so that lane has one place to point them at.
+@JwiftRimCarry: 1
+
 // ── THE SCREEN CORNER ───────────────────────────────────────────────
 // The app's outer corner (the iPhone's own, 52 CSS px) and the one floating sheet's corner. Chrome inside
 // the screen is concentric with it: inset = @JwiftScreenRadius - the element's own radius.
@@ -65,10 +135,21 @@ JwiftGlass {
   BackdropFilter: Blur(4pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
   // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
-  // the light hits and thinning to nothing on the far side. It lifts the backdrop only: a saturation of
-  // its own drew a darker ring inside it.
+  // the light hits and thinning to nothing on the far side.
   // Over black the rim peaks 38 above the body for one device px and is gone two px later; over content
   // it lifts what it shows by about 1.4.
+  //
+  // BorderFilter DELIBERATELY carries no Saturate(). It is not missing — the shader multiplies these
+  // numbers by the BODY's grade (`saturation * v_BorderFilter.y`), so the rim's backdrop pickup is
+  // already running at @JwiftControlSaturate. Writing Saturate(n) here means 1.6 x n, and THAT is the
+  // "darker ring inside the rim" this comment used to blame on saturation in general: applyGrading
+  // saturates about luma, so past about 2 the channels under luma fall far enough to read as a dark
+  // annulus across BorderFade's alpha falloff. The colour in the rim is not this knob's job.
+  //
+  // The rim carries hue through its Fresnel instead. Jiv.Panel.frag converges the lit side on the
+  // gather at full value rather than on vec3(1.0) — see RIM_CHROMA_GAIN there. Over a neutral backdrop
+  // that target IS white, so the numbers above stay the ones measured over black. How far the lit arc
+  // goes toward that target is @JwiftRimCarry; its derivation and its measurements are up there.
   BorderWidth: 0.45pt
   BorderBlur: 0.3pt
   BorderFade: 0.7pt
@@ -77,7 +158,7 @@ JwiftGlass {
   BorderLayer: 10
   BorderVariance: 0.5
   BorderAlphaVariance: 0.75
-  BorderFresnelBrightness: 0.7
+  BorderFresnelBrightness: @JwiftRimCarry
   // No inner glow, edge light or catchlight: on the iPhone the body of the glass is one even tone and
   // only the outline is lit.
   FresnelStrength: 0
@@ -164,9 +245,17 @@ JwiftSectionTitle {
 }
 
 // ── JwiftHeroGlass ──────────────────────────────────────────────────
-// Hero / CTA variant of JwiftGlass: a heavier shadow so it reads as the page's primary action. The
-// material's own tint is its colour, as on every other glass.
+// Hero / CTA variant of JwiftGlass: the material a control wears when it stands ON the page's art. A
+// heavier shadow so it reads as the page's primary action, and the hero clarity pair above — less tint,
+// more vibrancy — so the picture underneath comes through the control instead of being covered by it.
+// The material's own tint is still its colour, as on every other glass.
+//
+// EVERY hero action extends this, not JwiftGlass: Surface.jss's HeroPill family and Item.jss's action
+// row. A surface that authors its own tone scales that tone by @JwiftHeroClarity rather than restating
+// a number here.
 JwiftHeroGlass : JwiftGlass {
+  Tint: @JwiftHeroTint
+  BackdropFilter: Blur(4pt) Saturate(@JwiftHeroSaturate) Contrast(@JwiftControlContrast)
   ShadowColor: rgba(0, 0, 0, 0.2)
   ShadowBlur: 28pt
   ShadowOffsetY: 8pt
