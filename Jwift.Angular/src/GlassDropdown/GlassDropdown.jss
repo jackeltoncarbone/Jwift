@@ -165,6 +165,25 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
   // this is the same idea at one number, and it is the width the longest real row needs.
   Width: 260pt
   Height: MinContent
+  // A LONG MENU SCROLLS; IT DOES NOT RUN OFF THE SCREEN AND IT DOES NOT SQUASH ITS ROWS.
+  //
+  // `Height: MinContent` alone means the panel is exactly as tall as its rows, whatever the screen has
+  // to say about it. At a 620pt-tall window the account menu's fourteen rows solve to 706pt from a top
+  // at 20 — 106pt of options laid out past the bottom of the screen, opaque and unreachable. The cap
+  // that stops that is NOT written here, because a number written here would be a guess: the room is
+  // whatever is left under THIS dropdown's own top edge, which only the open dropdown can measure.
+  // `GlassDropdown._fitToRoom()` measures it and writes `MaxHeight`, and the cap is cleared on close so
+  // the next open measures again.
+  //
+  // `Overflow: Scroll` is the half that has to live in the sheet, and it is load-bearing twice over.
+  // The rows are flex children, so a capped panel with `Hidden` SHRINKS them — measured: fourteen 44pt
+  // rows in a 520pt box come out 30.7pt tall, which is a menu nobody asked for. A scroll container's
+  // children get the scroll axis unbounded instead, so the rows keep their 44 and the surplus becomes
+  // travel. Apple's own rule for the case, HIG > Menus: a long menu is fine for "user-defined or
+  // dynamically generated content ... and scrolling is acceptable" — which is exactly the account
+  // menu, whose length depends on how many personas you belong to and whether you can reach admin.
+  // `Clip: Auto` already clips on Scroll as it did on Hidden, so the glass corner still cuts the rows.
+  Overflow: Scroll
   Direction: Column
   Justify: Start
   Align: Stretch

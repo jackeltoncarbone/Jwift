@@ -11,10 +11,21 @@ import {
   viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { Jaui, Jiv } from 'jaui-angular';
+import { Jaui, Jiv, JSS_REGISTRY } from 'jaui-angular';
 import type { JivHandle } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import GlassDropdownJss from './GlassDropdown.jss';
+
+/** The gap a floating glass surface keeps from the edge of the screen. Not invented here: the design
+ *  system already names it. `Jwift.Glass.jss` derives `@JwiftSheetInset` as `@JwiftScreenRadius (52pt)
+ *  - @JwiftSheetRadius (38pt)` = 14pt, the inset at which a sheet's corner nests concentrically inside
+ *  the screen's. A menu is a sheet by another name, so it keeps the same distance. */
+const SCREEN_GAP = 14;
+
+/** The shortest a capped menu is allowed to be: the glass's 6pt padding, three 44pt rows and the two
+ *  6pt gaps between them. Below three rows a menu stops reading as a list, so a panel with less room
+ *  than this overhangs rather than shrinking into a stub. */
+const PANEL_FLOOR = 6 + 3 * 44 + 2 * 6 + 6;
 
 /** A row of an open menu, as the dropdown sees it: a hit rect plus the two
  *  facts that change how the shared indicator draws over it. */
@@ -147,6 +158,9 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
    *  the server they bind to the render's own document and simply never fire. */
   private readonly _doc = inject(DOCUMENT);
   private _unbindDoc: (() => void) | null = null;
+  /** Read for `@SafeBottom` when the panel measures its room — the same table every sheet resolves
+   *  `@Name` against, so the inset here is the inset the glass is using. */
+  private readonly _jss = inject(JSS_REGISTRY);
 
   /** Extra class ANDed onto the closed pill — how the action group marks the
    *  avatar-only sink so the avatar can fill the glass. */
@@ -206,6 +220,10 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     };
     const onDocRelease = () => { if (this._pressed()) this._pressed.set(false); };
     const onDocLeave = () => this._hover(null);
+    // A window that gets shorter while a menu is open takes room away from it, and the cap is only as
+    // current as its last measurement. Re-measure rather than leave a menu sized for a window that is
+    // gone. Same reason the safe inset is re-read on resize one layer down, in Jaui's own host.
+    const onResize = () => { if (this._open()) this._fitToRoom(); };
     this._doc.addEventListener('pointerdown', onDocDown, true);
     this._doc.addEventListener('pointerdown', onDocPress, true);
     this._doc.addEventListener('pointermove', onDocMove, true);
@@ -213,7 +231,9 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     this._doc.addEventListener('pointercancel', onDocRelease, true);
     this._doc.addEventListener('pointerleave', onDocLeave, true);
     this._doc.addEventListener('keydown', onKey);
+    this._doc.defaultView?.addEventListener('resize', onResize, { passive: true });
     this._unbindDoc = () => {
+      this._doc.defaultView?.removeEventListener('resize', onResize);
       this._doc.removeEventListener('pointerdown', onDocDown, true);
       this._doc.removeEventListener('pointerdown', onDocPress, true);
       this._doc.removeEventListener('pointermove', onDocMove, true);
@@ -232,7 +252,57 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
 
   Open(): void {
     this._open.set(true);
+    this._fitToRoom();
     this._trackWhileGrowing();
+  }
+
+  /**
+   * CAP THE OPEN PANEL TO THE ROOM IT ACTUALLY HAS, MEASURED, NOT GUESSED.
+   *
+   * `Jwift_GlassDropdown_Open` is `Height: MinContent`: as tall as its rows, with nothing saying the
+   * screen is only so big. Solved through the engine at a 620px window, the account menu's fourteen
+   * rows come out 706px tall from a top at 20 — the last two and a half options are laid out 106px
+   * below the bottom of the screen. They are painted, they are opaque, and no pointer can ever reach
+   * them. A `max-height` constant would only move the number at which that happens; the panel is
+   * anchored `Top: 0` on a slot whose own Y depends on the page, so the ceiling is a measurement.
+   *
+   * WHAT IS MEASURED. The panel's top never moves — `Top: 0` pins it to the slot, and the slot is the
+   * closed pill, which is already laid out when this runs — so `Node.Y` is the panel's top in canvas
+   * space both before and after the cap lands. That is what makes this safe to run repeatedly: unlike
+   * a height measurement, it cannot read back its own constraint, so a re-open can never shrink the
+   * menu a second time. Room is everything under that top, less the screen's own safe inset and the
+   * gap a floating surface keeps from the edge.
+   *
+   * THE FLOOR. A trigger low enough that the room below is under three rows would be capped to a
+   * stub, so the floor holds it at three rows and the panel overhangs instead. Apple would flip the
+   * menu upward there; nothing in this app is anchored low enough to need that yet (every live
+   * `<glass-action-bar>` and `<glass-action-group>` sits in a `Jwift_PageHeader`), and a flip needs
+   * its own `Bottom`-anchored placement and its own proof. Noted, not pretended.
+   */
+  private _fitToRoom(): void {
+    const el = this._canvasRef?.Canvas?.Element;
+    if (!el) return;
+    const room = el.getBoundingClientRect().height - this.Node.Y - this._bottomInset() - SCREEN_GAP;
+    const cap = `${Math.round(Math.max(room, PANEL_FLOOR))}px`;
+    // Rounded, and written only on a CHANGE. `SetStyleOverride` re-fires `JivHost`'s effect, which
+    // re-applies the whole resolved class bag; this runs on every frame of the 600ms growth track, so
+    // an unguarded write would post three dozen identical `apply` ops per open and fight the height
+    // spring with sub-pixel dust while it flies.
+    if (this._cap === cap) return;
+    this._cap = cap;
+    this.SetStyleOverride({ MaxHeight: cap });
+  }
+
+  /** The last ceiling written, so a re-measure that lands on the same number costs nothing. */
+  private _cap: string | null = null;
+
+  /** The device's bottom safe inset, in px, as Jaui publishes it to every sheet (`@SafeBottom`, latched
+   *  by the host from `env(safe-area-inset-bottom)`). Zero on every desktop browser; on a phone it is
+   *  the home indicator, which a menu must not end underneath. */
+  private _bottomInset(): number {
+    const raw = this._jss.Vars.get('SafeBottom');
+    const px = raw ? parseFloat(raw) : 0;
+    return Number.isFinite(px) ? px : 0;
   }
 
   /**
@@ -255,6 +325,12 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
       agreeing = (n.X === lastX && n.Width === lastW) ? agreeing + 1 : 0;
       lastX = n.X; lastW = n.Width;
       this._replaceIndicator();
+      // Re-measure alongside the indicator. `Open()` measures from the CLOSED pill's rect, which is the
+      // right top edge (the slot holds the closed footprint and the panel is `Top: 0` on it) but is one
+      // frame old; this settles it against the open placement. Idempotent by construction — the cap
+      // moves the panel's BOTTOM and the measurement reads its TOP, so it can never read back its own
+      // constraint and walk the menu shorter on every frame.
+      this._fitToRoom();
       // The transition is 280ms and does not necessarily move on the first frames, so "two agreeing
       // frames" is true IMMEDIATELY after opening and would end the loop before the growth it exists to
       // follow. Hold until the transition is certainly over, then let agreement end it; 600ms is the
@@ -270,6 +346,17 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
 
   Close(): void {
     if (this._growRaf !== null) { cancelAnimationFrame(this._growRaf); this._growRaf = null; }
+    // BACK TO A CLEAN SLATE. The cap belongs to one open at one window size, so it is lifted with the
+    // rest of the open state and the next open measures again. A cap left behind would also sit on the
+    // CLOSED pill, which is 48pt and has no business carrying a 520pt ceiling.
+    //
+    // WRITTEN BACK TO `none`, NOT CLEARED. `JivHost._buildOpts` rebuilds ChildLayout as
+    // `{ ...this.Node.ChildLayout, ...class, ...overrides }` — the node's CURRENT state spread first —
+    // so simply dropping the override leaves the last cap standing, because nothing later in that
+    // merge mentions MaxHeight. `none` is the engine's own default (`DefaultChildLayout.MaxHeight`,
+    // which `ResolveBound` reads as Infinity), so this says no ceiling rather than hoping for one.
+    this._cap = null;
+    this.SetStyleOverride({ MaxHeight: 'none' });
     this._open.set(false); this._page.set(null); this._hovered.set(null); this._pressed.set(false);
   }
   Toggle(): void { if (this._open()) this.Close(); else this.Open(); }
