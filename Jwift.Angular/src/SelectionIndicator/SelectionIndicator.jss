@@ -144,5 +144,5 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   BorderFade: 0.7pt
   BorderVariance: 0.5
   BorderAlphaVariance: 0.75
-  BorderFresnelBrightness: 0.7
+  BorderFresnelStrength: 0.7
 }

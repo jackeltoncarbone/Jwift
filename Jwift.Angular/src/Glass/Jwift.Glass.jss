@@ -56,16 +56,24 @@
 
 // ── THE RIM CARRY ───────────────────────────────────────────────────
 // How much of the backdrop's OWN colour the lit arc of the rim carries. One number, here, because five
-// sheets author BorderFresnelBrightness by hand (Surface's CardGlass, Editorial's EdCard,
-// SelectionIndicator, Toggle) and a rim law stated five times is a rim law that drifts — Cruft.Audit.md
-// row 6. Those copies are still literal on purpose; see the note at the foot of this block.
+// sheets author the rim's Fresnel by hand (Surface's CardGlass, Editorial's EdCard, SelectionIndicator,
+// Toggle) and a rim law stated five times is a rim law that drifts — Cruft.Audit.md row 6. Those copies
+// are still literal on purpose; see the note at the foot of this block.
 //
-// WHAT THE PROPERTY NOW MEANS. It is `mix(BorderColor.rgb, fresnelTarget, pow(lightFacing,3) * this)` in
-// Jiv.Panel.frag. It used to drag the lit stroke toward the literal vec3(1.0), so it read as "how white
-// does the lit side get" and 0.7 was that dial. The mix TARGET is now the rim's own backdrop gather
-// driven to full value (RIM_CHROMA_GAIN), and over a neutral gather that target IS white and identical
-// to BorderColor — so over a neutral backdrop this number is a provable NO-OP and only decides how much
-// HUE a coloured backdrop pushes into the rim. 0.7 was calibrated for the job it no longer does.
+// WHAT THE PROPERTY NOW MEANS. It is `BorderFresnelStrength`, spelled `BorderFresnelBrightness` when
+// this block was written: `mix(BorderColor.rgb, fresnelTarget, pow(lightFacing,3) * this)` in
+// Jiv.Panel.frag. It is an AMOUNT and never was a brightness, and that name is why three separate asks
+// for a more SATURATED edge were answered by turning this dial. It used to drag the lit stroke toward
+// the literal vec3(1.0), so it read as "how white does the lit side get" and 0.7 was that dial. The mix
+// TARGET is now the rim's own backdrop gather driven to full value, and over a neutral gather that
+// target IS white and identical to BorderColor — so over a neutral backdrop this number is a provable
+// NO-OP and only decides how much HUE a coloured backdrop pushes into the rim. 0.7 was calibrated for
+// the job it no longer does.
+//
+// The COLOUR of that target is now its own control, `BorderFresnelFilter: Brightness(b) Saturate(s)`,
+// so a class can be more chromatic at the edge WITHOUT carrying more of the target, and two glass
+// classes over the same backdrop can differ in edge saturation. This sheet leaves it at the engine
+// default (Saturate 1.6, the number that used to be hard-coded in the shader), so nothing here moved.
 //
 // WHY 1. The target is value-normalised (max channel exactly 1.0), so carrying it in full cannot make
 // the rim dimmer than the white it replaces — it can only take the off-hue channels down, which IS the
@@ -80,7 +88,7 @@
 //
 // IN-HOUSE PRECEDENT, not a new idea. Toggle.jss already argues this exact case in its own words — "any
 // appreciable alpha paints a flat WHITE ring that overrides whatever the glass was bending, which is the
-// one part that never matched Apple" — and lands at BorderFresnelBrightness 1.1 with BorderColor alpha
+// one part that never matched Apple" — and lands at a Fresnel strength of 1.1 with BorderColor alpha
 // 0.15. This sheet keeps alpha at 0.35 because that alpha is the over-black luminosity calibration (the
 // rim peaks 38 above the body); only the carry moves.
 //
@@ -147,9 +155,10 @@ JwiftGlass {
   // annulus across BorderFade's alpha falloff. The colour in the rim is not this knob's job.
   //
   // The rim carries hue through its Fresnel instead. Jiv.Panel.frag converges the lit side on the
-  // gather at full value rather than on vec3(1.0) — see RIM_CHROMA_GAIN there. Over a neutral backdrop
-  // that target IS white, so the numbers above stay the ones measured over black. How far the lit arc
-  // goes toward that target is @JwiftRimCarry; its derivation and its measurements are up there.
+  // gather at full value rather than on vec3(1.0), saturated about white by BorderFresnelFilter's
+  // Saturate(). Over a neutral backdrop that target IS white, so the numbers above stay the ones
+  // measured over black. How far the lit arc goes toward that target is @JwiftRimCarry; its derivation
+  // and its measurements are up there.
   BorderWidth: 0.45pt
   BorderBlur: 0.3pt
   BorderFade: 0.7pt
@@ -158,7 +167,7 @@ JwiftGlass {
   BorderLayer: 10
   BorderVariance: 0.5
   BorderAlphaVariance: 0.75
-  BorderFresnelBrightness: @JwiftRimCarry
+  BorderFresnelStrength: @JwiftRimCarry
   // No inner glow, edge light or catchlight: on the iPhone the body of the glass is one even tone and
   // only the outline is lit.
   FresnelStrength: 0

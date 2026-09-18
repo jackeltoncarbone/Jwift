@@ -153,7 +153,7 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   // rather than a stroke drawn around a shape. Uniform alpha is what made ours look like an outline.
   BorderVariance: 0.6
   BorderAlphaVariance: 0.6
-  BorderFresnelBrightness: 1.1
+  BorderFresnelStrength: 1.1
   EdgeLightTop: 0.35
   EdgeLightBottom: 0.9
   InnerBlur: 0
