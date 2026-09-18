@@ -214,13 +214,51 @@ JwiftSolidGlass {
   ChromaticAberration: 0
   LightAngle: 135
   LightIntensity: 1
-  FresnelStrength: 0.55
-  EdgeLightBottom: 0.03
+  // ── The rim carries its own light ──
+  // This class draws its rim in a BORDER-ONLY overlay pass (BorderLayer 10), and that
+  // pass has no body: Jiv.Panel.frag zeroes `fillAlpha`, which is what every interior
+  // effect is multiplied by. FresnelStrength drove the wide inward rim glow, and that
+  // glow reached the screen only because `edgeLightAlpha` captured `fillAlpha` a few
+  // hundred lines BEFORE the border-only block zeroed it. With the leak closed, a body
+  // fresnel on this class is a knob wired to nothing. EdgeLightBottom was already dead
+  // the same way (its hemispherical ambient is multiplied by the zeroed fillAlpha), so
+  // this class's rim lighting was half-on by accident of where that zero sits in the
+  // file. Both are gone; the light moves into the border zone, which a border-only pass
+  // is entitled to paint.
+  //
+  // The leak reached max(BezelWidth * 0.75, 6) = 16.5 device px inward at peak alpha
+  // 0.55 on the lit arc and 0.6x that on the far side, falling as proximity^1.6 — about
+  // 2.2 alpha-px of ink once the stroke's own 4 px band is subtracted (the border zone
+  // overwrites `result` inside it). The three numbers below put that back:
+  //
+  //   BorderFade 3pt      the reach. `fadeIn = max(BorderFade * widthScale, aa)`, so
+  //                       6 device px of dissolve past the stroke instead of the 2 px
+  //                       BorderBlur floor. The band integral goes 2.0 -> 4.0 alpha-px:
+  //                       +2.0, against the leak's 2.2. Not the leak's 16.5 px — the
+  //                       border zone replaces `result` across its band rather than
+  //                       adding a wash over it, so matching the REACH would have put
+  //                       back 7.3 alpha-px, three times the ink. Tighter and truer.
+  //   BorderAlphaVariance 0.4   the direction. `strokeBrightness = mix(1 - av, 1,
+  //                       lightFacing^2)` runs 0.6..1.0 — exactly the leak's own
+  //                       `directional = 0.6 + 0.4 * lightFacing^1.5` range.
+  //   BorderFresnelStrength 0.5  the lit arc converges on the gather driven to full
+  //                       value instead of on flat BorderColor, the rim law
+  //                       @JwiftRimCarry states for JwiftGlass. It rides INSIDE the
+  //                       BorderColor.a mix, so it is worth at most BorderColor.a.
+  //
+  // BorderColor.a 0.1 -> 0.16 is what gives that Fresnel a lever: at 0.1 a full Fresnel
+  // could lift the rim by a tenth. Paired with BorderAlphaVariance 0.4 the unlit arc
+  // lands at 0.16 * 0.6 = 0.096, so the far side keeps today's 0.1 to within 4% and
+  // only the lit arc gains.
+  FresnelStrength: 0
   // The lit stroke that rides the bevel, floated ABOVE content so the footer
   // blur / art never eats the frame.
   BorderWidth: 1pt
   BorderBlur: 1pt
-  BorderColor: rgba(255, 255, 255, 0.1)
+  BorderFade: 3pt
+  BorderColor: rgba(255, 255, 255, 0.16)
+  BorderAlphaVariance: 0.4
+  BorderFresnelStrength: 0.5
   BorderFilter: Blur(4pt) Brightness(2) Saturate(2)
   BorderLayer: 10
 }
