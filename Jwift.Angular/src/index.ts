@@ -23,6 +23,8 @@ export {
 export {
   AvatarPhoto,
   AvatarPhotoBlob,
+  AvatarFetchCredentials,
+  SetAvatarCredentialedOrigins,
   ResetAvatarPhotos,
   type AvatarPhotoVerdict,
   type AvatarPhotoState,

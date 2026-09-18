@@ -70,6 +70,61 @@ let _minted = 0;
 const _INLINE = /^(data|blob):/i;
 
 /**
+ * ORIGINS WHOSE AVATARS ARE READ AS THE VIEWER — the host app's own API, named by the host app.
+ *
+ * WHY THIS EXISTS. A photo that belongs to a PERSON has to be authorized per viewer, and an
+ * authorization needs an identity on the wire. `credentials:'omit'` sends none, so a guarded avatar
+ * endpoint can only ever answer "who's asking?" with "nobody" — which is what forced the server to
+ * accept a bearer ticket in the query string instead, and a ticket in a URL is read by whoever holds the
+ * URL rather than by whoever the viewer is. Sending the session cookie retires the ticket outright.
+ *
+ * WHY IT IS A REGISTRY AND NOT A DEFAULT. `credentials:'include'` is the wrong answer for a PROVIDER's
+ * CDN, and not merely impolite: a credentialed cross-origin request cannot be answered with
+ * `Access-Control-Allow-Origin: *`, which is exactly what `lh3.googleusercontent.com` answers, so
+ * including credentials there would fail CORS and take every provider photo down. The host names the one
+ * origin it owns; everything else keeps today's anonymous fetch.
+ *
+ * SAME-ORIGIN NEEDS NO REGISTRATION and is always credentialed: `credentials:'same-origin'` is the
+ * platform default for `fetch` precisely because a request to yourself carrying your own cookies is the
+ * unsurprising case.
+ */
+const _credentialedOrigins = new Set<string>();
+
+/**
+ * Declare the origins whose avatar reads carry the viewer's session — REPLACING any previous set, so a
+ * host that calls this twice gets the second answer rather than the union. Values may be a bare origin
+ * (`https://api.example.com`) or any URL on it; anything unparseable is dropped rather than guessed at.
+ */
+export function SetAvatarCredentialedOrigins(origins: readonly string[]): void {
+  _credentialedOrigins.clear();
+  for (const candidate of origins) {
+    const origin = _originOf(candidate);
+    if (origin) _credentialedOrigins.add(origin);
+  }
+}
+
+/** The origin of `url`, resolved against the document when it is relative, or null when it is neither. */
+function _originOf(url: string): string | null {
+  try {
+    const base = typeof location !== 'undefined' ? location.href : undefined;
+    return new URL(url, base).origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether this photo's fetch carries the viewer's session. Exported because it is the RULE, and a rule
+ * this consequential should be assertable on its own rather than only through a fetch nobody can see.
+ */
+export function AvatarFetchCredentials(url: string): RequestCredentials {
+  const origin = _originOf(url);
+  if (!origin) return 'omit';
+  if (typeof location !== 'undefined' && origin === location.origin) return 'include';
+  return _credentialedOrigins.has(origin) ? 'include' : 'omit';
+}
+
+/**
  * The state of one avatar photo, as a signal. Idempotent: the first call for a URL kicks the single fetch,
  * every later call — including from another component, another surface, or the same disc re-rendering —
  * gets the same signal and no extra request.
@@ -103,10 +158,12 @@ export function AvatarPhoto(url: string | null | undefined): Signal<AvatarPhotoS
   const state = signal<AvatarPhotoState>(LOADING);
   _cache.set(trimmed, state);
 
-  // `credentials:'omit'` + `mode:'cors'` match the engine's own ImageCache exactly, so on the one host
-  // that does serve CORS headers this request and the engine's are the same request — except the engine
-  // never makes it, because what we hand back is a blob.
-  fetch(trimmed, { mode: 'cors', credentials: 'omit' })
+  // WHO IS ASKING, on every read. A photo on one of the host's own origins goes out with the viewer's
+  // session so the server can authorize THEM; a provider's CDN keeps the anonymous fetch, which is both
+  // correct and required (a credentialed request cannot be answered with `Access-Control-Allow-Origin:
+  // *`). `mode:'cors'` matches the engine's own ImageCache either way — though the engine never issues
+  // this request, because what we hand back is a blob.
+  fetch(trimmed, { mode: 'cors', credentials: AvatarFetchCredentials(trimmed) })
     .then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.blob();
@@ -137,8 +194,21 @@ export function AvatarPhotoBlob(url: string | null | undefined): Blob | null {
   return trimmed ? _blobs.get(trimmed) ?? null : null;
 }
 
-/** TEST SEAM ONLY — drop every verdict and revoke every object URL. Never called by the app: the cache is
- *  session-scoped on purpose, and a "refresh the avatar" that re-fetches a CDN is the fault this fixes. */
+/**
+ * DROP EVERY VERDICT AND REVOKE EVERY OBJECT URL — call this when the VIEWER changes, and at no other
+ * time.
+ *
+ * It used to be a test seam, and it stopped being one the moment an avatar became a per-viewer
+ * authorization. The cache is keyed by URL, and a guarded avatar URL is now STABLE across viewers (it
+ * names a profile, and nothing else — that is the point). So a tab that changes identity without
+ * reloading would keep serving the previous viewer's decoded bytes for a profile the new viewer may have
+ * no rung on: a cache hit answers before the server is ever asked. The web sign-in and sign-out paths
+ * both navigate, which wipes the heap anyway; the native code exchange and a re-auth after an expiry do
+ * not, and those are the ones this closes.
+ *
+ * It is NOT a "refresh the avatar" button. Re-fetching a provider CDN on demand is the exact fault
+ * this module was written to end.
+ */
 export function ResetAvatarPhotos(): void {
   for (const s of _cache.values()) {
     const src = s().Src;
@@ -151,8 +221,17 @@ export function ResetAvatarPhotos(): void {
 
 const _none = signal<AvatarPhotoState>(NONE).asReadonly();
 
+// THE FIRST TERM IS THE PLATFORM, AND IT HAS TO BE. This guard was written to mean "browser" and spelled
+// it as "has fetch and has createObjectURL" -- both of which Node has had for years, so under server
+// rendering it was VACUOUSLY TRUE: the fetch ran, and `state` was set to a `blob:nodedata:<uuid>` that
+// names a handle inside the render process and nothing else. That string was then serialized into the
+// semantic mirror as an <img src>, so the crawler and the pre-hydration browser were both handed a dead
+// image for every avatar on the page. `window` is the honest question -- Angular's server platform
+// installs domino's DOM types but never a `window`, which is the same signal Jaui's own host uses -- and
+// the minted URL can only outlive this function in a document a browser is going to load.
 const _canLoad = (): boolean =>
-  typeof fetch === 'function'
+  typeof window !== 'undefined'
+  && typeof fetch === 'function'
   && typeof URL !== 'undefined'
   && typeof URL.createObjectURL === 'function';
 
