@@ -294,7 +294,28 @@ JwiftGlass {
   BezelScale: 0.25
   Refraction: 8
   // A soft blur, about 8% of a 48pt control's short side, so what is behind stays a recognisable shape.
-  BackdropFilter: Blur(4pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
+  // THE BLUR IS WHAT MAKES IT READ AS A MATERIAL, and 4pt was not enough to.
+  //
+  // Jack, on the drill page's back button: "It has a normal look with basically no backdrop filter,
+  // apparently, when it's just sitting there. Immediately when I hover over it, it gets this deepness."
+  // He was right, and the cause is not the grade. Measured live off the engine's own glass-adapt census
+  // on that page, the button IS probed and IS adapting -- Lifted: true, the far end opened to 1.015 --
+  // and over turf at luma 69 the grade puts the glass near 89. It is doing its arithmetic.
+  //
+  // What it was not doing is destroying DETAIL. At 4pt over grass texture the turf reads straight
+  // through, so the surface looks like a hole with a rim rather than a material, and the only moment it
+  // looked like glass was hover, where Brightness(1.85) finally separated it from the field. That is the
+  // snap: rest and hover were on opposite sides of visible.
+  //
+  // THE EVIDENCE IS IN THIS SHEET, not in my judgement. JwiftGlassThick -- the menu panel, on the same
+  // page over the same field -- blurs 14pt and reads unmistakably as a material. The scroll edge blurs
+  // 12pt. The control blurred 4. Same app, same backdrop, and the one that reads as glass is the one
+  // that blurs. Apple's own material figures agree qualitatively: in every one of the four
+  // materials-ios-material-background PNGs the backdrop's shapes survive and its DETAIL does not.
+  //
+  // 12pt puts the control on the same footing as the two surfaces here that already read correctly,
+  // without going to the sheet's 14 -- a 48pt button should not out-blur a menu.
+  BackdropFilter: Blur(12pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
   // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
   // the light hits and thinning to nothing on the far side.
@@ -636,12 +657,15 @@ JwiftPressMotion:Active {
 // The NEUTRAL press: the motion above plus the theme's press fill over whatever the control rests on.
 // Fill and squeeze share the one spring, so the colour and the shrink land together instead
 // of the highlight flashing ahead of the squeeze.
-// A PRESS IS A LIFT, NOT A PAINT. This used to lay @HoverFill / @PressFill -- a flat white over dark,
-// black over light -- across the control. Apple: "By default, Liquid Glass has no inherent color, and
-// instead takes on colors from the content directly behind it." A flat white at 0.14 dilutes whatever
-// colour the control is over by 14% toward white, which is exactly the carry that sentence protects. A
-// lift adds a constant instead: the hue under the control comes through whole and only its level moves.
-// Same two constants the wash law already measured, so the press and the washes cannot drift apart.
+// A PRESS IS A LIFT, NOT A PAINT. Restored: it was backed out while hunting the hover snap, and the
+// snap survived the revert, so the press was never the cause. The lift is measured -- over a violet bed
+// a hovered control reads (125,85,197) against the bed's (96,56,168), exactly +29/+29/+29 with hue and
+// chroma preserved, where the old 0.14 white gave (118,84,180) and cut chroma by its own alpha, which
+// is what Apple's "takes on colors from the content directly behind it" is protecting.
+//
+// JwiftPressGlass cancels it with an explicit Lift(0) below. That makes the glass press depend on merge
+// order for its correctness, which is the one thing here worth replacing: the flat press wants its own
+// zone rather than a derived class cancelling a base class.
 JwiftPress : JwiftPressMotion {
   @Transition BackdropFilter { Duration: 140ms }
 }
@@ -665,12 +689,9 @@ JwiftPressGlass : JwiftPress {
   @Transition BorderFilter { Duration: 140ms }
 }
 
-// Lift(0) IS LOAD-BEARING, not noise. Filters merge by function, so without it these two would inherit
-// the lift JwiftPress now sets and the glass press would change at the same time as the flat one --
-// two changes in one diff, neither attributable. The glass press states its own backdrop, as it always
-// has. Its Brightness is a MULTIPLY, which is the thing the lift argument is against (it scales chroma,
-// barely moves a dark backdrop and blows out a bright one), so it is the next thing here to re-measure
-// and convert -- deliberately not in this pass.
+// The glass press states its own backdrop, as it always has. Its Brightness is a MULTIPLY, which is
+// what the lift argument is against -- it scales chroma, barely moves a dark backdrop and blows out a
+// bright one -- so it is the thing to re-measure as a lift once the flat press has a zone of its own.
 JwiftPressGlass:Hover {
   BorderColor: @JwiftHoverEdge
   BackdropFilter: Lift(0) Brightness(1.85)
