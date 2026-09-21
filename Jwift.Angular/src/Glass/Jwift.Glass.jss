@@ -618,7 +618,18 @@ JwiftScrollEdgeTop : JwiftScrollEdge {
 // itself. The bottom carries a transport and a sentence and needs less, which is what he asked for:
 // "maybe do it less for the bottom". If the top is ever measured against an Apple screenshot rather
 // than judged, this is the line to correct.
-@JwiftScrollEdgeDimSoft: 0.65 * @Dark + 1.05 * @Light
+// 0.5, NOT APPLE'S 0.65, AND THE DIFFERENCE IS THE INK FLIP WE HAVE NOT BUILT.
+//
+// Apple's published amount is 35% -- "consider adding a dark dimming layer of 35% opacity" -- which is
+// a multiply by 0.65, and that is what this was. Measured on home with the dock over the market's lit
+// field art, 0.65 leaves 'Explore' and 'Market' hard to read: Apple can afford the weaker layer because
+// the OTHER half of their rule carries the rest, symbols and text "becoming darker when the underlying
+// content is light". Ours cannot flip, so the strip has to hold the whole legibility budget alone.
+//
+// 0.5 is ours. It still dims LESS than the top's 0.32, which is what Jack asked for, and it holds the
+// dock's labels over the brightest content on the home page. When the ink flip lands this goes back to
+// Apple's 0.65 and the flip takes over -- that is the one line to change.
+@JwiftScrollEdgeDimSoft: 0.5 * @Dark + 1.05 * @Light
 @JwiftScrollEdgeVivid: 1 * @Dark + 1.8 * @Light
 JwiftScrollEdgeTopScene : JwiftScrollEdgeTop {
   BackdropFilter: Brightness(@JwiftScrollEdgeDim) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
