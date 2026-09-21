@@ -150,6 +150,58 @@
 // are the values GlassDropdown's indicators wore before the law, kept to the digit.
 @JwiftVibrancy: 1.6 * @Dark + 1.8 * @Light
 
+// ── THE WASH: A HOVER, A CHIP, A WELL, A SELECTED ROW ──────────────
+// The theme's @Wash / @WashStrong / @HoverFill are a flat white (dark) or black (light) paint at a few
+// percent. A paint at alpha a keeps (1 - a) of the colour under it, so every hover in the app DILUTES what
+// it sits on: the carry defect the glass law fixed, one layer up. This is what Apple does instead,
+// measured off Apple's pixels the way the law above was (HIG DocC figures; the lane report
+// WorkerReports/build-washeffect.md has every site):
+//
+//   dark, the ground under a selection or a resting fill -> the fill, of 255
+//     visionOS button, idle,  over warm-grey glass  163,155,143 -> 183,175,163   +19.5 +19.9 +19.8
+//     visionOS button, hover, same ground (disc mean)                             +27.7 +29.1 +30.3
+//     iPad sidebar, selected row                    36,38,41 ->  52,55,58        +16   +17   +17
+//     iPad tab bar, selected pill                         28 ->  46              +18
+//     iPhone tab bar, selected tab (HIG Color figure)     26 ->  56,56,59        +30   +30   +33
+//   light, the one Liquid Glass selection Apple draws in both themes
+//     iPhone tab bar, selected tab                       242 -> 221,221,222      -21   -21   -20
+//
+// THREE THINGS FOLLOW, AND ONE OF THEM IS NOT WHAT THE BRIEF ASSUMED.
+// 1. The lift is ADDITIVE, not a multiply. The same few levels land over 26, 36 and 163, where a
+//    Brightness(b) would have to be 2.15 on one and 1.12 on another, and a white paint 0.13 on one and
+//    0.20 on another. Apple adds a constant.
+// 2. The colour is CARRIED, not amplified. The one site over a coloured ground keeps its chroma to the
+//    level (20.3 -> 20.0, carry 0.99; hover 0.87): the fill neither dilutes the content like a white paint
+//    nor saturates it past itself. That is @JwiftGlassCarry, the same 1 the glass body carries. What Jack
+//    sees as "more saturation" is the difference from a white paint, which takes a of it away.
+// 3. The sign is SIGNED by theme. Dark lifts, light deepens: a light ground has no headroom (242 + 18 is
+//    past white, which erases the detail the wash is meant to show), and Apple's light tab bar goes DOWN.
+//    Apple's real iPad screenshots in light draw the selection as a near-opaque white plate instead
+//    (243 -> 251, chroma 2 -> 0), which covers the content and is a fill, not a wash (@SegOn's job).
+//    The light lift is Apple's one light/dark pair, -20 against +30, applied to each class: -2/3.
+//
+// THE GRADE THAT DOES IT, exactly. applyGrading is b * (c * (x - 0.5) + 0.5) with a luma-preserving
+// saturate between, so with c = 1 / b it is x + (b - 1) / 2 on every channel and chroma * s. Solve for a
+// lift L: Brightness 1 + 2L, Contrast its reciprocal, Saturate the carry. No Tint (a mix toward white is
+// the white paint again).
+//   wash    dark +18 (the three real sites, 16.7 / 18 / 19.7)   light -12
+//   strong  dark +30 (the selected Liquid Glass tab)             light -20
+//   hover   dark +29 (visionOS hover over the idle ground)       light -19
+// The dark wash is also what today's @Wash already paints over the app's ground (0.08 of 255 - 26 is +18);
+// only the dilution and the fall-off over brighter grounds change.
+@JwiftWashLift: 18 / 255 * @Dark - 12 / 255 * @Light
+@JwiftWashStrongLift: 30 / 255 * @Dark - 20 / 255 * @Light
+@JwiftHoverWashLift: 29 / 255 * @Dark - 19 / 255 * @Light
+@JwiftWashBrightness: 1 + 2 * @JwiftWashLift
+@JwiftWashContrast: 1 / @JwiftWashBrightness
+@JwiftWashSaturate: @JwiftGlassCarry
+@JwiftWashStrongBrightness: 1 + 2 * @JwiftWashStrongLift
+@JwiftWashStrongContrast: 1 / @JwiftWashStrongBrightness
+@JwiftWashStrongSaturate: @JwiftGlassCarry
+@JwiftHoverWashBrightness: 1 + 2 * @JwiftHoverWashLift
+@JwiftHoverWashContrast: 1 / @JwiftHoverWashBrightness
+@JwiftHoverWashSaturate: @JwiftGlassCarry
+
 // ── THE RIM CARRY ───────────────────────────────────────────────────
 // How much of the backdrop's OWN colour the lit arc of the rim carries. One number, here, because five
 // sheets author the rim's Fresnel by hand (Surface's CardGlass, Editorial's EdCard, SelectionIndicator,
@@ -597,6 +649,31 @@ JwiftPressGlass:Active {
   BorderColor: @JwiftPressEdge
   BackdropFilter: Brightness(2.5)
   BorderFilter: Brightness(1.7)
+}
+
+// ── JwiftWash / JwiftWashStrong / JwiftHoverWash ───────────────────
+// The wash law above (THE WASH), worn: no paint of its own, the content behind lifted by a constant and
+// its colour carried. JwiftWash is the quiet fill (@Wash), JwiftWashStrong the press, the selection and
+// the track that must read (@WashStrong), JwiftHoverWash the one hover (@HoverFill).
+//
+// NOTHING WEARS THESE YET, and that is the engine's call, not a style choice. The fragment reads an
+// unfrosted wash from the raw scene (Jiv.Panel.frag sampleBackdrop, one texture() tap), but the walk
+// sends every panel with a backdrop grade down the glass-fill path (Jaui.ts, the _hasBackdropFilter
+// branch), which snapshots the region AND builds a blur pyramid the fragment never opens. A wash worn
+// at rest is therefore one more pyramid build per surface, about 0.74 ms of fixed cost each. The
+// classes wait for the walk to skip that build when the plan's frost is zero and nothing else reads
+// the pyramid; Design/WashLaw.Conformance.spec.ts fails the day a sheet wears one before that.
+JwiftWash {
+  Background: rgba(0, 0, 0, 0)
+  BackdropFilter: Brightness(@JwiftWashBrightness) Contrast(@JwiftWashContrast) Saturate(@JwiftWashSaturate)
+}
+
+JwiftWashStrong : JwiftWash {
+  BackdropFilter: Brightness(@JwiftWashStrongBrightness) Contrast(@JwiftWashStrongContrast) Saturate(@JwiftWashStrongSaturate)
+}
+
+JwiftHoverWash : JwiftWash {
+  BackdropFilter: Brightness(@JwiftHoverWashBrightness) Contrast(@JwiftHoverWashContrast) Saturate(@JwiftHoverWashSaturate)
 }
 
 // ── JwiftPressTint ──────────────────────────────────────────────────
