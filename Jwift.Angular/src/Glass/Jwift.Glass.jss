@@ -54,7 +54,16 @@
 //    a LARGE surface, reads 0.93 and 1.21. One is the middle of the spread at both sizes and in both
 //    themes. This sheet used to carry 0.53 in dark and 0.32 on a dark sheet, and that was the whole of
 //    "bring more colour through".
-@JwiftGlassCarry: 1
+// SLIGHTLY MORE, not equal. Jack's three-part description of what makes glass visible as its own plane:
+// "Liquid glass is supposed to be slightly brighter, slightly more saturation, but less contrast. So
+// that it's visible. Right now, it just looks like it's identical to the background."
+//
+// 1 means the glass carries the backdrop's colour at exactly its own strength, which is the same
+// saturation -- a faithful reproduction, and a faithful reproduction of the backdrop is invisible
+// against it. 1.15 is the smallest step that reads as a lift of the colour rather than a copy of it,
+// and it is OURS, not Apple's: Apple publishes the behaviour ("amplifies and adjusts the color of the
+// content layered behind") and not the amount.
+@JwiftGlassCarry: 1.15
 //
 // 3. THE FAR END, solved: the ink is the app's own @Ink (Ui/Theme.Tokens.ts: rgb(245, 245, 247) in dark,
 //    rgb(29, 29, 31) in light), and the ratio is Apple's, "at least 4.5:1, aim for 7:1 for custom text"
@@ -122,7 +131,18 @@
 // Small controls, bars, the tab pill, and the hero action (a hero is a control; see JwiftHeroGlass):
 @JwiftControlOverBlack: @JwiftGlassGround * @Dark + @JwiftControlFar * @Light
 @JwiftControlOverWhite: @JwiftControlFar * @Dark + @JwiftGlassGround * @Light
-@JwiftControlTint: (1 - @JwiftControlOverBlack - @JwiftControlOverWhite) * (@Dark - @Light)
+// THE TINT IS CLAMPED AT ZERO, and without this the open far end cancels itself.
+//
+// The expression is what the two ends LEAVE of the ramp, signed toward the ground. It was written when
+// the dark far end was 0.442, where it came out positive. With the far end open past 1.0 it goes
+// NEGATIVE (1 - 0.102 - 1.015 = -0.117), and a negative tint pulls the body back toward the dark ground
+// -- undoing exactly the lift that opening the far end bought. The body computes to 89 over turf at 69
+// and the tint dragged it back to the field. That is Jack's "it just looks like it's identical to the
+// background", and it was arithmetic, not taste.
+//
+// A glass body has nothing left of the ramp to give back once the ends span it, so zero is the honest
+// value there rather than a negative one. @Dark * 0 keeps the light half's expression untouched.
+@JwiftControlTint: 0 * @Dark + (1 - @JwiftControlOverBlack - @JwiftControlOverWhite) * (0 - @Light)
 @JwiftControlContrast: (@JwiftControlOverWhite - @JwiftControlOverBlack) / (1 - @JwiftControlTint)
 @JwiftControlSaturate: @JwiftGlassCarry / (@JwiftControlOverWhite - @JwiftControlOverBlack)
 // Partial-height sheets, drawers, menus, panels:
