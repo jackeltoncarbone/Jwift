@@ -194,6 +194,18 @@
 @JwiftWashLift: 18 * @Dark - 12 * @Light
 @JwiftWashStrongLift: 30 * @Dark - 20 * @Light
 @JwiftHoverWashLift: 29 * @Dark - 19 * @Light
+// The PRESS lift is the one number in this law that is DERIVED, not measured, and it is labelled so.
+// Apple publishes a hover (visionOS, +29) and a selected tab (+30); it does not publish a press. So
+// this is the arithmetic THIS BLOCK already documents for @Wash, run on @PressFill: the comment above
+// gets +18 as `0.08 of 255 - 26`, i.e. alpha x (255 - ground) with the app's dark ground at 26, and
+// 0.05 x (255 - 15) = 12 puts the light ground at 15. On those same two grounds:
+//   dark   @PressFill 0.22 x 229 = 50.4
+//   light  @PressFill 0.12 x 240 = 28.8
+// Deriving rather than reusing @JwiftWashStrongLift matters: strong is 30, measured for @WashStrong's
+// 0.16, and borrowing it would put the press (+30) a single code above the hover (+29) and collapse a
+// distinction the fills have always drawn. If Apple's press is ever measured, THIS is the value to
+// replace, and the two above are not to be touched.
+@JwiftPressLift: 50 * @Dark - 29 * @Light
 
 // ── THE RIM CARRY ───────────────────────────────────────────────────
 // How much of the backdrop's OWN colour the lit arc of the rim carries. One number, here, because five
@@ -609,16 +621,22 @@ JwiftPressMotion:Active {
 // The NEUTRAL press: the motion above plus the theme's press fill over whatever the control rests on.
 // Fill and squeeze share the one spring, so the colour and the shrink land together instead
 // of the highlight flashing ahead of the squeeze.
+// A PRESS IS A LIFT, NOT A PAINT. This used to lay @HoverFill / @PressFill -- a flat white over dark,
+// black over light -- across the control. Apple: "By default, Liquid Glass has no inherent color, and
+// instead takes on colors from the content directly behind it." A flat white at 0.14 dilutes whatever
+// colour the control is over by 14% toward white, which is exactly the carry that sentence protects. A
+// lift adds a constant instead: the hue under the control comes through whole and only its level moves.
+// Same two constants the wash law already measured, so the press and the washes cannot drift apart.
 JwiftPress : JwiftPressMotion {
-  @Transition Background { Duration: 140ms }
+  @Transition BackdropFilter { Duration: 140ms }
 }
 
 JwiftPress:Hover {
-  Background: @HoverFill
+  BackdropFilter: Lift(@JwiftHoverWashLift)
 }
 
 JwiftPress:Active {
-  Background: @PressFill
+  BackdropFilter: Lift(@JwiftPressLift)
 }
 
 // ── JwiftPressGlass ─────────────────────────────────────────────────
@@ -632,15 +650,21 @@ JwiftPressGlass : JwiftPress {
   @Transition BorderFilter { Duration: 140ms }
 }
 
+// Lift(0) IS LOAD-BEARING, not noise. Filters merge by function, so without it these two would inherit
+// the lift JwiftPress now sets and the glass press would change at the same time as the flat one --
+// two changes in one diff, neither attributable. The glass press states its own backdrop, as it always
+// has. Its Brightness is a MULTIPLY, which is the thing the lift argument is against (it scales chroma,
+// barely moves a dark backdrop and blows out a bright one), so it is the next thing here to re-measure
+// and convert -- deliberately not in this pass.
 JwiftPressGlass:Hover {
   BorderColor: @JwiftHoverEdge
-  BackdropFilter: Brightness(1.85)
+  BackdropFilter: Lift(0) Brightness(1.85)
   BorderFilter: Brightness(1.5)
 }
 
 JwiftPressGlass:Active {
   BorderColor: @JwiftPressEdge
-  BackdropFilter: Brightness(2.5)
+  BackdropFilter: Lift(0) Brightness(2.5)
   BorderFilter: Brightness(1.7)
 }
 
