@@ -393,7 +393,7 @@ Jwift_GlassDropdownIndicator {
   Layer: 0
   BorderRadius: 100pt
   Background: @HoverFill
-  BackdropFilter: Saturate(@JwiftControlSaturate) Brightness(1.06 * @Dark + 0.97 * @Light)
+  BackdropFilter: Saturate(@JwiftVibrancy) Brightness(1.06 * @Dark + 0.97 * @Light)
   Opacity: 0
 
   @Transition Y { Duration: 220ms }
@@ -416,6 +416,6 @@ Jwift_GlassDropdownIndicator_On : Jwift_GlassDropdownIndicator {
 // and a touch more lift behind it. Still no lens.
 Jwift_GlassDropdownIndicator_Pressed : Jwift_GlassDropdownIndicator_On {
   Background: @PressFill
-  BackdropFilter: Saturate(@JwiftControlSaturate) Brightness(1.1 * @Dark + 0.94 * @Light)
+  BackdropFilter: Saturate(@JwiftVibrancy) Brightness(1.1 * @Dark + 0.94 * @Light)
 }
 
