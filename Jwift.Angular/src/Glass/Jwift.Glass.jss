@@ -54,16 +54,7 @@
 //    a LARGE surface, reads 0.93 and 1.21. One is the middle of the spread at both sizes and in both
 //    themes. This sheet used to carry 0.53 in dark and 0.32 on a dark sheet, and that was the whole of
 //    "bring more colour through".
-// SLIGHTLY MORE, not equal. Jack's three-part description of what makes glass visible as its own plane:
-// "Liquid glass is supposed to be slightly brighter, slightly more saturation, but less contrast. So
-// that it's visible. Right now, it just looks like it's identical to the background."
-//
-// 1 means the glass carries the backdrop's colour at exactly its own strength, which is the same
-// saturation -- a faithful reproduction, and a faithful reproduction of the backdrop is invisible
-// against it. 1.15 is the smallest step that reads as a lift of the colour rather than a copy of it,
-// and it is OURS, not Apple's: Apple publishes the behaviour ("amplifies and adjusts the color of the
-// content layered behind") and not the amount.
-@JwiftGlassCarry: 1.15
+@JwiftGlassCarry: 1
 //
 // 3. THE FAR END, solved: the ink is the app's own @Ink (Ui/Theme.Tokens.ts: rgb(245, 245, 247) in dark,
 //    rgb(29, 29, 31) in light), and the ratio is Apple's, "at least 4.5:1, aim for 7:1 for custom text"
@@ -78,29 +69,7 @@
 //      sheet,   7:1     dark  83.5 (7.010:1 over white)   light 167.1 (7.004:1 over black)
 @JwiftControlLegibility: 4.5
 @JwiftSheetLegibility: 7
-// THE DARK FAR END IS OPEN, so glass is never darker than what it sits on.
-//
-// Jack, on iOS: "even in dark mode, the liquid glass is always brighter than whatever is in the
-// background, even if the glass is a dark tint." Apple says the same and says how -- "the system can
-// adapt Liquid Glass between a light and a dark appearance in response to the underlying content", with
-// symbols and text "becoming darker when the underlying content is light, and lighter when it's dark".
-//
-// The arithmetic is short. The body is ground + b * (far - ground). For the body to exceed b at EVERY
-// backdrop the far end must exceed 1.0 -- at far <= 1 the two curves cross and everything above the
-// crossing is glass darker than its own backdrop. At 112.7 that crossing sat near a mid-tone, which is
-// why a button over turf read as a dark hole.
-//
-// 258.9 is not a new number: it is @JwiftGlassOpenFar, the value the adaptive lane opens this same far
-// end to when it probes. Setting it statically is that lane's LOOK without its machinery -- no probe, no
-// slot, no park snap stepping the grade, which is the artefact Jack has been hitting all evening.
-//
-// WHAT IT COSTS, stated: the 112.7 held @Ink at 4.5:1 over a WHITE backdrop. Open to 258.9 and white ink
-// over bright content falls below that floor. Apple's answer is the same sentence above -- the ink flips
-// to dark where the plate goes light -- and that flip is NOT built. So this trades a legibility floor on
-// bright backdrops for the material reading correctly everywhere else, and the flip is the next lane.
-// The light half is untouched: light glass already darkens as its backdrop brightens, which is the same
-// rule seen from the other end.
-@JwiftControlFar: 258.9 / 255 * @Dark + 132.1 / 255 * @Light
+@JwiftControlFar: 112.7 / 255 * @Dark + 132.1 / 255 * @Light
 @JwiftSheetFar: 83.5 / 255 * @Dark + 167.1 / 255 * @Light
 //
 // THE SOLVE, per size: the two ends of the ramp over black and over white, then the three knobs.
@@ -131,18 +100,7 @@
 // Small controls, bars, the tab pill, and the hero action (a hero is a control; see JwiftHeroGlass):
 @JwiftControlOverBlack: @JwiftGlassGround * @Dark + @JwiftControlFar * @Light
 @JwiftControlOverWhite: @JwiftControlFar * @Dark + @JwiftGlassGround * @Light
-// THE TINT IS CLAMPED AT ZERO, and without this the open far end cancels itself.
-//
-// The expression is what the two ends LEAVE of the ramp, signed toward the ground. It was written when
-// the dark far end was 0.442, where it came out positive. With the far end open past 1.0 it goes
-// NEGATIVE (1 - 0.102 - 1.015 = -0.117), and a negative tint pulls the body back toward the dark ground
-// -- undoing exactly the lift that opening the far end bought. The body computes to 89 over turf at 69
-// and the tint dragged it back to the field. That is Jack's "it just looks like it's identical to the
-// background", and it was arithmetic, not taste.
-//
-// A glass body has nothing left of the ramp to give back once the ends span it, so zero is the honest
-// value there rather than a negative one. @Dark * 0 keeps the light half's expression untouched.
-@JwiftControlTint: 0 * @Dark + (1 - @JwiftControlOverBlack - @JwiftControlOverWhite) * (0 - @Light)
+@JwiftControlTint: (1 - @JwiftControlOverBlack - @JwiftControlOverWhite) * (@Dark - @Light)
 @JwiftControlContrast: (@JwiftControlOverWhite - @JwiftControlOverBlack) / (1 - @JwiftControlTint)
 @JwiftControlSaturate: @JwiftGlassCarry / (@JwiftControlOverWhite - @JwiftControlOverBlack)
 // Partial-height sheets, drawers, menus, panels:
@@ -336,28 +294,7 @@ JwiftGlass {
   BezelScale: 0.25
   Refraction: 8
   // A soft blur, about 8% of a 48pt control's short side, so what is behind stays a recognisable shape.
-  // THE BLUR IS WHAT MAKES IT READ AS A MATERIAL, and 4pt was not enough to.
-  //
-  // Jack, on the drill page's back button: "It has a normal look with basically no backdrop filter,
-  // apparently, when it's just sitting there. Immediately when I hover over it, it gets this deepness."
-  // He was right, and the cause is not the grade. Measured live off the engine's own glass-adapt census
-  // on that page, the button IS probed and IS adapting -- Lifted: true, the far end opened to 1.015 --
-  // and over turf at luma 69 the grade puts the glass near 89. It is doing its arithmetic.
-  //
-  // What it was not doing is destroying DETAIL. At 4pt over grass texture the turf reads straight
-  // through, so the surface looks like a hole with a rim rather than a material, and the only moment it
-  // looked like glass was hover, where Brightness(1.85) finally separated it from the field. That is the
-  // snap: rest and hover were on opposite sides of visible.
-  //
-  // THE EVIDENCE IS IN THIS SHEET, not in my judgement. JwiftGlassThick -- the menu panel, on the same
-  // page over the same field -- blurs 14pt and reads unmistakably as a material. The scroll edge blurs
-  // 12pt. The control blurred 4. Same app, same backdrop, and the one that reads as glass is the one
-  // that blurs. Apple's own material figures agree qualitatively: in every one of the four
-  // materials-ios-material-background PNGs the backdrop's shapes survive and its DETAIL does not.
-  //
-  // 12pt puts the control on the same footing as the two surfaces here that already read correctly,
-  // without going to the sheet's 14 -- a 48pt button should not out-blur a menu.
-  BackdropFilter: Blur(12pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
+  BackdropFilter: Blur(4pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
   // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
   // the light hits and thinning to nothing on the far side.
