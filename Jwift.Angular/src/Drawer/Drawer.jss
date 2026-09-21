@@ -71,7 +71,11 @@ Jwift_DrawerTitle {
   FlexShrink: 0
 }
 
-// A flat fill on the drawer's glass, so it takes the shared neutral press.
+// A quiet wash on the drawer's glass, so it takes the shared neutral press.
+// The resting fill is a LIFT, not a paint (Jwift.Glass.jss, THE WASH). @Wash's white at 0.08 diluted
+// the drawer's glass by 8% toward white, which is the one thing the glass is for; +18 of 255 brightens
+// the same glass and keeps every color it carries. The ladder reads 18 resting, 29 hovered, 50 pressed
+// -- the last two inherited from JwiftPress, which already transitions BackdropFilter.
 Jwift_DrawerClose : JwiftPress {
   Layer: 26
   Position: Placed
@@ -84,7 +88,7 @@ Jwift_DrawerClose : JwiftPress {
   Direction: Row
   Justify: Center
   Align: Center
-  Background: @Wash
+  BackdropFilter: Lift(@JwiftWashLift)
 }
 
 Jwift_DrawerCloseGlyph {

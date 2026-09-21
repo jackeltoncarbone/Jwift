@@ -61,6 +61,14 @@ Jwift_Toggle_Disabled : Jwift_Toggle {
   Cursor: Default
 }
 
+// The OFF track is a wash, and a wash is a LIFT (Jwift.Glass.jss, THE WASH): @WashStrong's 0.16 white
+// diluted whatever the switch sat on -- and a switch sits on a Jwift_ListRow, which sits on a section
+// that may be glass, so it was diluting a material two levels down. +30 of 255 instead.
+//
+// BOTH transitions are needed here, and that is the one place in this sweep where a @Transition
+// Background did NOT simply become a @Transition BackdropFilter. Off-to-on now moves two properties in
+// opposite directions: Background transparent -> green, and the lift 30 -> 0. Drop either line and half
+// the switch snaps while the other half eases.
 Jwift_ToggleTrack {
   Direction: Row
   Justify: Start
@@ -68,13 +76,18 @@ Jwift_ToggleTrack {
   Width: 100%
   Height: 31pt
   BorderRadius: 999pt
-  Background: @WashStrong
+  BackdropFilter: Lift(@JwiftWashStrongLift)
   FlexShrink: 0
   @Transition Background { Duration: 200ms }
+  @Transition BackdropFilter { Duration: 200ms }
 }
 
+// Lift(0) IS LOAD-BEARING. Filters merge by function, so the ON track would otherwise keep the OFF
+// track's +30 behind its own opaque green -- an additive draw of the full track shape, every frame,
+// under pixels that can never show it. Invisible and not free.
 Jwift_ToggleTrack_On : Jwift_ToggleTrack {
   Background: rgb(48, 209, 88)
+  BackdropFilter: Lift(0)
 }
 
 Jwift_ToggleTrack_Disabled : Jwift_ToggleTrack {

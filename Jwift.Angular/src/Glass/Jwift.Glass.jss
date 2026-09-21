@@ -592,11 +592,12 @@ JwiftScrollEdgeTopScene : JwiftScrollEdgeTop {
 // The ONE press treatment. Every control that answers a finger extends this, so a press
 // reads the same on a button, a cell and an avatar, and the numbers live in one place.
 //
-// It changes what the element OWNS: a fill over whatever it rests on, the theme's @HoverFill / @PressFill
-// (white over dark, black over light). No glass on glass: the fill is a fill, not a second material.
+// It changes what the element OWNS: a LIFT of whatever it rests on, @JwiftHoverWashLift /
+// @JwiftPressLift from the wash law above. No glass on glass -- and a lift is not a second material
+// either, it is the absence of one, which is why this is the one treatment every control can take.
 // The rim lift, for the glass half below. The glass border paints above the panel's own
 // content (BorderLayer), so this is the part of a press that still reads when a photo or
-// a glyph covers the fill.
+// a glyph covers the lift.
 @JwiftHoverEdge: rgba(255, 255, 255, 0.55)
 @JwiftPressEdge: rgba(255, 255, 255, 0.85)
 
@@ -756,9 +757,9 @@ JwiftPressTintGlass:Active {
 // a prominent button answers a finger exactly as every glass button, cell and avatar does. What it
 // cannot inherit is the PAINT half of either shared press:
 //
-//   * `JwiftPress` lays @HoverFill / @PressFill over the control, which are white over dark and
-//     black over light. Over a white plate in dark, white at 14% is invisible; over a black plate in
-//     light, black at 6% is invisible. The neutral veil has nothing to say on an inverted solid.
+//   * `JwiftPress` lifts what is BEHIND the control, by @JwiftHoverWashLift / @JwiftPressLift. A
+//     prominent button's plate is opaque, so there is nothing behind it to lift: the backdrop the lift
+//     would move is covered by the button's own fill, and the press would not read at all.
 //   * `JwiftPressTint` grades the finished pixels with Brightness/Saturate. On an achromatic extreme
 //     that is a no-op in one theme and the wrong direction in the other: brightening a near-black
 //     plate in light theme spends the contrast that makes it prominent.

@@ -29,9 +29,16 @@ Jwift_WheelPicker {
 }
 
 // The chosen row's highlight — a bright-glass capsule pinned at the vertical
-// center, matching the nav's Jwift_SelectionIndicator (Background 0.1 +
-// BackdropFilter Brightness 1.5 Saturate 1.25). Sits BEHIND the rows (Layer 0)
+// center, matching the nav's Jwift_SelectionIndicator. Sits BEHIND the rows (Layer 0)
 // so the centered item reads ON TOP of the pill, exactly like iOS.
+//
+// A selection band is a wash, and a wash is a LIFT (Jwift.Glass.jss, THE WASH). @WashStrong's white at
+// 0.16 sat OVER the sheet the wheel is on; +30 of 255 brightens that sheet instead and carries its
+// color. The Brightness(1.5) beside it is kept to the digit and is the reason this site is worth
+// reading twice: the hairline below exists because "Brightness(1.5) of a near-black backdrop barely
+// lifts", which is the multiply-versus-add argument stated as a bug report two months before the law
+// was measured. A multiply scales a dark backdrop by nothing; the +30 is what actually moves it.
+// The border stays: it is a real iOS hairline, not a workaround for the missing step.
 Jwift_WheelSelectionBand {
   Position: Placed
   Top: 50%
@@ -47,10 +54,8 @@ Jwift_WheelSelectionBand {
   VisualTranslate: 0 -17pt
   Layer: 0
   BorderRadius: 12pt
-  Background: @WashStrong
-  BackdropFilter: Brightness(1.5) Saturate(1.25)
-  // Hairline edge so the pill stays legible on a dark sheet (Brightness(1.5)
-  // of a near-black backdrop barely lifts) — defines the band like iOS.
+  BackdropFilter: Lift(@JwiftWashStrongLift) Brightness(1.5) Saturate(1.25)
+  // Hairline edge that defines the band like iOS.
   BorderWidth: 1pt
   BorderColor: @Line
 }

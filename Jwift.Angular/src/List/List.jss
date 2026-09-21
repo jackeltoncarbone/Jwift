@@ -66,15 +66,21 @@ Jwift_ListRow {
   Interactive: true
   Cursor: Pointer
   UserSelect: None
-  @Transition Background { Duration: 140ms }
+  // The row's states are LIFTS, so the one transition is on BackdropFilter. It was on Background, and
+  // left there the hover would snap: nothing animates a property the row no longer sets.
+  @Transition BackdropFilter { Duration: 140ms }
 }
 
+// A hover and a press are a LIFT, not a paint (Jwift.Glass.jss, THE WASH). Over the opaque grouped fill
+// of Jwift_List the two land within a level of each other; over Jwift_List_Glass and
+// Jwift_List_Translucent they do not, because a paint covers the color the glass brought through and a
+// lift brightens it. One rule for both, so a section on a page and a section on a sheet answer alike.
 Jwift_ListRow:Hover {
-  Background: @Wash
+  BackdropFilter: Lift(@JwiftWashLift)
 }
 
 Jwift_ListRow:Active {
-  Background: @WashStrong
+  BackdropFilter: Lift(@JwiftWashStrongLift)
 }
 
 // A row that only reports, so it must not light up under the pointer.
@@ -83,12 +89,15 @@ Jwift_ListRow_Static : Jwift_ListRow {
   Cursor: Default
 }
 
+// Lift(0) IS LOAD-BEARING. Filters merge by function, so a static row would otherwise inherit the two
+// lifts above and light up exactly as the interactive row does -- the defect this pair exists to stop.
+// Zeroing Background here no longer does it: the row has no background to zero.
 Jwift_ListRow_Static:Hover {
-  Background: rgba(255, 255, 255, 0)
+  BackdropFilter: Lift(0)
 }
 
 Jwift_ListRow_Static:Active {
-  Background: rgba(255, 255, 255, 0)
+  BackdropFilter: Lift(0)
 }
 
 // A label longer than its row TRUNCATES. MaxLines alone only stops the second line being painted, so a

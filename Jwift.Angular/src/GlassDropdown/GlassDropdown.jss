@@ -77,25 +77,37 @@ Jwift_GlassDropdownCell : JwiftPress {
   Background: rgba(255, 255, 255, 0)
 }
 
-// The SELECTED cell wears the press fill at rest — same token, so a held-open cell and a
-// pressed one read as the same state.
+// The SELECTED cell wears the press LIFT at rest — the same value JwiftPress:Active sets, so a
+// held-open cell and a pressed one read as the same state. It was @PressFill, a white at 0.22 over the
+// dropdown's glass; +50 of 255 is the same step in level with the glass's color left whole.
+//
+// The :Hover override is not noise. Filters merge by function, so without it the inherited
+// JwiftPress:Hover (Lift 29) would REPLACE this rule's resting 50 and a selected cell would go DIMMER
+// under the pointer. The paint version never showed that: the inherited hover fill stacked ON the
+// resting fill. A lift does not stack with itself, so the strongest state has to be restated.
 Jwift_GlassDropdownCell_Active : Jwift_GlassDropdownCell {
-  Background: @PressFill
+  BackdropFilter: Lift(@JwiftPressLift)
+}
+
+Jwift_GlassDropdownCell_Active:Hover {
+  BackdropFilter: Lift(@JwiftPressLift)
 }
 
 // Disabled inline cell — dimmed + inert (e.g. Undo with nothing to undo). The
 // click is also gated in the consumer; this is the VISUAL half so a cell that
 // can't be used reads as unavailable instead of identical to an active one.
-// Hover/active are flattened so it doesn't light up under the pointer.
+// Hover/active are flattened so it doesn't light up under the pointer — and since JwiftPress lifts
+// rather than paints, flattening it means Lift(0). Zeroing Background stopped working the moment the
+// press became a lift, and a disabled cell has been lighting up under the pointer since.
 Jwift_GlassDropdownCell_Disabled : Jwift_GlassDropdownCell {
   Opacity: 0.5
   Cursor: Default
 }
 Jwift_GlassDropdownCell_Disabled:Hover {
-  Background: rgba(255, 255, 255, 0)
+  BackdropFilter: Lift(0)
 }
 Jwift_GlassDropdownCell_Disabled:Active {
-  Background: rgba(255, 255, 255, 0)
+  BackdropFilter: Lift(0)
 }
 
 // Round avatar-style cell — like the cell above but clips its inner
@@ -381,19 +393,26 @@ Jwift_GlassDropdownDivider {
 // entirely, which drops a term Apple names: "We still have to honor the background color ... still that
 // slight tint but we need to bring more saturation through."
 //
-// So: the fill stays and stays thin (@HoverFill is 0.14 white in dark, 0.06 black in light - the same
-// token every pressable control wears), and the backdrop carries the saturation that brings the colour
-// under it forward. The brightness lift is deliberately small BECAUSE the fill already supplies part of
-// it; the two together are what the single 0.14 wash was trying to be.
+// That is where the previous pass stopped: a thin fill (@HoverFill, 0.14 white in dark) beside a small
+// brightness, "the two together what the single 0.14 wash was trying to be". THIS IS THE COMPLETION OF
+// THAT, NOT A REVERSAL. The wash law (Jwift.Glass.jss, THE WASH) measured what Apple actually does in
+// place of the fill: it ADDS a constant. So the honored background color is still honored -- it is
+// just stated as the +29 / -19 Apple's own hover measures instead of as a veil that takes 14% of the
+// menu's color away on its way past. Three terms, all three intact: the lift is the fill, Saturate is
+// the vibrancy, and the element's own transparency is unchanged.
+//
+// The brightness is NOT re-tuned. It stayed small because the fill supplied part of the step, and the
+// lift supplies that same part -- 29 of 255 where 0.14 over the menu's own floor was about 32. Changing
+// a measured constant and a multiply in one diff would make neither attributable.
 //
 // NOT the pressed-glass lens: no Thickness, Refraction, Fillet or bezel. A menu row is not a tab pill,
-// and "avoid glass on glass" is the rule that says so.
+// and "avoid glass on glass" is the rule that says so. A lift is not a second material either; it is
+// the absence of one.
 Jwift_GlassDropdownIndicator {
   Position: Placed
   Layer: 0
   BorderRadius: 100pt
-  Background: @HoverFill
-  BackdropFilter: Saturate(@JwiftVibrancy) Brightness(1.06 * @Dark + 0.97 * @Light)
+  BackdropFilter: Lift(@JwiftHoverWashLift) Saturate(@JwiftVibrancy) Brightness(1.06 * @Dark + 0.97 * @Light)
   Opacity: 0
 
   @Transition Y { Duration: 220ms }
@@ -401,8 +420,8 @@ Jwift_GlassDropdownIndicator {
   @Transition Width { Duration: 220ms }
   @Transition Height { Duration: 220ms }
   @Transition Opacity { Duration: 140ms }
-  // Fill and grade deepen together on press, so both cross-fade on the same 140ms.
-  @Transition Background { Duration: 140ms }
+  // Lift and grade deepen together on press, and they are now one property, so the 140ms that used to
+  // be stated twice (Background beside BackdropFilter) is stated once. Nothing here sets a Background.
   @Transition BackdropFilter { Duration: 140ms }
 }
 
@@ -410,12 +429,12 @@ Jwift_GlassDropdownIndicator_On : Jwift_GlassDropdownIndicator {
   Opacity: 1
 }
 
-// Pressed is the same grade, deeper: @PressFill's 0.22 dark / 0.12 light as a backdrop lift rather than
-// a heavier white. Still no lens - a menu row is not a tab pill.
-// Pressed deepens both halves together, the way the fill alone used to: @PressFill against @HoverFill,
-// and a touch more lift behind it. Still no lens.
+// Pressed is the same grade, deeper: the press lift against the hover lift (50 against 29 in dark,
+// -29 against -19 in light -- @JwiftPressLift, the one DERIVED number in the law, from @PressFill's
+// own 0.22 / 0.12), and a touch more brightness behind it. Still no lens - a menu row is not a tab pill.
+// Restating Lift here is required, not decorative: filters merge by function, so naming only Saturate
+// and Brightness would leave the hover's 29 in place and the press would not deepen at all.
 Jwift_GlassDropdownIndicator_Pressed : Jwift_GlassDropdownIndicator_On {
-  Background: @PressFill
-  BackdropFilter: Saturate(@JwiftVibrancy) Brightness(1.1 * @Dark + 0.94 * @Light)
+  BackdropFilter: Lift(@JwiftPressLift) Saturate(@JwiftVibrancy) Brightness(1.1 * @Dark + 0.94 * @Light)
 }
 

@@ -44,7 +44,9 @@ Jwift_SelectionIndicator {
   ShadowBlur: 0
 
   @Transition Opacity { Duration: 200ms }
-  @Transition Background { Duration: 300ms }
+  // No @Transition Background: the pressed pill's fill became a Lift on the line below, and this pill's
+  // Background is now the fixed transparent above. A transition on a property nothing ever changes is a
+  // line that reads like a decision and is not one.
   @Transition Tint { Duration: 300ms }
   @Transition BackdropFilter { Duration: 300ms }
   @Transition Thickness { Duration: 300ms }
@@ -98,12 +100,16 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   // release — the resting label is crisp again.
   Layer: 2
 
-  Background: @Wash
-
   // Pressed, the pill is a clear lens over the label: no tint and a neutral grade, so it magnifies what is
   // under it rather than dimming it.
+  //
+  // THE FILL WAS THE ONE THING CONTRADICTING THAT SENTENCE. `Background: @Wash` is a white at 0.08 laid
+  // over the magnified label, which keeps 92% of it -- a lens with a veil on the front. The wash law
+  // (Jwift.Glass.jss, THE WASH) says the same step as a LIFT: +18 of 255 in dark, -12 in light, added to
+  // what the lens already brought through. The grade stays neutral to the digit; the lift rides beside
+  // it and merges by function, which is why all four are named on the one line.
   Tint: 0
-  BackdropFilter: Brightness(1) Saturate(1) Contrast(1)
+  BackdropFilter: Lift(@JwiftWashLift) Brightness(1) Saturate(1) Contrast(1)
 
   // BezelWidth stays close to the base 8: the refraction's flat inner region is the rounded shape inset
   // by BezelWidth (inner corner radius ≈ outerRadius − BezelWidth), so a wide bezel on this small pill

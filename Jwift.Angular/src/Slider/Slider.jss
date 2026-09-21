@@ -14,6 +14,13 @@ Jwift_Slider {
 }
 
 // Placed boxes anchor from the top left only, so the track and the hit area are sized, not stretched.
+//
+// The UNFILLED track is a wash, and a wash is a LIFT (Jwift.Glass.jss, THE WASH). @WashStrong's white
+// at 0.16 was the brightest paint in the app and so the worst diluter: laid over a sheet's glass or a
+// tinted panel it walked the trough 16% toward white and the slider stopped belonging to what it sat
+// on. +30 of 255 is the same step in level with the color behind it carried whole. The FILL below is
+// opaque @Ink and covers the lifted trough up to the value, which is the one place the two must not be
+// confused: the trough shows the page, the fill hides it.
 Jwift_SliderTrack {
   Position: Placed
   Top: 6pt
@@ -21,7 +28,7 @@ Jwift_SliderTrack {
   Width: 100%
   Height: 6pt
   BorderRadius: 999pt
-  Background: @WashStrong
+  BackdropFilter: Lift(@JwiftWashStrongLift)
   Overflow: Hidden
   @Transition Height { Duration: 200ms }
   @Transition Top { Duration: 200ms }
