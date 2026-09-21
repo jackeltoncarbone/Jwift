@@ -4,9 +4,11 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   forwardRef,
   inject,
   input,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -166,11 +168,45 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
    *  avatar-only sink so the avatar can fill the glass. */
   readonly closedVariant = input<string | null>(null);
 
+  /** Drive the panel open or closed from outside, as the ordinary Angular input/output pair so
+   *  `[(open)]` binds. **`null` is UNCONTROLLED and is the default**, which is every consumer that
+   *  exists today: the host click owns the state and this pair does nothing at all.
+   *
+   *  It exists because a demo could not show this component open. `/dev/jiv` hand-rolled its own
+   *  Menu / MenuItem / MenuItemOn classes instead, and that imitation drifted — 8pt panel padding
+   *  against the real 6, 46pt rows against 44, and a flat `@WashStrong` behind EVERY selected row
+   *  where the rule here is one shared indicator that springs between rows. A gallery that cannot
+   *  render the real open state will always end up drawing a picture of it instead.
+   *
+   *  It goes THROUGH `Open()` / `Close()` and honours `canOpen`, for the reason the host-click path
+   *  states below: two ways to open must not mean two behaviours. So this path gets the growth
+   *  tracking and the `defaultPage` push exactly as a tap does. */
+  readonly open = input<boolean | null>(null);
+  readonly openChange = output<boolean>();
+
+  /** Set once the node is attached and can be measured. `Open()` calls `_fitToRoom()`, which reads
+   *  the Jiv's rect, so the controlled input must not fire before `ngOnInit` has attached it. */
+  private readonly _ready = signal(false);
+
   constructor() {
     super('GlassDropdown', GlassDropdownJss, 'Jwift_GlassDropdown_Closed', () => {
       if (this._open()) return 'Jwift_GlassDropdown_Open';
       const extra = this.closedVariant();
       return extra ? `Jwift_GlassDropdown_Closed ${extra}` : 'Jwift_GlassDropdown_Closed';
+    });
+    // The controlled half of `[(open)]`. Reads the input, compares with the state this component
+    // already owns, and drives the SAME two methods a tap drives — never `_open.set`, which is the
+    // mistake the host-click path documents. `null` returns immediately, so an uncontrolled consumer
+    // (all of them today) never enters here and nothing about its behaviour changes.
+    effect(() => {
+      const want = this.open();
+      if (want === null || !this._ready()) return;
+      if (want === this._open()) return;
+      if (!want) { this.Close(); return; }
+      if (!this.canOpen()) return;
+      this.Open();
+      const dp = this.defaultPage();
+      if (dp !== null) this._page.set(dp);
     });
   }
 
@@ -242,6 +278,10 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
       this._doc.removeEventListener('pointerleave', onDocLeave, true);
       this._doc.removeEventListener('keydown', onKey);
     };
+    // The node is attached and its rect is watched, so `Open()`'s measure will read a real rect
+    // rather than the default zeros. Releases the controlled `[(open)]` effect, which is a no-op for
+    // every uncontrolled consumer because its input is null.
+    this._ready.set(true);
   }
 
   ngOnDestroy(): void {
@@ -254,6 +294,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     this._open.set(true);
     this._fitToRoom();
     this._trackWhileGrowing();
+    this.openChange.emit(true);
   }
 
   /**
@@ -358,6 +399,10 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     this._cap = null;
     this.SetStyleOverride({ MaxHeight: 'none' });
     this._open.set(false); this._page.set(null); this._hovered.set(null); this._pressed.set(false);
+    // The output half of [(open)]. Emitted from Close() and Open() rather than from the click handler,
+    // so every route into the state - a tap, the escape key, an outside click, the controlled input -
+    // reports it. Same reason the open paths were unified.
+    this.openChange.emit(false);
   }
   Toggle(): void { if (this._open()) this.Close(); else this.Open(); }
 
