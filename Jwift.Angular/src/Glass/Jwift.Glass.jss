@@ -69,7 +69,29 @@
 //      sheet,   7:1     dark  83.5 (7.010:1 over white)   light 167.1 (7.004:1 over black)
 @JwiftControlLegibility: 4.5
 @JwiftSheetLegibility: 7
-@JwiftControlFar: 112.7 / 255 * @Dark + 132.1 / 255 * @Light
+// THE DARK FAR END IS OPEN, so glass is never darker than what it sits on.
+//
+// Jack, on iOS: "even in dark mode, the liquid glass is always brighter than whatever is in the
+// background, even if the glass is a dark tint." Apple says the same and says how -- "the system can
+// adapt Liquid Glass between a light and a dark appearance in response to the underlying content", with
+// symbols and text "becoming darker when the underlying content is light, and lighter when it's dark".
+//
+// The arithmetic is short. The body is ground + b * (far - ground). For the body to exceed b at EVERY
+// backdrop the far end must exceed 1.0 -- at far <= 1 the two curves cross and everything above the
+// crossing is glass darker than its own backdrop. At 112.7 that crossing sat near a mid-tone, which is
+// why a button over turf read as a dark hole.
+//
+// 258.9 is not a new number: it is @JwiftGlassOpenFar, the value the adaptive lane opens this same far
+// end to when it probes. Setting it statically is that lane's LOOK without its machinery -- no probe, no
+// slot, no park snap stepping the grade, which is the artefact Jack has been hitting all evening.
+//
+// WHAT IT COSTS, stated: the 112.7 held @Ink at 4.5:1 over a WHITE backdrop. Open to 258.9 and white ink
+// over bright content falls below that floor. Apple's answer is the same sentence above -- the ink flips
+// to dark where the plate goes light -- and that flip is NOT built. So this trades a legibility floor on
+// bright backdrops for the material reading correctly everywhere else, and the flip is the next lane.
+// The light half is untouched: light glass already darkens as its backdrop brightens, which is the same
+// rule seen from the other end.
+@JwiftControlFar: 258.9 / 255 * @Dark + 132.1 / 255 * @Light
 @JwiftSheetFar: 83.5 / 255 * @Dark + 167.1 / 255 * @Light
 //
 // THE SOLVE, per size: the two ends of the ramp over black and over white, then the three knobs.
