@@ -54,7 +54,8 @@
 //    a LARGE surface, reads 0.93 and 1.21. One is the middle of the spread at both sizes and in both
 //    themes. This sheet used to carry 0.53 in dark and 0.32 on a dark sheet, and that was the whole of
 //    "bring more colour through".
-@JwiftGlassCarry: 1
+@JwiftControlLift: 2.0 * @Dark + 1 * @Light
+@JwiftGlassCarry: 0.72
 //
 // 3. THE FAR END, solved: the ink is the app's own @Ink (Ui/Theme.Tokens.ts: rgb(245, 245, 247) in dark,
 //    rgb(29, 29, 31) in light), and the ratio is Apple's, "at least 4.5:1, aim for 7:1 for custom text"
@@ -294,7 +295,7 @@ JwiftGlass {
   BezelScale: 0.25
   Refraction: 8
   // A soft blur, about 8% of a 48pt control's short side, so what is behind stays a recognisable shape.
-  BackdropFilter: Blur(4pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
+  BackdropFilter: Blur(4pt) Brightness(@JwiftControlLift) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
   // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
   // the light hits and thinning to nothing on the far side.
@@ -316,7 +317,7 @@ JwiftGlass {
   BorderWidth: 0.45pt
   BorderBlur: 0.3pt
   BorderFade: 0.7pt
-  BorderColor: rgba(255, 255, 255, 0.35)
+  BorderColor: rgba(255, 255, 255, 0.5)
   BorderFilter: Blur(-0.5pt) Brightness(1.4)
   BorderLayer: 10
   BorderVariance: 0.5
