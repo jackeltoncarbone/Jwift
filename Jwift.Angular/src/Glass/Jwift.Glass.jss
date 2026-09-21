@@ -180,27 +180,20 @@
 //    (243 -> 251, chroma 2 -> 0), which covers the content and is a fill, not a wash (@SegOn's job).
 //    The light lift is Apple's one light/dark pair, -20 against +30, applied to each class: -2/3.
 //
-// THE GRADE THAT DOES IT, exactly. applyGrading is b * (c * (x - 0.5) + 0.5) with a luma-preserving
-// saturate between, so with c = 1 / b it is x + (b - 1) / 2 on every channel and chroma * s. Solve for a
-// lift L: Brightness 1 + 2L, Contrast its reciprocal, Saturate the carry. No Tint (a mix toward white is
-// the white paint again).
+// THE LIFT, stated as what it is. `BackdropFilter: Lift(n)` adds n (of 255) to every channel of what is
+// behind the element, inside its shape, and carries the colour at 1 by construction (a constant has no
+// chroma). The engine draws it UNDER the element with an additive blend when nothing else there samples,
+// and folds it into the grade (Brightness 1 + 2L, Contrast its reciprocal: the solve this block used to
+// spell out) when something does. Jaui/src/Core/Lift.ts has both and the algebra. No Tint (a mix toward
+// white is the white paint again), no Saturate (the carry is 1, @JwiftGlassCarry, which a lift already is).
 //   wash    dark +18 (the three real sites, 16.7 / 18 / 19.7)   light -12
 //   strong  dark +30 (the selected Liquid Glass tab)             light -20
 //   hover   dark +29 (visionOS hover over the idle ground)       light -19
 // The dark wash is also what today's @Wash already paints over the app's ground (0.08 of 255 - 26 is +18);
 // only the dilution and the fall-off over brighter grounds change.
-@JwiftWashLift: 18 / 255 * @Dark - 12 / 255 * @Light
-@JwiftWashStrongLift: 30 / 255 * @Dark - 20 / 255 * @Light
-@JwiftHoverWashLift: 29 / 255 * @Dark - 19 / 255 * @Light
-@JwiftWashBrightness: 1 + 2 * @JwiftWashLift
-@JwiftWashContrast: 1 / @JwiftWashBrightness
-@JwiftWashSaturate: @JwiftGlassCarry
-@JwiftWashStrongBrightness: 1 + 2 * @JwiftWashStrongLift
-@JwiftWashStrongContrast: 1 / @JwiftWashStrongBrightness
-@JwiftWashStrongSaturate: @JwiftGlassCarry
-@JwiftHoverWashBrightness: 1 + 2 * @JwiftHoverWashLift
-@JwiftHoverWashContrast: 1 / @JwiftHoverWashBrightness
-@JwiftHoverWashSaturate: @JwiftGlassCarry
+@JwiftWashLift: 18 * @Dark - 12 * @Light
+@JwiftWashStrongLift: 30 * @Dark - 20 * @Light
+@JwiftHoverWashLift: 29 * @Dark - 19 * @Light
 
 // ── THE RIM CARRY ───────────────────────────────────────────────────
 // How much of the backdrop's OWN colour the lit arc of the rim carries. One number, here, because five
@@ -656,24 +649,21 @@ JwiftPressGlass:Active {
 // its colour carried. JwiftWash is the quiet fill (@Wash), JwiftWashStrong the press, the selection and
 // the track that must read (@WashStrong), JwiftHoverWash the one hover (@HoverFill).
 //
-// NOTHING WEARS THESE YET, and that is the engine's call, not a style choice. The fragment reads an
-// unfrosted wash from the raw scene (Jiv.Panel.frag sampleBackdrop, one texture() tap), but the walk
-// sends every panel with a backdrop grade down the glass-fill path (Jaui.ts, the _hasBackdropFilter
-// branch), which snapshots the region AND builds a blur pyramid the fragment never opens. A wash worn
-// at rest is therefore one more pyramid build per surface, about 0.74 ms of fixed cost each. The
-// classes wait for the walk to skip that build when the plan's frost is zero and nothing else reads
-// the pyramid; Design/WashLaw.Conformance.spec.ts fails the day a sheet wears one before that.
+// A wash is a Lift() and nothing else, so it takes the under-draw: one draw of its own shape, no
+// snapshot and no pyramid, and its label is never lifted. Anything that also samples (a Blur, a grade,
+// a Filter on an ancestor, a drop shadow) sends it through the grade instead, at a pyramid build, and the
+// `jaui:lift` census names which. Worn today only where Design/WashLaw.Conformance.spec.ts admits it.
 JwiftWash {
   Background: rgba(0, 0, 0, 0)
-  BackdropFilter: Brightness(@JwiftWashBrightness) Contrast(@JwiftWashContrast) Saturate(@JwiftWashSaturate)
+  BackdropFilter: Lift(@JwiftWashLift)
 }
 
 JwiftWashStrong : JwiftWash {
-  BackdropFilter: Brightness(@JwiftWashStrongBrightness) Contrast(@JwiftWashStrongContrast) Saturate(@JwiftWashStrongSaturate)
+  BackdropFilter: Lift(@JwiftWashStrongLift)
 }
 
 JwiftHoverWash : JwiftWash {
-  BackdropFilter: Brightness(@JwiftHoverWashBrightness) Contrast(@JwiftHoverWashContrast) Saturate(@JwiftHoverWashSaturate)
+  BackdropFilter: Lift(@JwiftHoverWashLift)
 }
 
 // ── JwiftPressTint ──────────────────────────────────────────────────
