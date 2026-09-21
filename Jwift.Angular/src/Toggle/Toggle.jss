@@ -135,7 +135,8 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   // CLEAR, not frosted. Apple's held thumb keeps the track's colour essentially intact through it
   // (measured: 1.07 of the track's saturation). A white fill is what makes glass read as frost, so there
   // is almost none here; the pill is carried by its rim and by the bend at its edge.
-  Background: rgba(255, 255, 255, 0.06)
+  // A WASH, not a scrim: the pressed knob: a quiet fill over the track, so it takes the quiet lift.
+  BackdropFilter: Lift(@JwiftWashLift)
   Thickness: 2.5
   Refraction: 12
   BezelWidth: 5

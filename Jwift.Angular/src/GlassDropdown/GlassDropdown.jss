@@ -29,6 +29,10 @@ Jwift_GlassDropdown : JwiftGlass {
   @Transition Width  { Duration: 280ms }
   @Transition Height { Duration: 280ms }
   @Transition Padding { Duration: 220ms }
+  // 10ms is effectively instant, and it is deliberate FOR THE SWAP: closed and open are different
+  // materials (JwiftGlass vs JwiftGlassThick), so easing the backdrop across that change makes the
+  // panel look like it is developing rather than opening. The open state overrides it for its own
+  // HOVER -- see the derivation there. Nothing had written this down.
   @Transition BackdropFilter { Duration: 10ms }
   @Transition BorderFilter { Duration: 10ms }
 }
@@ -204,6 +208,22 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
   // shared hover pill never touches a neighbour or a divider hairline.
   Gap: 6pt
   BorderRadius: 28pt
+
+  // THE OPEN PANEL EASES ITS OWN HOVER, and this is the fix for a defect Jack found by using it:
+  // "all of our glass, like our dropdowns, have this weird issue where when I'm hovering over it, it
+  // gets deep really like basically instantly on hover and then when I go off it's instantly not,
+  // there's no animation."
+  //
+  // He was describing the base's 10ms, which predates this sheet's current shape and was never
+  // commented. It is right for the closed-to-open SWAP and wrong for a hover: :Hover and :Active both
+  // move only Brightness (1.085 and 1.15 below), and a brightness step with no ramp reads as a glitch
+  // rather than a response. One duration was serving two different events.
+  //
+  // 140ms is the house press duration -- JwiftPressMotion's spring, JwiftPress's fill, the dropdown
+  // indicator's own Opacity and BackdropFilter all use it -- so the panel now answers a pointer on the
+  // same clock as every other control instead of on its own.
+  @Transition BackdropFilter { Duration: 140ms }
+  @Transition BorderFilter { Duration: 140ms }
 }
 
 // A MENU IS NOT A BUTTON, BUT IT IS STILL ALIVE UNDER THE POINTER - at a tenth of the strength.
