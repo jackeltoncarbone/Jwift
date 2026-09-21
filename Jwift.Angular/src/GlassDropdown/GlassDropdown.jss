@@ -226,51 +226,38 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
   @Transition BorderFilter { Duration: 140ms }
 }
 
-// A MENU IS NOT A BUTTON, BUT IT IS STILL ALIVE UNDER THE POINTER - at a tenth of the strength.
+// AN OPEN MENU IS INERT UNDER THE POINTER. ITS ROWS ARE NOT.
 //
-// Jack, first: "just from hovering over the expanded drop-down, it has the same scaling effects that the
-// collapse button does, and it's very large for that ... It's closed when it's a button or a button
-// group and it's open when it's a menu." Then, on the flat version that followed: "Can we maybe do like
-// 10% of the effect of the non-expanded one on the expanded one maybe? Because it felt good, it was just
-// very large."
+// Jack has now said this three times, each time closer to the principle. First: "just from hovering
+// over the expanded drop-down, it has the same scaling effects that the collapse button does, and it's
+// very large for that ... It's closed when it's a button or a button group and it's open when it's a
+// menu." Then: "Can we maybe do like 10% of the effect ... Because it felt good, it was just very
+// large." And finally, the question that settles it: "Why is the deepness even changing on hover? For
+// an expanded dropdown."
 //
-// Measured cause: the open sink probes as `Jwift_GlassDropdown_Open.Jwift_GlassDropdown_Closed.
-// Jwift_GlassDropdown_ClosedAvatarOnly`, still wearing both closed classes, and `_ClosedAvatarOnly`
-// composes JwiftPressGlass -> JwiftPress -> JwiftPressMotion. So a 220x621 menu was taking a 48pt
-// control's physics whole.
+// It should not. An open menu highlights the ROW under the pointer -- one shared indicator springs
+// between rows -- and that is the whole feedback. A panel that also brightens is saying the same thing
+// twice, in a way that reads as a glitch because the panel is large and the change is global.
 //
-// The response is SCALED, not removed. Each value is the menu's own resting value moved a tenth of the
-// way toward what the closed pill does, so the gesture is the same gesture at a tenth of its amplitude:
+// THESE RULES EXIST TO CANCEL AN INHERITANCE, NOT TO ADD AN EFFECT, and deleting them would make the
+// problem worse. The open sink probes as `Jwift_GlassDropdown_Open.Jwift_GlassDropdown_Closed.
+// Jwift_GlassDropdown_ClosedAvatarOnly` -- it still wears both closed classes, and _ClosedAvatarOnly
+// composes JwiftPressGlass -> JwiftPress -> JwiftPressMotion. So with no rules here a 220x621 menu
+// takes a 48pt control's physics whole: VisualScale 1.06 and a backdrop Brightness of 1.85 that also
+// REPLACES the thick glass's blur. The previous answer scaled that to a tenth (1.006 / 1.085). A tenth
+// of a thing that should not happen is still the thing happening.
 //
-//   property              resting   closed pill   here (10%)
-//   VisualScale           1.0       1.06          1.006
-//   backdrop Brightness   1.0       1.85          1.085
-//   border Brightness     1.4       1.5           1.41
-//   border alpha          0.35      0.55          0.37
+// So both states now restate the panel's RESTING appearance. The pointer changes nothing; the
+// indicator does all of it.
 //
-// The backdrop KEEPS its blur, saturation and contrast and only gains the brightness. The closed pill's
-// rule replaces the whole filter with `Brightness(1.85)`, which is a second reason the open menu flared:
-// it lost the thick glass's blur at the same moment it brightened.
-//
-// Active is the same tenth of the press (0.992, 1.15, 1.43, 0.40). A menu's rows own the real press
-// feedback - one shared indicator springs between them - so this is only the panel acknowledging that it
-// is under the pointer at all.
-//
-// Stated as the OPEN state's own rules rather than by unpicking a class: whatever a consumer composes
-// onto the closed pill, the open menu answers with its own amplitude.
+// :Active was also declared TWICE -- a second block already held these resting values, so someone had
+// started this fix and left both declarations standing, with merge order deciding which won. One now.
 Jwift_GlassDropdown_Open:Hover {
-  VisualScale: 1.006
+  VisualScale: 1
   Background: @GlassTint
-  BorderColor: rgba(255, 255, 255, 0.37)
-  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast) Brightness(1.085)
-  BorderFilter: Blur(-0.5pt) Brightness(1.41)
-}
-Jwift_GlassDropdown_Open:Active {
-  VisualScale: 0.992
-  Background: @GlassTint
-  BorderColor: rgba(255, 255, 255, 0.40)
-  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast) Brightness(1.15)
-  BorderFilter: Blur(-0.5pt) Brightness(1.43)
+  BorderColor: rgba(255, 255, 255, 0.35)
+  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
+  BorderFilter: Blur(-0.5pt) Brightness(1.4)
 }
 Jwift_GlassDropdown_Open:Active {
   VisualScale: 1
