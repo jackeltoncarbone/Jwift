@@ -109,7 +109,22 @@
 @JwiftSheetOverWhite: @JwiftSheetFar * @Dark + @JwiftGlassGround * @Light
 @JwiftSheetTint: (1 - @JwiftSheetOverBlack - @JwiftSheetOverWhite) * (@Dark - @Light)
 @JwiftSheetContrast: (@JwiftSheetOverWhite - @JwiftSheetOverBlack) / (1 - @JwiftSheetTint)
-@JwiftSheetSaturate: @JwiftGlassCarry / (@JwiftSheetOverWhite - @JwiftSheetOverBlack)
+// THE SHEET NEEDS ITS OWN CARRY, or it out-saturates the control it sits beside.
+//
+// Jack: "the open dropdown is like way more saturated than the closed button, which is wrong." It is,
+// and by a number: saturate is carry / range, and the sheet's range is smaller than the control's
+// (83.5-26 against 112.7-26, both of 255) because a sheet holds running text and solves for 7:1 where
+// a control holds a glyph and solves for 4.5:1. One carry over two ranges therefore lands 3.19 against
+// 2.12 -- the sheet 1.51x the control, from the same token.
+//
+// So the carry is per size, as the range and the contrast already are. 0.478 is @JwiftGlassCarry scaled
+// by the ratio of the two ranges, which is the value that makes the two saturates equal: a menu opening
+// over a photo now carries the same colour as the button that opened it.
+// The sheet's own lift, for the same reason the control has one: applyGrading runs with brightness 1
+// unless something sets it, and a stage whose brightness is 1 can only darken.
+@JwiftSheetLift: 2.0 * @Dark + 1 * @Light
+@JwiftSheetCarry: 0.478
+@JwiftSheetSaturate: @JwiftSheetCarry / (@JwiftSheetOverWhite - @JwiftSheetOverBlack)
 
 // ── THE FAR END OPENS: THE SAME RULE, SOLVED PER SURFACE ───────────
 // Everything above is solved once, against the worst backdrop on the ramp. That is the only thing a
@@ -479,7 +494,7 @@ JwiftGlassThick : JwiftGlass {
   // More opaque, as a larger size is: it holds 7:1 where a control holds 4.5:1, which the law above turns
   // into a harder tint and a narrower range at the same full colour carry, and a wider blur.
   Tint: @JwiftSheetTint
-  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
+  BackdropFilter: Blur(14pt) Brightness(@JwiftSheetLift) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
   Thickness: 3
   Refraction: 10
   BezelWidth: 14
@@ -556,7 +571,11 @@ JwiftScrollEdgeBottom : JwiftScrollEdge {
 // 184pt, the bar over the top half of the ramp and the run-out below it. That is within 6pt of the two
 // heights (190, 190) Designer.jss and Camera.jss arrived at separately, which is the number both were
 // reaching for.
-@JwiftScrollEdgeHeight: 2 * @JwiftScrollEdgeBar
+// 2.15 bars rather than 2: a touch taller so the fade starts further from the bar and the content has
+// longer to dissolve. Jack, by eye: "make the top one a little bit taller just the tiniest bit". The
+// BAR is the derived number (18 + 4 + 48 + 4 + 18 = 92pt, pinned to Toolbar.jss by the conformance
+// spec); the multiplier is a judgement and Apple publishes no strip height.
+@JwiftScrollEdgeHeight: 2.15 * @JwiftScrollEdgeBar
 
 // THE BLUR IS THE HOUSE RATIO, stated twice already in this sheet: about 8% of the element's short side
 // (JwiftGlass, 4pt on a 48pt control; JwiftGlassThickVivid, 5pt on a 64pt bar). A full-width strip's
@@ -582,7 +601,24 @@ JwiftScrollEdgeTop : JwiftScrollEdge {
 // CALIBRATED pair, not a derivation like the material law above: the strip carries no label of its own,
 // so there is no legibility constraint to solve against, and Apple publishes the behaviour, not the
 // numbers. The strip's flat colour stays the consumer's, because a page's paper is the page's.
-@JwiftScrollEdgeDim: 0.45 * @Dark + 1.05 * @Light
+// DARKER, because the darkness belongs to the STRIP and not to the glass. Jack: "the point is supposed
+// to be that the glass is the normal color, but it's on top of that gradient that's darker. So it's
+// like taking the color from the background through." The glass now lifts its backdrop (see
+// @JwiftControlLift), so the separation has to come from under it rather than from dimming the material
+// itself. 0.32 against the old 0.45 is that separation moved to where it belongs.
+@JwiftScrollEdgeDim: 0.32 * @Dark + 1.05 * @Light
+// THE BOTTOM DIMS LESS THAN THE TOP, and its number is APPLE'S.
+//
+// Apple publishes exactly one dimming amount, in Materials: "If the underlying content is bright,
+// consider adding a dark dimming layer of 35% opacity." A 35% black layer over content is a multiply by
+// 0.65, so that is @JwiftScrollEdgeDimSoft, and it is the only number in this pair that is Apple's.
+//
+// The top's 0.32 is OURS and is labelled so. It carries a page title, a back control and an action
+// cluster over whatever the page is showing, and Jack judged it by eye after the glass stopped dimming
+// itself. The bottom carries a transport and a sentence and needs less, which is what he asked for:
+// "maybe do it less for the bottom". If the top is ever measured against an Apple screenshot rather
+// than judged, this is the line to correct.
+@JwiftScrollEdgeDimSoft: 0.65 * @Dark + 1.05 * @Light
 @JwiftScrollEdgeVivid: 1 * @Dark + 1.8 * @Light
 JwiftScrollEdgeTopScene : JwiftScrollEdgeTop {
   BackdropFilter: Brightness(@JwiftScrollEdgeDim) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
@@ -599,7 +635,7 @@ JwiftScrollEdgeTopScene : JwiftScrollEdgeTop {
 // @JwiftScrollEdgeVivid the top uses. One calibration for one behaviour: if the dim is ever re-measured,
 // both ends move together and cannot drift.
 JwiftScrollEdgeBottomScene : JwiftScrollEdgeBottom {
-  BackdropFilter: Brightness(@JwiftScrollEdgeDim) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
+  BackdropFilter: Brightness(@JwiftScrollEdgeDimSoft) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
 }
 
 
