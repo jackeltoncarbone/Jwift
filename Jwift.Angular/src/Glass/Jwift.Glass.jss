@@ -587,6 +587,20 @@ JwiftScrollEdgeTopScene : JwiftScrollEdgeTop {
   BackdropFilter: Brightness(@JwiftScrollEdgeDim) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
 }
 
+// And the SAME treatment at the bottom, which did not exist. Jack: "the bottom should have same
+// treatment." He is right that it is one behaviour, not two: the dock floats over the same content the
+// top bar floats over, and a tab bar's white ink needs its contrast over a bright photo exactly as much
+// as a title's does. There was only a plain JwiftScrollEdgeBottom, so a dock over sunlit turf had blur
+// and no dimming.
+//
+// It inherits the bottom's own geometry -- Justify: End, ProgressiveBlurDirection: ToBottom and the
+// 140pt strip -- and adds the dimming pair, which is DELIBERATELY the same @JwiftScrollEdgeDim and
+// @JwiftScrollEdgeVivid the top uses. One calibration for one behaviour: if the dim is ever re-measured,
+// both ends move together and cannot drift.
+JwiftScrollEdgeBottomScene : JwiftScrollEdgeBottom {
+  BackdropFilter: Brightness(@JwiftScrollEdgeDim) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
+}
+
 
 // ── JwiftPress ──────────────────────────────────────────────────────
 // The ONE press treatment. Every control that answers a finger extends this, so a press
