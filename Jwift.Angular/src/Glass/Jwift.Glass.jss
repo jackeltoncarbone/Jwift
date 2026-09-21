@@ -110,6 +110,37 @@
 @JwiftSheetContrast: (@JwiftSheetOverWhite - @JwiftSheetOverBlack) / (1 - @JwiftSheetTint)
 @JwiftSheetSaturate: @JwiftGlassCarry / (@JwiftSheetOverWhite - @JwiftSheetOverBlack)
 
+// ── THE FAR END OPENS: THE SAME RULE, SOLVED PER SURFACE ───────────
+// Everything above is solved once, against the worst backdrop on the ramp. That is the only thing a
+// constant can do, and it is why dark glass over a mid-tone sat at about half its backdrop's luma: the far
+// end had to hold white ink at the floor over WHITE, and was held there over a field of turf too. Apple's
+// dark glass over the same blossom photo (1b above's figure, glass against the ring mean around it) sits
+// AT OR ABOVE the photo: 110 -> 123, 128 -> 152, 136 -> 145. It can, because its far end is not a constant.
+//
+// So the engine re-runs the far-end solve for each surface, against the backdrop that surface is actually
+// over (`?glass-adapt`, Jaui Core/Glass.Adapt.ts). The adaptive-shadow probe already reads that backdrop;
+// it now also keeps its brightest local luma, `peak`. The body is legible wherever it is no lighter than
+// the far end above, and over that backdrop its lightest point is ground + (F - ground) * peak, so the far
+// end OPENS to F = ground + (far - ground) / peak -- the same legibility solve, with `peak` where the
+// solve above had to put 1 -- and never past AdaptiveFar. Ground and the colour carried do not move; the
+// range and the tint do. Over black nothing changes (the body is the ground whatever F is); over white F is
+// exactly the far end above. The ink is never less legible than this sheet already made it.
+//
+// ADAPTIVE FAR is Apple's own far end: the least-squares fit of ground + (F - ground) * Y through the three
+// iPad sites with the ground pinned at the measured 26 (1a). F = 258.9 of 255, i.e. no range cap at all,
+// matching 1b's "implied over-white 248-278"; at the knee it resolves to c 0.81, t -0.08, which is 1b's
+// implied c 0.81, t -0.07 to -0.19. It is past white on purpose: the ink holds every surface below it long
+// before it binds, and 255 would put a second, invented knee into the fit. Light glass does NOT open
+// (0): Apple's light numbers are already this sheet's static solve (1b, "Apple IS our legibility solve"),
+// so a lighter or darker light plate would be a departure from Apple, not a match.
+//
+// WHAT IT CANNOT DO, measured: with the ink held white, a dark control's body stops at 112.7 however light
+// the backdrop is, and a dark sheet's at 83.5. Over Apple's three sites that recovers 83% / 52% / 56% of the
+// distance from the static law (63.5 / 69.6 / 72.3) to Apple (123 / 152 / 145). The rest needs the LABEL
+// to flip to dark ink where the plate goes past the white floor, which is a text-colour change per surface
+// and is not built here (the lane report, "the ink").
+@JwiftGlassOpenFar: 258.9 / 255 * @Dark
+
 // ── VIBRANCY ON GLASS ───────────────────────────────────────────────
 // Things placed ON glass use "fills, transparency, and vibrancy" (HIG Materials), vibrancy being what
 // "amplifies and adjusts the color of the content layered behind". A selection plate inside a glass menu
@@ -192,6 +223,7 @@ JwiftGlass {
   Background: rgba(0, 0, 0, 0)
   Tint: @JwiftControlTint
   TintTone: Ground
+  AdaptiveFar: @JwiftGlassOpenFar
   // The face is FLAT (Fillet is the dome): Apple's panel never magnifies what is behind it. Only the
   // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
   Thickness: 2.5
