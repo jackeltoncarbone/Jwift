@@ -532,6 +532,35 @@ JwiftHeroGlass : JwiftGlass {
 }
 
 
+// ── JwiftGlassSolidRim ──────────────────────────────────────────────
+// THE HOUSE RIM WITH ITS ANGULAR MODULATION REMOVED. Same width, same colour family, same owner --
+// only the light-following part is off, so the stroke reads as one consistent ring.
+//
+// It exists because the modulation is a SIZE argument, not a taste one. On a pill or a card the rim
+// being thicker and brighter on the 135-degree arc reads as a lit edge, which is the whole point. On a
+// 48pt disc the entire ring is in view at once, so the same numbers read as a gradient. Jack, on the
+// avatar: "the color is really weird and gradient-y. Solid color, so it should be pretty solid and
+// consistent."
+//
+// MEASURED OFF APPLE's Arcade header avatar, profiled across its centre line: backdrop luma 145, ring
+// 213-223 left and 213-224 right, photo 42-200 between them. Their ring varies about 1.05x around the
+// whole circle, and at 214 over a 145 bed it is not mostly bed -- solving white-over-bed puts its
+// effective alpha near 0.63, uniform. Hence the three zeros and that alpha.
+//
+// What the three zeros switch off, from Jiv.Panel.frag:
+//   BorderVariance 0       widthScale = 1 + v * widthAlign      stops the 0.5x .. 1.5x width swing
+//   BorderAlphaVariance 0  alphaFloor = 1 - av                  strokeBrightness pins at 1
+//   BorderFresnelStrength 0                                     strokeTint stays BorderColor.rgb
+// leaving `borderRgb = mix(bed, white, 0.63)` at every angle. Width stays @JwiftRimWidth, so a regrade
+// of the rim still reaches everything that wears it -- which is the rule this variant had to satisfy
+// rather than dodge (Avatar.Conformance: "the rim grade has one owner").
+JwiftGlassSolidRim : JwiftGlass {
+  BorderColor: rgba(255, 255, 255, 0.63)
+  BorderVariance: 0
+  BorderAlphaVariance: 0
+  BorderFresnelStrength: 0
+}
+
 // ── JwiftGlassThick ─────────────────────────────────────────────────
 // Apple's one material at its second thickness. Session 219: when glass "morphs to larger sizes, like
 // when presenting a menu from a toolbar button, its material characteristics change to simulate a

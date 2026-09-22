@@ -33,21 +33,17 @@ Jwift_AvatarDisc {
   FlexShrink: 0
 }
 
-// THE PLATE IS GLASS, the same material as every other control, and the photo fills it when there is one.
-// Jack: "That avatar should be the same material as the glass, just filled with the image when there is
-// one ... when I'm logged in, and when I'm logged out, it should just be a liquid glass like everything
-// else." It had never carried a material in any variant - an opaque @Fill disc among controls that all
-// compose JwiftGlass - so on the item page it read as a flat swatch beside a glass chevron and pill.
+// ITS RIM IS THE SOLID VARIANT, and it hand-rolls nothing. A 48pt disc shows its whole ring at once, so
+// the house rim's light-following modulation (width 0.5x-1.5x, brightness 0.25x-1) reads as a gradient
+// rather than a highlight -- Jack: "the color is really weird and gradient-y. Solid color, so it should
+// be pretty solid and consistent." The numbers, Apple's measurement and what the zeros switch off all
+// live on JwiftGlassSolidRim in Jwift.Glass.jss, because the rim grade has exactly one owner and this
+// class is not it.
 //
-// The rim still shows through a photo: JwiftGlass draws its border at BorderLayer 10, above the content,
-// so the bezel and Fresnel edge survive `Overflow: Hidden` clipping the image to the disc.
-//
-// THIS NAME HAS ONE OWNER. Toolbar.jss used to declare a second `Jwift_Avatar` (a flat @WashStrong press
-// cell nothing used). The registry FIELD-MERGES a name declared by two sheets, in whatever order their
-// components happened to mount, so the bare class was a hybrid of both. The rungs below never saw it (they
-// are flattened at parse), but the next consumer of the bare name would have. Design/
-// JssClassCollision.Conformance.spec.ts now fails on any name two Jwift sheets declare.
-Jwift_Avatar : JwiftGlass, Jwift_AvatarDisc {
+// The rim still shows through a photo: the border draws at BorderLayer 10, above the content, so the
+// bezel survives `Overflow: Hidden` clipping the image to the disc. Jack on that: "the border has a
+// layer just like anything else -- if it's over the contents children, it uses that."
+Jwift_Avatar : JwiftGlassSolidRim, Jwift_AvatarDisc {
 }
 
 // Byline — the mark beside a publisher's name under a title. The item page's own 24pt, which is the app's
