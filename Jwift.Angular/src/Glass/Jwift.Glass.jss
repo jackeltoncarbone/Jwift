@@ -654,8 +654,19 @@ JwiftScrollEdgeTopScene : JwiftScrollEdgeTop {
 // 140pt strip -- and adds the dimming pair, which is DELIBERATELY the same @JwiftScrollEdgeDim and
 // @JwiftScrollEdgeVivid the top uses. One calibration for one behaviour: if the dim is ever re-measured,
 // both ends move together and cannot drift.
+//
+// AND IT IS THE SAME DIM AGAIN, after a detour. This read @JwiftScrollEdgeDimSoft for a few hours on
+// 2026-09-21 while the comment above went on claiming the two ends share one number -- the same prose/
+// value split the glass carry had, in the same sheet, on the same evening. Jack settled it by eye:
+// "the bottom blur that we see on the home page needs the same darkness as the header on the drill page."
+//
+// Which is the stronger answer anyway. The detour started from Apple's softer 0.65 leaving "Explore" and
+// "Market" unreadable over lit turf, and 0.5 was a halfway house picked to claw some of that back. 0.32
+// is darker than either, so it spends MORE of the legibility budget, not less -- and it costs nothing to
+// give the two ends one number, which is what makes a re-measurement move both and neither drift.
+// @JwiftScrollEdgeDimSoft survives for Drill.jss's own 120pt bottom blur, which is not this strip.
 JwiftScrollEdgeBottomScene : JwiftScrollEdgeBottom {
-  BackdropFilter: Brightness(@JwiftScrollEdgeDimSoft) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
+  BackdropFilter: Brightness(@JwiftScrollEdgeDim) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
 }
 
 
