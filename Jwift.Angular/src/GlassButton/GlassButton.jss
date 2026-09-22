@@ -11,7 +11,7 @@ Jwift_GlassBtn : JwiftGlass, JwiftPressGlass {
   Background: @GlassTint
   BezelScale: 0.25
   SpecularIntensity: 0
-  SpecularSharpness: 10
+  SpecularGlow: 0
   EdgeLightTop: 0
 
   // Hover, press, squeeze and their 140ms spring all come from JwiftPressGlass.

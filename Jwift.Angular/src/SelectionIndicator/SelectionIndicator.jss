@@ -23,7 +23,7 @@ Jwift_SelectionIndicator {
   // glass NESTED inside the nav bar's glass, where high refraction over-displaces
   // and reads see-through past the bar. Pressed state deepens this (Thickness 8).
   Thickness: 0
-  Fillet: 0            // flat centre — no central dome scaling the whole label
+  Curvature: 0         // at rest it does not bend at all (Thickness 0); the press brings the lens
   Refraction: 0
   BezelWidth: 4        // thin rim band → large 1:1 centre stays true-size + crisp
   BezelScale: 0.25
@@ -50,7 +50,9 @@ Jwift_SelectionIndicator {
   @Transition Tint { Duration: 300ms }
   @Transition BackdropFilter { Duration: 300ms }
   @Transition Thickness { Duration: 300ms }
-  @Transition Fillet { Duration: 300ms }
+  @Transition Curvature { Duration: 300ms }
+  @Transition SpecularIntensity { Duration: 300ms }
+  @Transition SpecularGlow { Duration: 300ms }
   @Transition Refraction { Duration: 300ms }
   @Transition BezelWidth { Duration: 300ms }
   @Transition BezelScale { Duration: 300ms }
@@ -116,24 +118,24 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   // squared off the refraction relative to the fully-rounded pill border. 8 keeps the inner refraction
   // concentric with the pill.
   //
-  // Fillet drives the central glass BULGE (a radial dome normalized by the panel's LONG axis), which on
-  // a wide pill forms a horizontal band that doesn't round with the endcaps. Keeping it low lets the
-  // pill-aware EDGE refraction dominate so the whole effect follows the pill instead of reading boxy.
-  // MAGNIFY on press (text bulges BIGGER). Three independent levers:
-  //  • DIRECTION = sign(Fillet * Refraction): NEGATIVE = magnify (inward),
-  //    POSITIVE = minify/shrink. Fillet +, Refraction − → magnify.
-  //  • BULGE STRENGTH ≈ Fillet × |Refraction| (no Thickness term) — raise Fillet
-  //    for more magnify WITHOUT adding clipping.
-  //  • CLIPPING (the "sliver" / off-pill clamp) ≈ Thickness × |Refraction| — keep
-  //    Thickness LOW so the edge displacement never runs off the pill.
-  // So: low Thickness, higher Fillet, moderate Refraction = strong bulge, no clip.
+  // THE PRESSED PILL IS AAVE'S LENS (Jwift/Shared/Research/Aave.Glass.md). The outline keeps Apple's
+  // outward band; past it the lens field pulls the label toward the edge, so the label MAGNIFIES under
+  // the lens. Curvature is the cap height that shapes that pull: aave's playground 40, clamped by the
+  // shader to the pill's half height, so on a 48pt pill it is a near-hemisphere and the bend is steep at
+  // the rim and gentle over the label. The reach is Thickness x Refraction (px, outward; the lens gets
+  // 0.4 of it), which is the one lever that can run a sample off the pill, so it stays low.
   Thickness: 2.5
-  Fillet: 0
+  Curvature: 40
   Refraction: 8
   BezelWidth: 12
   BezelScale: 0.25
   FresnelStrength: 0
+  // aave's dispersion rides the bend, so this is a fringe only where the lens bends hardest.
   ChromaticAberration: 0.25
+  // aave's highlight, their playground's numbers: a band at the outline and a wash toward the two lit
+  // corners, brightening over a dark bar and darkening over a bright one so the lens always reads.
+  SpecularIntensity: 0.25
+  SpecularGlow: 0.1
 
   LightAngle: 135
   LightIntensity: 1

@@ -107,7 +107,7 @@ Jwift_ToggleKnob {
   BorderRadius: 999pt
   Background: rgb(255, 255, 255)
   Thickness: 0
-  Fillet: 0
+  Curvature: 0
   Refraction: 0
   BezelWidth: 5
   BezelScale: 0.3

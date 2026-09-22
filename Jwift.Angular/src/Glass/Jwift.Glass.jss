@@ -341,10 +341,11 @@ JwiftGlass {
   Tint: @JwiftControlTint
   TintTone: Ground
   AdaptiveFar: @JwiftGlassOpenFar
-  // The face is FLAT (Fillet is the dome): Apple's panel never magnifies what is behind it. Only the
-  // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
+  // The face is FLAT: Apple's panel never magnifies what is behind it. Only the bezel bends, over a 10pt
+  // band, peaking near 35px of displacement (Thickness x Refraction). Curvature 0 gives the lens field
+  // aave's straight ramp across the bezel rather than a cap's slope.
   Thickness: @JwiftGlassThickness
-  Fillet: 0
+  Curvature: 0
   // The bend as the iPhone's: about 12px wide, most of it in the first few px, easing to flat with no
   // seam, and the backdrop pulled about 12px at the peak. The body inside it is flat and quiet.
   // The outline is a lens: the first quarter of the bezel shows what lies outside the panel, the rest
@@ -388,7 +389,7 @@ JwiftGlass {
   LightAngle: 135
   LightIntensity: 1
   SpecularIntensity: 0
-  SpecularSharpness: 32
+  SpecularGlow: 0
   EdgeLightTop: 0
   EdgeLightBottom: 0
   ChromaticAberration: 0.25
@@ -421,7 +422,6 @@ JwiftSolidGlass {
   // Glass slab geometry — drives the bevel/fresnel RIM only (Refraction 0 = no
   // distortion of the content under the edge; the fill stays solid).
   Thickness: @JwiftGlassThickness
-  Fillet: 0.25
   BezelWidth: 11
   BezelScale: 0.5
   Refraction: 0
