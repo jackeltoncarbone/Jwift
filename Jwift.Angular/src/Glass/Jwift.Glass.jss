@@ -532,31 +532,34 @@ JwiftHeroGlass : JwiftGlass {
 }
 
 
-// ── JwiftGlassSolidRim ──────────────────────────────────────────────
-// THE HOUSE RIM WITH ITS ANGULAR MODULATION REMOVED. Same width, same colour family, same owner --
-// only the light-following part is off, so the stroke reads as one consistent ring.
+// ── JwiftGlassEvenRim ───────────────────────────────────────────────
+// THE RIM'S COLOUR IS EVEN; ITS THICKNESS STILL FOLLOWS THE LIGHT. Three knobs modulate this rim and
+// they are not the same knob:
 //
-// It exists because the modulation is a SIZE argument, not a taste one. On a pill or a card the rim
-// being thicker and brighter on the 135-degree arc reads as a lit edge, which is the whole point. On a
-// 48pt disc the entire ring is in view at once, so the same numbers read as a gradient. Jack, on the
-// avatar: "the color is really weird and gradient-y. Solid color, so it should be pretty solid and
-// consistent."
+//   BorderVariance          WIDTH   `widthScale = 1 + v * widthAlign`  -> thicker on the lit arc
+//   BorderAlphaVariance     BRIGHTNESS `alphaFloor = 1 - av`           -> dimmer off the lit arc
+//   BorderFresnelStrength   TINT    converges strokeTint on the gather -> hue shifts by angle
 //
-// MEASURED OFF APPLE's Arcade header avatar, profiled across its centre line: backdrop luma 145, ring
-// 213-223 left and 213-224 right, photo 42-200 between them. Their ring varies about 1.05x around the
-// whole circle, and at 214 over a 145 bed it is not mostly bed -- solving white-over-bed puts its
-// effective alpha near 0.63, uniform. Hence the three zeros and that alpha.
+// Jack wanted the first and not the other two: "I wanted the varying thickness, but it had a varying
+// color, even though there was nothing actually varying. It's just a solid purple." That is the whole
+// argument. A bevel genuinely IS thicker where the light hits it, and that reads as craft. But its
+// colour varying over a UNIFORM fill is not a bevel, it is the rim inventing a gradient that nothing
+// underneath justifies -- and on a 48pt disc, where the entire ring is in view at once, it reads as
+// corners on a circle.
 //
-// What the three zeros switch off, from Jiv.Panel.frag:
-//   BorderVariance 0       widthScale = 1 + v * widthAlign      stops the 0.5x .. 1.5x width swing
-//   BorderAlphaVariance 0  alphaFloor = 1 - av                  strokeBrightness pins at 1
-//   BorderFresnelStrength 0                                     strokeTint stays BorderColor.rgb
-// leaving `borderRgb = mix(bed, white, 0.63)` at every angle. Width stays @JwiftRimWidth, so a regrade
-// of the rim still reaches everything that wears it -- which is the rule this variant had to satisfy
-// rather than dodge (Avatar.Conformance: "the rim grade has one owner").
-JwiftGlassSolidRim : JwiftGlass {
+// So BorderVariance is left at the house value and inherited. Only the two colour knobs go to zero,
+// which pins strokeBrightness at 1 and leaves strokeTint at BorderColor.rgb, so every point of the
+// ring is `mix(whatever is under it, white, 0.63)` -- one colour, still varying in width.
+//
+// The 0.63 is measured off Apple's Arcade header avatar: profiled across its centre line the ring
+// reads 213-224 all the way round over a 145 backdrop, and solving white-over-bed puts its effective
+// alpha there. Width stays @JwiftRimWidth, so a regrade of the rim still reaches everything wearing
+// this.
+//
+// AN EARLIER VERSION OF THIS ZEROED ALL THREE and was called JwiftGlassSolidRim. That killed the
+// thickness variation too, which was never the complaint.
+JwiftGlassEvenRim : JwiftGlass {
   BorderColor: rgba(255, 255, 255, 0.63)
-  BorderVariance: 0
   BorderAlphaVariance: 0
   BorderFresnelStrength: 0
 }

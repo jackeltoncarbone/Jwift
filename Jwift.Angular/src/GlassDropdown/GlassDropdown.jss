@@ -131,7 +131,22 @@ Jwift_GlassDropdownCell_Avatar : Jwift_GlassDropdownCell {
 // the cell inside stays still (two nested squeezes read as a flinch).
 // The pill is glass, so it takes the glass press, and its rim paints above the avatar
 // (BorderLayer), which is what keeps the press legible when a photo fills the circle.
-Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGlass {
+//
+// AND ITS RIM IS THE SOLID ONE, because THIS is the ring you see around the header avatar. The avatar
+// disc inside it (Jwift_Avatar_Fill) extends no glass and draws no rim at all -- the comment above says
+// as much, "its rim paints above the avatar" -- so the pill owns the ring, and the pill was still
+// wearing JwiftGlass's light-following rim: BorderVariance 0.5 and BorderAlphaVariance 0.75, width
+// swinging 0.5x-1.5x and brightness 0.25x-1 around a 48pt circle.
+//
+// MEASURED on the live header before this line existed: the ring read luma 107 at the top and bottom
+// against 130 at the left and right -- a 1.21x swing that Jack saw as "more saturated in the center, so
+// it looks like stupid corners on this border". I had first put JwiftGlassEvenRim on Jwift_Avatar,
+// which is the disc with no rim, and then explained the residual swing away as pixel-grid geometry. It
+// was the variance the whole time, on a class I had not touched.
+//
+// JwiftGlassEvenRim comes LAST so it wins the rim: the variant is only the three zeros and the alpha
+// (its width is still @JwiftRimWidth), so nothing else about the pill's glass or its press moves.
+Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGlass, JwiftGlassEvenRim {
   Padding: 0pt
 }
 Jwift_GlassDropdownCell_Avatar_Fill : Jwift_GlassDropdownCell_Avatar {
