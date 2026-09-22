@@ -46,14 +46,23 @@
 //    black, and light glass is NOT white: this sheet used to settle light glass at 255, and Apple's own
 //    pixels say 242. The same end for every size: it is what the material is, not how much it hides.
 @JwiftGlassGround: 26 / 255 * @Dark + 242 / 255 * @Light
-//
 // 2. THE CHROMA CARRIED, measured off the same figures: Apple's glass carries the colour behind it at
 //    FULL strength. The Layout page's iPad toolbar over a blossom photo, the same photo in both themes,
 //    reads 0.85 / 1.15 / 1.02 in dark and 0.97 / 1.30 / 1.24 in light (glass chroma over the photo's
 //    area-mean chroma around each button, so the blur's averaging is taken out); the tvOS media panel,
 //    a LARGE surface, reads 0.93 and 1.21. One is the middle of the spread at both sizes and in both
-//    themes. This sheet used to carry 0.53 in dark and 0.32 on a dark sheet, and that was the whole of
-//    "bring more colour through".
+//    themes, and ONE IS WHAT THE FINISHED SURFACE HAS TO READ -- the last on-screen measurement over
+//    real content was 1.249x chroma, inside Apple's spread and near the top of it.
+//
+//    THE KNOB BELOW IS NOT THAT NUMBER, AND THE DIFFERENCE MATTERS. 0.72 is what the GRADE carries,
+//    which is only the second of two stages: a lift goes underneath it (@JwiftControlLift, @JwiftSheetLift
+//    below) and supplies the brightness that makes glass read as a material over dark content. Before the
+//    lift existed the grade was the whole glass and this token was 1, because it had to be. With the lift
+//    carrying the luma, the grade's share is smaller and the surface still lands in Apple's band.
+//
+//    So: 1 is the measurement, 0.72 is the input. This comment said "full strength" over a token reading
+//    0.72 for a few hours on 2026-09-21 -- the prose and the number disagreeing is the exact failure
+//    GlassLaw.Conformance guards against, and it is the guard that caught it.
 @JwiftControlLift: 2.0 * @Dark + 1 * @Light
 @JwiftGlassCarry: 0.72
 //
