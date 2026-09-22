@@ -140,13 +140,13 @@ Jwift_GlassDropdownCell_Avatar : Jwift_GlassDropdownCell {
 //
 // MEASURED on the live header before this line existed: the ring read luma 107 at the top and bottom
 // against 130 at the left and right -- a 1.21x swing that Jack saw as "more saturated in the center, so
-// it looks like stupid corners on this border". I had first put JwiftGlassEvenRim on Jwift_Avatar,
+// it looks like stupid corners on this border". I had first put JwiftGlassEvenTint on Jwift_Avatar,
 // which is the disc with no rim, and then explained the residual swing away as pixel-grid geometry. It
 // was the variance the whole time, on a class I had not touched.
 //
-// JwiftGlassEvenRim comes LAST so it wins the rim: the variant is only the three zeros and the alpha
+// JwiftGlassEvenTint comes LAST so it wins the rim: the variant is only the three zeros and the alpha
 // (its width is still @JwiftRimWidth), so nothing else about the pill's glass or its press moves.
-Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGlass, JwiftGlassEvenRim {
+Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGlass, JwiftGlassEvenTint {
   Padding: 0pt
 }
 Jwift_GlassDropdownCell_Avatar_Fill : Jwift_GlassDropdownCell_Avatar {

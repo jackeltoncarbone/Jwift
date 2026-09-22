@@ -532,35 +532,36 @@ JwiftHeroGlass : JwiftGlass {
 }
 
 
-// ── JwiftGlassEvenRim ───────────────────────────────────────────────
-// THE RIM'S COLOUR IS EVEN; ITS THICKNESS STILL FOLLOWS THE LIGHT. Three knobs modulate this rim and
-// they are not the same knob:
+// ── JwiftGlassEvenTint ──────────────────────────────────────────────
+// ONE KNOB OFF: the rim's HUE stops chasing the light. Everything else about the house rim is kept.
 //
-//   BorderVariance          WIDTH   `widthScale = 1 + v * widthAlign`  -> thicker on the lit arc
-//   BorderAlphaVariance     BRIGHTNESS `alphaFloor = 1 - av`           -> dimmer off the lit arc
-//   BorderFresnelStrength   TINT    converges strokeTint on the gather -> hue shifts by angle
+// Three knobs modulate this rim and only one of them is the colour:
 //
-// Jack wanted the first and not the other two: "I wanted the varying thickness, but it had a varying
-// color, even though there was nothing actually varying. It's just a solid purple." That is the whole
-// argument. A bevel genuinely IS thicker where the light hits it, and that reads as craft. But its
-// colour varying over a UNIFORM fill is not a bevel, it is the rim inventing a gradient that nothing
-// underneath justifies -- and on a 48pt disc, where the entire ring is in view at once, it reads as
-// corners on a circle.
+//   BorderVariance         WIDTH       widthScale = 1 + v * widthAlign        -- KEPT (house 0.5)
+//   BorderAlphaVariance    BRIGHTNESS  alphaFloor = 1 - av                    -- KEPT (house 0.75)
+//   BorderFresnelStrength  TINT        strokeTint = mix(BorderColor.rgb,
+//                                        fresnelTarget, lightFacing^3 * this) -- ZEROED
 //
-// So BorderVariance is left at the house value and inherited. Only the two colour knobs go to zero,
-// which pins strokeBrightness at 1 and leaves strokeTint at BorderColor.rgb, so every point of the
-// ring is `mix(whatever is under it, white, 0.63)` -- one colour, still varying in width.
+// Jack: "I wanted the varying thickness, but it had a varying color, even though there was nothing
+// actually varying. It's just a solid purple." And then, on my first attempt: "It was more correct in
+// the before. The color was the only thing that wasn't correct."
 //
-// The 0.63 is measured off Apple's Arcade header avatar: profiled across its centre line the ring
-// reads 213-224 all the way round over a 145 backdrop, and solving white-over-bed puts its effective
-// alpha there. Width stays @JwiftRimWidth, so a regrade of the rim still reaches everything wearing
-// this.
+// So the width taper and the brightness taper both stay -- together they ARE the varying thickness he
+// is describing, since a dimmer arc reads as a softer, thinner edge. What goes is the third: with
+// BorderFresnelStrength at 0, strokeTint collapses to BorderColor.rgb and the line below becomes
 //
-// AN EARLIER VERSION OF THIS ZEROED ALL THREE and was called JwiftGlassSolidRim. That killed the
-// thickness variation too, which was never the complaint.
-JwiftGlassEvenRim : JwiftGlass {
-  BorderColor: rgba(255, 255, 255, 0.63)
-  BorderAlphaVariance: 0
+//   borderRgb = mix(borderBackdrop, WHITE, BorderColor.a * strokeBrightness)
+//
+// so the rim is white over whatever is beneath it, at a weight that varies -- ONE hue, varying amount.
+// With the Fresnel on, strokeTint itself swung toward the gather by lightFacing^3, which is a hue that
+// changes with angle for no reason the content gives, and over a flat purple disc that is the gradient
+// he is pointing at.
+//
+// TWO THINGS I CHANGED AND SHOULD NOT HAVE, now reverted: BorderAlphaVariance to 0 (which flattened the
+// taper he wanted) and BorderColor.a to 0.63 (a weight change nobody asked for; the house 0.5 is the
+// over-black luminosity calibration and stands). Named JwiftGlassSolidRim, then JwiftGlassEvenRim, each
+// describing a version that took away more than the complaint.
+JwiftGlassEvenTint : JwiftGlass {
   BorderFresnelStrength: 0
 }
 
