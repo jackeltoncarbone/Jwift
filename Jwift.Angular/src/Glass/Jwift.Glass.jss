@@ -301,6 +301,15 @@
 // ── JwiftGlass ──────────────────────────────────────────────────────
 // Universal Liquid-Glass look: the small-control material. A control with a colour of its own (an accent
 // CTA) sets `Tint: 0` and paints its Background; everything else takes its colour from what is behind it.
+// THE SLAB THICKNESS, ONCE. A card is the same material as a button, so it is the same number, and the
+// number lives here rather than being typed twice. Jack: "Our card should hold the same thickness as the
+// other glass." JwiftSolidGlass had drifted to 4 -- a heavier slab, so a wider bevel and a softer read,
+// which is what made the CMS cards look thick beside every other surface.
+//
+// JwiftGlassThick keeps its OWN 3 on purpose and is not folded in here: a sheet holds running text and
+// solves for 7:1 where a control solves for 4.5:1, so a heavier slab is part of that solve rather than
+// a drift from this one. Two numbers with two reasons, not three with one.
+@JwiftGlassThickness: 2.5
 JwiftGlass {
   Background: rgba(0, 0, 0, 0)
   Tint: @JwiftControlTint
@@ -308,7 +317,7 @@ JwiftGlass {
   AdaptiveFar: @JwiftGlassOpenFar
   // The face is FLAT (Fillet is the dome): Apple's panel never magnifies what is behind it. Only the
   // bezel bends, over a 10pt band, peaking near 35px of displacement (Thickness x Refraction x hump).
-  Thickness: 2.5
+  Thickness: @JwiftGlassThickness
   Fillet: 0
   // The bend as the iPhone's: about 12px wide, most of it in the first few px, easing to flat with no
   // seam, and the backdrop pulled about 12px at the peak. The body inside it is flat and quiet.
@@ -385,7 +394,7 @@ JwiftGlass {
 JwiftSolidGlass {
   // Glass slab geometry — drives the bevel/fresnel RIM only (Refraction 0 = no
   // distortion of the content under the edge; the fill stays solid).
-  Thickness: 4
+  Thickness: @JwiftGlassThickness
   Fillet: 0.25
   BezelWidth: 11
   BezelScale: 0.5
