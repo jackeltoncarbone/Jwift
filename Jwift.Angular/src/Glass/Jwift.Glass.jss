@@ -319,7 +319,21 @@
 // been reaching the screen only through a shader leak (see the block over JwiftSolidGlass): when the
 // leak closed, the reach was moved into the border zone to keep the light. The reasoning was sound and
 // the result is still wrong on screen -- a compensation that overshoots is a drift like any other.
-@JwiftRimWidth: 0.45pt
+// 0.675pt = 1.5 x the 0.45pt this was. Jack: "would it be easy to increase the Fresnel thickness by
+// 1.5x ever slightly for our standard for cards and chrome and stuff". It was easy because these three
+// tokens exist: JwiftGlass and JwiftSolidGlass both read them, JwiftGlassThick inherits, and the three
+// card classes (Surface CardGlass, Prose DocCardGlass, Editorial EdCard) inherit through the solid one.
+// One number, and the cards and the chrome move together -- which is the whole return on collapsing the
+// three copies of this rim earlier.
+//
+// ONLY THE WIDTH SCALES. Blur and fade stay where they are, deliberately: the rim reads as a hairline
+// because it is SHARP at the outline and dissolves over a short reach, and scaling the reach with it
+// would have given back the soft, thick edge the CMS cards were just taken off ("thick and blurry...
+// the chrome is what is correct"). More presence, same crispness.
+//
+// At dpr 2 this is 1.35 device px against 0.9 -- still under a rounded pixel and a half, which is what
+// keeps it a hairline rather than a stroke.
+@JwiftRimWidth: 0.675pt
 @JwiftRimBlur: 0.3pt
 @JwiftRimFade: 0.7pt
 JwiftGlass {
