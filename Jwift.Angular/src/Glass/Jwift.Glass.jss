@@ -310,6 +310,18 @@
 // solves for 7:1 where a control solves for 4.5:1, so a heavier slab is part of that solve rather than
 // a drift from this one. Two numbers with two reasons, not three with one.
 @JwiftGlassThickness: 2.5
+// THE RIM GEOMETRY, ONCE, for the same reason. Jack: "The Fresnel is really thick and blurry on the cms
+// stuff. but the chrome is what is correct. the glass." The chrome IS the reference, so these three are
+// its numbers and JwiftSolidGlass reads them instead of carrying its own set.
+//
+// What it was carrying: BorderWidth 1pt, BorderBlur 1pt, BorderFade 3pt -- a stroke 2.2x as wide, 3.3x
+// as soft, reaching 4.3x further inward. Those were chosen to compensate for a body Fresnel that had
+// been reaching the screen only through a shader leak (see the block over JwiftSolidGlass): when the
+// leak closed, the reach was moved into the border zone to keep the light. The reasoning was sound and
+// the result is still wrong on screen -- a compensation that overshoots is a drift like any other.
+@JwiftRimWidth: 0.45pt
+@JwiftRimBlur: 0.3pt
+@JwiftRimFade: 0.7pt
 JwiftGlass {
   Background: rgba(0, 0, 0, 0)
   Tint: @JwiftControlTint
@@ -347,9 +359,9 @@ JwiftGlass {
   // Saturate(). Over a neutral backdrop that target IS white, so the numbers above stay the ones
   // measured over black. How far the lit arc goes toward that target is @JwiftRimCarry; its derivation
   // and its measurements are up there.
-  BorderWidth: 0.45pt
-  BorderBlur: 0.3pt
-  BorderFade: 0.7pt
+  BorderWidth: @JwiftRimWidth
+  BorderBlur: @JwiftRimBlur
+  BorderFade: @JwiftRimFade
   BorderColor: rgba(255, 255, 255, 0.5)
   BorderFilter: Blur(-0.5pt) Brightness(1.4)
   BorderLayer: 10
@@ -441,13 +453,18 @@ JwiftSolidGlass {
   FresnelStrength: 0
   // The lit stroke that rides the bevel, floated ABOVE content so the footer
   // blur / art never eats the frame.
-  BorderWidth: 1pt
-  BorderBlur: 1pt
-  BorderFade: 3pt
+  BorderWidth: @JwiftRimWidth
+  BorderBlur: @JwiftRimBlur
+  BorderFade: @JwiftRimFade
   BorderColor: rgba(255, 255, 255, 0.16)
   BorderAlphaVariance: 0.4
   BorderFresnelStrength: 0.5
-  BorderFilter: Blur(4pt) Brightness(2) Saturate(2)
+  // THE RIM SHARPENS ITS PICKUP, it does not blur it. This was Blur(4pt) Brightness(2) Saturate(2) --
+  // a 4pt blur on the annulus the rim samples, against the chrome's Blur(-0.5pt), which is a SHARPEN.
+  // That sign flip is most of what read as "blurry": the same rim law, fed a smeared gather. Brightness
+  // and Saturate stay the solid class's own, because its fill is opaque and its rim has no frost behind
+  // it to borrow contrast from -- only the blur was wrong.
+  BorderFilter: Blur(-0.5pt) Brightness(2) Saturate(2)
   BorderLayer: 10
 }
 
