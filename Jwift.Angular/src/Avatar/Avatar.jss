@@ -33,17 +33,19 @@ Jwift_AvatarDisc {
   FlexShrink: 0
 }
 
-// ITS RIM IS THE SOLID VARIANT, and it hand-rolls nothing. A 48pt disc shows its whole ring at once, so
-// the house rim's light-following modulation (width 0.5x-1.5x, brightness 0.25x-1) reads as a gradient
-// rather than a highlight -- Jack: "the color is really weird and gradient-y. Solid color, so it should
-// be pretty solid and consistent." The numbers, Apple's measurement and what the zeros switch off all
-// live on JwiftGlassEvenTint in Jwift.Glass.jss, because the rim grade has exactly one owner and this
-// class is not it.
+// ITS RIM ADDS WHAT IT RIDES, and it hand-rolls nothing. A 48pt disc shows its whole ring at once, so the
+// house rim's light-following modulation (width 0.5x-1.5x, brightness 0.25x-1) reads as a gradient rather
+// than a highlight -- Jack: "the color is really weird and gradient-y. Solid color, so it should be pretty
+// solid and consistent." A rim that ADDS is solid and consistent by construction: `out = in + k` keeps hue
+// and chroma exactly and moves only luma, so the ring is the disc's own color at a higher value, all the
+// way round, and there is no longer a hued target for the light angle to swing it toward. The amount, the
+// clipping bound and the measurement behind them live on JwiftGlassAdditiveRim in Jwift.Glass.jss, because
+// the rim grade has exactly one owner and this class is not it.
 //
 // The rim still shows through a photo: the border draws at BorderLayer 10, above the content, so the
 // bezel survives `Overflow: Hidden` clipping the image to the disc. Jack on that: "the border has a
 // layer just like anything else -- if it's over the contents children, it uses that."
-Jwift_Avatar : JwiftGlassEvenTint, Jwift_AvatarDisc {
+Jwift_Avatar : JwiftGlassAdditiveRim, Jwift_AvatarDisc {
 }
 
 // Byline — the mark beside a publisher's name under a title. The item page's own 24pt, which is the app's

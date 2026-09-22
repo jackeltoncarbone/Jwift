@@ -132,7 +132,7 @@ Jwift_GlassDropdownCell_Avatar : Jwift_GlassDropdownCell {
 // The pill is glass, so it takes the glass press, and its rim paints above the avatar
 // (BorderLayer), which is what keeps the press legible when a photo fills the circle.
 //
-// AND ITS RIM IS THE SOLID ONE, because THIS is the ring you see around the header avatar. The avatar
+// AND ITS RIM IS THE ADDITIVE ONE, because THIS is the ring you see around the header avatar. The avatar
 // disc inside it (Jwift_Avatar_Fill) extends no glass and draws no rim at all -- the comment above says
 // as much, "its rim paints above the avatar" -- so the pill owns the ring, and the pill was still
 // wearing JwiftGlass's light-following rim: BorderVariance 0.5 and BorderAlphaVariance 0.75, width
@@ -140,14 +140,34 @@ Jwift_GlassDropdownCell_Avatar : Jwift_GlassDropdownCell {
 //
 // MEASURED on the live header before this line existed: the ring read luma 107 at the top and bottom
 // against 130 at the left and right -- a 1.21x swing that Jack saw as "more saturated in the center, so
-// it looks like stupid corners on this border". I had first put JwiftGlassEvenTint on Jwift_Avatar,
+// it looks like stupid corners on this border". I had first put the even-tint variant on Jwift_Avatar,
 // which is the disc with no rim, and then explained the residual swing away as pixel-grid geometry. It
 // was the variance the whole time, on a class I had not touched.
 //
-// JwiftGlassEvenTint comes LAST so it wins the rim: the variant is only the three zeros and the alpha
+// AND THEN THE COLOR WAS STILL WRONG, because a rim that MIXES toward white cannot carry the color it
+// rings: the disc measured rgb(81, 45, 168) at chroma 123 while its ring measured rgb(170, 142, 236) at
+// chroma 94, at the same hue 258 -- 0.76x the color of the thing it circles. Jack: "it might need more
+// sat?" It did not need more saturation, it needed to stop losing it. So the rim ADDS now instead of
+// mixing, which is JwiftGlassAdditiveRim, and BorderFresnelStrength is no longer zeroed because on an
+// additive rim it cannot apply at all.
+//
+// JwiftGlassAdditiveRim comes LAST so it wins the rim: the variant is only the rim's own BorderFilter
 // (its width is still @JwiftRimWidth), so nothing else about the pill's glass or its press moves.
-Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGlass, JwiftGlassEvenTint {
+Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGlass, JwiftGlassAdditiveRim {
   Padding: 0pt
+}
+// THE PRESS KEEPS THE ADDITIVE RIM. JwiftPressGlass brightens a pressed rim two ways. It raises
+// BorderColor's alpha (0.5 -> 0.55 -> 0.85), which is the rim's WEIGHT in both modes and so brightens an
+// additive rim exactly as it brightened a mixed one -- that half is kept whole. And it multiplies the
+// rim's gather by BorderFilter: Brightness(1.5 / 1.7), which is the one thing this variant exists to
+// refuse: a multiply scales chroma with luma, so a pressed ring would jump to 1.5x the disc's color for
+// the length of the press. Restating Brightness(1) cancels only that half, and merge-by-function keeps
+// the base's Lift and the press's alpha -- so a press reads as a brighter ring of the SAME color.
+Jwift_GlassDropdown_ClosedAvatarOnly:Hover {
+  BorderFilter: Brightness(1)
+}
+Jwift_GlassDropdown_ClosedAvatarOnly:Active {
+  BorderFilter: Brightness(1)
 }
 Jwift_GlassDropdownCell_Avatar_Fill : Jwift_GlassDropdownCell_Avatar {
   Width: 48pt

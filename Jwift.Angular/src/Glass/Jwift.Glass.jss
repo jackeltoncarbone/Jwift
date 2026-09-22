@@ -532,37 +532,46 @@ JwiftHeroGlass : JwiftGlass {
 }
 
 
-// ── JwiftGlassEvenTint ──────────────────────────────────────────────
-// ONE KNOB OFF: the rim's HUE stops chasing the light. Everything else about the house rim is kept.
+// ── JwiftGlassAdditiveRim ────────────────────────────
+// THE RIM ADDS WHAT IT RIDES, instead of mixing toward BorderColor. One line, and it is the whole
+// variant: `BorderFilter: Lift(n)` switches the stroke's last composite from
 //
-// Three knobs modulate this rim and only one of them is the colour:
+//   borderRgb = mix(borderBackdrop, strokeTint, weight)        // the house rim
+//   borderRgb = borderBackdrop + BorderColor.rgb * k * weight  // this one
 //
-//   BorderVariance         WIDTH       widthScale = 1 + v * widthAlign        -- KEPT (house 0.5)
-//   BorderAlphaVariance    BRIGHTNESS  alphaFloor = 1 - av                    -- KEPT (house 0.75)
-//   BorderFresnelStrength  TINT        strokeTint = mix(BorderColor.rgb,
-//                                        fresnelTarget, lightFacing^3 * this) -- ZEROED
+// at the SAME weight, which is BorderColor's alpha tapered by the light-facing brightness. The taper
+// is the varying thickness Jack asked to keep -- "I wanted the varying thickness" -- and it survives
+// untouched, because only the thing being weighted changed, never the weight.
 //
-// Jack: "I wanted the varying thickness, but it had a varying color, even though there was nothing
-// actually varying. It's just a solid purple." And then, on my first attempt: "It was more correct in
-// the before. The color was the only thing that wasn't correct."
+// WHY IT REPLACES JwiftGlassEvenTint, which was this variant's previous answer and is now deleted.
+// That class zeroed BorderFresnelStrength so the rim's hue would stop chasing the light angle. It was
+// treating the symptom: the rim's color was wrong because a MIX makes it wrong. `mix(in, white, w)`
+// raises luma and scales chroma by `(1 - w)`, so a rim is always less saturated than what it rides,
+// by an amount that VARIES with the taper -- which is the swing Jack read as "more saturated in the
+// center, so it looks like stupid corners on this border", and zeroing the Fresnel only removed one
+// of the two things that swung. A LIFT is `out = in + k`: it preserves hue and chroma EXACTLY while
+// raising luma, so there is nothing left to swing and nothing left to converge on a hued target.
+// BorderFresnelStrength is not zeroed here because it CANNOT apply: the fresnel term is multiplied by
+// `weight * (1 - additive)`, which is exactly 0 on this rim. A line that does nothing is not kept.
 //
-// So the width taper and the brightness taper both stay -- together they ARE the varying thickness he
-// is describing, since a dimmer arc reads as a softer, thinner edge. What goes is the third: with
-// BorderFresnelStrength at 0, strokeTint collapses to BorderColor.rgb and the line below becomes
+// MEASURED on the live header avatar before this variant existed: the disc read rgb(81, 45, 168) --
+// chroma 123, hue 258 -- and its ring read rgb(170, 142, 236) -- chroma 94, the same hue. 0.76x the
+// color of the thing it rings, for no reason the content gives. Jack: "it might need more sat?"
 //
-//   borderRgb = mix(borderBackdrop, WHITE, BorderColor.a * strokeBrightness)
+// AND Brightness(1) IS PART OF THE VARIANT, restating JwiftGlass's Brightness(1.4) down to identity.
+// A brightness multiplier is the same defect one level earlier: it scales the rim's gather, chroma
+// and all, so the rim would carry 1.4x the disc's color instead of the disc's color. The lift does
+// the brightening the multiply was there for, and does it without touching the color.
 //
-// so the rim is white over whatever is beneath it, at a weight that varies -- ONE hue, varying amount.
-// With the Fresnel on, strokeTint itself swung toward the gather by lightFacing^3, which is a hue that
-// changes with angle for no reason the content gives, and over a flat purple disc that is the gradient
-// he is pointing at.
-//
-// TWO THINGS I CHANGED AND SHOULD NOT HAVE, now reverted: BorderAlphaVariance to 0 (which flattened the
-// taper he wanted) and BorderColor.a to 0.63 (a weight change nobody asked for; the house 0.5 is the
-// over-black luminosity calibration and stands). Named JwiftGlassSolidRim, then JwiftGlassEvenRim, each
-// describing a version that took away more than the complaint.
-JwiftGlassEvenTint : JwiftGlass {
-  BorderFresnelStrength: 0
+// THE AMOUNT. 120 of 255, added at the rim's own weight: 60 on the fully lit arc (weight 0.5) and 15
+// on the far side (weight 0.125, the BorderAlphaVariance 0.75 floor). Over the header avatar's disc
+// that is a ring of rgb(141, 105, 228) at the lit arc -- still chroma 123 at hue 258, and 27 short of
+// clipping on blue. A LIFT CLIPS AT 255 and clipping is the one thing that shifts a hue, so the
+// amount is bounded by the brightest channel the rim can ride: the first clipping code is 256 - added,
+// so at the lit arc this one clips from a backdrop channel of 196. Retune in one place, below.
+@JwiftRimLift: 120
+JwiftGlassAdditiveRim : JwiftGlass {
+  BorderFilter: Brightness(1) Lift(@JwiftRimLift)
 }
 
 // ── JwiftGlassThick ─────────────────────────────────────────────────
