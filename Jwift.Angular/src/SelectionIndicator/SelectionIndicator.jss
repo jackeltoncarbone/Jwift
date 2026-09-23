@@ -16,17 +16,9 @@ Jwift_SelectionIndicator {
   BorderRadius: 100pt
   BackdropFilter: Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
 
-  // Real bevel glass (was flat Thickness 0/Refraction 0). The flat interior
-  // (inside the bezel) samples the backdrop ~1:1 so the active label's CENTRE
-  // stays crisp, while the beveled EDGES refract — bending the label/content at
-  // the rim (the Liquid-Glass distortion). Refraction kept low (~5): the pill is
-  // glass NESTED inside the nav bar's glass, where high refraction over-displaces
-  // and reads see-through past the bar. Pressed state deepens this (Thickness 8).
+  // At rest it does not bend at all; the press brings the lens.
   Thickness: 0
-  Curvature: 0         // at rest it does not bend at all (Thickness 0); the press brings the lens
   Refraction: 0
-  BezelWidth: 4        // thin rim band → large 1:1 centre stays true-size + crisp
-  BezelScale: 0.25
   FresnelStrength: 0
   ChromaticAberration: 0
 
@@ -48,12 +40,9 @@ Jwift_SelectionIndicator {
   @Transition Tint { Duration: 300ms }
   @Transition BackdropFilter { Duration: 300ms }
   @Transition Thickness { Duration: 300ms }
-  @Transition Curvature { Duration: 300ms }
   @Transition SpecularIntensity { Duration: 300ms }
   @Transition SpecularGlow { Duration: 300ms }
   @Transition Refraction { Duration: 300ms }
-  @Transition BezelWidth { Duration: 300ms }
-  @Transition BezelScale { Duration: 300ms }
   @Transition FresnelStrength { Duration: 300ms }
   @Transition ChromaticAberration { Duration: 300ms }
   @Transition LightAngle { Duration: 300ms }
@@ -108,24 +97,13 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   Tint: 0
   BackdropFilter: Lift(@JwiftWashLift) Brightness(1) Saturate(1) Contrast(1)
 
-  // BezelWidth stays close to the base 8: the refraction's flat inner region is the rounded shape inset
-  // by BezelWidth (inner corner radius ≈ outerRadius − BezelWidth), so a wide bezel on this small pill
-  // squared off the refraction relative to the fully-rounded pill border. 8 keeps the inner refraction
-  // concentric with the pill.
-  //
-  // THE PRESSED PILL IS AAVE'S LENS (Jwift/Shared/Research/Aave.Glass.md). The outline keeps Apple's
-  // outward band; past it the lens field pulls the label toward the edge, so the label MAGNIFIES under
-  // the lens. Curvature is the cap height that shapes that pull: aave's playground 40, clamped by the
-  // shader to the pill's half height, so on a 48pt pill it is a near-hemisphere and the bend is steep at
-  // the rim and gentle over the label. The reach is Thickness x Refraction (px, outward; the lens gets
-  // 0.4 of it), which is the one lever that can run a sample off the pill, so it stays low.
+  // THE PRESSED PILL IS A LENS: the edge band bends what is under it, stretching the label at the rim
+  // and leaving it true-size across the flat face.
   Thickness: 2.5
-  Curvature: 40
-  Refraction: 8
-  BezelWidth: 12
-  BezelScale: 0.25
+  Refraction: 1
   FresnelStrength: 0
-  // aave's dispersion rides the bend, so this is a fringe only where the lens bends hardest.
+  // THE ONE FRINGE. Glass at rest has none; the lens that moves under a finger disperses, and the
+  // dispersion rides the bend, so it is a fringe only where the lens bends hardest.
   ChromaticAberration: 0.25
   // aave's highlight, their playground's numbers: a band at the outline and a wash toward the two lit
   // corners, brightening over a dark bar and darkening over a bright one so the lens always reads.

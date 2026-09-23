@@ -9,7 +9,6 @@
 
 Jwift_GlassBtn : JwiftGlass, JwiftPressGlass {
   Background: @GlassTint
-  BezelScale: 0.25
   SpecularIntensity: 0
   SpecularGlow: 0
   EdgeLightTop: 0

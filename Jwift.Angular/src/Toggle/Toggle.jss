@@ -37,8 +37,7 @@
 // and a thumb that nearly filled the track with nowhere to slide. The thumb grows for REAL rather than by VisualScale: scaling the
 // rendered result magnifies the hairline rim into a grey smudge, while growing the box re-renders the
 // glass at true resolution and the rim stays a hairline. The thumb is Placed, so nothing else moves, and
-// the negative Top/Left are what let it stand proud of the track. BezelWidth
-// stays small against a 23pt thumb: a wide bezel leaves no flat face and the pill reads as a dome.
+// the negative Top/Left are what let it stand proud of the track.
 
 // The hit box reaches the 48pt floor around the 31pt track; the margins take the reach back out, so a
 // row is no taller for holding a switch.
@@ -107,10 +106,7 @@ Jwift_ToggleKnob {
   BorderRadius: 999pt
   Background: rgb(255, 255, 255)
   Thickness: 0
-  Curvature: 0
   Refraction: 0
-  BezelWidth: 5
-  BezelScale: 0.3
   FresnelStrength: 0
   ShadowColor: rgba(0, 0, 0, 0.25)
   ShadowBlur: 4pt
@@ -138,9 +134,7 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   // A WASH, not a scrim: the pressed knob: a quiet fill over the track, so it takes the quiet lift.
   BackdropFilter: Lift(@JwiftWashLift)
   Thickness: 2.5
-  Refraction: 12
-  BezelWidth: 5
-  BezelScale: 0.3
+  Refraction: 1
   // Grows for real rather than by VisualScale, so the rim re-renders as a hairline instead of magnifying
   // into a smudge. Placed, so nothing else moves; the negative Top/Left stand it proud of the track.
   Top: -5.75pt
@@ -154,8 +148,7 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   RimStrength: @JwiftRimStrength
   EdgeLightTop: 0.35
   EdgeLightBottom: 0.9
-  InnerBlur: 0
-  ChromaticAberration: 0.08
+  ChromaticAberration: 0
   ShadowColor: rgba(0, 0, 0, 0)
   ShadowBlur: 0pt
   ShadowOffsetY: 0pt

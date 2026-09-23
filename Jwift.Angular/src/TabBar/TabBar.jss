@@ -11,7 +11,7 @@ Jwift_TabBarRow {
 // THICK material, not the standard one. A tab bar is a large element and it floats over arbitrary page
 // content, so it wears JwiftGlassThick (the shared second thickness: heavier body, deeper shadow,
 // stronger lensing) rather than JwiftGlass. Everything else still comes from the one glass family:
-// border luminosity, flat outline, crisper bevel (BezelScale 0.25), no specular.
+// the rim, the refraction band, no specular.
 //
 // The drill page's chrome is JwiftGlass and is legible because the PAGE veils behind it (Drill.jss
 // TopBlur Brightness(0.5), BottomBlur 0.34 black under a 120pt blur). The dock has no such veil:

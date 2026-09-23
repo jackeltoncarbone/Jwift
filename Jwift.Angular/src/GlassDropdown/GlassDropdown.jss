@@ -411,7 +411,7 @@ Jwift_GlassDropdownDivider {
 // lift supplies that same part -- 29 of 255 where 0.14 over the menu's own floor was about 32. Changing
 // a measured constant and a multiply in one diff would make neither attributable.
 //
-// NOT the pressed-glass lens: no Thickness, Refraction, Curvature or bezel. A menu row is not a tab pill,
+// NOT the pressed-glass lens: no Thickness and no Refraction. A menu row is not a tab pill,
 // and "avoid glass on glass" is the rule that says so. A lift is not a second material either; it is
 // the absence of one.
 Jwift_GlassDropdownIndicator {

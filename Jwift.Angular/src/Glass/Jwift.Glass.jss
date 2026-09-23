@@ -283,18 +283,11 @@ JwiftGlass {
   Tint: @JwiftControlTint
   TintTone: Ground
   AdaptiveFar: @JwiftGlassOpenFar
-  // The face is FLAT: Apple's panel never magnifies what is behind it. Only the bezel bends.
-  // Curvature 0 gives the lens field aave's straight ramp across the bezel rather than a cap's slope.
+  // The face is FLAT: Apple's panel never magnifies what is behind it. Only the edge band bends, 9% of
+  // the short side, as kube.io's convex squircle bends it: inward, stretching what lies just inside the
+  // edge, milky toward the outline, never folding. Refraction 1 is Apple's bend.
   Thickness: @JwiftGlassThickness
-  Curvature: 0
-  // The bend as the iPhone's: about 12px wide, most of it in the first few px, easing to flat with no
-  // seam, and the backdrop pulled about 12px at the peak. The body inside it is flat and quiet.
-  // The outline is a lens: the first quarter of the bezel shows what lies outside the panel, the rest
-  // pulls the interior to the edge, and the bend dies within a dozen px (Thickness x Refraction = the
-  // outward reach in px; the shader gives the inward half 0.4 of it).
-  BezelWidth: 12
-  BezelScale: 0.25
-  Refraction: 8
+  Refraction: 1
   // A soft blur, about 8% of a 48pt control's short side, so what is behind stays a recognisable shape.
   BackdropFilter: Blur(4pt) Brightness(@JwiftControlLift) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   RimWidth: @JwiftRimWidth
@@ -309,8 +302,8 @@ JwiftGlass {
   SpecularGlow: 0
   EdgeLightTop: 0
   EdgeLightBottom: 0
-  ChromaticAberration: 0.25
-  InnerBlur: 0.2
+  // Glass at rest has no fringe: only the moving selection lens disperses (SelectionIndicator).
+  ChromaticAberration: 0
   // The shadow as Apple's: soft, wide and barely lifted, its strength set by what is behind the glass, never
   // by the theme. ShadowColor's alpha is the shadow over text and busy content; over a flat light ground
   // ShadowAdaptive takes 85% of it away, and over black no shadow can show anyway.
@@ -332,8 +325,6 @@ JwiftGlass {
 JwiftSolidGlass {
   // A glass slab with Refraction 0: no distortion of the content under the edge, the fill stays solid.
   Thickness: @JwiftGlassThickness
-  BezelWidth: 11
-  BezelScale: 0.5
   Refraction: 0
   ChromaticAberration: 0
   LightAngle: 135
@@ -409,8 +400,6 @@ JwiftGlassThick : JwiftGlass {
   Tint: @JwiftSheetTint
   BackdropFilter: Blur(14pt) Brightness(@JwiftSheetLift) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
   Thickness: 3
-  Refraction: 10
-  BezelWidth: 14
   // Deeper and richer than a control's, still soft and low. The adaptive share comes from JwiftGlass.
   ShadowColor: rgba(0, 0, 0, 0.34)
   ShadowBlur: 32pt

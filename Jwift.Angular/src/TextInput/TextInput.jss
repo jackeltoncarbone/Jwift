@@ -109,7 +109,6 @@ Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   Padding: 0pt 18pt
   BorderRadius: 999pt
   Cursor: Text
-  BezelScale: 0.25
   SpecularIntensity: 0
   SpecularGlow: 0
   EdgeLightTop: 0
