@@ -28,7 +28,7 @@ Jwift_SliderTrack {
   Width: 100%
   Height: 6pt
   BorderRadius: 999pt
-  BackdropFilter: Lift(@JwiftWashStrongLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
   Overflow: Hidden
   @Transition Height { Duration: 200ms }
   @Transition Top { Duration: 200ms }

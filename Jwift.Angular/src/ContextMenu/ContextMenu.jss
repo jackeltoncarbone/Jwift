@@ -99,20 +99,18 @@ Jwift_ContextMenuItemLabel_Destructive : Jwift_ContextMenuItemLabel {
   Color: @Ink
 }
 
-Jwift_ContextMenuItemIcon {
+Jwift_ContextMenuItemIcon : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 12pt
   FontWeight: 600
-  Color: @InkSoft
   TextAlign: Center
   Width: 16pt
   FlexShrink: 0
 }
 
-Jwift_ContextMenuDivider {
+Jwift_ContextMenuDivider : JwiftSeparatorVibrancy {
   Width: 100%
   Height: 1pt
-  Background: @Line
   // Sits flush against the rows' inner padding band — small vertical
   // breathing room so the hairline doesn't touch the row above / below.
   // (4pt panel padding + this 1pt divider = 5pt before next row's 6pt.)

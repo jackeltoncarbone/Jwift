@@ -1,14 +1,14 @@
 // THE FIELD. One body for every text entry in the app, answering the pointer and the keyboard the way the
-// buttons do: it extends JwiftPress, so hover and press are the same lifts (@JwiftHoverWashLift,
-// @JwiftPressLift) on the same 140ms spring. What differs is only what a field should do with them.
+// buttons do: it extends JwiftPress, so hover and press are the same lifts (@JwiftVibrancyFill,
+// @JwiftVibrancyFillPressed) on the same 140ms spring. What differs is only what a field should do with them.
 //
-//   rest              Lift(@JwiftWashLift)          +18 dark / -12 light, the quiet wash every field wore
-//   hover             Lift(@JwiftHoverWashLift)     +29 / -19, the button's hover
-//   pressed           Lift(@JwiftPressLift)         +50 / -29, the button's press, squeezed to 0.985
-//   editing           Lift(@JwiftWashStrongLift)    +30 / -20, the selected wash, and the accent ring
-//   editing + hover   Lift(@JwiftFieldEditingHover) +41 / -27, the hover step taken from the editing step
+//   rest              Vibrancy(@JwiftVibrancySecondaryFill)   +18 dark / -12 light, the secondary fill
+//   hover             Vibrancy(@JwiftVibrancyFill)            +30 / -20, the button's hover
+//   pressed           Vibrancy(@JwiftVibrancyFillPressed)     +50 / -29, the button's press, squeezed to 0.985
+//   editing           Vibrancy(@JwiftVibrancyFill)            +30 / -20, the fill, and the accent ring
+//   editing + hover   Vibrancy(@JwiftFieldEditingHover)       +42 / -28, the hover step taken from the editing step
 //   invalid           @DangerWash, no lift; @DangerWashStrong under a hover; the ring turns @Danger
-//   disabled          half the resting lift, no response to the pointer; the text dims in the jinput
+//   disabled          Vibrancy(@JwiftVibrancyTertiaryFill), no response to the pointer; the text dims
 //
 // A field does not swell on hover. A button is a target and grows toward the finger; a field is a place,
 // 300pt wide, and 1.06 of it is 18pt of furniture moving. So the squeeze is the button's travel scaled to
@@ -17,8 +17,7 @@
 // The ring is a stroke in @GoldInk, the accent as a line, which is the one use of gold a control makes.
 // BorderWidth is paint only (it never moves layout), so it springs from 0 to 2pt with no reflow.
 
-@JwiftFieldEditingHover: @JwiftHoverWashLift + @JwiftWashStrongLift - @JwiftWashLift
-@JwiftFieldOffLift: 0.5 * @JwiftWashLift
+@JwiftFieldEditingHover: 2 * @JwiftVibrancyFill - @JwiftVibrancySecondaryFill
 @JwiftFieldRing: 2pt
 
 // The toolbar button's 48pt is the floor for anything a finger can press, and a line of text is exactly that
@@ -38,7 +37,7 @@ Jwift_Field : JwiftPress {
   BorderRadius: 999pt
   Cursor: Text
   Background: rgba(0, 0, 0, 0)
-  BackdropFilter: Lift(@JwiftWashLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
   BorderWidth: 0pt
   BorderColor: @GoldInk
   @Transition BorderWidth { Duration: 140ms }
@@ -56,29 +55,29 @@ Jwift_Field:Active {
 
 Jwift_Field:(Editing) {
   VisualScale: 1
-  BackdropFilter: Lift(@JwiftWashStrongLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
   BorderWidth: @JwiftFieldRing
 }
 
 Jwift_Field:(Editing && Hover) {
-  BackdropFilter: Lift(@JwiftFieldEditingHover)
+  BackdropFilter: Vibrancy(@JwiftFieldEditingHover)
 }
 
 Jwift_Field:(Invalid) {
   Background: @DangerWash
-  BackdropFilter: Lift(0)
+  BackdropFilter: Vibrancy(0)
   BorderColor: @Danger
 }
 
 Jwift_Field:(Invalid && Hover) {
   Background: @DangerWashStrong
-  BackdropFilter: Lift(0)
+  BackdropFilter: Vibrancy(0)
 }
 
 Jwift_Field:Disabled {
   VisualScale: 1
   Cursor: Default
-  BackdropFilter: Lift(@JwiftFieldOffLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyTertiaryFill)
   BorderWidth: 0pt
 }
 

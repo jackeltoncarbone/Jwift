@@ -152,24 +152,22 @@ Jwift_TabItemExpandedActive : Jwift_TabItemExpanded {
 // Icons use a consumer-provided font — Jwift defaults to JwiftIcons but
 // any Unicode font works. TextAlign: Center is important for icon glyphs.
 
-Jwift_TabIcon {
+Jwift_TabIcon : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
   // Apple's tab glyph fills a 24pt box (the native App Store capture); this face draws its glyph about
   // 1.14 em across, so 21pt lands on it.
   FontSize: 21pt
   FontWeight: 400
-  // Resting glyphs and labels are VIBRANT, as Apple's are: @TabInk added over the glass under them, which
-  // they keep the colour of (Jwift.Glass.jss, VIBRANT INK). Only the selected one covers, in the ink or
-  // the consumer's tint.
-  Color: @TabInk
-  TextFilter: Vibrant(@JwiftTabVibrantCover)
+  // Resting glyphs and labels wear Apple's label vibrancy (Jwift.Glass.jss): they keep the colour of the
+  // glass under them. Only the selected one covers, in the ink or the consumer's tint.
   TextAlign: Center
 }
 
 Jwift_TabIconActive : Jwift_TabIcon {
   FontWeight: 600
   Color: @Ink
-  TextFilter: None
+  // Filters merge by function, so the selected item resets the level with Vibrancy(0); None would keep it.
+  TextFilter: Vibrancy(0)
 }
 
 Jwift_TabIconExpanded : Jwift_TabIcon {
@@ -181,7 +179,7 @@ Jwift_TabIconExpanded : Jwift_TabIcon {
 Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
   FontWeight: 600
   Color: @Ink
-  TextFilter: None
+  TextFilter: Vibrancy(0)
 }
 
 // The accessory glyph follows the bar's glyph size: the expanded cell's size, the phone cell's below 880.
@@ -195,18 +193,16 @@ Jwift_TabAccessoryIcon : Jwift_TabIcon {
 Jwift_TabAccessoryIconActive : Jwift_TabAccessoryIcon {
   FontWeight: 600
   Color: @Ink
-  TextFilter: None
+  TextFilter: Vibrancy(0)
 }
 
 // ─── Tab label ───
 
-Jwift_TabLabel {
+Jwift_TabLabel : JwiftLabelVibrancy {
   FontFamily: Inter
   // Apple's tab label: 10pt semibold (a 7.3pt cap height and 1pt strokes on the native capture).
   FontSize: 10pt
   FontWeight: 600
-  Color: @TabInk
-  TextFilter: Vibrant(@JwiftTabVibrantCover)
   TextAlign: Center
   LetterSpacing: 0pt
   Margin: 0pt
@@ -215,7 +211,7 @@ Jwift_TabLabel {
 Jwift_TabLabelActive : Jwift_TabLabel {
   FontWeight: 600
   Color: @Ink
-  TextFilter: None
+  TextFilter: Vibrancy(0)
 }
 
 Jwift_TabLabelExpanded : Jwift_TabLabel {
@@ -228,7 +224,7 @@ Jwift_TabLabelExpanded : Jwift_TabLabel {
 Jwift_TabLabelExpandedActive : Jwift_TabLabelExpanded {
   FontWeight: 600
   Color: @Ink
-  TextFilter: None
+  TextFilter: Vibrancy(0)
 }
 
 // Label-only item (no icon) — the label IS the tab, at full reading size in any bar width.
@@ -241,5 +237,5 @@ Jwift_TabLabelSolo : Jwift_TabLabel {
 Jwift_TabLabelSoloActive : Jwift_TabLabelSolo {
   FontWeight: 600
   Color: @Ink
-  TextFilter: None
+  TextFilter: Vibrancy(0)
 }

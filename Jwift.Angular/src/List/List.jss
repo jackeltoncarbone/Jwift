@@ -76,11 +76,11 @@ Jwift_ListRow {
 // Jwift_List_Translucent they do not, because a paint covers the color the glass brought through and a
 // lift brightens it. One rule for both, so a section on a page and a section on a sheet answer alike.
 Jwift_ListRow:Hover {
-  BackdropFilter: Lift(@JwiftWashLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
 }
 
 Jwift_ListRow:Active {
-  BackdropFilter: Lift(@JwiftWashStrongLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
 }
 
 // A row that only reports, so it must not light up under the pointer.
@@ -89,15 +89,15 @@ Jwift_ListRow_Static : Jwift_ListRow {
   Cursor: Default
 }
 
-// Lift(0) IS LOAD-BEARING. Filters merge by function, so a static row would otherwise inherit the two
+// Vibrancy(0) IS LOAD-BEARING. Filters merge by function, so a static row would otherwise inherit the two
 // lifts above and light up exactly as the interactive row does -- the defect this pair exists to stop.
 // Zeroing Background here no longer does it: the row has no background to zero.
 Jwift_ListRow_Static:Hover {
-  BackdropFilter: Lift(0)
+  BackdropFilter: Vibrancy(0)
 }
 
 Jwift_ListRow_Static:Active {
-  BackdropFilter: Lift(0)
+  BackdropFilter: Vibrancy(0)
 }
 
 // A label longer than its row TRUNCATES. MaxLines alone only stops the second line being painted, so a

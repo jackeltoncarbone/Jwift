@@ -55,7 +55,7 @@
 //    real content was 1.249x chroma, inside Apple's spread and near the top of it.
 //
 //    THE KNOB BELOW IS NOT THAT NUMBER, AND THE DIFFERENCE MATTERS. 0.72 is what the GRADE carries,
-//    which is only the second of two stages: a lift goes underneath it (@JwiftControlLift, @JwiftSheetLift
+//    which is only the second of two stages: a lift goes underneath it (@JwiftControlBrightness, @JwiftSheetBrightness
 //    below) and supplies the brightness that makes glass read as a material over dark content. Before the
 //    lift existed the grade was the whole glass and this token was 1, because it had to be. With the lift
 //    carrying the luma, the grade's share is smaller and the surface still lands in Apple's band.
@@ -63,7 +63,7 @@
 //    So: 1 is the measurement, 0.72 is the input. This comment said "full strength" over a token reading
 //    0.72 for a few hours on 2026-09-21 -- the prose and the number disagreeing is the exact failure
 //    GlassLaw.Conformance guards against, and it is the guard that caught it.
-@JwiftControlLift: 2.0 * @Dark + 1 * @Light
+@JwiftControlBrightness: 2.0 * @Dark + 1 * @Light
 @JwiftGlassCarry: 0.72
 //
 // 3. THE FAR END. The ink is the app's own @Ink (Ui/Theme.Tokens.ts: rgb(245, 245, 247) in dark,
@@ -130,7 +130,7 @@
 // in light both sizes share Apple's plate and one range, so the sheet carries what the control does.
 // The sheet's own lift, for the same reason the control has one: applyGrading runs with brightness 1
 // unless something sets it, and a stage whose brightness is 1 can only darken.
-@JwiftSheetLift: 2.0 * @Dark + 1 * @Light
+@JwiftSheetBrightness: 2.0 * @Dark + 1 * @Light
 @JwiftSheetCarry: 0.478 * @Dark + @JwiftGlassCarry * @Light
 @JwiftSheetSaturate: @JwiftSheetCarry / (@JwiftSheetOverWhite - @JwiftSheetOverBlack)
 
@@ -172,23 +172,52 @@
 // saturate above: that number is now the reciprocal of a range and means nothing without its contrast
 // and tint, and a bare Saturate(2.9) over glass that already carries full colour would double it. These
 // are the values GlassDropdown's indicators wore before the law, kept to the digit.
-@JwiftVibrancy: 1.6 * @Dark + 1.8 * @Light
+@JwiftSelectionSaturate: 1.6 * @Dark + 1.8 * @Light
 
-// ── VIBRANT INK ─────────────────────────────────────────────────────
-// Apple's resting tab glyphs and labels are not a paint: measured on the native iPhone bars as each ink
-// pixel against the glass beside it, per channel, they are a dimmed copy of that glass with a light added,
-// out = (1 - cover) glass + ink, and they keep 63 to 88% of its colour where a white paint keeps none.
-//   dark   ink 212 of 255, cover 0.55   (App Store over a poster 0.63, Photos over concert photos 0.48)
-//   light  ink 5 of 255,   cover 0.88   (Music over a white list)
-// The ink is @TabInk; the cover is here, and `TextFilter: Vibrant()` draws the two (Jaui Core/Lift.ts).
-@JwiftTabVibrantCover: 0.55 * @Dark + 0.88 * @Light
+// ── VIBRANCY: APPLE'S LEVELS ────────────────────────────────────────
+// Apple's vibrancy (UIVibrancyEffectStyle: label, secondaryLabel, tertiaryLabel, fill, secondaryFill,
+// tertiaryFill, separator) drawn by Jaui's one model, `Vibrancy(amount, cover)`: out = (1 - cover) x what
+// is under it + amount (Jaui Core/Vibrancy.md). Each level is an AMOUNT (of 255, signed: light levels
+// darken) and a COVER, fitted per theme off Apple's native captures as each ink pixel against the glass
+// beside it. Text takes a white `Color` and the amount carries its ink.
+//
+//   level            dark amount / cover   light amount / cover   measured on
+//   label            212 / 0.55            5 / 0.88               iPhone App Store, Photos and Music tab bars
+//   secondary label  160 / 0.51            -7 / 0.24              light: macOS menu shortcuts; dark: between
+//                                                                 label and tertiary (no clean dark capture)
+//   tertiary label   108 / 0.47            -4 / 0.26              macOS widget footnote; macOS disabled items
+//   separator        33 / 0.13             -2 / 0.11              macOS widget and menu separators
+@JwiftVibrancyLabel: 212 * @Dark + 5 * @Light
+@JwiftVibrancyLabelCover: 0.55 * @Dark + 0.88 * @Light
+@JwiftVibrancySecondaryLabel: 160 * @Dark - 7 * @Light
+@JwiftVibrancySecondaryLabelCover: 0.51 * @Dark + 0.24 * @Light
+@JwiftVibrancyTertiaryLabel: 108 * @Dark - 4 * @Light
+@JwiftVibrancyTertiaryLabelCover: 0.47 * @Dark + 0.26 * @Light
+@JwiftVibrancySeparator: 33 * @Dark - 2 * @Light
+@JwiftVibrancySeparatorCover: 0.13 * @Dark + 0.11 * @Light
+// The levels as classes, one per Apple level, so every vibrant label and separator names its level once.
+// A vibrant label's ink is white: the level's amount carries it.
+JwiftLabelVibrancy {
+  Color: rgb(255, 255, 255)
+  TextFilter: Vibrancy(@JwiftVibrancyLabel, @JwiftVibrancyLabelCover)
+}
+JwiftSecondaryLabelVibrancy {
+  Color: rgb(255, 255, 255)
+  TextFilter: Vibrancy(@JwiftVibrancySecondaryLabel, @JwiftVibrancySecondaryLabelCover)
+}
+JwiftTertiaryLabelVibrancy {
+  Color: rgb(255, 255, 255)
+  TextFilter: Vibrancy(@JwiftVibrancyTertiaryLabel, @JwiftVibrancyTertiaryLabelCover)
+}
+// A separator paints nothing of its own: its shape treats the glass under it.
+JwiftSeparatorVibrancy {
+  Background: rgba(0, 0, 0, 0)
+  BackdropFilter: Vibrancy(@JwiftVibrancySeparator, @JwiftVibrancySeparatorCover)
+}
 
-// ── THE WASH: A HOVER, A CHIP, A WELL, A SELECTED ROW ──────────────
-// The theme's @Wash / @WashStrong / @HoverFill are a flat white (dark) or black (light) paint at a few
-// percent. A paint at alpha a keeps (1 - a) of the colour under it, so every hover in the app DILUTES what
-// it sits on: the carry defect the glass law fixed, one layer up. This is what Apple does instead,
-// measured off Apple's pixels the way the law above was (HIG DocC figures; the lane report
-// WorkerReports/build-washeffect.md has every site):
+// THE FILLS: a hover, a chip, a well, a selected row. Cover 0: Apple's fills add a constant and carry the
+// colour under them at 1, where a white paint at alpha a keeps (1 - a) of it. Measured off Apple's pixels
+// (HIG DocC figures; WorkerReports/build-washeffect.md has every site):
 //
 //   dark, the ground under a selection or a resting fill -> the fill, of 255
 //     visionOS button, idle,  over warm-grey glass  163,155,143 -> 183,175,163   +19.5 +19.9 +19.8
@@ -199,46 +228,19 @@
 //   light, the one Liquid Glass selection Apple draws in both themes
 //     iPhone tab bar, selected tab                       242 -> 221,221,222      -21   -21   -20
 //
-// THREE THINGS FOLLOW, AND ONE OF THEM IS NOT WHAT THE BRIEF ASSUMED.
-// 1. The lift is ADDITIVE, not a multiply. The same few levels land over 26, 36 and 163, where a
-//    Brightness(b) would have to be 2.15 on one and 1.12 on another, and a white paint 0.13 on one and
-//    0.20 on another. Apple adds a constant.
-// 2. The colour is CARRIED, not amplified. The one site over a coloured ground keeps its chroma to the
-//    level (20.3 -> 20.0, carry 0.99; hover 0.87): the fill neither dilutes the content like a white paint
-//    nor saturates it past itself. That is @JwiftGlassCarry, the same 1 the glass body carries. What Jack
-//    sees as "more saturation" is the difference from a white paint, which takes a of it away.
-// 3. The sign is SIGNED by theme. Dark lifts, light deepens: a light ground has no headroom (242 + 18 is
-//    past white, which erases the detail the wash is meant to show), and Apple's light tab bar goes DOWN.
-//    Apple's real iPad screenshots in light draw the selection as a near-opaque white plate instead
-//    (243 -> 251, chroma 2 -> 0), which covers the content and is a fill, not a wash (@SegOn's job).
-//    The light lift is Apple's one light/dark pair, -20 against +30, applied to each class: -2/3.
-//
-// THE LIFT, stated as what it is. `BackdropFilter: Lift(n)` adds n (of 255) to every channel of what is
-// behind the element, inside its shape, and carries the colour at 1 by construction (a constant has no
-// chroma). The engine draws it UNDER the element with an additive blend when nothing else there samples,
-// and folds it into the grade (Brightness 1 + 2L, Contrast its reciprocal: the solve this block used to
-// spell out) when something does. Jaui/src/Core/Lift.ts has both and the algebra. No Tint (a mix toward
-// white is the white paint again), no Saturate (the carry is 1, @JwiftGlassCarry, which a lift already is).
-//   wash    dark +18 (the three real sites, 16.7 / 18 / 19.7)   light -12
-//   strong  dark +30 (the selected Liquid Glass tab)             light -20
-//   hover   dark +29 (visionOS hover over the idle ground)       light -19
-// The dark wash is also what today's @Wash already paints over the app's ground (0.08 of 255 - 26 is +18);
-// only the dilution and the fall-off over brighter grounds change.
-@JwiftWashLift: 18 * @Dark - 12 * @Light
-@JwiftWashStrongLift: 30 * @Dark - 20 * @Light
-@JwiftHoverWashLift: 29 * @Dark - 19 * @Light
-// The PRESS lift is the one number in this law that is DERIVED, not measured, and it is labelled so.
-// Apple publishes a hover (visionOS, +29) and a selected tab (+30); it does not publish a press. So
-// this is the arithmetic THIS BLOCK already documents for @Wash, run on @PressFill: the comment above
-// gets +18 as `0.08 of 255 - 26`, i.e. alpha x (255 - ground) with the app's dark ground at 26, and
-// 0.05 x (255 - 15) = 12 puts the light ground at 15. On those same two grounds:
-//   dark   @PressFill 0.22 x 229 = 50.4
-//   light  @PressFill 0.12 x 240 = 28.8
-// Deriving rather than reusing @JwiftWashStrongLift matters: strong is 30, measured for @WashStrong's
-// 0.16, and borrowing it would put the press (+30) a single code above the hover (+29) and collapse a
-// distinction the fills have always drawn. If Apple's press is ever measured, THIS is the value to
-// replace, and the two above are not to be touched.
-@JwiftPressLift: 50 * @Dark - 29 * @Light
+// The same few levels land over 26, 36 and 163, so it is a constant, not a multiply. Dark brings light,
+// light deepens (242 + 18 is past white), -20 against +30, so each light level is -2/3 of its dark one.
+// Apple has no hover level: the visionOS hover (+29) is the fill (+30).
+//   fill             dark +30 (the selected Liquid Glass tab)             light -20
+//   secondary fill   dark +18 (the three resting sites, 16.7 / 18 / 19.7) light -12
+//   tertiary fill    half the secondary: a field at rest
+@JwiftVibrancyFill: 30 * @Dark - 20 * @Light
+@JwiftVibrancySecondaryFill: 18 * @Dark - 12 * @Light
+@JwiftVibrancyTertiaryFill: 0.5 * @JwiftVibrancySecondaryFill
+// The PRESS is DERIVED, not measured: Apple publishes no press. It is @PressFill's alpha x (255 - ground)
+// on the app's grounds (dark 26, light 15): 0.22 x 229 = 50.4 and 0.12 x 240 = 28.8. Kept apart from the
+// fill so a press reads a clear step past a selection.
+@JwiftVibrancyFillPressed: 50 * @Dark - 29 * @Light
 
 // ── THE RIM ─────────────────────────────────────────────────────────
 // Apple's Liquid Glass rim, measured off Apple's own pixels (LiquidGlassGallery: the Hold Assist speaker
@@ -302,7 +304,7 @@ JwiftGlass {
   Refraction: 1
   // The frost follows the size: 3% of the short half side, 0.5 to 8pt, so a control stays nearly clear
   // over what is behind it, as Apple's do, and a large panel frosts.
-  BackdropFilter: Blur(Auto) Brightness(@JwiftControlLift) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
+  BackdropFilter: Blur(Auto) Brightness(@JwiftControlBrightness) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   RimWidth: @JwiftRimWidth
   RimStrength: @JwiftRimStrength
   BorderLayer: 10
@@ -411,7 +413,7 @@ JwiftGlassThick : JwiftGlass {
   // More opaque, as a larger size is: it holds 7:1 where a control holds 4.5:1, which the law above turns
   // into a harder tint and a narrower range at the same full colour carry, and a wider blur.
   Tint: @JwiftSheetTint
-  BackdropFilter: Blur(14pt) Brightness(@JwiftSheetLift) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
+  BackdropFilter: Blur(14pt) Brightness(@JwiftSheetBrightness) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
   Thickness: 3
   // Deeper and richer than a control's, still soft and low. The adaptive share comes from JwiftGlass.
   ShadowColor: rgba(0, 0, 0, 0.34)
@@ -554,8 +556,8 @@ JwiftScrollEdgeBottomScene : JwiftScrollEdgeBottom {
 // The ONE press treatment. Every control that answers a finger extends this, so a press
 // reads the same on a button, a cell and an avatar, and the numbers live in one place.
 //
-// It changes what the element OWNS: a LIFT of whatever it rests on, @JwiftHoverWashLift /
-// @JwiftPressLift from the wash law above. No glass on glass -- and a lift is not a second material
+// It changes what the element OWNS: a LIFT of whatever it rests on, @JwiftVibrancyFill /
+// @JwiftVibrancyFillPressed from the wash law above. No glass on glass -- and a lift is not a second material
 // either, it is the absence of one, which is why this is the one treatment every control can take.
 // The glass half below also brightens the rim (@JwiftRimHoverStrength / @JwiftRimPressStrength). The
 // rim paints above the panel's own content (BorderLayer), so it is the part of a press that still reads
@@ -588,7 +590,7 @@ JwiftPressMotion:Active {
 // chroma preserved, where the old 0.14 white gave (118,84,180) and cut chroma by its own alpha, which
 // is what Apple's "takes on colors from the content directly behind it" is protecting.
 //
-// JwiftPressGlass cancels it with an explicit Lift(0) below. That makes the glass press depend on merge
+// JwiftPressGlass cancels it with an explicit Vibrancy(0) below. That makes the glass press depend on merge
 // order for its correctness, which is the one thing here worth replacing: the flat press wants its own
 // zone rather than a derived class cancelling a base class.
 JwiftPress : JwiftPressMotion {
@@ -596,11 +598,11 @@ JwiftPress : JwiftPressMotion {
 }
 
 JwiftPress:Hover {
-  BackdropFilter: Lift(@JwiftHoverWashLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
 }
 
 JwiftPress:Active {
-  BackdropFilter: Lift(@JwiftPressLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
 }
 
 // ── JwiftPressGlass ─────────────────────────────────────────────────
@@ -618,21 +620,21 @@ JwiftPressGlass : JwiftPress {
 // bright one -- so it is the thing to re-measure as a lift once the flat press has a zone of its own.
 //
 // A STEP ABOVE REST, NOT AN ABSOLUTE. Filters merge by function, so this Brightness REPLACES the resting
-// one, @JwiftControlLift. These were written as 1.85 and 2.5 when rest was 1 in both themes; rest became
+// one, @JwiftControlBrightness. These were written as 1.85 and 2.5 when rest was 1 in both themes; rest became
 // 2.0 in dark and nobody moved them, so a dark-mode hover DIMMED the control (2.0 -> 1.85) and a press
 // then jumped past rest (2.5): measured on the drill page's back button, body 52 at rest, 48 hovered.
 // Jack: "major saturation and darkness differences" between button states. Written as the same steps
 // above rest they always were, light mode is unchanged (1.85, 2.5) and dark reads rest < hover < press.
-@JwiftPressGlassHover: @JwiftControlLift + 0.85
-@JwiftPressGlassActive: @JwiftControlLift + 1.5
+@JwiftPressGlassHover: @JwiftControlBrightness + 0.85
+@JwiftPressGlassActive: @JwiftControlBrightness + 1.5
 JwiftPressGlass:Hover {
   RimStrength: @JwiftRimHoverStrength
-  BackdropFilter: Lift(0) Brightness(@JwiftPressGlassHover)
+  BackdropFilter: Vibrancy(0) Brightness(@JwiftPressGlassHover)
 }
 
 JwiftPressGlass:Active {
   RimStrength: @JwiftRimPressStrength
-  BackdropFilter: Lift(0) Brightness(@JwiftPressGlassActive)
+  BackdropFilter: Vibrancy(0) Brightness(@JwiftPressGlassActive)
 }
 
 // ── JwiftWash / JwiftWashStrong / JwiftHoverWash ───────────────────
@@ -640,21 +642,21 @@ JwiftPressGlass:Active {
 // its colour carried. JwiftWash is the quiet fill (@Wash), JwiftWashStrong the press, the selection and
 // the track that must read (@WashStrong), JwiftHoverWash the one hover (@HoverFill).
 //
-// A wash is a Lift() and nothing else, so it takes the under-draw: one draw of its own shape, no
+// A wash is a Vibrancy() and nothing else, so it takes the under-draw: one draw of its own shape, no
 // snapshot and no pyramid, and its label is never lifted. Anything that also samples (a Blur, a grade,
 // a Filter on an ancestor, a drop shadow) sends it through the grade instead, at a pyramid build, and the
-// `jaui:lift` census names which. Worn today only where Design/WashLaw.Conformance.spec.ts admits it.
+// `jaui:vibrancy` census names which. Worn today only where Design/WashLaw.Conformance.spec.ts admits it.
 JwiftWash {
   Background: rgba(0, 0, 0, 0)
-  BackdropFilter: Lift(@JwiftWashLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
 }
 
 JwiftWashStrong : JwiftWash {
-  BackdropFilter: Lift(@JwiftWashStrongLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
 }
 
 JwiftHoverWash : JwiftWash {
-  BackdropFilter: Lift(@JwiftHoverWashLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
 }
 
 // ── JwiftPressTint ──────────────────────────────────────────────────
@@ -720,7 +722,7 @@ JwiftPressTintGlass:Active {
 // a prominent button answers a finger exactly as every glass button, cell and avatar does. What it
 // cannot inherit is the PAINT half of either shared press:
 //
-//   * `JwiftPress` lifts what is BEHIND the control, by @JwiftHoverWashLift / @JwiftPressLift. A
+//   * `JwiftPress` lifts what is BEHIND the control, by @JwiftVibrancyFill / @JwiftVibrancyFillPressed. A
 //     prominent button's plate is opaque, so there is nothing behind it to lift: the backdrop the lift
 //     would move is covered by the button's own fill, and the press would not read at all.
 //   * `JwiftPressTint` grades the finished pixels with Brightness/Saturate. On an achromatic extreme

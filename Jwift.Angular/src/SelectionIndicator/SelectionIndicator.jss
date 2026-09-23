@@ -8,14 +8,14 @@ Jwift_SelectionIndicator {
 
   // Apple's selected tab is a LIFTED plate over the bar, not a sunken one: the Photos bar's selected
   // segment sits at 97 of 255 over a body at 69, a neutral +28, and the wash law's measured selected
-  // Liquid Glass tab is +30 in dark and -20 in light (Jwift.Glass.jss, @JwiftWashStrongLift). So the
+  // Liquid Glass tab is +30 in dark and -20 in light (Jwift.Glass.jss, @JwiftVibrancyFill). So the
   // pill lifts what the bar shows by that step and carries the colour through; only the selected glyph
   // and label take the tint, as Apple's do. At rest it is FLAT: no glass, no rim, no bend. It becomes
   // the glass lens only while a finger is on it (the pressed class below).
   Background: rgba(0, 0, 0, 0)
   Tint: 0
   BorderRadius: 100pt
-  BackdropFilter: Lift(@JwiftWashStrongLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
 
   // At rest it does not bend at all; the press brings the lens.
   Thickness: 0
@@ -94,7 +94,7 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   // stays neutral to the digit and the lift rides beside it, merged by function, which is why all four
   // are named on the one line.
   Tint: 0
-  BackdropFilter: Lift(@JwiftWashStrongLift) Brightness(1) Saturate(1) Contrast(1)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill) Brightness(1) Saturate(1) Contrast(1)
 
   // THE PRESSED PILL IS A LENS: the edge band bends what is under it, stretching the label at the rim
   // and leaving it true-size across the flat face.

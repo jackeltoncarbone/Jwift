@@ -88,13 +88,12 @@ Jwift_DrawerClose : JwiftPress {
   Direction: Row
   Justify: Center
   Align: Center
-  BackdropFilter: Lift(@JwiftWashLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
 }
 
-Jwift_DrawerCloseGlyph {
+Jwift_DrawerCloseGlyph : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 12pt
   FontWeight: 600
-  Color: @InkSoft
   TextAlign: Center
 }

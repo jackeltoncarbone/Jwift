@@ -75,18 +75,18 @@ Jwift_ToggleTrack {
   Width: 100%
   Height: 31pt
   BorderRadius: 999pt
-  BackdropFilter: Lift(@JwiftWashStrongLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
   FlexShrink: 0
   @Transition Background { Duration: 200ms }
   @Transition BackdropFilter { Duration: 200ms }
 }
 
-// Lift(0) IS LOAD-BEARING. Filters merge by function, so the ON track would otherwise keep the OFF
+// Vibrancy(0) IS LOAD-BEARING. Filters merge by function, so the ON track would otherwise keep the OFF
 // track's +30 behind its own opaque green -- an additive draw of the full track shape, every frame,
 // under pixels that can never show it. Invisible and not free.
 Jwift_ToggleTrack_On : Jwift_ToggleTrack {
   Background: rgb(48, 209, 88)
-  BackdropFilter: Lift(0)
+  BackdropFilter: Vibrancy(0)
 }
 
 Jwift_ToggleTrack_Disabled : Jwift_ToggleTrack {
@@ -132,7 +132,7 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   // (measured: 1.07 of the track's saturation). A white fill is what makes glass read as frost, so there
   // is almost none here; the pill is carried by its rim and by the bend at its edge.
   // A WASH, not a scrim: the pressed knob: a quiet fill over the track, so it takes the quiet lift.
-  BackdropFilter: Lift(@JwiftWashLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
   Thickness: 2.5
   Refraction: 1
   // Grows for real rather than by VisualScale, so the rim re-renders as a hairline instead of magnifying

@@ -54,7 +54,7 @@ Jwift_WheelSelectionBand {
   VisualTranslate: 0 -17pt
   Layer: 0
   BorderRadius: 12pt
-  BackdropFilter: Lift(@JwiftWashStrongLift) Brightness(1.5) Saturate(1.25)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill) Brightness(1.5) Saturate(1.25)
   // Hairline edge that defines the band like iOS.
   BorderWidth: 1pt
   BorderColor: @Line

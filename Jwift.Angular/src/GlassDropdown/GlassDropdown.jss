@@ -90,28 +90,28 @@ Jwift_GlassDropdownCell : JwiftPress {
 // under the pointer. The paint version never showed that: the inherited hover fill stacked ON the
 // resting fill. A lift does not stack with itself, so the strongest state has to be restated.
 Jwift_GlassDropdownCell_Active : Jwift_GlassDropdownCell {
-  BackdropFilter: Lift(@JwiftPressLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
 }
 
 Jwift_GlassDropdownCell_Active:Hover {
-  BackdropFilter: Lift(@JwiftPressLift)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
 }
 
 // Disabled inline cell — dimmed + inert (e.g. Undo with nothing to undo). The
 // click is also gated in the consumer; this is the VISUAL half so a cell that
 // can't be used reads as unavailable instead of identical to an active one.
 // Hover/active are flattened so it doesn't light up under the pointer — and since JwiftPress lifts
-// rather than paints, flattening it means Lift(0). Zeroing Background stopped working the moment the
+// rather than paints, flattening it means Vibrancy(0). Zeroing Background stopped working the moment the
 // press became a lift, and a disabled cell has been lighting up under the pointer since.
 Jwift_GlassDropdownCell_Disabled : Jwift_GlassDropdownCell {
   Opacity: 0.5
   Cursor: Default
 }
 Jwift_GlassDropdownCell_Disabled:Hover {
-  BackdropFilter: Lift(0)
+  BackdropFilter: Vibrancy(0)
 }
 Jwift_GlassDropdownCell_Disabled:Active {
-  BackdropFilter: Lift(0)
+  BackdropFilter: Vibrancy(0)
 }
 
 // Round avatar-style cell — like the cell above but clips its inner
@@ -363,22 +363,20 @@ Jwift_GlassDropdownItemLabel_Destructive : Jwift_GlassDropdownItemLabel {
 // Non-interactive section header — labels a consolidated overflow section in
 // the multi-group action bar's sink menu (e.g. "CAMERA", "FILE"). Small,
 // uppercase, dim; sits above its group's rows.
-Jwift_GlassDropdownSectionHeader {
+Jwift_GlassDropdownSectionHeader : JwiftTertiaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 10pt
   FontWeight: 700
   LetterSpacing: 0.6pt
-  Color: @InkFaint
   Padding: 8pt 14pt 4pt 14pt
   MaxLines: 1
 }
 
 // Hairline between large sections of a menu. It lives inside the 6pt row
 // gap (6pt clear above and below), so no row pill can ever touch it.
-Jwift_GlassDropdownDivider {
+Jwift_GlassDropdownDivider : JwiftSeparatorVibrancy {
   Width: 100%
   Height: 1pt
-  Background: @Line
 }
 
 // The one shared highlight for every row of an open menu. Placed inside the
@@ -418,7 +416,7 @@ Jwift_GlassDropdownIndicator {
   Position: Placed
   Layer: 0
   BorderRadius: 100pt
-  BackdropFilter: Lift(@JwiftHoverWashLift) Saturate(@JwiftVibrancy) Brightness(1.06 * @Dark + 0.97 * @Light)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill) Saturate(@JwiftSelectionSaturate) Brightness(1.06 * @Dark + 0.97 * @Light)
   Opacity: 0
 
   @Transition Y { Duration: 220ms }
@@ -436,11 +434,11 @@ Jwift_GlassDropdownIndicator_On : Jwift_GlassDropdownIndicator {
 }
 
 // Pressed is the same grade, deeper: the press lift against the hover lift (50 against 29 in dark,
-// -29 against -19 in light -- @JwiftPressLift, the one DERIVED number in the law, from @PressFill's
+// -29 against -19 in light -- @JwiftVibrancyFillPressed, the one DERIVED number in the law, from @PressFill's
 // own 0.22 / 0.12), and a touch more brightness behind it. Still no lens - a menu row is not a tab pill.
 // Restating Lift here is required, not decorative: filters merge by function, so naming only Saturate
 // and Brightness would leave the hover's 29 in place and the press would not deepen at all.
 Jwift_GlassDropdownIndicator_Pressed : Jwift_GlassDropdownIndicator_On {
-  BackdropFilter: Lift(@JwiftPressLift) Saturate(@JwiftVibrancy) Brightness(1.1 * @Dark + 0.94 * @Light)
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed) Saturate(@JwiftSelectionSaturate) Brightness(1.1 * @Dark + 0.94 * @Light)
 }
 
