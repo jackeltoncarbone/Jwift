@@ -66,21 +66,28 @@
 @JwiftControlLift: 2.0 * @Dark + 1 * @Light
 @JwiftGlassCarry: 0.72
 //
-// 3. THE FAR END, solved: the ink is the app's own @Ink (Ui/Theme.Tokens.ts: rgb(245, 245, 247) in dark,
+// 3. THE FAR END. The ink is the app's own @Ink (Ui/Theme.Tokens.ts: rgb(245, 245, 247) in dark,
 //    rgb(29, 29, 31) in light), and the ratio is Apple's, "at least 4.5:1, aim for 7:1 for custom text"
 //    (Apple.LiquidGlass.md, colour on glass). A CONTROL holds a glyph or a short label, so it holds the
-//    floor, 4.5. A SHEET holds running text, so it holds the aim, 7. That pair is the whole of "a larger
-//    size is more opaque" (WWDC25 session 284) and the only thing the sizes differ by. The worst
-//    backdrop on the greyscale ramp is the ground's opposite (white under dark glass, black under
-//    light), so the far end is the body value at which @Ink over it lands EXACTLY on the ratio, rounded
-//    toward the legible side. JSS cannot invert the sRGB curve, so the solve is here and
-//    Design/GlassLaw.Conformance.spec.ts re-runs it from the two ratios below and the live tokens:
-//      control, 4.5:1   dark 112.7 (4.502:1 over white)   light 132.1 (4.506:1 over black)
-//      sheet,   7:1     dark  83.5 (7.010:1 over white)   light 167.1 (7.004:1 over black)
+//    floor, 4.5. A SHEET holds running text, so it holds the aim, 7. The worst backdrop on the greyscale
+//    ramp is the ground's opposite (white under dark glass, black under light).
+//
+//    DARK: the far end is the body value at which @Ink over white lands EXACTLY on the ratio, rounded
+//    toward the legible side, so dark glass lets through all the content legibility allows:
+//      control, 4.5:1   112.7 (4.502:1 over white)
+//      sheet,   7:1      83.5 (7.010:1 over white)
+//    LIGHT: glass tints white in light mode, never grey. The far end is Apple's measured light plate
+//    over black, the fit through Apple's light glass over light content (the search button 236 over 236,
+//    the tab bar 237 over 235, both over list rows) with the ground pinned at its 242 over white: 170.
+//    It clears both floors (7.2:1 against @Ink), so it is one number for both sizes, and a sheet differs
+//    from a control in light only by its carry and its lift.
+//    Design/GlassLaw.Conformance.spec.ts re-runs the dark solve from the two ratios and the live tokens,
+//    and holds the light end to the floors.
 @JwiftControlLegibility: 4.5
 @JwiftSheetLegibility: 7
-@JwiftControlFar: 112.7 / 255 * @Dark + 132.1 / 255 * @Light
-@JwiftSheetFar: 83.5 / 255 * @Dark + 167.1 / 255 * @Light
+@JwiftGlassLightFar: 170 / 255
+@JwiftControlFar: 112.7 / 255 * @Dark + @JwiftGlassLightFar * @Light
+@JwiftSheetFar: 83.5 / 255 * @Dark + @JwiftGlassLightFar * @Light
 //
 // THE SOLVE, per size: the two ends of the ramp over black and over white, then the three knobs.
 //   tint      what the ends leave of the ramp, signed toward the ground by (@Dark - @Light)
@@ -89,13 +96,11 @@
 // Grade arguments must stay parenthesis-free (Style.Resolver's grade-arg regex is `[^()]*`), so the
 // arithmetic lives here and a bare var is what goes inside Saturate() / Contrast().
 //
-// WHAT IT DOES TO TODAY'S NUMBERS (over black / over white / chroma carried, of 255):
-//   control dark    28.1 / 112.2 / 0.528  ->  26.0 / 112.7 / 1     c 0.625  s 2.941  t 0.456
-//   control light  127.5 / 255.0 / 0.900  -> 132.1 / 242.0 / 1     c 0.809  s 2.320  t 0.467
-//   sheet dark      25.5 /  76.5 / 0.320  ->  26.0 /  83.5 / 1     c 0.525  s 4.435  t 0.571
-//   sheet light    165.8 / 255.0 / 0.630  -> 167.1 / 242.0 / 1     c 0.742  s 3.405  t 0.604
-// The ramp barely moves: the old dark numbers were already this legibility solve, never written down
-// (4.53:1 for the control, 7.82:1 for the sheet). What moves is the colour, which is what was missing.
+// WHAT THE KNOBS RESOLVE TO (over black / over white, of 255):
+//   control dark    26.0 / 112.7     c 0.625  s 2.118  t 0.456
+//   control light  170.0 / 242.0     c 0.735  s 2.550  t 0.616
+//   sheet dark      26.0 /  83.5     c 0.525  s 2.120  t 0.571
+//   sheet light    170.0 / 242.0     c 0.735  s 2.550  t 0.616
 //
 // WHAT THE LAW DOES NOT PROMISE, measured and not hidden. Saturate preserves LUMA, which is computed on
 // encoded values, but WCAG contrast is computed in linear light, and the two part company on a saturated
@@ -118,21 +123,15 @@
 @JwiftSheetOverWhite: @JwiftSheetFar * @Dark + @JwiftGlassGround * @Light
 @JwiftSheetTint: (1 - @JwiftSheetOverBlack - @JwiftSheetOverWhite) * (@Dark - @Light)
 @JwiftSheetContrast: (@JwiftSheetOverWhite - @JwiftSheetOverBlack) / (1 - @JwiftSheetTint)
-// THE SHEET NEEDS ITS OWN CARRY, or it out-saturates the control it sits beside.
-//
-// Jack: "the open dropdown is like way more saturated than the closed button, which is wrong." It is,
-// and by a number: saturate is carry / range, and the sheet's range is smaller than the control's
-// (83.5-26 against 112.7-26, both of 255) because a sheet holds running text and solves for 7:1 where
-// a control holds a glyph and solves for 4.5:1. One carry over two ranges therefore lands 3.19 against
-// 2.12 -- the sheet 1.51x the control, from the same token.
-//
-// So the carry is per size, as the range and the contrast already are. 0.478 is @JwiftGlassCarry scaled
-// by the ratio of the two ranges, which is the value that makes the two saturates equal: a menu opening
-// over a photo now carries the same colour as the button that opened it.
+// THE SHEET'S CARRY keeps its saturate equal to the control's, or a menu out-saturates the button that
+// opened it (Jack: "the open dropdown is like way more saturated than the closed button, which is
+// wrong"). Saturate is carry / range. In dark the sheet's range is the smaller (83.5-26 against
+// 112.7-26, both of 255), so its carry is @JwiftGlassCarry scaled by the ratio of the two ranges, 0.478;
+// in light both sizes share Apple's plate and one range, so the sheet carries what the control does.
 // The sheet's own lift, for the same reason the control has one: applyGrading runs with brightness 1
 // unless something sets it, and a stage whose brightness is 1 can only darken.
 @JwiftSheetLift: 2.0 * @Dark + 1 * @Light
-@JwiftSheetCarry: 0.478
+@JwiftSheetCarry: 0.478 * @Dark + @JwiftGlassCarry * @Light
 @JwiftSheetSaturate: @JwiftSheetCarry / (@JwiftSheetOverWhite - @JwiftSheetOverBlack)
 
 // ── THE FAR END OPENS: THE SAME RULE, SOLVED PER SURFACE ───────────
@@ -156,8 +155,8 @@
 // matching 1b's "implied over-white 248-278"; at the knee it resolves to c 0.81, t -0.08, which is 1b's
 // implied c 0.81, t -0.07 to -0.19. It is past white on purpose: the ink holds every surface below it long
 // before it binds, and 255 would put a second, invented knee into the fit. Light glass does NOT open
-// (0): Apple's light numbers are already this sheet's static solve (1b, "Apple IS our legibility solve"),
-// so a lighter or darker light plate would be a departure from Apple, not a match.
+// (0): its far end is already Apple's measured light plate (3 above), so a lighter or darker light plate
+// would be a departure from Apple, not a match.
 //
 // WHAT IT CANNOT DO, measured: with the ink held white, a dark control's body stops at 112.7 however light
 // the backdrop is, and a dark sheet's at 83.5. Over Apple's three sites that recovers 83% / 52% / 56% of the
@@ -233,20 +232,20 @@
 @JwiftPressLift: 50 * @Dark - 29 * @Light
 
 // ── THE RIM ─────────────────────────────────────────────────────────
-// Apple's Liquid Glass rim, measured off Apple's own pixels (LiquidGlassGallery, the newsroom crops of
-// the Hold Assist speaker button, the Control Center Wi-Fi pill and the phone's search button): a core
-// 2 to 3 device px wide at 3x, the SAME width all the way round, whose brightness alone follows the
-// light. Over the dark body (luma 26) the two lobes facing the light and its bounce (top left, bottom
-// right at LightAngle 135) sit 55 to 60 above the body, and ninety degrees off them 8 to 11 above. It
-// eases into the body over about 3% of the short side.
+// Apple's Liquid Glass rim, measured off Apple's own pixels (LiquidGlassGallery: the Hold Assist speaker
+// button, the Safari address pill, the Control Center Wi-Fi pill, the App Store search button over blue).
+// It is lit at two points, where the outline faces the light and its bounce (top left and bottom right at
+// LightAngle 135), and dies away from them: on the speaker button the lobe is about 100 degrees wide at
+// half strength and the sides sit at a tenth of the peak; on the Safari pill the whole cap is lit and the
+// straight top keeps a third of it. Its width follows the same falloff, crisp, with no shoulder.
 //
-// Apple's rim is a LIFTED, still-saturated version of the color under it, not a white veil: over teal
-// the body (0,113,108) peaks at (36,155,148), over blue (28,121,202) at (96,176,249). Jaui draws it as its
-// own thin strip along the outline (Jiv/Jiv.Rim.ts), a GAIN of what is below (x 1 + strength) and then a
-// screen toward white at 0.8 of the strength: no snapshot, no pyramid, no backdrop tap. 0.25 is the fit
-// to those crops (gain 0.23, white 0.19). The white term is what reads over black, where a gain has
-// nothing to lift: over the dark body (26) the lit lobes rise by about 50 and the sides by about 8; over
-// lavender (196,200,227) the lobes reach (241,246,255), as Apple's more button does.
+// Apple's rim is a LIFTED, still-saturated version of the color under it, not a white veil: over teal the
+// body (0,113,108) peaks at (36,155,148), over blue (28,121,202) at (96,176,249), over the App Store's
+// saturated blue (28,56,244) at (56,95,248). Jaui draws it as the panel program's rim instance at the
+// node's BorderLayer slot, from the face's own corner field: a GAIN of what is below (x 1 + strength),
+// then a screen toward white at 0.48 of the strength. 0.23 is the joint fit to those crops (gain 0.23,
+// white 0.11); the white term is what reads over black, where a gain has nothing to lift, and kept small
+// it leaves the rim over a saturated color that color rather than a pale line.
 //
 // The width is a HAIRLINE in px, not pt: PointScale and a Visual press never thicken it. It is the width
 // at the lit lobes; the sides narrow to 0.45 of it, never under one device pixel. Fitted to Apple's
@@ -254,7 +253,7 @@
 //
 // It rides BorderLayer, so a glass class's rim still paints above its own content.
 @JwiftRimWidth: 0.95px
-@JwiftRimStrength: 0.25
+@JwiftRimStrength: 0.23
 // The glass press brightens the rim a step at a time, as it brightens the body: a hover and a press
 // read on black, where there is nothing behind the glass to lift.
 @JwiftRimHoverStrength: 0.3
@@ -291,8 +290,8 @@ JwiftGlass {
   // outline. Refraction 1 is Apple's bend.
   Thickness: @JwiftGlassThickness
   Refraction: 1
-  // The frost follows the size: 6% of the short half side, 1.5 to 8pt, so what is behind a control stays
-  // a recognizable shape.
+  // The frost follows the size: 3% of the short half side, 0.5 to 8pt, so a control stays nearly clear
+  // over what is behind it, as Apple's do, and a large panel frosts.
   BackdropFilter: Blur(Auto) Brightness(@JwiftControlLift) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   RimWidth: @JwiftRimWidth
   RimStrength: @JwiftRimStrength
