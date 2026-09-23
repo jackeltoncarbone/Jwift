@@ -47,8 +47,9 @@
 // 170 over black, the fit through Apple's light search button and tab bar over list rows, carry 1.
 //
 // WHAT THE FIT DOES NOT PROMISE, stated. Apple's dark glass is not a legibility solve: over white the
-// control's body is 130.6, where @Ink holds 3.5:1, and the bar's is 147, 2.8:1. Apple lives with that;
-// its dark UI rarely puts glass over white, and the dark scroll edge dims what passes under a bar.
+// control's body is 130.6, where @Ink holds 3.5:1, the bar's 147, 2.8:1, and the hero's 222, 1.2:1. Apple
+// lives with that; its dark UI rarely puts glass over white, the dark scroll edge dims what passes under a
+// bar, and a hero's foot darkens its art under the button.
 @JwiftGlassGround: 26 / 255 * @Dark + 242 / 255 * @Light
 @JwiftGlassLightFar: 170 / 255
 @JwiftControlCarry: 1.15 * @Dark + 1 * @Light
@@ -91,18 +92,10 @@
 // Grade arguments must stay parenthesis-free (Style.Resolver's grade-arg regex is `[^()]*`), so the
 // arithmetic lives here and a bare var is what goes inside Saturate() / Contrast().
 
-// ── THE HERO'S LEGIBILITY GUARD ─────────────────────────────────────
-// Apple's dark glass does NOT flip: the iPad Games bar over a bright nebula (backdrop 140) stays dark glass
-// with white labels, and the App Store bar over bright art stays dark. Only the hero pill wears a flip, and
-// it is ours, not Apple's: its near-clear dark law puts white ink at 1.2:1 over white art, so over a light
-// backdrop (mean luma past 0.5) it turns to Apple's light plate with a dark label (Jiv/Shaders/Glass.Flip.glsl).
-// Light glass is that plate already, so the flip's contrast is 0 in light, which is no flip.
-@JwiftFlipOverBlack: @JwiftGlassLightFar
-@JwiftFlipOverWhite: 242 / 255
-@JwiftFlipTint: @JwiftFlipOverBlack + @JwiftFlipOverWhite - 1
-@JwiftFlipContrast: (@JwiftFlipOverWhite - @JwiftFlipOverBlack) / (1 - @JwiftFlipTint) * @Dark
-@JwiftFlipSaturate: 1 / (@JwiftFlipOverWhite - @JwiftFlipOverBlack)
-@JwiftFlipInk: rgb(16, 14, 18)
+// ── NO FLIP ─────────────────────────────────────────────────────────
+// Apple's dark glass never flips: the iPad Games bar over a bright nebula (backdrop 140) stays dark glass
+// with white labels, and the App Store bar over bright art stays dark. A hero pill stays legible the way
+// Apple's does, by the art darkening toward the hero's foot under it (Surface/HeroFade.ts), not by the glass.
 
 // ── VIBRANCY ON GLASS ───────────────────────────────────────────────
 // Things placed ON glass use "fills, transparency, and vibrancy" (HIG Materials), vibrancy being what
@@ -326,11 +319,10 @@ JwiftSectionTitle {
 
 // ── JwiftHeroGlass ──────────────────────────────────────────────────
 // The action a hero leads with, over its art: the hero law above (Apple's Games Play pills), near clear in
-// dark, with a heavier, wider shadow, and the hero's legibility guard (THE HERO'S LEGIBILITY GUARD above).
+// dark, with a heavier, wider shadow.
 JwiftHeroGlass : JwiftGlass {
   Tint: @JwiftHeroTint
   BackdropFilter: Blur(Auto) Saturate(@JwiftHeroSaturate) Contrast(@JwiftHeroContrast)
-  AdaptiveFlip: @JwiftFlipTint @JwiftFlipContrast @JwiftFlipSaturate @JwiftFlipInk
   ShadowColor: rgba(0, 0, 0, 0.2)
   // Unmeasured against Apple, so it keeps the adaptivity it had: 85% lighter over a flat light ground.
   ShadowAdaptive: 0.85
