@@ -6,16 +6,15 @@ Jwift_SelectionIndicator {
   // magnifies the label. Layer isn't animated, so it flips instantly on press.
   Layer: 0
 
-  // Apple's selected tab is a LIFTED plate over the bar, not a sunken one: the Photos bar's selected
-  // segment sits at 97 of 255 over a body at 69, a neutral +28, and the wash law's measured selected
-  // Liquid Glass tab is +30 in dark and -20 in light (Jwift.Glass.jss, @JwiftVibrancyFill). So the
-  // pill lifts what the bar shows by that step and carries the colour through; only the selected glyph
-  // and label take the tint, as Apple's do. At rest it is FLAT: no glass, no rim, no bend. It becomes
-  // the glass lens only while a finger is on it (the pressed class below).
+  // Apple's selected tab at rest is a NEUTRAL grey plate lifted over the bar: the Photos bar's selected
+  // segment sits +22 to +30 over the body and keeps a third of its colour (Jwift.Glass.jss,
+  // @JwiftVibrancySelection). Only the selected glyph and label take the tint, as Apple's do. At rest it
+  // is FLAT: no glass, no rim, no bend. It becomes the glass lens only while a finger is on it (the
+  // pressed class below).
   Background: rgba(0, 0, 0, 0)
   Tint: 0
   BorderRadius: 100pt
-  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
+  BackdropFilter: Vibrancy(@JwiftVibrancySelection, @JwiftVibrancySelectionCover)
 
   // At rest it does not bend at all; the press brings the lens.
   Thickness: 0
