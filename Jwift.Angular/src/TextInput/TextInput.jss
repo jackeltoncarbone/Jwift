@@ -168,6 +168,11 @@ Jwift_FieldText {
   AlignSelf: Stretch
 }
 
+// Multi-line text starts at the top of its field, like a text view.
+Jwift_FieldTextTop : Jwift_FieldText {
+  Justify: Start
+}
+
 // A search field's magnifying glass, as the home search drew it.
 Jwift_FieldGlyph {
   FontFamily: JwiftIcons

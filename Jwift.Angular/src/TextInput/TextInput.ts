@@ -37,7 +37,7 @@ export type TextInputMaterial = 'Fill' | 'Glass' | 'None';
   template: `
     @if (ShowsSearchGlyph()) { <icon class="Jwift_FieldGlyph" Name="magnifyingglass" /> }
     <ng-content select="[Leading]" />
-    <jiv class="Jwift_FieldText">
+    <jiv [class]="MultiLine() ? 'Jwift_FieldTextTop' : 'Jwift_FieldText'">
       <jinput
         #jinput
         [Text]="Text()"
