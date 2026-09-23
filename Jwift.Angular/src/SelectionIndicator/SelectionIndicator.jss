@@ -35,10 +35,8 @@ Jwift_SelectionIndicator {
   EdgeLightTop: 0
   EdgeLightBottom: 0
 
-  BorderWidth: 0
-  BorderBlur: 0.25pt
-  BorderFilter: Brightness(1) Saturate(1)
-  BorderColor: rgba(255, 255, 255, 0)
+  RimWidth: @JwiftRimWidth
+  RimStrength: 0
 
   ShadowColor: rgba(0, 0, 0, 0)
   ShadowBlur: 0
@@ -62,10 +60,7 @@ Jwift_SelectionIndicator {
   @Transition LightIntensity { Duration: 300ms }
   @Transition EdgeLightTop { Duration: 300ms }
   @Transition EdgeLightBottom { Duration: 300ms }
-  @Transition BorderWidth { Duration: 300ms }
-  @Transition BorderBlur { Duration: 300ms }
-  @Transition BorderFilter { Duration: 300ms }
-  @Transition BorderColor { Duration: 300ms }
+  @Transition RimStrength { Duration: 300ms }
   @Transition ShadowColor { Duration: 300ms }
   @Transition ShadowBlur { Duration: 300ms }
 
@@ -142,15 +137,8 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   EdgeLightTop: 0
   EdgeLightBottom: 0
 
-  BorderWidth: 0.45pt
-  BorderBlur: 0.3pt
-  BorderFilter: Blur(-0.5pt) Brightness(1.4)
-  BorderColor: rgba(255, 255, 255, 0.35)
+  RimStrength: @JwiftRimStrength
 
   ShadowColor: rgba(0, 0, 0, 0.15)
   ShadowBlur: 40pt
-  BorderFade: 0.7pt
-  BorderVariance: 0.5
-  BorderAlphaVariance: 0.75
-  BorderFresnelStrength: 0.7
 }

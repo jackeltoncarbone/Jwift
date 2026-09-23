@@ -232,64 +232,32 @@
 // replace, and the two above are not to be touched.
 @JwiftPressLift: 50 * @Dark - 29 * @Light
 
-// ── THE RIM CARRY ───────────────────────────────────────────────────
-// How much of the backdrop's OWN colour the lit arc of the rim carries. One number, here, because five
-// sheets author the rim's Fresnel by hand (Surface's CardGlass, Editorial's EdCard, SelectionIndicator,
-// Toggle) and a rim law stated five times is a rim law that drifts — Cruft.Audit.md row 6. Those copies
-// are still literal on purpose; see the note at the foot of this block.
+// ── THE RIM ─────────────────────────────────────────────────────────
+// Apple's Liquid Glass rim, measured off Apple's own pixels (LiquidGlassGallery, the newsroom crops of
+// the Hold Assist speaker button, the Control Center Wi-Fi pill and the phone's search button): a core
+// 2 to 3 device px wide at 3x, the SAME width all the way round, whose brightness alone follows the
+// light. Over the dark body (luma 26) the two lobes facing the light and its bounce (top left, bottom
+// right at LightAngle 135) sit 55 to 60 above the body, and ninety degrees off them 8 to 11 above. It
+// eases into the body over about 3% of the short side.
 //
-// WHAT THE PROPERTY NOW MEANS. It is `BorderFresnelStrength`, spelled `BorderFresnelBrightness` when
-// this block was written: `mix(BorderColor.rgb, fresnelTarget, pow(lightFacing,3) * this)` in
-// Jiv.Panel.frag. It is an AMOUNT and never was a brightness, and that name is why three separate asks
-// for a more SATURATED edge were answered by turning this dial. It used to drag the lit stroke toward
-// the literal vec3(1.0), so it read as "how white does the lit side get" and 0.7 was that dial. The mix
-// TARGET is now the rim's own backdrop gather driven to full value, and over a neutral gather that
-// target IS white and identical to BorderColor — so over a neutral backdrop this number is a provable
-// NO-OP and only decides how much HUE a coloured backdrop pushes into the rim. 0.7 was calibrated for
-// the job it no longer does.
+// Jaui draws it as its own thin strip along the outline, SCREENED onto what is already there
+// (Jiv/Jiv.Rim.ts): no snapshot, no pyramid, no backdrop tap. A screen keeps the destination's hue, lifts
+// darks the most and leaves whites white, so one strength serves both themes: over the dark body 0.25
+// lifts the lit lobes by 57 and the sides (0.15 of it) by 9, and over the light body (242) it can only
+// add what is left, 3 at the lobes, which is Apple's quiet light-mode rim.
 //
-// The COLOUR of that target is now its own control, `BorderFresnelFilter: Brightness(b) Saturate(s)`,
-// so a class can be more chromatic at the edge WITHOUT carrying more of the target, and two glass
-// classes over the same backdrop can differ in edge saturation. This sheet leaves it at the engine
-// default (Saturate 1.6, the number that used to be hard-coded in the shader), so nothing here moved.
+// The width is a HAIRLINE in px, not pt: PointScale and a Visual press never thicken it, and the engine
+// never draws it under one device pixel. 0.85px is 2.55 device px at 3x and 1.7 at 2x.
 //
-// WHY 1. The target is value-normalised (max channel exactly 1.0), so carrying it in full cannot make
-// the rim dimmer than the white it replaces — it can only take the off-hue channels down, which IS the
-// colour being carried. `pow(lightFacing, 3)` still shapes the falloff, so 1 means "the single most
-// light-facing point of the bevel shows the backdrop's hue at full intensity", not "the whole outline is
-// coloured". That is the highlight Apple describes: light sources "shine on the material producing
-// highlights that respond to geometry" on a material whose defining act is to "bend, shape and
-// concentrate light" (WWDC25 session 219, Shared/Research/Apple.LiquidGlass.md, the layers table) —
-// concentrated light that came through a green field is green, and HIG Color's "Liquid Glass has no
-// inherent color, and instead takes on colors from the content directly behind it" forbids the rim
-// having a white one of its own.
-//
-// IN-HOUSE PRECEDENT, not a new idea. Toggle.jss already argues this exact case in its own words — "any
-// appreciable alpha paints a flat WHITE ring that overrides whatever the glass was bending, which is the
-// one part that never matched Apple" — and lands at a Fresnel strength of 1.1 with BorderColor alpha
-// 0.15. This sheet keeps alpha at 0.35 because that alpha is the over-black luminosity calibration (the
-// rim peaks 38 above the body); only the carry moves.
-//
-// MEASURED, 1440x900 @3x, home hero pill over a teal stadium photo, sampled ON the 135-degree arc —
-// the point of the bevel that faces LightAngle, where the Fresnel is fully engaged. (The top-centre of
-// a pill is only ~35% engaged: lightFacing there is cos 45 and the term is cubed. Measuring the rim at
-// 12 o'clock understates this knob by a factor of three and is how 0.7 survived.)
-//   dark   rim rgb(99,144,144) chroma 0.313 -> 0.7: rgb(30,158,156) 0.810 -> 1: rgb(6,158,155) 0.962
-//          body just inside  rgb(5,110,108) 0.955   backdrop just outside rgb(0,38,37) 1.000
-//   light  rim rgb(227,255,255)      0.110 -> 0.7: rgb(172,255,255) 0.325 -> 1: rgb(161,255,255) 0.369
-//          body just inside rgb(159,242,242) 0.343  backdrop just outside rgb(223,252,252) 0.115
-// The dominant channel does not move between 0.7 and 1 in either theme (158 and 255); only the off-hue
-// channel falls, 30->6 and 172->161. At 1 the rim is brighter than the body it rides AND at least as
-// chromatic, which is the "saturate and brighten" this block exists for; at 0.7 it was still the least
-// chromatic thing in its own neighbourhood. Over black, 1 versus 0.7 differs by 0 pixels at threshold 0
-// across the whole /dev/jiv glass row and the non-Fresnel SOLID row — the no-op above, measured.
-//
-// THE FOUR COPIES ARE DELIBERATELY NOT POINTED HERE. Surface/Editorial/SelectionIndicator still say 0.7
-// and Prose's DocCardGlass omits the property entirely. Repointing them would move card and indicator
-// rims this lane never photographed, and adding the property where it is absent is a behaviour change,
-// not a de-duplication. Consolidating those four is its own lane (Cruft.Audit.md row 6); this constant
-// exists so that lane has one place to point them at.
-@JwiftRimCarry: 1
+// It rides BorderLayer, so a glass class's rim still paints above its own content.
+@JwiftRimWidth: 0.85px
+@JwiftRimStrength: 0.25
+// The glass press brightens the rim a step at a time, as it brightens the body: a hover and a press
+// read on black, where there is nothing behind the glass to lift.
+@JwiftRimHoverStrength: 0.3
+@JwiftRimPressStrength: 0.4
+// A sheet that carries words rather than a control (an alert, a notice, a hint) keeps its rim quiet.
+@JwiftRimQuietStrength: 0.1
 
 // ── THE SCREEN CORNER ───────────────────────────────────────────────
 // The app's outer corner (the iPhone's own, 52 CSS px) and the one floating sheet's corner. Chrome inside
@@ -310,40 +278,13 @@
 // solves for 7:1 where a control solves for 4.5:1, so a heavier slab is part of that solve rather than
 // a drift from this one. Two numbers with two reasons, not three with one.
 @JwiftGlassThickness: 2.5
-// THE RIM GEOMETRY, ONCE, for the same reason. Jack: "The Fresnel is really thick and blurry on the cms
-// stuff. but the chrome is what is correct. the glass." The chrome IS the reference, so these three are
-// its numbers and JwiftSolidGlass reads them instead of carrying its own set.
-//
-// What it was carrying: BorderWidth 1pt, BorderBlur 1pt, BorderFade 3pt -- a stroke 2.2x as wide, 3.3x
-// as soft, reaching 4.3x further inward. Those were chosen to compensate for a body Fresnel that had
-// been reaching the screen only through a shader leak (see the block over JwiftSolidGlass): when the
-// leak closed, the reach was moved into the border zone to keep the light. The reasoning was sound and
-// the result is still wrong on screen -- a compensation that overshoots is a drift like any other.
-// 0.675pt = 1.5 x the 0.45pt this was. Jack: "would it be easy to increase the Fresnel thickness by
-// 1.5x ever slightly for our standard for cards and chrome and stuff". It was easy because these three
-// tokens exist: JwiftGlass and JwiftSolidGlass both read them, JwiftGlassThick inherits, and the three
-// card classes (Surface CardGlass, Prose DocCardGlass, Editorial EdCard) inherit through the solid one.
-// One number, and the cards and the chrome move together -- which is the whole return on collapsing the
-// three copies of this rim earlier.
-//
-// ONLY THE WIDTH SCALES. Blur and fade stay where they are, deliberately: the rim reads as a hairline
-// because it is SHARP at the outline and dissolves over a short reach, and scaling the reach with it
-// would have given back the soft, thick edge the CMS cards were just taken off ("thick and blurry...
-// the chrome is what is correct"). More presence, same crispness.
-//
-// At dpr 2 this is 1.35 device px against 0.9 -- still under a rounded pixel and a half, which is what
-// keeps it a hairline rather than a stroke.
-@JwiftRimWidth: 0.675pt
-@JwiftRimBlur: 0.3pt
-@JwiftRimFade: 0.7pt
 JwiftGlass {
   Background: rgba(0, 0, 0, 0)
   Tint: @JwiftControlTint
   TintTone: Ground
   AdaptiveFar: @JwiftGlassOpenFar
-  // The face is FLAT: Apple's panel never magnifies what is behind it. Only the bezel bends, over a 10pt
-  // band, peaking near 35px of displacement (Thickness x Refraction). Curvature 0 gives the lens field
-  // aave's straight ramp across the bezel rather than a cap's slope.
+  // The face is FLAT: Apple's panel never magnifies what is behind it. Only the bezel bends.
+  // Curvature 0 gives the lens field aave's straight ramp across the bezel rather than a cap's slope.
   Thickness: @JwiftGlassThickness
   Curvature: 0
   // The bend as the iPhone's: about 12px wide, most of it in the first few px, easing to flat with no
@@ -356,33 +297,9 @@ JwiftGlass {
   Refraction: 8
   // A soft blur, about 8% of a 48pt control's short side, so what is behind stays a recognisable shape.
   BackdropFilter: Blur(4pt) Brightness(@JwiftControlLift) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
-  // The rim is a Fresnel highlight that follows the light, not a uniform stroke.
-  // The rim: a hairline that is sharp at the outline and dissolves inward over BorderFade, thick where
-  // the light hits and thinning to nothing on the far side.
-  // Over black the rim peaks 38 above the body for one device px and is gone two px later; over content
-  // it lifts what it shows by about 1.4.
-  //
-  // BorderFilter DELIBERATELY carries no Saturate(). It is not missing — the shader multiplies these
-  // numbers by the BODY's grade (`saturation * v_BorderFilter.y`), so the rim's backdrop pickup is
-  // already running at @JwiftControlSaturate. Writing Saturate(n) here means 1.6 x n, and THAT is the
-  // "darker ring inside the rim" this comment used to blame on saturation in general: applyGrading
-  // saturates about luma, so past about 2 the channels under luma fall far enough to read as a dark
-  // annulus across BorderFade's alpha falloff. The colour in the rim is not this knob's job.
-  //
-  // The rim carries hue through its Fresnel instead. Jiv.Panel.frag converges the lit side on the
-  // gather at full value rather than on vec3(1.0), saturated about white by BorderFresnelFilter's
-  // Saturate(). Over a neutral backdrop that target IS white, so the numbers above stay the ones
-  // measured over black. How far the lit arc goes toward that target is @JwiftRimCarry; its derivation
-  // and its measurements are up there.
-  BorderWidth: @JwiftRimWidth
-  BorderBlur: @JwiftRimBlur
-  BorderFade: @JwiftRimFade
-  BorderColor: rgba(255, 255, 255, 0.5)
-  BorderFilter: Blur(-0.5pt) Brightness(1.4)
+  RimWidth: @JwiftRimWidth
+  RimStrength: @JwiftRimStrength
   BorderLayer: 10
-  BorderVariance: 0.5
-  BorderAlphaVariance: 0.75
-  BorderFresnelStrength: @JwiftRimCarry
   // No inner glow, edge light or catchlight: on the iPhone the body of the glass is one even tone and
   // only the outline is lit.
   FresnelStrength: 0
@@ -405,22 +322,15 @@ JwiftGlass {
 
 
 // ── JwiftSolidGlass ─────────────────────────────────────────────────
-// A SOLID content surface that carries the iOS-26 glass RIM — beveled,
-// fresnel-lit, SATURATING the host's own content at the edge — with NO
-// refraction and NO backdrop frost, but a SOLID fill. This is genuinely
-// "solid glass": a slab that reads as opaque content with an edge (list
-// rows, cards, tiles, banners), yet paints the real glass bevel — not a
-// flat panel with a plain CSS border. The rim is THIS node's own border,
-// floated over its content via BorderLayer (successor to the old separate
-// top-layer outline jiv). Works because Jaui decouples the glass border
-// from the glass fill — a glass slab (Thickness > 0) with Refraction 0 and
-// no backdrop renders a solid fill but still paints its glass bevel border.
-// Drop onto any clipped (Overflow: Hidden) card/banner/tile; the consumer
-// owns Background / BorderRadius / Width / Height. A jiv is a jiv — it can
-// have a glass outline no matter what its fill is.
+// A SOLID content surface that carries the iOS-26 glass RIM, with NO
+// refraction and NO backdrop frost, but a SOLID fill: a slab that reads as
+// opaque content with an edge (list rows, cards, tiles, banners). The rim is
+// THIS node's own, floated over its content via BorderLayer. A jiv is a jiv:
+// it can wear the glass rim whatever its fill is. Drop onto any clipped
+// (Overflow: Hidden) card/banner/tile; the consumer owns Background /
+// BorderRadius / Width / Height.
 JwiftSolidGlass {
-  // Glass slab geometry — drives the bevel/fresnel RIM only (Refraction 0 = no
-  // distortion of the content under the edge; the fill stays solid).
+  // A glass slab with Refraction 0: no distortion of the content under the edge, the fill stays solid.
   Thickness: @JwiftGlassThickness
   BezelWidth: 11
   BezelScale: 0.5
@@ -428,57 +338,11 @@ JwiftSolidGlass {
   ChromaticAberration: 0
   LightAngle: 135
   LightIntensity: 1
-  // ── The rim carries its own light ──
-  // This class draws its rim in a BORDER-ONLY overlay pass (BorderLayer 10), and that
-  // pass has no body: Jiv.Panel.frag zeroes `fillAlpha`, which is what every interior
-  // effect is multiplied by. FresnelStrength drove the wide inward rim glow, and that
-  // glow reached the screen only because `edgeLightAlpha` captured `fillAlpha` a few
-  // hundred lines BEFORE the border-only block zeroed it. With the leak closed, a body
-  // fresnel on this class is a knob wired to nothing. EdgeLightBottom was already dead
-  // the same way (its hemispherical ambient is multiplied by the zeroed fillAlpha), so
-  // this class's rim lighting was half-on by accident of where that zero sits in the
-  // file. Both are gone; the light moves into the border zone, which a border-only pass
-  // is entitled to paint.
-  //
-  // The leak reached max(BezelWidth * 0.75, 6) = 16.5 device px inward at peak alpha
-  // 0.55 on the lit arc and 0.6x that on the far side, falling as proximity^1.6 — about
-  // 2.2 alpha-px of ink once the stroke's own 4 px band is subtracted (the border zone
-  // overwrites `result` inside it). The three numbers below put that back:
-  //
-  //   BorderFade 3pt      the reach. `fadeIn = max(BorderFade * widthScale, aa)`, so
-  //                       6 device px of dissolve past the stroke instead of the 2 px
-  //                       BorderBlur floor. The band integral goes 2.0 -> 4.0 alpha-px:
-  //                       +2.0, against the leak's 2.2. Not the leak's 16.5 px — the
-  //                       border zone replaces `result` across its band rather than
-  //                       adding a wash over it, so matching the REACH would have put
-  //                       back 7.3 alpha-px, three times the ink. Tighter and truer.
-  //   BorderAlphaVariance 0.4   the direction. `strokeBrightness = mix(1 - av, 1,
-  //                       lightFacing^2)` runs 0.6..1.0 — exactly the leak's own
-  //                       `directional = 0.6 + 0.4 * lightFacing^1.5` range.
-  //   BorderFresnelStrength 0.5  the lit arc converges on the gather driven to full
-  //                       value instead of on flat BorderColor, the rim law
-  //                       @JwiftRimCarry states for JwiftGlass. It rides INSIDE the
-  //                       BorderColor.a mix, so it is worth at most BorderColor.a.
-  //
-  // BorderColor.a 0.1 -> 0.16 is what gives that Fresnel a lever: at 0.1 a full Fresnel
-  // could lift the rim by a tenth. Paired with BorderAlphaVariance 0.4 the unlit arc
-  // lands at 0.16 * 0.6 = 0.096, so the far side keeps today's 0.1 to within 4% and
-  // only the lit arc gains.
+  // The rim is the chrome's own, floated ABOVE content so the footer blur and the art never eat it.
+  // Over an opaque card it lifts the card's own content at the edge, which is what a bevel does.
   FresnelStrength: 0
-  // The lit stroke that rides the bevel, floated ABOVE content so the footer
-  // blur / art never eats the frame.
-  BorderWidth: @JwiftRimWidth
-  BorderBlur: @JwiftRimBlur
-  BorderFade: @JwiftRimFade
-  BorderColor: rgba(255, 255, 255, 0.16)
-  BorderAlphaVariance: 0.4
-  BorderFresnelStrength: 0.5
-  // THE RIM SHARPENS ITS PICKUP, it does not blur it. This was Blur(4pt) Brightness(2) Saturate(2) --
-  // a 4pt blur on the annulus the rim samples, against the chrome's Blur(-0.5pt), which is a SHARPEN.
-  // That sign flip is most of what read as "blurry": the same rim law, fed a smeared gather. Brightness
-  // and Saturate stay the solid class's own, because its fill is opaque and its rim has no frost behind
-  // it to borrow contrast from -- only the blur was wrong.
-  BorderFilter: Blur(-0.5pt) Brightness(2) Saturate(2)
+  RimWidth: @JwiftRimWidth
+  RimStrength: @JwiftRimStrength
   BorderLayer: 10
 }
 
@@ -531,48 +395,6 @@ JwiftHeroGlass : JwiftGlass {
   ShadowOffsetY: 8pt
 }
 
-
-// ── JwiftGlassAdditiveRim ────────────────────────────
-// THE RIM ADDS WHAT IT RIDES, instead of mixing toward BorderColor. One line, and it is the whole
-// variant: `BorderFilter: Lift(n)` switches the stroke's last composite from
-//
-//   borderRgb = mix(borderBackdrop, strokeTint, weight)        // the house rim
-//   borderRgb = borderBackdrop + BorderColor.rgb * k * weight  // this one
-//
-// at the SAME weight, which is BorderColor's alpha tapered by the light-facing brightness. The taper
-// is the varying thickness Jack asked to keep -- "I wanted the varying thickness" -- and it survives
-// untouched, because only the thing being weighted changed, never the weight.
-//
-// WHY IT REPLACES JwiftGlassEvenTint, which was this variant's previous answer and is now deleted.
-// That class zeroed BorderFresnelStrength so the rim's hue would stop chasing the light angle. It was
-// treating the symptom: the rim's color was wrong because a MIX makes it wrong. `mix(in, white, w)`
-// raises luma and scales chroma by `(1 - w)`, so a rim is always less saturated than what it rides,
-// by an amount that VARIES with the taper -- which is the swing Jack read as "more saturated in the
-// center, so it looks like stupid corners on this border", and zeroing the Fresnel only removed one
-// of the two things that swung. A LIFT is `out = in + k`: it preserves hue and chroma EXACTLY while
-// raising luma, so there is nothing left to swing and nothing left to converge on a hued target.
-// BorderFresnelStrength is not zeroed here because it CANNOT apply: the fresnel term is multiplied by
-// `weight * (1 - additive)`, which is exactly 0 on this rim. A line that does nothing is not kept.
-//
-// MEASURED on the live header avatar before this variant existed: the disc read rgb(81, 45, 168) --
-// chroma 123, hue 258 -- and its ring read rgb(170, 142, 236) -- chroma 94, the same hue. 0.76x the
-// color of the thing it rings, for no reason the content gives. Jack: "it might need more sat?"
-//
-// AND Brightness(1) IS PART OF THE VARIANT, restating JwiftGlass's Brightness(1.4) down to identity.
-// A brightness multiplier is the same defect one level earlier: it scales the rim's gather, chroma
-// and all, so the rim would carry 1.4x the disc's color instead of the disc's color. The lift does
-// the brightening the multiply was there for, and does it without touching the color.
-//
-// THE AMOUNT. 120 of 255, added at the rim's own weight: 60 on the fully lit arc (weight 0.5) and 15
-// on the far side (weight 0.125, the BorderAlphaVariance 0.75 floor). Over the header avatar's disc
-// that is a ring of rgb(141, 105, 228) at the lit arc -- still chroma 123 at hue 258, and 27 short of
-// clipping on blue. A LIFT CLIPS AT 255 and clipping is the one thing that shifts a hue, so the
-// amount is bounded by the brightest channel the rim can ride: the first clipping code is 256 - added,
-// so at the lit arc this one clips from a backdrop channel of 196. Retune in one place, below.
-@JwiftRimLift: 120
-JwiftGlassAdditiveRim : JwiftGlass {
-  BorderFilter: Brightness(1) Lift(@JwiftRimLift)
-}
 
 // ── JwiftGlassThick ─────────────────────────────────────────────────
 // Apple's one material at its second thickness. Session 219: when glass "morphs to larger sizes, like
@@ -759,11 +581,9 @@ JwiftScrollEdgeBottomScene : JwiftScrollEdgeBottom {
 // It changes what the element OWNS: a LIFT of whatever it rests on, @JwiftHoverWashLift /
 // @JwiftPressLift from the wash law above. No glass on glass -- and a lift is not a second material
 // either, it is the absence of one, which is why this is the one treatment every control can take.
-// The rim lift, for the glass half below. The glass border paints above the panel's own
-// content (BorderLayer), so this is the part of a press that still reads when a photo or
-// a glyph covers the lift.
-@JwiftHoverEdge: rgba(255, 255, 255, 0.55)
-@JwiftPressEdge: rgba(255, 255, 255, 0.85)
+// The glass half below also brightens the rim (@JwiftRimHoverStrength / @JwiftRimPressStrength). The
+// rim paints above the panel's own content (BorderLayer), so it is the part of a press that still reads
+// when a photo or a glyph covers the lift.
 
 // The GESTURE, with nothing said about colour: the hit state, the swell, the squeeze, and the
 // one critically damped 140ms spring they ride. Every press in the app is this motion; what
@@ -813,9 +633,8 @@ JwiftPress:Active {
 // what shows over content; the fill and the rim are what carry the press on black.
 // Filters merge by function, so naming Brightness here keeps the resting blur and saturate.
 JwiftPressGlass : JwiftPress {
-  @Transition BorderColor { Duration: 140ms }
+  @Transition RimStrength { Duration: 140ms }
   @Transition BackdropFilter { Duration: 140ms }
-  @Transition BorderFilter { Duration: 140ms }
 }
 
 // The glass press states its own backdrop, as it always has. Its Brightness is a MULTIPLY, which is
@@ -831,15 +650,13 @@ JwiftPressGlass : JwiftPress {
 @JwiftPressGlassHover: @JwiftControlLift + 0.85
 @JwiftPressGlassActive: @JwiftControlLift + 1.5
 JwiftPressGlass:Hover {
-  BorderColor: @JwiftHoverEdge
+  RimStrength: @JwiftRimHoverStrength
   BackdropFilter: Lift(0) Brightness(@JwiftPressGlassHover)
-  BorderFilter: Brightness(1.5)
 }
 
 JwiftPressGlass:Active {
-  BorderColor: @JwiftPressEdge
+  RimStrength: @JwiftRimPressStrength
   BackdropFilter: Lift(0) Brightness(@JwiftPressGlassActive)
-  BorderFilter: Brightness(1.7)
 }
 
 // ── JwiftWash / JwiftWashStrong / JwiftHoverWash ───────────────────
@@ -900,18 +717,15 @@ JwiftPressTint:Active {
 // No backdrop brightness here. The foreground grade already moves the lensed backdrop along with
 // the fill, and lifting it a second time is exactly what washes a tinted pill out.
 JwiftPressTintGlass : JwiftPressTint {
-  @Transition BorderColor { Duration: 140ms }
-  @Transition BorderFilter { Duration: 140ms }
+  @Transition RimStrength { Duration: 140ms }
 }
 
 JwiftPressTintGlass:Hover {
-  BorderColor: @JwiftHoverEdge
-  BorderFilter: Brightness(1.5)
+  RimStrength: @JwiftRimHoverStrength
 }
 
 JwiftPressTintGlass:Active {
-  BorderColor: @JwiftPressEdge
-  BorderFilter: Brightness(1.7)
+  RimStrength: @JwiftRimPressStrength
 }
 
 // ── JwiftProminent ──────────────────────────────────────────────────

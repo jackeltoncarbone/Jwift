@@ -122,7 +122,7 @@ Jwift_ToggleKnob {
   @Transition Background { Duration: 160ms }
   @Transition Thickness { Duration: 160ms }
   @Transition Refraction { Duration: 160ms }
-  @Transition BorderWidth { Duration: 160ms }
+  @Transition RimStrength { Duration: 160ms }
 }
 
 Jwift_ToggleKnob_On : Jwift_ToggleKnob {
@@ -147,27 +147,11 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   Left: -8.5pt
   Width: 63.5pt
   Height: 42.5pt
-  // A hairline rim, crisp. Fade/blur/variance are what smeared it into a halo: the shader's rim boost
-  // feeds the backdrop LOD, and any boost above zero switches the sample off the raw scene and onto the
-  // blurred pyramid, which is where the haze came from.
-  BorderWidth: 0.8pt
-  BorderBlur: 0.4pt
-  BorderFade: 0.5pt
-  // BorderColor's ALPHA is a crossfade between the real refracted backdrop and a flat tint
-  // (borderRgb = mix(borderBackdrop, strokeTint, alpha * strokeBrightness)). Any appreciable alpha paints
-  // a flat WHITE ring that overrides whatever the glass was bending, which is the one part that never
-  // matched Apple. Low alpha lets the rim BE the refracted backdrop: green where it crosses the track,
-  // dark where it stands over the page. That asymmetry is correct physics, and it is why Apple's render
-  // shows a green rim at the track and a bright one over its white ground. The silhouette is carried by
-  // EdgeLight and the Fresnel term instead of by a painted stroke.
-  BorderColor: rgba(255, 255, 255, 0.15)
-  BorderFilter: Blur(-0.5pt) Brightness(1.6)
-  // Varied around the circumference, not a traced outline. Apple's rim is dark along the top and bright
-  // along the bottom, which is what makes it read as a thick slab of glass catching a light from above
-  // rather than a stroke drawn around a shape. Uniform alpha is what made ours look like an outline.
-  BorderVariance: 0.6
-  BorderAlphaVariance: 0.6
-  BorderFresnelStrength: 1.1
+  // The house hairline rim, screened onto whatever the lens shows: green where it crosses the track,
+  // bright where it stands over the page, as Apple's held thumb is. The silhouette is carried by the rim
+  // and the EdgeLight, not by a painted stroke.
+  RimWidth: @JwiftRimWidth
+  RimStrength: @JwiftRimStrength
   EdgeLightTop: 0.35
   EdgeLightBottom: 0.9
   InnerBlur: 0
