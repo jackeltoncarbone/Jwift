@@ -248,11 +248,12 @@
 // nothing to lift: over the dark body (26) the lit lobes rise by about 50 and the sides by about 8; over
 // lavender (196,200,227) the lobes reach (241,246,255), as Apple's more button does.
 //
-// The width is a HAIRLINE in px, not pt: PointScale and a Visual press never thicken it, and the engine
-// never draws it under one device pixel. 0.85px is 2.55 device px at 3x and 1.7 at 2x.
+// The width is a HAIRLINE in px, not pt: PointScale and a Visual press never thicken it. It is the width
+// at the lit lobes; the sides narrow to 0.45 of it, never under one device pixel. Fitted to Apple's
+// speaker button rim: 0.95px is 2.85 device px at the lobes and 1.3 on the sides at 3x.
 //
 // It rides BorderLayer, so a glass class's rim still paints above its own content.
-@JwiftRimWidth: 0.85px
+@JwiftRimWidth: 0.95px
 @JwiftRimStrength: 0.25
 // The glass press brightens the rim a step at a time, as it brightens the body: a hover and a press
 // read on black, where there is nothing behind the glass to lift.
