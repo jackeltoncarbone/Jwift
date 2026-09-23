@@ -49,10 +49,13 @@ Jwift_TabBar : JwiftGlassThickVivid {
   MaxWidth: 100%
   // Expanded: the 48pt interactive floor inside the 6pt inset = a 60pt bar, radius 30, cells 24.
   Height: 60pt
-  // A phone wears the iPhone tab bar: the condensed cell is 3.25rem = 52px (anchored in rem so the
-  // shrunken label font cannot undercut it), inside the same 6px inset = a 64px bar.
+  // A phone wears the iPhone tab bar, measured in Apple's points off a native App Store capture (a
+  // 440pt device at 3x): the bar 62pt tall, the selected pill 54pt tall and so inset 4pt, the cells
+  // side by side with no gap, as Apple's pill fills its slot.
   @If (Width < 880) {
-    Height: 64pt
+    Height: 62pt
+    Padding: 4pt
+    Gap: 0pt
   }
   BorderRadius: 999pt
 
@@ -79,11 +82,11 @@ Jwift_TabAccessory : Jwift_TabBar {
   Justify: Center
   Width: 60pt
   @If (Width < 880) {
-    Width: 64pt
+    Width: 62pt
   }
 }
 
-// The one cell inside the bar's inset, so a selected lens is concentric: 32pt - 6pt = 26pt, half its 52pt.
+// The one cell inside the bar's inset, so a selected lens is concentric: 31pt - 4pt = 27pt, half its 54pt.
 Jwift_TabAccessoryCell {
   Direction: Column
   Justify: Center
@@ -151,20 +154,22 @@ Jwift_TabItemExpandedActive : Jwift_TabItemExpanded {
 
 Jwift_TabIcon {
   FontFamily: JwiftIcons
-  // 1.5625rem. Deliberately ROOT-relative in the HTML bar, not em: the condensed cell's label font
-  // drops to 10px, and an em glyph fell to ~15px with it, far under Apple's tab-bar proportion.
-  FontSize: 25pt
+  // Apple's tab glyph fills a 24pt box (the native App Store capture); this face draws its glyph about
+  // 1.14 em across, so 21pt lands on it.
+  FontSize: 21pt
   FontWeight: 400
-  // Resting glyphs and labels take @TabInk, a rung that holds over whatever colour is behind the glass;
-  // only the selected one rises to primary, or to the accent when the consumer opts in.
+  // Resting glyphs and labels are VIBRANT, as Apple's are: @TabInk added over the glass under them, which
+  // they keep the colour of (Jwift.Glass.jss, VIBRANT INK). Only the selected one covers, in the ink or
+  // the consumer's tint.
   Color: @TabInk
+  TextFilter: Vibrant(@JwiftTabVibrantCover)
   TextAlign: Center
 }
 
 Jwift_TabIconActive : Jwift_TabIcon {
-  FontSize: 25pt
   FontWeight: 600
   Color: @Ink
+  TextFilter: None
 }
 
 Jwift_TabIconExpanded : Jwift_TabIcon {
@@ -176,37 +181,41 @@ Jwift_TabIconExpanded : Jwift_TabIcon {
 Jwift_TabIconExpandedActive : Jwift_TabIconExpanded {
   FontWeight: 600
   Color: @Ink
+  TextFilter: None
 }
 
 // The accessory glyph follows the bar's glyph size: the expanded cell's size, the phone cell's below 880.
 Jwift_TabAccessoryIcon : Jwift_TabIcon {
   FontSize: 19.03pt
   @If (Width < 880) {
-    FontSize: 25pt
+    FontSize: 21pt
   }
 }
 
 Jwift_TabAccessoryIconActive : Jwift_TabAccessoryIcon {
   FontWeight: 600
   Color: @Ink
+  TextFilter: None
 }
 
 // ─── Tab label ───
 
 Jwift_TabLabel {
   FontFamily: Inter
-  // The condensed cell: 0.625em = 10px at weight 700, and no tracking of its own.
+  // Apple's tab label: 10pt semibold (a 7.3pt cap height and 1pt strokes on the native capture).
   FontSize: 10pt
-  FontWeight: 700
+  FontWeight: 600
   Color: @TabInk
+  TextFilter: Vibrant(@JwiftTabVibrantCover)
   TextAlign: Center
   LetterSpacing: 0pt
   Margin: 0pt
 }
 
 Jwift_TabLabelActive : Jwift_TabLabel {
-  FontWeight: 700
+  FontWeight: 600
   Color: @Ink
+  TextFilter: None
 }
 
 Jwift_TabLabelExpanded : Jwift_TabLabel {
@@ -219,6 +228,7 @@ Jwift_TabLabelExpanded : Jwift_TabLabel {
 Jwift_TabLabelExpandedActive : Jwift_TabLabelExpanded {
   FontWeight: 600
   Color: @Ink
+  TextFilter: None
 }
 
 // Label-only item (no icon) — the label IS the tab, at full reading size in any bar width.
@@ -231,4 +241,5 @@ Jwift_TabLabelSolo : Jwift_TabLabel {
 Jwift_TabLabelSoloActive : Jwift_TabLabelSolo {
   FontWeight: 600
   Color: @Ink
+  TextFilter: None
 }

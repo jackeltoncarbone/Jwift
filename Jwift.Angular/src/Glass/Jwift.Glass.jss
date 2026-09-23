@@ -174,6 +174,15 @@
 // are the values GlassDropdown's indicators wore before the law, kept to the digit.
 @JwiftVibrancy: 1.6 * @Dark + 1.8 * @Light
 
+// ── VIBRANT INK ─────────────────────────────────────────────────────
+// Apple's resting tab glyphs and labels are not a paint: measured on the native iPhone bars as each ink
+// pixel against the glass beside it, per channel, they are a dimmed copy of that glass with a light added,
+// out = (1 - cover) glass + ink, and they keep 63 to 88% of its colour where a white paint keeps none.
+//   dark   ink 212 of 255, cover 0.55   (App Store over a poster 0.63, Photos over concert photos 0.48)
+//   light  ink 5 of 255,   cover 0.88   (Music over a white list)
+// The ink is @TabInk; the cover is here, and `TextFilter: Vibrant()` draws the two (Jaui Core/Lift.ts).
+@JwiftTabVibrantCover: 0.55 * @Dark + 0.88 * @Light
+
 // ── THE WASH: A HOVER, A CHIP, A WELL, A SELECTED ROW ──────────────
 // The theme's @Wash / @WashStrong / @HoverFill are a flat white (dark) or black (light) paint at a few
 // percent. A paint at alpha a keeps (1 - a) of the colour under it, so every hover in the app DILUTES what
