@@ -155,17 +155,13 @@ Jwift_AvatarGlyph_Fill : Jwift_AvatarGlyph {
 // it: the same circle, emptier, because there is no one there yet. The account surface had this already
 // and it is right; it becomes the primitive's `Empty` flag rather than a second class in a page's sheet.
 Jwift_Avatar_BylineEmpty : Jwift_Avatar_Byline {
-  Tint: 0.28 * @Dark + 0.32 * @Light
 }
 
 Jwift_Avatar_RowEmpty : Jwift_Avatar_Row {
-  Tint: 0.28 * @Dark + 0.32 * @Light
 }
 Jwift_Avatar_GroupEmpty : Jwift_Avatar_Group {
-  Tint: 0.28 * @Dark + 0.32 * @Light
 }
 Jwift_Avatar_HeaderEmpty : Jwift_Avatar_Header {
-  Tint: 0.28 * @Dark + 0.32 * @Light
 }
 // Fill has no glass to tint (see Fill above), so its empty plate is the pill's own and the class only has
 // to exist for the component to resolve.

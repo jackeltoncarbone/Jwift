@@ -9,9 +9,6 @@
 
 Jwift_GlassBtn : JwiftGlass, JwiftPressGlass {
   Background: @GlassTint
-  SpecularIntensity: 0
-  SpecularGlow: 0
-  EdgeLightTop: 0
 
   // Hover, press, squeeze and their 140ms spring all come from JwiftPressGlass.
   // PointScale is the button's own: it cascades through the layout solver, shrinking the

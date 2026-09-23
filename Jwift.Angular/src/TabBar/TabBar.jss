@@ -8,33 +8,19 @@ Jwift_TabBarRow {
   PointerEvents: Auto
 }
 
-// THICK material, not the standard one. A tab bar is a large element and it floats over arbitrary page
-// content, so it wears JwiftGlassThick (the shared second thickness: heavier body, deeper shadow,
-// stronger lensing) rather than JwiftGlass. Everything else still comes from the one glass family:
-// the rim, the refraction band, no specular.
+// Apple's glass (JwiftGlass): a bar's size sets its blur, face and shadow (Jaui Core/Glass.md).
 //
 // It floats in the dock's scroll edge (Navigation.jss DockEdge, JwiftScrollEdgeBottomScene), which dims and
 // blurs the content under it; the bar's own glass samples that content undimmed (Jaui's edge backdrop), so
 // it reads brighter than its surround, as Apple's does.
-Jwift_TabBar : JwiftGlassThickVivid {
+Jwift_TabBar : JwiftGlass {
   UserSelect: None
 
-  // The tint and the backdrop grade live in JwiftGlassThickVivid and the control optics above it
-  // (Jwift.Glass.jss). Tune them there, never here.
-  //
-  // Why no grey fill: the composite is fill over backdrop, so a neutral grey lays a flat floor across all
-  // three channels that no Saturate can climb past, and that floor is what desaturated the bar. The body
-  // paints no fill; its tint pulls the enriched backdrop toward the theme's ground, black in dark and white
-  // in light, so the hero's own colour is most of what you see. Dark glass floors at 26 of 255
-  // over black, so the bar stays a visible surface on an unlit page.
 
   // A tab bar's height is intrinsic — it must NEVER be vertically compressed by sibling flex content.
   // Without this, dropping a <tab-bar> into a flex column (a modal header, a settings panel) lets a
   // FlexGrow neighbour squish it to a different height per layout. Pin it.
   FlexShrink: 0
-
-  // The shadow is JwiftGlassThickVivid's adaptive one: present over text and imagery, near gone over a
-  // flat light ground. Tune it there, never here.
 
   Direction: Row
   Justify: Start

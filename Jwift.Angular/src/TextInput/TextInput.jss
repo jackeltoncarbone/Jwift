@@ -108,9 +108,6 @@ Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   Padding: 0pt 18pt
   BorderRadius: 999pt
   Cursor: Text
-  SpecularIntensity: 0
-  SpecularGlow: 0
-  EdgeLightTop: 0
 }
 
 // A number or a short code, in a field of its own width so a run of them reads as a column.

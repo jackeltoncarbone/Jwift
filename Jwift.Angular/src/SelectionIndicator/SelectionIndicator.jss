@@ -19,13 +19,8 @@ Jwift_SelectionIndicator {
   // At rest it does not bend at all; the press brings the lens.
   Thickness: 0
   Refraction: 0
-  FresnelStrength: 0
   ChromaticAberration: 0
 
-  LightAngle: 135
-  LightIntensity: 0
-  EdgeLightTop: 0
-  EdgeLightBottom: 0
 
   RimWidth: @JwiftRimWidth
   RimStrength: 0
@@ -40,15 +35,8 @@ Jwift_SelectionIndicator {
   @Transition Tint { Duration: 300ms }
   @Transition BackdropFilter { Duration: 300ms }
   @Transition Thickness { Duration: 300ms }
-  @Transition SpecularIntensity { Duration: 300ms }
-  @Transition SpecularGlow { Duration: 300ms }
   @Transition Refraction { Duration: 300ms }
-  @Transition FresnelStrength { Duration: 300ms }
   @Transition ChromaticAberration { Duration: 300ms }
-  @Transition LightAngle { Duration: 300ms }
-  @Transition LightIntensity { Duration: 300ms }
-  @Transition EdgeLightTop { Duration: 300ms }
-  @Transition EdgeLightBottom { Duration: 300ms }
   @Transition RimStrength { Duration: 300ms }
   @Transition ShadowColor { Duration: 300ms }
   @Transition ShadowBlur { Duration: 300ms }
@@ -86,35 +74,14 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   // release — the resting label is crisp again.
   Layer: 2
 
-  // Pressed, the pill is a clear lens over the label: no tint and a neutral grade, so it magnifies what is
-  // under it rather than dimming it.
-  //
-  // It keeps the resting pill's lift, the selected tab's step, so a press never darkens it: the grade
-  // stays neutral to the digit and the lift rides beside it, merged by function, which is why all four
-  // are named on the one line.
-  Tint: 0
+  // Pressed, the pill is Apple's clear glass, a lens over the label that magnifies what is under it. It
+  // keeps the resting pill's lift, the selected tab's step, so a press never darkens it.
   BackdropFilter: Vibrancy(@JwiftVibrancyFill) Brightness(1) Saturate(1) Contrast(1)
-
-  // THE PRESSED PILL IS A LENS: the edge band bends what is under it, stretching the label at the rim
-  // and leaving it true-size across the flat face.
-  Thickness: 2.5
+  Thickness: 1
   Refraction: 1
-  FresnelStrength: 0
+  GlassVariant: Clear
   // THE ONE FRINGE. Glass at rest has none; the lens that moves under a finger disperses, and the
   // dispersion rides the bend, so it is a fringe only where the lens bends hardest.
   ChromaticAberration: 0.25
-  // aave's highlight, their playground's numbers: a band at the outline and a wash toward the two lit
-  // corners, brightening over a dark bar and darkening over a bright one so the lens always reads.
-  SpecularIntensity: 0.25
-  SpecularGlow: 0.1
-
-  LightAngle: 135
-  LightIntensity: 1
-  EdgeLightTop: 0
-  EdgeLightBottom: 0
-
   RimStrength: @JwiftRimStrength
-
-  ShadowColor: rgba(0, 0, 0, 0.15)
-  ShadowBlur: 40pt
 }

@@ -10,11 +10,9 @@
 // and rides up from below on [entered] via the same VisualTranslate the app's
 // SheetEnter used.
 //
-// The material is the shared one, not a private mix. A partial-height sheet is a large element, so it is
-// Apple's thick material (JwiftGlassThick): more opaque than a control, tinted toward the theme's ground
-// rather than a grey, so the page's colour still reads through the card. Rim, bevel, lensing and shadow
-// all come from the glass family.
-Jwift_DrawerCard : JwiftGlassThick {
+// The material is the shared one, not a private mix: Apple's glass, whose size gives a sheet its heavier
+// blur, edge bleed and colored shadow.
+Jwift_DrawerCard : JwiftGlass {
   Layer: 25
   Position: Flow
   Width: 660pt

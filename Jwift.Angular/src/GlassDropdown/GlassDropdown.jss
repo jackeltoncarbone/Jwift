@@ -14,9 +14,6 @@ Jwift_GlassDropdown : JwiftGlass {
   Padding: 4pt
   Gap: 2pt
 
-  ShadowColor: rgba(0, 0, 0, 0.2)
-  ShadowBlur: 28pt
-  ShadowOffsetY: 8pt
 
   // Concentric with the 44pt pill rows at the 4pt closed padding; the open
   // state restates its own derivation below. Authored = apparent under the
@@ -30,8 +27,8 @@ Jwift_GlassDropdown : JwiftGlass {
   @Transition Height { Duration: 280ms }
   @Transition Padding { Duration: 220ms }
   // 10ms is effectively instant, and it is deliberate FOR THE SWAP: closed and open are different
-  // materials (JwiftGlass vs JwiftGlassThick), so easing the backdrop across that change makes the
-  // panel look like it is developing rather than opening. The open state overrides it for its own
+  // sizes of glass, so easing the backdrop across that change makes the panel look like it is
+  // developing rather than opening. The open state overrides it for its own
   // HOVER -- see the derivation there. Nothing had written this down.
   @Transition BackdropFilter { Duration: 10ms }
   @Transition RimStrength { Duration: 10ms }
@@ -171,8 +168,8 @@ Jwift_GlassDropdownCell_Ellipsis : Jwift_GlassDropdownCell {
 // Direction/Justify/Align re-stated explicitly: when the resolver swaps
 // from _Closed to _Open it rebuilds Layout from defaults, so anything not
 // declared on _Open falls back to default (Direction: Row), not the base.
-// The open menu is a large element, so it takes the thick material (later base wins).
-Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
+// The open menu is the same glass at a menu's size (later base wins).
+Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   Position: Placed
   Top: 0pt
   Right: 0pt
@@ -244,8 +241,7 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
 // problem worse. The open sink probes as `Jwift_GlassDropdown_Open.Jwift_GlassDropdown_Closed.
 // Jwift_GlassDropdown_ClosedAvatarOnly` -- it still wears both closed classes, and _ClosedAvatarOnly
 // composes JwiftPressGlass -> JwiftPress -> JwiftPressMotion. So with no rules here a 220x621 menu
-// takes a 48pt control's physics whole: VisualScale 1.06 and a backdrop Brightness of 1.85 that also
-// REPLACES the thick glass's blur. The previous answer scaled that to a tenth (1.006 / 1.085). A tenth
+// takes a 48pt control's physics whole: VisualScale 1.06 and the press's backdrop fill. The previous answer scaled that to a tenth (1.006 / 1.085). A tenth
 // of a thing that should not happen is still the thing happening.
 //
 // So both states now restate the panel's RESTING appearance. The pointer changes nothing; the
@@ -256,13 +252,13 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlassThick {
 Jwift_GlassDropdown_Open:Hover {
   VisualScale: 1
   Background: @GlassTint
-  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
+  BackdropFilter: None
   RimStrength: @JwiftRimStrength
 }
 Jwift_GlassDropdown_Open:Active {
   VisualScale: 1
   Background: @GlassTint
-  BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
+  BackdropFilter: None
   RimStrength: @JwiftRimStrength
 }
 

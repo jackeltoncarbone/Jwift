@@ -107,7 +107,6 @@ Jwift_ToggleKnob {
   Background: rgb(255, 255, 255)
   Thickness: 0
   Refraction: 0
-  FresnelStrength: 0
   ShadowColor: rgba(0, 0, 0, 0.25)
   ShadowBlur: 4pt
   ShadowOffsetY: 1pt
@@ -141,17 +140,12 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   Left: -8.5pt
   Width: 63.5pt
   Height: 42.5pt
-  // The house hairline rim, screened onto whatever the lens shows: green where it crosses the track,
-  // bright where it stands over the page, as Apple's held thumb is. The silhouette is carried by the rim
-  // and the EdgeLight, not by a painted stroke.
+  // Apple's clear glass: the rim all the way round, recoloring whatever the lens shows (green where it
+  // crosses the track, bright over the page), and no shadow.
+  GlassVariant: Clear
   RimWidth: @JwiftRimWidth
   RimStrength: @JwiftRimStrength
-  EdgeLightTop: 0.35
-  EdgeLightBottom: 0.9
   ChromaticAberration: 0
-  ShadowColor: rgba(0, 0, 0, 0)
-  ShadowBlur: 0pt
-  ShadowOffsetY: 0pt
 }
 
 Jwift_ToggleKnob_OnPressed : Jwift_ToggleKnob_Pressed {
