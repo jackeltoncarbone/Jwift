@@ -6,15 +6,15 @@ Jwift_SelectionIndicator {
   // magnifies the label. Layer isn't animated, so it flips instantly on press.
   Layer: 0
 
-  // The small-control optics (Jwift.Glass.jss), regraded over the bar it rests on: no fill of its own,
-  // the bar's backdrop compressed, enriched and tinted toward the theme's ground. Over a dark bar the
-  // compression lifts the pill a step above the bar's floor, as the iPhone's active pill sits above its
-  // bar; over bright content the tint sinks it below. The values live once, in the glass sheet.
+  // Apple's selected tab is a LIFTED plate over the bar, not a sunken one: the Photos bar's selected
+  // segment sits at 97 of 255 over a body at 69, a neutral +28, and the wash law's measured selected
+  // Liquid Glass tab is +30 in dark and -20 in light (Jwift.Glass.jss, @JwiftWashStrongLift). So the
+  // pill lifts what the bar shows by that step and carries the colour through; only the selected glyph
+  // and label take the tint, as Apple's do. A quiet rim draws its edge.
   Background: rgba(0, 0, 0, 0)
-  Tint: @JwiftControlTint
-  TintTone: Ground
+  Tint: 0
   BorderRadius: 100pt
-  BackdropFilter: Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
+  BackdropFilter: Lift(@JwiftWashStrongLift)
 
   // At rest it does not bend at all; the press brings the lens.
   Thickness: 0
@@ -28,7 +28,7 @@ Jwift_SelectionIndicator {
   EdgeLightBottom: 0
 
   RimWidth: @JwiftRimWidth
-  RimStrength: 0
+  RimStrength: @JwiftRimQuietStrength
 
   ShadowColor: rgba(0, 0, 0, 0)
   ShadowBlur: 0
@@ -89,13 +89,11 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   // Pressed, the pill is a clear lens over the label: no tint and a neutral grade, so it magnifies what is
   // under it rather than dimming it.
   //
-  // THE FILL WAS THE ONE THING CONTRADICTING THAT SENTENCE. `Background: @Wash` is a white at 0.08 laid
-  // over the magnified label, which keeps 92% of it -- a lens with a veil on the front. The wash law
-  // (Jwift.Glass.jss, THE WASH) says the same step as a LIFT: +18 of 255 in dark, -12 in light, added to
-  // what the lens already brought through. The grade stays neutral to the digit; the lift rides beside
-  // it and merges by function, which is why all four are named on the one line.
+  // It keeps the resting pill's lift, the selected tab's step, so a press never darkens it: the grade
+  // stays neutral to the digit and the lift rides beside it, merged by function, which is why all four
+  // are named on the one line.
   Tint: 0
-  BackdropFilter: Lift(@JwiftWashLift) Brightness(1) Saturate(1) Contrast(1)
+  BackdropFilter: Lift(@JwiftWashStrongLift) Brightness(1) Saturate(1) Contrast(1)
 
   // THE PRESSED PILL IS A LENS: the edge band bends what is under it, stretching the label at the rim
   // and leaving it true-size across the flat face.
