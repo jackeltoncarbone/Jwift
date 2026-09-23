@@ -1,35 +1,43 @@
 import {
-  ChangeDetectionStrategy, Component,
-  input, model, output, viewChild,
+  ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit,
+  computed, effect, forwardRef, input, model, output, signal, viewChild,
 } from '@angular/core';
-import { Jinput, type JinputSpan, type JinputPeerCaret, Jiv, Jext, Jyle } from 'jaui-angular';
+import { Jinput, type JinputSpan, type JinputPeerCaret, Jiv } from 'jaui-angular';
+import { JivHost } from '../Internal/JivHost';
+import { Icon } from '../Icon/Icon';
 import TextInputJss from './TextInput.jss';
 
 export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret };
 
 /**
- * `<text-input>` — Jwift's house-styled wrapper around `<jinput>`.
+ * What the field is drawn in. `Fill` is the house field, a lift of whatever it rests on. `Glass` is for
+ * the one field a page leads with over its ground (a directory's search). `None` paints nothing: the
+ * text sits in a surface its host already draws, like the drill sentence or a grouped card.
+ */
+export type TextInputMaterial = 'Fill' | 'Glass' | 'None';
+
+/**
+ * `<text-input>`: the one text field. It IS the field body, not a wrapper around one, so the body answers
+ * hover, press, editing, invalid and disabled with the same 140ms spring and the same lifts the buttons use
+ * (TextInput.jss). A single line is a pill at the toolbar button's height; `MultiLine` is a card that grows.
  *
- * Adds Apple-style typography (Inter), padding, and a soft focus ring on
- * top of the bare Jaui primitive. Pass-through API: every input and event
- * on `<jinput>` is exposed here too. For per-range styling (e.g. tokens),
- * pass `[Spans]` — each span is `{ Start, End, Color?, Background? }`.
+ *   <text-input [Text]="Query()" (TextChange)="Query.set($event)" Placeholder="Search"
+ *               InputMode="search" Label="Search users" />
  *
- *   <text-input [Text]="title()" (TextChanged)="title.set($event)"
- *               Placeholder="Enter a title…" />
- *
- * Single-line vs multi-line is controlled by sizing — wrap a `<text-input>`
- * in a constrained-height container for single-line, or let it grow for
- * multi-line. Wrap follows the container width.
+ * Anything marked `Leading` projects before the text; anything else after it. A search field gets its
+ * magnifying glass and its clear button from the component.
  */
 @Component({
   selector: 'text-input',
   standalone: true,
-  imports: [Jiv, Jinput, Jyle],
+  imports: [Jiv, Jinput, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: Jiv, useExisting: forwardRef(() => TextInput) }],
+  host: { '(click)': 'OnBodyClick($event)' },
   template: `
-    <jyle [source]="JssSource" />
-    <jiv class="TextInputBox">
+    @if (ShowsSearchGlyph()) { <icon class="Jwift_FieldGlyph" Name="magnifyingglass" /> }
+    <ng-content select="[Leading]" />
+    <jiv class="Jwift_FieldText">
       <jinput
         #jinput
         [Text]="Text()"
@@ -37,67 +45,75 @@ export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret
         [Spans]="Spans()"
         [PeerCarets]="PeerCarets()"
         [Placeholder]="Placeholder()"
-        [ReadOnly]="ReadOnly()"
+        [ReadOnly]="Disabled()"
         [MultiLine]="MultiLine()"
-        [FontFamily]="_fontFamily()"
-        [FontSizePx]="_fontSizePx()"
-        [FontWeight]="_fontWeight()"
-        [LineHeightRatio]="_lineHeightRatio()"
-        [RowGapPx]="_rowGapPx()"
+        [Label]="Label()"
+        [HitSurface]="Material() === 'None' ? null : Node"
+        [FontFamily]="FontFamily()"
+        [FontSizePx]="FontSizePx()"
+        [FontWeight]="FontWeight()"
+        [LineHeightRatio]="LineHeightRatio()"
+        [RowGapPx]="RowGapPx()"
         [InputMode]="InputMode()"
         [Autocorrect]="Autocorrect()"
         [EnterKeyHint]="EnterKeyHint()"
-        [PlaceholderFontStyle]="PlaceholderFontStyle()"
-        [Ink]="_ink()"
-        [PlaceholderInk]="_placeholderInk()"
-        [CaretInk]="_caretInk()"
+        PlaceholderFontStyle="Normal"
+        [Ink]="Ink()"
+        [PlaceholderInk]="PlaceholderInk()"
+        [CaretInk]="CaretInk()"
         (PositionClicked)="PositionClicked.emit($event)"
         (PositionHovered)="PositionHovered.emit($event)"
-        (FocusChanged)="FocusChanged.emit($event)"
+        (FocusChanged)="OnFocusChanged($event)"
         (ContextRequested)="ContextRequested.emit($event)"
         (Submitted)="Submitted.emit($event)"
         (Cancelled)="Cancelled.emit($event)"
         (SelectionChanged)="SelectionChanged.emit($event)" />
     </jiv>
+    <ng-content />
+    @if (ShowsClear()) {
+      <jiv class="Jwift_FieldClear" label="Clear" (click)="Clear()">
+        <jiv class="Jwift_FieldClearDisc"><icon class="Jwift_FieldClearGlyph" Name="xmark" /></jiv>
+      </jiv>
+    }
   `,
   styles: [':host { display: contents; }'],
 })
-export class TextInput {
-  readonly JssSource = TextInputJss;
-
-  // ── Inputs (pass-through) ────────────────────────────────────────
+export class TextInput extends JivHost implements OnInit, OnDestroy {
   readonly Text = model('');
   readonly Spans = input<readonly JinputSpan[]>([]);
   readonly PeerCarets = input<readonly JinputPeerCaret[]>([]);
   readonly Placeholder = input('');
-  readonly ReadOnly = input(false);
+  /** The accessible name. Falls back to the placeholder. */
+  readonly Label = input<string | null>(null);
   readonly MultiLine = input(false);
-  /** Placeholder slant — 'Italic' (house default) or 'Normal' for straight
-   *  placeholder text. */
-  readonly PlaceholderFontStyle = input<'Normal' | 'Italic'>('Italic');
-  /** Text, placeholder and caret inks; any colour or `@Var`. Unset, they follow the theme (see House defaults). */
-  readonly Ink = input<string | null>(null);
-  readonly PlaceholderInk = input<string | null>(null);
-  readonly CaretInk = input<string | null>(null);
+  readonly Material = input<TextInputMaterial>('Fill');
+  /** Present but not editable: no caret, no focus, no response to the pointer. */
+  readonly Disabled = input(false);
+  /** The value cannot be accepted as it stands. */
+  readonly Invalid = input(false);
+  /** A clear button while there is text. Search fields have one unless this says otherwise. */
+  readonly Clearable = input<boolean | null>(null);
+  /** App classes merged after the field's own, for a field sized by its screen. */
+  readonly Class = input('');
 
-  /** Optional font overrides. Left at house defaults when not provided. */
-  readonly FontFamily = input<string | null>(null);
-  readonly FontSizePx = input<number | null>(null);
-  readonly FontWeight = input<number | null>(null);
-  readonly LineHeightRatio = input<number | null>(null);
-  readonly RowGapPx = input<number | null>(null);
-  /** Keyboard identity, straight through to the jinput: plain text, and what
-   *  the return key claims to do. */
+  /** Text, placeholder and caret inks; any colour or `@Var`. */
+  readonly Ink = input('@Ink');
+  readonly PlaceholderInk = input('@InkFaint');
+  readonly CaretInk = input('@Ink');
+  readonly FontFamily = input('Inter, system-ui, sans-serif');
+  readonly FontSizePx = input(15);
+  readonly FontWeight = input(400);
+  readonly LineHeightRatio = input(1.6);
+  readonly RowGapPx = input(5);
   readonly InputMode = input<'text' | 'search' | 'none'>('text');
-  /** Opt in to native QuickType suggestions + autocorrect (see Jinput.Autocorrect). */
+  /** Opt in to native QuickType suggestions and autocorrect (see Jinput.Autocorrect). */
   readonly Autocorrect = input(false);
   readonly EnterKeyHint = input<'enter' | 'done' | 'go' | 'search' | 'send'>('enter');
 
-  // ── Outputs (pass-through) ───────────────────────────────────────
   readonly PositionClicked = output<{ index: number; event: PointerEvent; summonedFocus?: boolean }>();
   readonly PositionHovered = output<{ index: number | null }>();
   readonly FocusChanged = output<boolean>();
-  /** A context-class gesture (right-click or touch long-press) — see Jinput. */
+  /** A context-class gesture (right-click or touch long-press); see Jinput. */
   readonly ContextRequested = output<{
     source: 'mouse' | 'touch';
     caretIndex: number;
@@ -109,26 +125,54 @@ export class TextInput {
   readonly Submitted = output<KeyboardEvent>();
   readonly Cancelled = output<KeyboardEvent>();
   readonly SelectionChanged = output<{ start: number; end: number }>();
+  /** The clear button emptied the field. */
+  readonly Cleared = output<void>();
 
-  // ── House defaults ───────────────────────────────────────────────
-  // Apple-style baseline. PointScale 1.25 → 16pt × 1.25 = 20px.
-  // Wrapping consumers can override individual values via inputs.
-  protected readonly _fontFamily = (): string => this.FontFamily() ?? 'Inter, system-ui, sans-serif';
-  protected readonly _fontSizePx = (): number => this.FontSizePx() ?? 20;
-  protected readonly _fontWeight = (): number => this.FontWeight() ?? 400;
-  protected readonly _lineHeightRatio = (): number => this.LineHeightRatio() ?? 1.6;
-  protected readonly _rowGapPx = (): number => this.RowGapPx() ?? 5;
-  // Theme inks, passed inline because jinput re-merges its own white sheet on every mount, so a page
-  // sheet cannot outrank it. Text and caret are @Ink, the placeholder @InkFaint; span colours still win.
-  protected readonly _ink = (): string => this.Ink() ?? '@Ink';
-  protected readonly _placeholderInk = (): string => this.PlaceholderInk() ?? '@InkFaint';
-  protected readonly _caretInk = (): string => this.CaretInk() ?? '@Ink';
-
-  // ── Imperative API ───────────────────────────────────────────────
   private readonly _jinput = viewChild<Jinput>('jinput');
+  private readonly _jinputHost = viewChild('jinput', { read: ElementRef });
+  private readonly _editing = signal(false);
 
-  /** Programmatically focus the input. Forwards to the underlying jinput. */
-  Focus = (): void => {
-    this._jinput()?.Focus();
+  protected readonly ShowsSearchGlyph = computed(() => this.InputMode() === 'search' && this.Material() !== 'None');
+  protected readonly ShowsClear = computed(() =>
+    (this.Clearable() ?? this.InputMode() === 'search') && !this.Disabled() && this.Text().length > 0);
+
+  constructor() {
+    super('TextInput', TextInputJss, 'Jwift_Field', () => {
+      const material = this.Material();
+      const base = material === 'None' ? 'Jwift_Field_Bare'
+        : material === 'Glass' ? 'Jwift_Field_Glass'
+        : this.MultiLine() ? 'Jwift_Field_Tall' : 'Jwift_Field';
+      return `${base} ${this.Class()}`.trim();
+    });
+    effect(() => this.Node.SetState('Editing', this._editing()));
+    effect(() => this.Node.SetState('Invalid', this.Invalid()));
+    effect(() => this.Node.SetState('Disabled', this.Disabled()));
+  }
+
+  ngOnInit(): void {
+    this._attachOnInit();
+    this.Node.WatchRect(true);
+  }
+  ngOnDestroy(): void { this._detachOnDestroy(); }
+
+  Focus = (): void => { this._jinput()?.Focus(); };
+  Blur = (): void => { this._jinput()?.Blur(); };
+
+  Clear = (): void => {
+    this._jinput()?.SetText('');
+    this.Cleared.emit();
   };
+
+  protected OnFocusChanged(focused: boolean): void {
+    this._editing.set(focused);
+    this.FocusChanged.emit(focused);
+  }
+
+  /** A press on the body outside the text (its padding, the glyph, the clear button) edits the field. */
+  protected OnBodyClick(event: Event): void {
+    if (this.Disabled() || this.Material() === 'None' || this._editing()) return;
+    const text = this._jinputHost()?.nativeElement as HTMLElement | undefined;
+    if (text && event.target instanceof Node && text.contains(event.target)) return;
+    this.Focus();
+  }
 }

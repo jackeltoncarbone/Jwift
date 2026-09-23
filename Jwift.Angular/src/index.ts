@@ -52,7 +52,7 @@ export { JwiftStyleLoader } from './Jss/Jwift.Style.Loader';
 export { JivHost, JWIFT_GLASS_TINT } from './Internal/JivHost';
 export { ContextMenu } from './ContextMenu/ContextMenu';
 export { ContextMenuService, type ContextMenuItem } from './ContextMenu/ContextMenu.Service';
-export { TextInput, type TextInputSpan, type TextInputPeerCaret } from './TextInput/TextInput';
+export { TextInput, type TextInputSpan, type TextInputPeerCaret, type TextInputMaterial } from './TextInput/TextInput';
 export { NumberTicker } from './NumberTicker/NumberTicker';
 export { JwiftSpinner } from './Spinner/JwiftSpinner';
 export { JwiftState, type JwiftStateTone } from './State/JwiftState';

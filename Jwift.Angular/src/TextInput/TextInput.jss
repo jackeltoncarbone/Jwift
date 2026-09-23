@@ -1,25 +1,220 @@
-// Jwift TextInput — house styling around the Jaui jinput primitive.
+// THE FIELD. One body for every text entry in the app, answering the pointer and the keyboard the way the
+// buttons do: it extends JwiftPress, so hover and press are the same lifts (@JwiftHoverWashLift,
+// @JwiftPressLift) on the same 140ms spring. What differs is only what a field should do with them.
 //
-// Keep functional layout responsibilities on Jaui's JinputRoot/JinputWrap —
-// this layer only adds the visual chrome (font, padding, optional surface).
-// The Box currently renders without a background by default; consumers can
-// place `<text-input>` inside a glass `<jiv>` if they want a contained
-// surface (matches the existing picture-toolbar / drill-editor patterns).
+//   rest              Lift(@JwiftWashLift)          +18 dark / -12 light, the quiet wash every field wore
+//   hover             Lift(@JwiftHoverWashLift)     +29 / -19, the button's hover
+//   pressed           Lift(@JwiftPressLift)         +50 / -29, the button's press, squeezed to 0.985
+//   editing           Lift(@JwiftWashStrongLift)    +30 / -20, the selected wash, and the accent ring
+//   editing + hover   Lift(@JwiftFieldEditingHover) +41 / -27, the hover step taken from the editing step
+//   invalid           @DangerWash, no lift; @DangerWashStrong under a hover; the ring turns @Danger
+//   disabled          half the resting lift, no response to the pointer; the text dims in the jinput
+//
+// A field does not swell on hover. A button is a target and grows toward the finger; a field is a place,
+// 300pt wide, and 1.06 of it is 18pt of furniture moving. So the squeeze is the button's travel scaled to
+// the field: 0.985, a few points on a wide pill, felt more than seen.
+//
+// The ring is a stroke in @GoldInk, the accent as a line, which is the one use of gold a control makes.
+// BorderWidth is paint only (it never moves layout), so it springs from 0 to 2pt with no reflow.
 
-TextInputBox {
-  Direction: Column
+@JwiftFieldEditingHover: @JwiftHoverWashLift + @JwiftWashStrongLift - @JwiftWashLift
+@JwiftFieldOffLift: 0.5 * @JwiftWashLift
+@JwiftFieldRing: 2pt
+
+// The toolbar button's 48pt is the floor for anything a finger can press, and a line of text is exactly that
+// tall: pinned top and bottom, because FlexGrow is for the row it sits in and a column would stretch it.
+Jwift_Field : JwiftPress {
+  Direction: Row
   Justify: Start
+  Align: Center
+  Gap: 8pt
+  Height: 48pt
+  MinHeight: 48pt
+  MaxHeight: 48pt
+  MinWidth: 120pt
+  FlexGrow: 1
+  FlexShrink: 1
+  Padding: 0pt 18pt
+  BorderRadius: 999pt
+  Cursor: Text
+  Background: rgba(0, 0, 0, 0)
+  BackdropFilter: Lift(@JwiftWashLift)
+  BorderWidth: 0pt
+  BorderColor: @GoldInk
+  @Transition BorderWidth { Duration: 140ms }
+  @Transition BorderColor { Duration: 140ms }
+  @Transition Background { Duration: 140ms }
+}
+
+Jwift_Field:Hover {
+  VisualScale: 1
+}
+
+Jwift_Field:Active {
+  VisualScale: 0.985
+}
+
+Jwift_Field:(Editing) {
+  VisualScale: 1
+  BackdropFilter: Lift(@JwiftWashStrongLift)
+  BorderWidth: @JwiftFieldRing
+}
+
+Jwift_Field:(Editing && Hover) {
+  BackdropFilter: Lift(@JwiftFieldEditingHover)
+}
+
+Jwift_Field:(Invalid) {
+  Background: @DangerWash
+  BackdropFilter: Lift(0)
+  BorderColor: @Danger
+}
+
+Jwift_Field:(Invalid && Hover) {
+  Background: @DangerWashStrong
+  BackdropFilter: Lift(0)
+}
+
+Jwift_Field:Disabled {
+  VisualScale: 1
+  Cursor: Default
+  BackdropFilter: Lift(@JwiftFieldOffLift)
+  BorderWidth: 0pt
+}
+
+// A sentence is not a pill: it keeps a card corner and grows with what is written in it.
+Jwift_Field_Tall : Jwift_Field {
+  Align: Stretch
+  Height: Auto
+  MinHeight: 96pt
+  MaxHeight: none
+  Padding: 12pt 18pt
+  BorderRadius: 24pt
+}
+
+// The one field a page leads with, over its ground: the glass button's material and press, the field's
+// geometry. Editing and an invalid value draw a hairline in the accent or the danger color at the
+// rim's own width, over the rim.
+Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
+  Direction: Row
+  Justify: Start
+  Align: Center
+  Gap: 8pt
+  Height: 48pt
+  MinHeight: 48pt
+  MaxHeight: 48pt
+  MinWidth: 120pt
+  FlexGrow: 1
+  FlexShrink: 1
+  Padding: 0pt 18pt
+  BorderRadius: 999pt
+  Cursor: Text
+  BezelScale: 0.25
+  SpecularIntensity: 0
+  SpecularGlow: 0
+  EdgeLightTop: 0
+}
+
+// A number or a short code, in a field of its own width so a run of them reads as a column.
+// Class="Jwift_Field_Short" on any material.
+Jwift_Field_Short {
+  FlexGrow: 0
+  Width: 132pt
+  MinWidth: 132pt
+}
+
+// Text in a surface its host draws. No paint and no states: the host is the control.
+Jwift_Field_Bare {
+  Direction: Row
   Align: Stretch
   Width: 100%
   Height: 100%
   FlexGrow: 1
-  // Padding is a wrapper concern — apps that drop a TextInput into a tight
-  // toolbar slot get crisp edges; apps that use it as a standalone field
-  // can wrap it in their own padded container.
-  Padding: 0pt
 }
 
-// Inter is the Show Studio + Jwift baseline. JinputSegment and JinputPlaceholder are Jaui-internal classes only emitted by jinput, so applying these rules globally is equivalent to scoping them under TextInputBox; JSS v1 doesn't support compound selectors.
+Jwift_Field_Glass:Hover {
+  VisualScale: 1
+}
+
+Jwift_Field_Glass:Active {
+  VisualScale: 0.985
+}
+
+Jwift_Field_Glass:(Editing) {
+  VisualScale: 1
+  BorderWidth: @JwiftRimWidth
+  BorderColor: @GoldInk
+}
+
+Jwift_Field_Glass:(Invalid) {
+  BorderWidth: @JwiftRimWidth
+  BorderColor: @Danger
+}
+
+Jwift_Field_Glass:Disabled {
+  VisualScale: 1
+  Cursor: Default
+  Opacity: 0.4
+}
+
+// The text's own cell takes what the glyph and the clear button leave.
+Jwift_FieldText {
+  Direction: Column
+  Justify: Center
+  Align: Stretch
+  FlexGrow: 1
+  FlexShrink: 1
+  FlexBasis: 0pt
+  MinWidth: 0pt
+  AlignSelf: Stretch
+}
+
+// A search field's magnifying glass, as the home search drew it.
+Jwift_FieldGlyph {
+  FontFamily: JwiftIcons
+  FontSize: 17pt
+  FontWeight: 400
+  Color: @InkSoft
+  Width: 22pt
+  TextAlign: Center
+  AlignSelf: Center
+  FlexShrink: 0
+}
+
+// Clearing is a button, so it is a full 48pt target; the negative margin gives back the field's trailing
+// padding so the disc sits where Apple's does instead of 42pt in from the edge.
+Jwift_FieldClear : JwiftPressMotion {
+  Direction: Row
+  Justify: Center
+  Align: Center
+  Width: 48pt
+  Height: 48pt
+  Margin: 0pt -14pt 0pt 0pt
+  AlignSelf: Center
+  FlexShrink: 0
+}
+
+// xmark.circle.fill, drawn: a disc in the placeholder ink with the ground's colour cut through it.
+Jwift_FieldClearDisc {
+  Direction: Row
+  Justify: Center
+  Align: Center
+  Width: 18pt
+  Height: 18pt
+  BorderRadius: 999pt
+  Background: @InkFaint
+}
+
+Jwift_FieldClearGlyph {
+  FontFamily: JwiftIcons
+  FontSize: 9pt
+  FontWeight: 700
+  Color: @Ground
+  TextAlign: Center
+}
+
+// Inter is the Show Studio and Jwift baseline. JinputSegment and JinputPlaceholder are only emitted by
+// jinput, so these apply exactly where a field's text is.
 JinputSegment {
   FontFamily: Inter
   FontWeight: 400
