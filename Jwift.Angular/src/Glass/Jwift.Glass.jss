@@ -821,15 +821,24 @@ JwiftPressGlass : JwiftPress {
 // The glass press states its own backdrop, as it always has. Its Brightness is a MULTIPLY, which is
 // what the lift argument is against -- it scales chroma, barely moves a dark backdrop and blows out a
 // bright one -- so it is the thing to re-measure as a lift once the flat press has a zone of its own.
+//
+// A STEP ABOVE REST, NOT AN ABSOLUTE. Filters merge by function, so this Brightness REPLACES the resting
+// one, @JwiftControlLift. These were written as 1.85 and 2.5 when rest was 1 in both themes; rest became
+// 2.0 in dark and nobody moved them, so a dark-mode hover DIMMED the control (2.0 -> 1.85) and a press
+// then jumped past rest (2.5): measured on the drill page's back button, body 52 at rest, 48 hovered.
+// Jack: "major saturation and darkness differences" between button states. Written as the same steps
+// above rest they always were, light mode is unchanged (1.85, 2.5) and dark reads rest < hover < press.
+@JwiftPressGlassHover: @JwiftControlLift + 0.85
+@JwiftPressGlassActive: @JwiftControlLift + 1.5
 JwiftPressGlass:Hover {
   BorderColor: @JwiftHoverEdge
-  BackdropFilter: Lift(0) Brightness(1.85)
+  BackdropFilter: Lift(0) Brightness(@JwiftPressGlassHover)
   BorderFilter: Brightness(1.5)
 }
 
 JwiftPressGlass:Active {
   BorderColor: @JwiftPressEdge
-  BackdropFilter: Lift(0) Brightness(2.5)
+  BackdropFilter: Lift(0) Brightness(@JwiftPressGlassActive)
   BorderFilter: Brightness(1.7)
 }
 
