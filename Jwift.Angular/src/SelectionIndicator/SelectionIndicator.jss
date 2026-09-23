@@ -10,7 +10,8 @@ Jwift_SelectionIndicator {
   // segment sits at 97 of 255 over a body at 69, a neutral +28, and the wash law's measured selected
   // Liquid Glass tab is +30 in dark and -20 in light (Jwift.Glass.jss, @JwiftWashStrongLift). So the
   // pill lifts what the bar shows by that step and carries the colour through; only the selected glyph
-  // and label take the tint, as Apple's do. A quiet rim draws its edge.
+  // and label take the tint, as Apple's do. At rest it is FLAT: no glass, no rim, no bend. It becomes
+  // the glass lens only while a finger is on it (the pressed class below).
   Background: rgba(0, 0, 0, 0)
   Tint: 0
   BorderRadius: 100pt
@@ -28,7 +29,7 @@ Jwift_SelectionIndicator {
   EdgeLightBottom: 0
 
   RimWidth: @JwiftRimWidth
-  RimStrength: @JwiftRimQuietStrength
+  RimStrength: 0
 
   ShadowColor: rgba(0, 0, 0, 0)
   ShadowBlur: 0
