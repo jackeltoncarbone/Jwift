@@ -13,10 +13,9 @@ Jwift_TabBarRow {
 // stronger lensing) rather than JwiftGlass. Everything else still comes from the one glass family:
 // the rim, the refraction band, no specular.
 //
-// The drill page's chrome is JwiftGlass and is legible because the PAGE veils behind it (Drill.jss
-// TopBlur Brightness(0.5), BottomBlur 0.34 black under a 120pt blur). The dock has no such veil:
-// DockEdge is JwiftScrollEdgeBottom, which blurs but is fully transparent. So the bar carries the veil
-// itself, in its own backdrop, and is legible on any page rather than on one page.
+// It floats in the dock's scroll edge (Navigation.jss DockEdge, JwiftScrollEdgeBottomScene), which dims and
+// blurs the content under it; the bar's own glass samples that content undimmed (Jaui's edge backdrop), so
+// it reads brighter than its surround, as Apple's does.
 Jwift_TabBar : JwiftGlassThickVivid {
   UserSelect: None
 

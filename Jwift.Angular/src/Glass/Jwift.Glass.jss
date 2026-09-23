@@ -241,11 +241,12 @@
 //
 // Apple's rim is a LIFTED, still-saturated version of the color under it, not a white veil: over teal the
 // body (0,113,108) peaks at (36,155,148), over blue (28,121,202) at (96,176,249), over the App Store's
-// saturated blue (28,56,244) at (56,95,248). Jaui draws it as the panel program's rim instance at the
-// node's BorderLayer slot, from the face's own corner field: a GAIN of what is below (x 1 + strength),
-// then a screen toward white at 0.48 of the strength. 0.23 is the joint fit to those crops (gain 0.23,
-// white 0.11); the white term is what reads over black, where a gain has nothing to lift, and kept small
-// it leaves the rim over a saturated color that color rather than a pale line.
+// saturated blue (28,56,244) at (56,95,248), and over the Photos buttons' dark body on busy concert photos
+// the lit lobes stand 40 to 69 above a body of 40 to 80. Jaui draws it as the panel program's rim instance
+// at the node's BorderLayer slot, from the face's own corner field: a GAIN of what is below
+// (x 1 + strength), then a screen toward white at 0.96 of the strength. 0.24 is the joint fit to all of
+// those (gain 0.24, white 0.23); the white term is what holds the rim over a dark, busy body, where a gain
+// has little to lift and a smaller white let the rim sink into the hero.
 //
 // The width is a HAIRLINE in px, not pt: PointScale and a Visual press never thicken it. It is the width
 // at the lit lobes; the sides narrow to 0.45 of it, never under one device pixel. Fitted to Apple's
@@ -253,7 +254,7 @@
 //
 // It rides BorderLayer, so a glass class's rim still paints above its own content.
 @JwiftRimWidth: 0.95px
-@JwiftRimStrength: 0.23
+@JwiftRimStrength: 0.24
 // The glass press brightens the rim a step at a time, as it brightens the body: a hover and a press
 // read on black, where there is nothing behind the glass to lift.
 @JwiftRimHoverStrength: 0.3
@@ -496,72 +497,47 @@ JwiftScrollEdgeTop : JwiftScrollEdge {
   BackdropFilter: Blur(@JwiftScrollEdgeBlur) Saturate(1.1)
 }
 
-// The DIMMING edge: the same geometry with Apple's second behaviour of the soft form, "when dark content
-// scrolls under and the glass goes dark, the effect switches to apply a subtle dimming instead". Every
-// bar in this app that floats over LIVE imagery needs it -- the drill field, the designer and uniform
-// stages, the camera viewfinder -- because blur alone cannot buy white ink its contrast over sunlit turf.
-// The grade pulls the backdrop toward the theme's ground, darker in dark and lighter in light, and puts
-// back the colour that pull takes, which is the vibrancy the material section above describes. A
-// CALIBRATED pair, not a derivation like the material law above: the strip carries no label of its own,
-// so there is no legibility constraint to solve against, and Apple publishes the behaviour, not the
-// numbers. The strip's flat colour stays the consumer's, because a page's paper is the page's.
-// DARKER, because the darkness belongs to the STRIP and not to the glass. Jack: "the point is supposed
-// to be that the glass is the normal color, but it's on top of that gradient that's darker. So it's
-// like taking the color from the background through." The glass now lifts its backdrop (see
-// @JwiftControlLift), so the separation has to come from under it rather than from dimming the material
-// itself. 0.32 against the old 0.45 is that separation moved to where it belongs.
-@JwiftScrollEdgeDim: 0.32 * @Dark + 1.05 * @Light
-// THE BOTTOM DIMS LESS THAN THE TOP, and its number is APPLE'S.
+// The DIMMING edge: the same geometry with Apple's second behaviour of the soft form, the content under
+// a bar "blurred and dimmed so that it works better next to surrounding UI controls". Every bar in this
+// app that floats over content wears it: the dock, the page headers, the drill, designer and camera
+// chrome. It is MEASURED, off Apple's native iPhone screenshots (LiquidGlassGallery, Web/Full):
 //
-// Apple publishes exactly one dimming amount, in Materials: "If the underlying content is bright,
-// consider adding a dark dimming layer of 35% opacity." A 35% black layer over content is a multiply by
-// 0.65, so that is @JwiftScrollEdgeDimSoft, and it is the only number in this pair that is Apple's.
+//   DARK, the Photos grid's white gutters under its bottom bar, which are 255 in the source: they hold
+//   255 until 0.9 bar heights above the bar, then fall smoothly to 0.42 of themselves by the bar's
+//   bottom edge and stay there to the screen edge (0.96, 0.88, 0.74, 0.42 at 13, 26, 39, 77% of the
+//   strip). A multiply, with the colour kept: Brightness 0.42.
+//   LIGHT, the Phone app's white list under its tab bar: not a lift but a grey veil. The white ground
+//   falls to about 242 and the grey labels (129) rise to about 148, the range compressed toward a light
+//   grey: Brightness 1.2 over Contrast 0.58, which lands 255 on 242 and 129 on 146.
 //
-// The top's 0.32 is OURS and is labelled so. It carries a page title, a back control and an action
-// cluster over whatever the page is showing, and Jack judged it by eye after the glass stopped dimming
-// itself. The bottom carries a transport and a sentence and needs less, which is what he asked for:
-// "maybe do it less for the bottom". If the top is ever measured against an Apple screenshot rather
-// than judged, this is the line to correct.
-// 0.5, NOT APPLE'S 0.65, AND THE DIFFERENCE IS THE INK FLIP WE HAVE NOT BUILT.
+// The grade follows the blur's own progress, smoothstep(t)^(2 x Easing), and Easing 0.4 is the fit to
+// that dark profile: 0.95, 0.86, 0.74, 0.47 at the same four heights.
 //
-// Apple's published amount is 35% -- "consider adding a dark dimming layer of 35% opacity" -- which is
-// a multiply by 0.65, and that is what this was. Measured on home with the dock over the market's lit
-// field art, 0.65 leaves 'Explore' and 'Market' hard to read: Apple can afford the weaker layer because
-// the OTHER half of their rule carries the rest, symbols and text "becoming darker when the underlying
-// content is light". Ours cannot flip, so the strip has to hold the whole legibility budget alone.
-//
-// 0.5 is ours. It still dims LESS than the top's 0.32, which is what Jack asked for, and it holds the
-// dock's labels over the brightest content on the home page. When the ink flip lands this goes back to
-// Apple's 0.65 and the flip takes over -- that is the one line to change.
+// THE BAR ABOVE IT IS NOT DIMMED, and that is the whole point of the effect. Jack: "the glass above it is
+// unaffected by that layer. It's brighter than it. And that way you get the contrast of the tab bar and
+// separated." The engine does it: a glass surface inside a progressive blur samples the strip's own
+// sharp-rooted pyramid, built from the scene BEFORE the strip dimmed it, at its own frost (Jaui.ts,
+// `edgeBackdrop`). So the bar shows the content at full brightness through its own material, over a
+// surround that is dimmed, and it costs no pyramid of its own.
+@JwiftScrollEdgeDim: 0.42 * @Dark + 1.2 * @Light
+@JwiftScrollEdgeContrast: 1 * @Dark + 0.58 * @Light
+@JwiftScrollEdgeVivid: 1 * @Dark + 1 * @Light
+@JwiftScrollEdgeEasing: 0.4
+// Apple's one published dimming amount, "If the underlying content is bright, consider adding a dark
+// dimming layer of 35% opacity" (Materials), a multiply by 0.65 against the measured 0.42: kept for
+// Drill.jss's own 120pt bottom blur, which is not this strip.
 @JwiftScrollEdgeDimSoft: 0.5 * @Dark + 1.05 * @Light
-@JwiftScrollEdgeVivid: 1 * @Dark + 1.8 * @Light
 JwiftScrollEdgeTopScene : JwiftScrollEdgeTop {
-  BackdropFilter: Brightness(@JwiftScrollEdgeDim) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
+  ProgressiveBlurEasing: @JwiftScrollEdgeEasing
+  BackdropFilter: Brightness(@JwiftScrollEdgeDim) Contrast(@JwiftScrollEdgeContrast) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
 }
 
-// And the SAME treatment at the bottom, which did not exist. Jack: "the bottom should have same
-// treatment." He is right that it is one behaviour, not two: the dock floats over the same content the
-// top bar floats over, and a tab bar's white ink needs its contrast over a bright photo exactly as much
-// as a title's does. There was only a plain JwiftScrollEdgeBottom, so a dock over sunlit turf had blur
-// and no dimming.
-//
-// It inherits the bottom's own geometry -- Justify: End, ProgressiveBlurDirection: ToBottom and the
-// 140pt strip -- and adds the dimming pair, which is DELIBERATELY the same @JwiftScrollEdgeDim and
-// @JwiftScrollEdgeVivid the top uses. One calibration for one behaviour: if the dim is ever re-measured,
-// both ends move together and cannot drift.
-//
-// AND IT IS THE SAME DIM AGAIN, after a detour. This read @JwiftScrollEdgeDimSoft for a few hours on
-// 2026-09-21 while the comment above went on claiming the two ends share one number -- the same prose/
-// value split the glass carry had, in the same sheet, on the same evening. Jack settled it by eye:
-// "the bottom blur that we see on the home page needs the same darkness as the header on the drill page."
-//
-// Which is the stronger answer anyway. The detour started from Apple's softer 0.65 leaving "Explore" and
-// "Market" unreadable over lit turf, and 0.5 was a halfway house picked to claw some of that back. 0.32
-// is darker than either, so it spends MORE of the legibility budget, not less -- and it costs nothing to
-// give the two ends one number, which is what makes a re-measurement move both and neither drift.
-// @JwiftScrollEdgeDimSoft survives for Drill.jss's own 120pt bottom blur, which is not this strip.
+// The same treatment at the bottom, from the same numbers: one behaviour, measured once. It inherits the
+// bottom's own geometry, Justify: End, ProgressiveBlurDirection: ToBottom and the 140pt strip, which puts
+// its start 0.9 of the 64pt bar's height above the bar, where Apple's starts.
 JwiftScrollEdgeBottomScene : JwiftScrollEdgeBottom {
-  BackdropFilter: Brightness(@JwiftScrollEdgeDim) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
+  ProgressiveBlurEasing: @JwiftScrollEdgeEasing
+  BackdropFilter: Brightness(@JwiftScrollEdgeDim) Contrast(@JwiftScrollEdgeContrast) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
 }
 
 
