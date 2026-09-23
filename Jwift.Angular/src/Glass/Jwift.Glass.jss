@@ -240,11 +240,13 @@
 // right at LightAngle 135) sit 55 to 60 above the body, and ninety degrees off them 8 to 11 above. It
 // eases into the body over about 3% of the short side.
 //
-// Jaui draws it as its own thin strip along the outline, SCREENED onto what is already there
-// (Jiv/Jiv.Rim.ts): no snapshot, no pyramid, no backdrop tap. A screen keeps the destination's hue, lifts
-// darks the most and leaves whites white, so one strength serves both themes: over the dark body 0.25
-// lifts the lit lobes by 57 and the sides (0.15 of it) by 9, and over the light body (242) it can only
-// add what is left, 3 at the lobes, which is Apple's quiet light-mode rim.
+// Apple's rim is a LIFTED, still-saturated version of the color under it, not a white veil: over teal
+// the body (0,113,108) peaks at (36,155,148), over blue (28,121,202) at (96,176,249). Jaui draws it as its
+// own thin strip along the outline (Jiv/Jiv.Rim.ts), a GAIN of what is below (x 1 + strength) and then a
+// screen toward white at 0.8 of the strength: no snapshot, no pyramid, no backdrop tap. 0.25 is the fit
+// to those crops (gain 0.23, white 0.19). The white term is what reads over black, where a gain has
+// nothing to lift: over the dark body (26) the lit lobes rise by about 50 and the sides by about 8; over
+// lavender (196,200,227) the lobes reach (241,246,255), as Apple's more button does.
 //
 // The width is a HAIRLINE in px, not pt: PointScale and a Visual press never thicken it, and the engine
 // never draws it under one device pixel. 0.85px is 2.55 device px at 3x and 1.7 at 2x.
