@@ -13,171 +13,96 @@
 // same shadow, same backdrop blur, same refraction across every
 // floating glass surface in the app.
 
-// ── THE GLASS OPTICS: ONE LAW, DERIVED, NOT TUNED ──────────────────
+// ── THE GLASS OPTICS: ONE GRADE, FITTED TO APPLE PER MATERIAL ───────
 // "By default, Liquid Glass has no inherent color, and instead takes on colors from the content directly
 // behind it." So a glass body paints no fill of its own. What you see is the backdrop run through one
 // physical chain, in this order whatever order a filter is written in (Jiv.Panel.frag applyGrading, then
 // applyTint; both steps are affine and nothing clamps between them, so the written order is a no-op):
-//   contrast   compresses the backdrop around 0.5, the readability guarantee
-//   saturate   puts back the colour the compression took, the vibrancy
-//   brightness 1 here, so it is left out
+//   contrast   compresses the backdrop around 0.5
+//   saturate   puts back the color the compression took
 //   Tint       pulls the result toward the theme's ground: black in dark, white in light
 // @Dark / @Light are the 0/1 theme twins <jaui> publishes, so each line is both themes' value.
 //
-// THE RULE IS APPLE'S, and it is an optimisation, not a look: "the amount of tint and the dynamic range
-// shift to always ensure buttons remain legible, while letting as much of the content through as
-// possible" (WWDC25 session 219, Shared/Research/Apple.LiquidGlass.md, the layers table). Maximise what
-// comes through, subject to the label staying legible.
+// THE THREE KNOBS ARE THREE TRANSMISSIONS. With contrast c, saturate s and tint magnitude t, the body is
+// gain x backdrop + lift, one gain for luma and one for chroma:
+//   the body over black and over white are the two ends of the greyscale ramp, (1 - t)(1 -/+ c) / 2, plus
+//   t in light; the RANGE between them is (1 - t) c, the luma gain;
+//   the CARRY is c s (1 - t), the chroma gain.
+// So each material is three numbers, over black, over white and its carry, and the three lines under each
+// below solve them for the knobs.
 //
-// THE THREE KNOBS ARE THREE TRANSMISSIONS. With contrast c, saturate s and tint magnitude t:
-//   the body over the ground's opposite end (white in dark, black in light) and over the ground itself
-//   are the two ends of the greyscale ramp, (1 - t)(1 -/+ c) / 2, plus t in light;
-//   the RANGE between them is (1 - t) c, the luma the glass lets through;
-//   the chroma carried is c s (1 - t), the colour the glass lets through.
-// Saturate is luma-preserving, so t and c are pinned by the two ends of the ramp and s is then free: the
-// three lines under each size below are those identities solved for the knobs, not three more choices.
+// THE NUMBERS ARE APPLE'S, fitted per material to Apple's native dark captures (LiquidGlassGallery/Dark:
+// the body against the backdrop beside it, blurred like the frost) and to the HIG figures in light. Dark
+// glass is black-tinted glass over a colored backdrop: a low ground, a gain under 1, and the color kept.
 //
-// THE INPUTS, each from Apple or from this app, never picked:
+//   material   dark over black / white   carry   fitted on
+//   control    26 / 130.6                1.15    Photos, App Store and Games nav buttons, Messages: 27 + 0.41 x
+//                                                backdrop; HIG's button over black at 26; chroma kept 0.7 to 2.2
+//   bar        45 / 147                  0.85    Photos, App Store, iOS Games, iPad Games and Mac Games bars:
+//                                                45 + 0.40 x backdrop, chroma kept 0.75 to 0.93
+//   sheet      17 / 55                   range   the Music menu: near opaque smoke, luma and chroma both at 0.15
+//   hero       23 / 222                  range   the Games Play pills (iPhone, iPad): 23 + 0.78 x backdrop, luma
+//                                                and chroma kept alike
+// LIGHT is Apple's one plate for every material: 242 over white off the HIG's colors-liquid-glass pair,
+// 170 over black, the fit through Apple's light search button and tab bar over list rows, carry 1.
 //
-// 1. THE GROUND END, measured off Apple's HIG figures (developer.apple.com/tutorials/data, the Color
-//    page's colors-liquid-glass-usage-correct pair): a toolbar glass button over a pure black page is
-//    rgb(26, 26, 26) in dark, and over a pure white page rgb(242, 242, 242) in light, both neutral. The
-//    Materials page's regular-glass disc over a night sky agrees in dark at 27. So dark glass is not
-//    black, and light glass is NOT white: this sheet used to settle light glass at 255, and Apple's own
-//    pixels say 242. The same end for every size: it is what the material is, not how much it hides.
+// WHAT THE FIT DOES NOT PROMISE, stated. Apple's dark glass is not a legibility solve: over white the
+// control's body is 130.6, where @Ink holds 3.5:1, and the bar's is 147, 2.8:1. Apple lives with that;
+// its dark UI rarely puts glass over white, and the dark scroll edge dims what passes under a bar.
 @JwiftGlassGround: 26 / 255 * @Dark + 242 / 255 * @Light
-// 2. THE CHROMA CARRIED, measured off the same figures: Apple's glass carries the colour behind it at
-//    FULL strength. The Layout page's iPad toolbar over a blossom photo, the same photo in both themes,
-//    reads 0.85 / 1.15 / 1.02 in dark and 0.97 / 1.30 / 1.24 in light (glass chroma over the photo's
-//    area-mean chroma around each button, so the blur's averaging is taken out); the tvOS media panel,
-//    a LARGE surface, reads 0.93 and 1.21. One is the middle of the spread at both sizes and in both
-//    themes, and ONE IS WHAT THE FINISHED SURFACE HAS TO READ -- the last on-screen measurement over
-//    real content was 1.249x chroma, inside Apple's spread and near the top of it.
-//
-//    So the grade carries exactly that: @JwiftGlassCarry is 1, and the grade's brightness is 1. A
-//    brightness above 1 doubled the plate in dark (a button over black at 52, not Apple's 26; over white at
-//    225, with a white label at 1.2:1) and took the surface off the ramp the adaptive far end opens, so
-//    no glass class states one at rest. Design/GlassLaw.Conformance holds both.
-@JwiftGlassCarry: 1
-//
-// 3. THE FAR END. The ink is the app's own @Ink (Ui/Theme.Tokens.ts: rgb(245, 245, 247) in dark,
-//    rgb(29, 29, 31) in light), and the ratio is Apple's, "at least 4.5:1, aim for 7:1 for custom text"
-//    (Apple.LiquidGlass.md, colour on glass). A CONTROL holds a glyph or a short label, so it holds the
-//    floor, 4.5. A SHEET holds running text, so it holds the aim, 7. The worst backdrop on the greyscale
-//    ramp is the ground's opposite (white under dark glass, black under light).
-//
-//    DARK: the far end is the body value at which @Ink over white lands EXACTLY on the ratio, rounded
-//    toward the legible side, so dark glass lets through all the content legibility allows:
-//      control, 4.5:1   112.7 (4.502:1 over white)
-//      sheet,   7:1      83.5 (7.010:1 over white)
-//    LIGHT: glass tints white in light mode, never grey. The far end is Apple's measured light plate
-//    over black, the fit through Apple's light glass over light content (the search button 236 over 236,
-//    the tab bar 237 over 235, both over list rows) with the ground pinned at its 242 over white: 170.
-//    It clears both floors (7.2:1 against @Ink), so it is one number for both sizes, and a sheet differs
-//    from a control in light only by its carry and its lift.
-//    Design/GlassLaw.Conformance.spec.ts re-runs the dark solve from the two ratios and the live tokens,
-//    and holds the light end to the floors.
-@JwiftControlLegibility: 4.5
-@JwiftSheetLegibility: 7
 @JwiftGlassLightFar: 170 / 255
-@JwiftControlFar: 112.7 / 255 * @Dark + @JwiftGlassLightFar * @Light
-@JwiftSheetFar: 83.5 / 255 * @Dark + @JwiftGlassLightFar * @Light
+@JwiftControlCarry: 1.15 * @Dark + 1 * @Light
 //
-// THE SOLVE, per size: the two ends of the ramp over black and over white, then the three knobs.
-//   tint      what the ends leave of the ramp, signed toward the ground by (@Dark - @Light)
-//   contrast  the range, over what the tint leaves
-//   saturate  the carry, over the range: exactly the colour the range compression took, given back
-// Grade arguments must stay parenthesis-free (Style.Resolver's grade-arg regex is `[^()]*`), so the
-// arithmetic lives here and a bare var is what goes inside Saturate() / Contrast().
-//
-// WHAT THE KNOBS RESOLVE TO (over black / over white, of 255):
-//   control dark    26.0 / 112.7     c 0.625  s 2.941  t 0.456
-//   control light  170.0 / 242.0     c 0.735  s 3.542  t 0.616
-//   sheet dark      26.0 /  83.5     c 0.525  s 2.941  t 0.571
-//   sheet light    170.0 / 242.0     c 0.735  s 3.542  t 0.616
-//
-// WHAT THE LAW DOES NOT PROMISE, measured and not hidden. Saturate preserves LUMA, which is computed on
-// encoded values, but WCAG contrast is computed in linear light, and the two part company on a saturated
-// backdrop. Over every colour a blur can produce (the whole sRGB cube), @Ink on the dark control bottoms
-// out at 3.18:1 over pure green and the dark sheet at 3.65:1 over pure magenta; light holds 4.5 and 6.77.
-// A static grade that holds 4.5:1 over EVERY colour can carry only 0.56 in dark, which is what this sheet
-// carried before: Apple escapes the trade by shifting tint and range per backdrop ("the amount of tint
-// and the dynamic range SHIFT"), which a constant cannot do. Carrying Apple's full colour with fixed
-// numbers keeps the greyscale guarantee exactly and spends the rest on saturated backdrops, where the
-// floor stays above WCAG's 3:1 for glyphs and large text.
-//
-// Small controls, bars, the tab pill, and the hero action (a hero is a control; see JwiftHeroGlass):
-@JwiftControlOverBlack: @JwiftGlassGround * @Dark + @JwiftControlFar * @Light
-@JwiftControlOverWhite: @JwiftControlFar * @Dark + @JwiftGlassGround * @Light
+// Small controls and the tab pill:
+@JwiftControlOverBlack: @JwiftGlassGround * @Dark + @JwiftGlassLightFar * @Light
+@JwiftControlOverWhite: 130.6 / 255 * @Dark + @JwiftGlassGround * @Light
 @JwiftControlTint: (1 - @JwiftControlOverBlack - @JwiftControlOverWhite) * (@Dark - @Light)
 @JwiftControlContrast: (@JwiftControlOverWhite - @JwiftControlOverBlack) / (1 - @JwiftControlTint)
-@JwiftControlSaturate: @JwiftGlassCarry / (@JwiftControlOverWhite - @JwiftControlOverBlack)
-// Partial-height sheets, drawers, menus, panels:
-@JwiftSheetOverBlack: @JwiftGlassGround * @Dark + @JwiftSheetFar * @Light
-@JwiftSheetOverWhite: @JwiftSheetFar * @Dark + @JwiftGlassGround * @Light
+@JwiftControlSaturate: @JwiftControlCarry / (@JwiftControlOverWhite - @JwiftControlOverBlack)
+// Menus, popovers, sheets, panels: more opaque, as a larger size is. In dark it keeps as much color as
+// luma (saturate 1), so a menu never out-colors the button that opened it.
+@JwiftSheetOverBlack: 17 / 255 * @Dark + @JwiftGlassLightFar * @Light
+@JwiftSheetOverWhite: 55 / 255 * @Dark + @JwiftGlassGround * @Light
+@JwiftSheetCarry: (@JwiftSheetOverWhite - @JwiftSheetOverBlack) * @Dark + @JwiftControlCarry * @Light
 @JwiftSheetTint: (1 - @JwiftSheetOverBlack - @JwiftSheetOverWhite) * (@Dark - @Light)
 @JwiftSheetContrast: (@JwiftSheetOverWhite - @JwiftSheetOverBlack) / (1 - @JwiftSheetTint)
-// THE SHEET'S SATURATE IS THE CONTROL'S, or a menu out-saturates the button that opened it (Jack: "the
-// open dropdown is like way more saturated than the closed button, which is wrong"). Saturate is carry /
-// range, so the sheet carries the control's colour scaled by its narrower range (in dark 83.5-26 against
-// 112.7-26; in light both sizes share Apple's plate and one range).
-@JwiftSheetCarry: @JwiftGlassCarry * (@JwiftSheetOverWhite - @JwiftSheetOverBlack) / (@JwiftControlOverWhite - @JwiftControlOverBlack)
-@JwiftSheetSaturate: @JwiftControlSaturate
+@JwiftSheetSaturate: @JwiftSheetCarry / (@JwiftSheetOverWhite - @JwiftSheetOverBlack)
+// The tab bar: a lighter ground than a control and a gentler slope, color kept at 0.85.
+@JwiftBarOverBlack: 45 / 255 * @Dark + @JwiftGlassLightFar * @Light
+@JwiftBarOverWhite: 147 / 255 * @Dark + @JwiftGlassGround * @Light
+@JwiftBarCarry: 0.85 * @Dark + @JwiftControlCarry * @Light
+@JwiftBarTint: (1 - @JwiftBarOverBlack - @JwiftBarOverWhite) * (@Dark - @Light)
+@JwiftBarContrast: (@JwiftBarOverWhite - @JwiftBarOverBlack) / (1 - @JwiftBarTint)
+@JwiftBarSaturate: @JwiftBarCarry / (@JwiftBarOverWhite - @JwiftBarOverBlack)
+// The hero action: a near-clear pill, the art showing through at 0.78 over Apple's 23 ground.
+@JwiftHeroOverBlack: 23 / 255 * @Dark + @JwiftGlassLightFar * @Light
+@JwiftHeroOverWhite: 222 / 255 * @Dark + @JwiftGlassGround * @Light
+@JwiftHeroCarry: (@JwiftHeroOverWhite - @JwiftHeroOverBlack) * @Dark + @JwiftControlCarry * @Light
+@JwiftHeroTint: (1 - @JwiftHeroOverBlack - @JwiftHeroOverWhite) * (@Dark - @Light)
+@JwiftHeroContrast: (@JwiftHeroOverWhite - @JwiftHeroOverBlack) / (1 - @JwiftHeroTint)
+@JwiftHeroSaturate: @JwiftHeroCarry / (@JwiftHeroOverWhite - @JwiftHeroOverBlack)
+//
+// WHAT THE KNOBS RESOLVE TO (over black / over white, of 255):
+//   control dark    26.0 / 130.6     c 0.668  s 2.804  t 0.386
+//   sheet dark      17.0 /  55.0     c 0.528  s 1.000  t 0.718
+//   bar dark        45.0 / 147.0     c 0.531  s 2.125  t 0.247
+//   hero dark       23.0 / 222.0     c 0.812  s 1.000  t 0.039
+//   every size, light  170.0 / 242.0  c 0.735  s 3.542  t 0.616
+// Grade arguments must stay parenthesis-free (Style.Resolver's grade-arg regex is `[^()]*`), so the
+// arithmetic lives here and a bare var is what goes inside Saturate() / Contrast().
 
-// ── THE FAR END OPENS: THE SAME RULE, SOLVED PER SURFACE ───────────
-// Everything above is solved once, against the worst backdrop on the ramp. That is the only thing a
-// constant can do, and it is why dark glass over a mid-tone sat at about half its backdrop's luma: the far
-// end had to hold white ink at the floor over WHITE, and was held there over a field of turf too. Apple's
-// dark glass over the same blossom photo (1b above's figure, glass against the ring mean around it) sits
-// AT OR ABOVE the photo: 110 -> 123, 128 -> 152, 136 -> 145. It can, because its far end is not a constant.
-//
-// So the engine re-runs the far-end solve for each surface, against the backdrop that surface is actually
-// over (`?glass-adapt`, Jaui Core/Glass.Adapt.ts). The adaptive-shadow probe already reads that backdrop;
-// it now also keeps its brightest local luma, `peak`. The body is legible wherever it is no lighter than
-// the far end above, and over that backdrop its lightest point is ground + (F - ground) * peak, so the far
-// end OPENS to F = ground + (far - ground) / peak -- the same legibility solve, with `peak` where the
-// solve above had to put 1 -- and never past AdaptiveFar. Ground and the colour carried do not move; the
-// range and the tint do. Over black nothing changes (the body is the ground whatever F is); over white F is
-// exactly the far end above. The ink is never less legible than this sheet already made it.
-//
-// ADAPTIVE FAR is Apple's own far end: the least-squares fit of ground + (F - ground) * Y through the three
-// iPad sites with the ground pinned at the measured 26 (1a). F = 258.9 of 255, i.e. no range cap at all,
-// matching 1b's "implied over-white 248-278"; at the knee it resolves to c 0.81, t -0.08, which is 1b's
-// implied c 0.81, t -0.07 to -0.19. It is past white on purpose: the ink holds every surface below it long
-// before it binds, and 255 would put a second, invented knee into the fit. Light glass does NOT open
-// (0): its far end is already Apple's measured light plate (3 above), so a lighter or darker light plate
-// would be a departure from Apple, not a match.
-//
-// WHAT IT CANNOT DO: with the ink held white, a dark control's body stops at 112.7 however light the
-// backdrop is. Past that the glass FLIPS (below).
-@JwiftGlassOpenFar: 258.9 / 255 * @Dark
-
-// ── THE FLIP ────────────────────────────────────────────────────────
-// Apple's small glass turns to its LIGHT plate with a dark label over light content (the Safari bar's
-// buttons: body 186 over a backdrop of 42, ink (16, 14, 18)), where white ink could no longer hold its
-// floor. Jaui flips when the backdrop's mean luma passes 0.5, eased across the probe's frames, and the
-// label turns with the plate (Jiv/Shaders/Glass.Flip.glsl). The light plate is Apple's measured light law
-// (170 over black, 242 over white), stated whatever the theme; light glass is that plate already, so the
-// flip's contrast is 0 in light, which is no flip. Dark ink on it holds 8:1 or better, past the 4.5 floor.
+// ── THE HERO'S LEGIBILITY GUARD ─────────────────────────────────────
+// Apple's dark glass does NOT flip: the iPad Games bar over a bright nebula (backdrop 140) stays dark glass
+// with white labels, and the App Store bar over bright art stays dark. Only the hero pill wears a flip, and
+// it is ours, not Apple's: its near-clear dark law puts white ink at 1.2:1 over white art, so over a light
+// backdrop (mean luma past 0.5) it turns to Apple's light plate with a dark label (Jiv/Shaders/Glass.Flip.glsl).
+// Light glass is that plate already, so the flip's contrast is 0 in light, which is no flip.
 @JwiftFlipOverBlack: @JwiftGlassLightFar
 @JwiftFlipOverWhite: 242 / 255
 @JwiftFlipTint: @JwiftFlipOverBlack + @JwiftFlipOverWhite - 1
 @JwiftFlipContrast: (@JwiftFlipOverWhite - @JwiftFlipOverBlack) / (1 - @JwiftFlipTint) * @Dark
-@JwiftFlipSaturate: @JwiftGlassCarry / (@JwiftFlipOverWhite - @JwiftFlipOverBlack)
+@JwiftFlipSaturate: 1 / (@JwiftFlipOverWhite - @JwiftFlipOverBlack)
 @JwiftFlipInk: rgb(16, 14, 18)
-
-// ── THE BAR ─────────────────────────────────────────────────────────
-// Apple's tab bar is neither law above: over the Photos grid its body sits +28 over the backdrop's mean
-// (64 over 36) and over the App Store's bright art +29 (109 over 80), while what varies under it comes
-// through at a slope of about 0.15 (Photos -0.04, App Store 0.30). So the bar rides the MEAN (AdaptiveLift),
-// never past the control's far end, the label's 4.5:1 floor: a white heading scrolling under it reads about
-// 110, under the labels. Its ramp is that slope from Apple's ground; light keeps the control law.
-@JwiftBarLift: 28 * @Dark
-@JwiftBarOverBlack: @JwiftControlOverBlack
-@JwiftBarOverWhite: (@JwiftGlassGround + 0.15) * @Dark + @JwiftControlOverWhite * @Light
-@JwiftBarTint: (1 - @JwiftBarOverBlack - @JwiftBarOverWhite) * (@Dark - @Light)
-@JwiftBarContrast: (@JwiftBarOverWhite - @JwiftBarOverBlack) / (1 - @JwiftBarTint)
-@JwiftBarSaturate: @JwiftGlassCarry / (@JwiftBarOverWhite - @JwiftBarOverBlack)
 
 // ── VIBRANCY ON GLASS ───────────────────────────────────────────────
 // Things placed ON glass use "fills, transparency, and vibrancy" (HIG Materials), vibrancy being what
@@ -255,13 +180,11 @@ JwiftSeparatorVibrancy {
 // on the app's grounds (dark 26, light 15): 0.22 x 229 = 50.4 and 0.12 x 240 = 28.8. Kept apart from the
 // fill so a press reads a clear step past a selection.
 @JwiftVibrancyFillPressed: 50 * @Dark - 29 * @Light
-// THE SELECTED TAB at rest: a neutral plate, not a fill. Apple's Photos bar keeps 0.3 of the colour under
-// its selected segment and lands it +22 to +30 over the body. A cover of 0.5 keeps half the colour, and
-// holds the plate above the bar over the brighter bodies the bar reaches (a cover of 0.7 put it below the
-// bar past a body of 105); the amount lands it +26 over Apple's bar body of 67 in dark, and at Apple's
-// 221 over 242 in light.
-@JwiftVibrancySelection: 60 * @Dark + 100 * @Light
-@JwiftVibrancySelectionCover: 0.5
+// THE SELECTED TAB at rest: a neutral plate, not a fill. Apple's Photos bar keeps 0.3 of the color under
+// its selected segment and lands it +22 to +30 over the body: cover 0.7 in dark, and the amount lands it
+// +26 over Apple's bar body of 67. In light, cover 0.5 and 100 land it at Apple's 221 over 242.
+@JwiftVibrancySelection: 68 * @Dark + 100 * @Light
+@JwiftVibrancySelectionCover: 0.7 * @Dark + 0.5 * @Light
 
 // ── THE RIM ─────────────────────────────────────────────────────────
 // Apple's Liquid Glass rim, measured off Apple's own pixels (LiquidGlassGallery: the Hold Assist speaker
@@ -278,7 +201,8 @@ JwiftSeparatorVibrancy {
 // at the node's BorderLayer slot, from the face's own corner field: a GAIN of what is below
 // (x 1 + strength), then a screen toward white at 0.96 of the strength. 0.24 is the joint fit to all of
 // those (gain 0.24, white 0.23); the white term is what holds the rim over a dark, busy body, where a gain
-// has little to lift and a smaller white let the rim sink into the hero.
+// has little to lift. The dark gallery agrees: the iOS Games bar's rim stands +36 to +49 over its body in
+// the body's own hue, and the quiet hero pills +13 to +15 (the iPad Play pill's (37,41,74) rims at (52,55,90)).
 //
 // The width is a HAIRLINE in px, not pt: PointScale and a Visual press never thicken it. It is the width
 // at the lit lobes; the sides narrow to 0.45 of it, never under one device pixel. Fitted to Apple's
@@ -317,8 +241,6 @@ JwiftGlass {
   Background: rgba(0, 0, 0, 0)
   Tint: @JwiftControlTint
   TintTone: Ground
-  AdaptiveFar: @JwiftGlassOpenFar
-  AdaptiveFlip: @JwiftFlipTint @JwiftFlipContrast @JwiftFlipSaturate @JwiftFlipInk
   // The face is FLAT: Apple's panel never magnifies what is behind it. Only the edge band bends, by the
   // circle map (Jiv.Panel.frag), which folds a thin mirrored arc of what lies inside it along the
   // outline. Refraction 1 is Apple's bend.
@@ -403,21 +325,12 @@ JwiftSectionTitle {
 }
 
 // ── JwiftHeroGlass ──────────────────────────────────────────────────
-// Hero / CTA variant of JwiftGlass: the control a page leads with. It differs from JwiftGlass in its
-// SHADOW only, heavier and wider so it reads as the page's primary action. Its optics are the control's.
-//
-// It used to be clearer, by a "clarity" ratio of 0.7 on the tint and a saturate of 2.2 / 2.4, on the
-// argument that glass over art should be a lens rather than a plate. The law above prices that: over a
-// white backdrop the old hero put @Ink at 3.10:1 in dark and 2.41:1 in light, under Apple's 4.5:1 floor
-// for the very label it carries, and in light it carried 1.56 of the colour behind it, more than the
-// picture itself has. A hero is a control-sized surface holding a control's label, so it is the
-// control's point on the curve, and the lens the clarity was reaching for is now the control's full
-// colour carry. One glass, as Jack asked: "consistent glass".
-//
-// Used today by Dev/JivGallery only. The heroes a user sees are Surface.jss's HeroPill family and
-// Item.jss's Itm_Primary, which extend JwiftGlass and author their own tint by hand (see the lane report
-// WorkerReports/build-glasscolour.md for the list of hand-written grades and why each is left alone).
+// The action a hero leads with, over its art: the hero law above (Apple's Games Play pills), near clear in
+// dark, with a heavier, wider shadow, and the hero's legibility guard (THE HERO'S LEGIBILITY GUARD above).
 JwiftHeroGlass : JwiftGlass {
+  Tint: @JwiftHeroTint
+  BackdropFilter: Blur(Auto) Saturate(@JwiftHeroSaturate) Contrast(@JwiftHeroContrast)
+  AdaptiveFlip: @JwiftFlipTint @JwiftFlipContrast @JwiftFlipSaturate @JwiftFlipInk
   ShadowColor: rgba(0, 0, 0, 0.2)
   // Unmeasured against Apple, so it keeps the adaptivity it had: 85% lighter over a flat light ground.
   ShadowAdaptive: 0.85
@@ -430,17 +343,13 @@ JwiftHeroGlass : JwiftGlass {
 // Apple's one material at its second thickness. Session 219: when glass "morphs to larger sizes, like
 // when presenting a menu from a toolbar button, its material characteristics change to simulate a
 // thicker, more substantial material. It casts deeper, richer shadows, has more pronounced lensing and
-// refraction effects, and a softer scattering of light." UIKit: "A larger size is more opaque." Big
-// elements (menus, popovers, sheets, sidebars) never flip light or dark. Buttons and bars stay on
-// JwiftGlass; anything that opens out of one extends this.
+// refraction effects, and a softer scattering of light." UIKit: "A larger size is more opaque." Buttons
+// and bars stay on JwiftGlass; anything that opens out of one extends this.
 JwiftGlassThick : JwiftGlass {
-  // More opaque, as a larger size is: it holds 7:1 where a control holds 4.5:1, which the law above turns
-  // into a harder tint and a narrower range at the same full colour carry, and a wider blur.
+  // More opaque, as a larger size is: the sheet law above, and a wider blur.
   Tint: @JwiftSheetTint
   BackdropFilter: Blur(14pt) Saturate(@JwiftSheetSaturate) Contrast(@JwiftSheetContrast)
   Thickness: 3
-  // Big glass never flips.
-  AdaptiveFlip: None
   // Deeper and richer than a control's, still soft and low. The adaptive share comes from JwiftGlass.
   ShadowColor: rgba(0, 0, 0, 0.34)
   // Unmeasured against Apple, so it keeps the adaptivity it had: 85% lighter over a flat light ground.
@@ -452,12 +361,9 @@ JwiftGlassThick : JwiftGlass {
 // ── JwiftGlassThickVivid ────────────────────────────────────────────
 // A BAR: the thick body (rim, bevel, lensing, deep shadow) with a small control's frost, which is Apple's:
 // the detail Apple's tab bars keep of what is under them fits a frost of 0.4 to 0.9pt, and Blur(Auto) gives
-// a 62pt bar 0.93pt. It rides its backdrop's mean (THE BAR above) and flips as small glass does.
+// a 62pt bar 0.93pt. Its grade is the bar law above.
 JwiftGlassThickVivid : JwiftGlassThick {
   Tint: @JwiftBarTint
-  AdaptiveLift: @JwiftBarLift
-  AdaptiveFar: @JwiftControlFar * @Dark
-  AdaptiveFlip: @JwiftFlipTint @JwiftFlipContrast @JwiftFlipSaturate @JwiftFlipInk
   BackdropFilter: Blur(Auto) Saturate(@JwiftBarSaturate) Contrast(@JwiftBarContrast)
   ShadowColor: rgba(0, 0, 0, 0.3)
   // Unmeasured against Apple, so it keeps the adaptivity it had: 85% lighter over a flat light ground.
