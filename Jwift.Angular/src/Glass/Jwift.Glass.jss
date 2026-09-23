@@ -285,13 +285,14 @@ JwiftGlass {
   Tint: @JwiftControlTint
   TintTone: Ground
   AdaptiveFar: @JwiftGlassOpenFar
-  // The face is FLAT: Apple's panel never magnifies what is behind it. Only the edge band bends, 9% of
-  // the short side, as kube.io's convex squircle bends it: inward, stretching what lies just inside the
-  // edge, milky toward the outline, never folding. Refraction 1 is Apple's bend.
+  // The face is FLAT: Apple's panel never magnifies what is behind it. Only the edge band bends, by the
+  // circle map (Jiv.Panel.frag), which folds a thin mirrored arc of what lies inside it along the
+  // outline. Refraction 1 is Apple's bend.
   Thickness: @JwiftGlassThickness
   Refraction: 1
-  // A soft blur, about 8% of a 48pt control's short side, so what is behind stays a recognisable shape.
-  BackdropFilter: Blur(4pt) Brightness(@JwiftControlLift) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
+  // The frost follows the size: 6% of the short half side, 1.5 to 8pt, so what is behind a control stays
+  // a recognizable shape.
+  BackdropFilter: Blur(Auto) Brightness(@JwiftControlLift) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   RimWidth: @JwiftRimWidth
   RimStrength: @JwiftRimStrength
   BorderLayer: 10
@@ -410,12 +411,11 @@ JwiftGlassThick : JwiftGlass {
 
 // ── JwiftGlassThickVivid ────────────────────────────────────────────
 // A BAR: the thick body (rim, bevel, lensing, deep shadow) with a small control's optics. A tab bar is a
-// small element in Apple's terms, so it is as clear as a control, and its short blur (about 8% of a 64pt
-// bar) keeps the colour of what it floats over legible rather than smeared to fog. It never lays a grey
+// small element in Apple's terms, so it is as clear as a control, and its size-following blur keeps the colour of what it floats over legible rather than smeared to fog. It never lays a grey
 // floor over that colour: the tint pulls toward the theme's ground instead.
 JwiftGlassThickVivid : JwiftGlassThick {
   Tint: @JwiftControlTint
-  BackdropFilter: Blur(5pt) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
+  BackdropFilter: Blur(Auto) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
   ShadowColor: rgba(0, 0, 0, 0.3)
   ShadowBlur: 24pt
   ShadowOffsetY: 3pt
