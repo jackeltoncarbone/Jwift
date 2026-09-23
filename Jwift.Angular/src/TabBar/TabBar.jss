@@ -25,7 +25,7 @@ Jwift_TabBar : JwiftGlassThickVivid {
   // Why no grey fill: the composite is fill over backdrop, so a neutral grey lays a flat floor across all
   // three channels that no Saturate can climb past, and that floor is what desaturated the bar. The body
   // paints no fill; its tint pulls the enriched backdrop toward the theme's ground, black in dark and white
-  // in light, so the hero's own colour is most of what you see. Dark glass still floors near 28 of 255
+  // in light, so the hero's own colour is most of what you see. Dark glass floors at 33 of 255
   // over black, so the bar stays a visible surface on an unlit page.
 
   // A tab bar's height is intrinsic — it must NEVER be vertically compressed by sibling flex content.

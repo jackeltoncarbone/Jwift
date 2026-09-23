@@ -422,12 +422,25 @@ JwiftGlassThick : JwiftGlass {
 }
 
 // ── JwiftGlassThickVivid ────────────────────────────────────────────
-// A BAR: the thick body (rim, bevel, lensing, deep shadow) with a small control's optics. A tab bar is a
-// small element in Apple's terms, so it is as clear as a control, and its size-following blur keeps the colour of what it floats over legible rather than smeared to fog. It never lays a grey
-// floor over that colour: the tint pulls toward the theme's ground instead.
+// A BAR: the thick body (rim, bevel, lensing, deep shadow) with a small control's frost, which is Apple's:
+// the detail Apple's tab bars keep of what is under them fits a frost of 0.4 to 0.9pt (iPhone App Store
+// and Photos bars), where Blur(Auto) gives a 62pt bar 0.93pt.
+//
+// ITS RANGE IS APPLE'S DARK BAR, NOT THE LIFTED CONTROL'S. Measured on the iPhone Photos tab bar, the dark
+// bar over dark, busy content with white labels in it (the case of every dark page here): content 26..207
+// under the bar reads 39..82, a slope of 0.24 through 33 over black, so white reads 93 and a heading
+// scrolling under the bar never competes with the tab labels. The lifted control law put that heading at
+// 225. Light keeps the control law. The bar does not open its far end either: the opening reads its peak
+// at a coarse level, where a thin white heading averages dark, and would let the heading back through.
+@JwiftBarOverBlack: 33 / 255 * @Dark + @JwiftControlOverBlack * @Light
+@JwiftBarOverWhite: 93 / 255 * @Dark + @JwiftControlOverWhite * @Light
+@JwiftBarTint: (1 - @JwiftBarOverBlack - @JwiftBarOverWhite) * (@Dark - @Light)
+@JwiftBarContrast: (@JwiftBarOverWhite - @JwiftBarOverBlack) / (1 - @JwiftBarTint)
+@JwiftBarSaturate: @JwiftGlassCarry / (@JwiftBarOverWhite - @JwiftBarOverBlack)
 JwiftGlassThickVivid : JwiftGlassThick {
-  Tint: @JwiftControlTint
-  BackdropFilter: Blur(Auto) Saturate(@JwiftControlSaturate) Contrast(@JwiftControlContrast)
+  Tint: @JwiftBarTint
+  AdaptiveFar: 0
+  BackdropFilter: Blur(Auto) Brightness(1) Saturate(@JwiftBarSaturate) Contrast(@JwiftBarContrast)
   ShadowColor: rgba(0, 0, 0, 0.3)
   ShadowBlur: 24pt
   ShadowOffsetY: 3pt
