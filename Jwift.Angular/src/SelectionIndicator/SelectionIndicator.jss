@@ -65,10 +65,10 @@ Jwift_SelectionIndicator {
 // THE ACTIVE LENS, Apple's, measured on the iOS 26 tab bar (MacStories native capture, 1320 px at 60 fps, and a
 // dark Music capture; Core/Glass.md has the numbers and the fit). A finger on the selection lifts the resting pill
 // into a clear lens:
-//   - a capsule 1.71 bar heights wide and 1.17 tall, 5.3 pt past the bar top and bottom: SelectionIndicator.ts
-//     sets the VisualScale that draws it from the bar's height, and the springs below carry it;
-//   - it magnifies the bar as drawn 1.21 x at its centre, sharp, and across a 13 pt bezel compresses what lies past
-//     its outline into the band, dispersed there only (Apple's refraction, measured from its frames);
+//   - a capsule 1.35 item pitches wide (at most 1.71 bar heights) and 1.17 tall, 5.3 pt past the bar top and
+//     bottom: SelectionIndicator.ts sets the VisualScale that draws it from the bar, and the springs below carry it;
+//   - it magnifies the bar as drawn 1.21 x at its centre, sharp, folding back to the outline across a 7 pt bezel,
+//     dispersed there only, and reads nothing but the bar (Apple's refraction, measured from its frames);
 //   - its body lifts toward white in light and a little in dark (the lens's screen curve), its ink kept;
 //   - its rim is iridescent (Glass.Pipeline.glsl, GlassLensRimHeights).
 // It grows on a spring that overshoots 7% and settles (10 to 90% in 83 ms), fitted to the same capture.
