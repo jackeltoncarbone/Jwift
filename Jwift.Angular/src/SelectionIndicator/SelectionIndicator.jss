@@ -67,8 +67,8 @@ Jwift_SelectionIndicator {
 // into a clear lens:
 //   - a capsule 1.71 bar heights wide and 1.17 tall, 5.3 pt past the bar top and bottom: SelectionIndicator.ts
 //     sets the VisualScale that draws it from the bar's height, and the springs below carry it;
-//   - it magnifies what is under it 1.19 x (our label reads 1.21 x wider, as Apple's does), sharp, inside a 6.7 pt bezel that
-//     folds the content past its outline back in, dispersed;
+//   - it magnifies the bar as drawn 1.21 x at its centre, sharp, and across a 13 pt bezel compresses what lies past
+//     its outline into the band, dispersed there only (Apple's refraction, measured from its frames);
 //   - its body lifts toward white in light and a little in dark (the lens's screen curve), its ink kept;
 //   - its rim is iridescent (Glass.Pipeline.glsl, GlassLensRimHeights).
 // It grows on a spring that overshoots 7% and settles (10 to 90% in 83 ms), fitted to the same capture.
@@ -83,7 +83,7 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   Thickness: 1
   Refraction: 1
   GlassVariant: Clear
-  Magnification: 1.19
+  Magnification: 1.21
   // THE ONE FRINGE. Glass at rest has none; the lens that moves under a finger disperses, in its bezel and
   // its iridescent rim.
   ChromaticAberration: 0.25
