@@ -60,6 +60,12 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private static readonly _GrowDamping = 25.3;
   private static readonly _ReleaseStiffness = 2187;
   private static readonly _ReleaseDamping = 112;
+  // Apple's active lens against its bar (iOS 26 tab bar, native capture): 316 x 217 px over a 185 px bar, so 1.71
+  // bar heights wide and 1.17 tall, standing 5.3 pt past the bar top and bottom whatever the tab count.
+  private static readonly _LensWidthPerBar = 1.708;
+  private static readonly _LensHeightPerBar = 1.173;
+  /** The VisualScale override the lens is drawn at, or null at rest. */
+  private _lensScale: string | null = null;
   // How far the lens is in, [0, 1], on the same springs the pressed and resting classes time the lens with
   // (Apple's, SelectionIndicator.jss): it holds the pill above the labels until the release has settled.
   private _pressAmount = new Spring(0, SelectionIndicator._GrowStiffness, SelectionIndicator._GrowDamping, 1);
@@ -282,6 +288,18 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     const [, padR, , padL] = this._lastPad;
     const baseWidth = t.Width + this._reachPx * 2;
     const baseHeight = t.Height;
+
+    // Pressed, the pill is drawn as Apple's lens, a capsule sized against the bar rather than scaled from our
+    // near-square cell; the pressed class's springs carry it there and back.
+    const barHeight = parent?.Height ?? 0;
+    const lensScale = isPressed && barHeight > 0 && baseWidth > 0 && baseHeight > 0
+      ? `${(SelectionIndicator._LensWidthPerBar * barHeight / baseWidth).toFixed(4)} ${(SelectionIndicator._LensHeightPerBar * barHeight / baseHeight).toFixed(4)}`
+      : null;
+    if (lensScale !== this._lensScale) {
+      this._lensScale = lensScale;
+      if (lensScale === null) this.ClearStyleOverride('VisualScale');
+      else this.SetStyleOverride({ VisualScale: lensScale });
+    }
 
     let centerX = t.X + t.Width / 2;
     let overshoot = 0;
