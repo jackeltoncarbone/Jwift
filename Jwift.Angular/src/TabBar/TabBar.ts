@@ -143,6 +143,10 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
       // Expanded beside a wide viewport (the concept's top dock); stacked on a phone.
       const next = (typeof window !== 'undefined' ? window.innerWidth : this.Node.Width) >= TabBar._ExpandThreshold;
       if (next !== this.Expanded()) this.Expanded.set(next);
+      // Every item's rect is leased, so the first press after load hits whichever tab it lands on. A handle's
+      // lease is one flag the <selection-indicator> also sets and clears on its target, so it is held here
+      // each frame (a no-op while held).
+      for (const item of this.Items()) (item.Node as { WatchRect?: (w: boolean) => void }).WatchRect?.(true);
       // A per-frame width poll has no meaning where there are no frames. Under server rendering
       // the width is evaluated ONCE — so the bar still serializes in its correct stacked/expanded
       // form — and the loop simply never starts. Left unguarded, this threw out of ngOnInit on
