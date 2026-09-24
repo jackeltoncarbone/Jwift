@@ -105,6 +105,7 @@ Jwift_ToggleKnob {
   Height: 26pt
   BorderRadius: 999pt
   Background: rgb(255, 255, 255)
+  Glass: Clear
   Thickness: 0
   Refraction: 0
   ShadowColor: rgba(0, 0, 0, 0.25)
@@ -142,7 +143,6 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   Height: 42.5pt
   // Apple's clear glass: the rim all the way round, recoloring whatever the lens shows (green where it
   // crosses the track, bright over the page), and no shadow.
-  GlassVariant: Clear
   RimWidth: @JwiftRimWidth
   RimStrength: @JwiftRimStrength
   ChromaticAberration: 0

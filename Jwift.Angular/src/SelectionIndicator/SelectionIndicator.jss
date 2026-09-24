@@ -17,6 +17,7 @@ Jwift_SelectionIndicator {
   BackdropFilter: Vibrancy(@JwiftVibrancySelection, @JwiftVibrancySelectionCover)
 
   // At rest it does not bend at all; the press brings the lens.
+  Glass: Clear
   Thickness: 0
   Refraction: 0
   ChromaticAberration: 0
@@ -82,7 +83,6 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   BackdropFilter: Brightness(1) Saturate(1) Contrast(1)
   Thickness: 1
   Refraction: 1
-  GlassVariant: Clear
   Magnification: 1.21
   // THE ONE FRINGE. Glass at rest has none; the lens that moves under a finger disperses, in its bezel and
   // its iridescent rim.

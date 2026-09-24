@@ -111,9 +111,8 @@ JwiftSeparatorVibrancy {
 // tint seed (Apple's .tint(color)); everything else takes its colour from what is behind it.
 JwiftGlass {
   Background: rgba(0, 0, 0, 0)
-  Thickness: 1
+  Glass: Regular
   Refraction: 1
-  GlassVariant: Regular
   RimWidth: @JwiftRimWidth
   RimStrength: @JwiftRimStrength
   // The rim rides BorderLayer, so it paints above the glass's own content (a photo, a pill, a glyph).
@@ -122,7 +121,7 @@ JwiftGlass {
 
 // Apple's clear glass: one face for both themes, a lighter blur, a rim all the way round, no shadow.
 JwiftClearGlass : JwiftGlass {
-  GlassVariant: Clear
+  Glass: Clear
 }
 
 // ── JwiftSolidGlass ─────────────────────────────────────────────────
