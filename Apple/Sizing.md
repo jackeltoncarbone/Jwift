@@ -1,6 +1,6 @@
 # Apple's glass controls: sizing and proportions
 
-What Apple does, at rest and during interaction. Companion to `LiquidGlass.md` (the material). No Jaui or JSS here; our values and the deltas are in `Jaui/Jaui/src/Core/Glass.Jss.md`.
+What Apple does, at rest and during interaction. Companion to `LiquidGlass.md` (the material), `HIG.md` (Apple's published guidance), `Apps.md` (first-party app behavior) and `Web.md` (apple.com). No Jaui or JSS here; our values and the deltas are in `Jaui/Jaui/src/Core/Glass.Jss.md`.
 
 Status: **[C]** read from the iOS 26.1 decompile (UIKitCore, DesignLibrary; file and function given). **[I]** measured on Apple's native captures (the frame named) or inferred. The decompiler drops float arguments on many setter calls and keeps table names (`dbl_*`, `xmmword_*`) without values; where a number is missing for that reason it says so.
 
@@ -108,7 +108,31 @@ Capsule (`backgroundCornerRadius` FLT_MAX); height 44, 48 when floating (the tab
 
 ## 6. Switch (measured) [I]
 
-iOS 26 track 63 × 31 with a 34.5 × 23 capsule thumb, inset 3 horizontal and 4 vertical, travel 22.5; held, the thumb swells past the track to about 50 × 39 (Apple's comparison art, ±0.5 pt; `ShowStudio.Documentation/Design/Apple.Measured.Spec.md`).
+Apple publishes none of these; session 284 says only that sizes are "updated slightly" for controls like UISwitch. DesignLibrary holds Switch metrics (see Not found) whose values were not read. Measured 2026-09-14 off Apple's iOS 18 against iOS 26 comparison art, calibrated on the iOS 18 switch beside it (known geometry): pixels per point solved three independent ways (track width, track height, thumb diameter) agreed to 2.9%, adopted 2.2706 px/pt; the iOS 18 control reproduced at 50.87 × 31.49 with a 26.64 thumb and a 1.76 / 2.20 inset against a truth of 51 × 31, 27, 2. Confidence about ±0.5 pt.
+
+| | iOS 18 | iOS 26 |
+|---|---|---|
+| track | 51 × 31 | 63 × 31 |
+| thumb | 27 circle | 34.5 × 23 capsule |
+| thumb aspect | 1.0 | 1.515 (3:2) |
+| inset | 2 all round | 3 horizontal, 4 vertical |
+| travel | 20 | 22.5 |
+
+The track height is unchanged at 31 (radius 15.5), and the vertical inset closes exactly: 23 + 2 × 4 = 31. The horizontal inset measures 3, not 4.
+
+Held, the thumb takes Liquid Glass and swells past the track on both faces. Apple's Liquid Glass art shows this only in a 3D render with a soft shadow and a transparent thumb, so it cannot be measured precisely; the qualitative fact is certain (the held thumb is taller than the track). Adopted estimate: 34.5 × 23 grows to about 50 × 39 (× 1.45 horizontal, × 1.70 vertical), about 4 pt proud of the track on each face. A capture of a real device at a known scale supersedes this section.
+
+## 7. Superseded values
+
+Older notes in this repo carried these; the decompile replaces them.
+
+| old value | source it came from | now |
+|---|---|---|
+| iPhone tab bar "about 83 px" tall | March 2026 secondary research | 54 pt content, about 62 pt outer (section 1) [C] / [I] |
+| iPhone tab bar "64 px tall at 3x with 20 px insets" | an earlier note | 54 pt content, 21 pt side margins (section 1) [C] |
+| tab label "10 pt Regular" | March 2026 secondary research | 10 pt [C]; weight heavier than regular, likely medium, measured semibold (section 1) [I] |
+| large button 64 pt | visionOS extra large, read as iOS | large 50, medium 34, small and mini 28 (section 3) |
+| Apple's pill endcap as a superellipse, lead-in 1.086 r, exponent 2.06 | fitted on a screenshot | continuous corner, circular at a capsule's short axis (`LiquidGlass.md` section 10) [C] |
 
 ## Not found
 

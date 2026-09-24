@@ -382,7 +382,7 @@ Jwift_GlassDropdownDivider : JwiftSeparatorVibrancy {
 // transparency, and vibrancy". A backdrop filter here would re-brighten the thick menu under it.
 // THE HIGHLIGHT IS A THIN FILL WITH THE COLOUR BEHIND IT AMPLIFIED - all three of Apple's terms.
 //
-// `Shared/Research/Apple.LiquidGlass.md`: "Always avoid glass on glass." Things placed on glass use
+// `Apple/HIG.md`: "Always avoid glass on glass." Things placed on glass use
 // "fills, transparency, and vibrancy" so they read as "a thin overlay that is part of the material".
 // Three terms, not one. Vibrancy is specifically what "amplifies and adjusts the color of the content
 // layered behind", which is the half a flat fill can never do.

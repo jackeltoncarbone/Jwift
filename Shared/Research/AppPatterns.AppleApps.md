@@ -368,7 +368,7 @@ Folded in 2026-09-17 (desktoplayout lane). Until then these files had nothing on
 
 **A few exclusive choices:**
 - **Answers with pictures sit side by side**, with the chosen one ringed: System Settings > Appearance (Auto/Light/Dark), iOS Display & Brightness. They stay side by side even on a phone.
-- **Answers that are words stack as full-width rows:** iPhone setup ("Set Up for Myself / Set Up for a Family Member"), the account chooser (Apple.Apps.md, "choose from a list of email providers"), a picker with a checkmark. On a wide window the question becomes a form sheet ("page or form sheet presentation styles, each centering content… at a default size", Apple.LiquidGlass.md §8). UIKit's `formSheet` is 540pt wide.
+- **Answers that are words stack as full-width rows:** iPhone setup ("Set Up for Myself / Set Up for a Family Member"), the account chooser (`Apple/Apps.md` section 5.1, "choose from a list of email providers"), a picker with a checkmark. On a wide window the question becomes a form sheet ("page or form sheet presentation styles, each centering content… at a default size", `Apple/HIG.md` section 9). UIKit's `formSheet` is 540pt wide.
 - **A segmented control switches modes or views, not settings.** Use radio buttons on macOS, or a pop-up once there are more than a handful of choices (HIG Segmented controls, Radio buttons).
 - **Never a tall card per answer with a blank picture area.** When the picture isn't there, the answer is a row.
 

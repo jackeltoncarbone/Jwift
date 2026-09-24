@@ -1,6 +1,6 @@
 # Apple's Liquid Glass
 
-What Apple does, and nothing else. No Jaui, no JSS, none of our values: those live in `Jaui/Jaui/src/Core/Glass.Jss.md`, which is derived from this file. Sizing and proportions of the controls are in `Sizing.md` beside this file.
+What Apple does, and nothing else. No Jaui, no JSS, none of our values: those live in `Jaui/Jaui/src/Core/Glass.Jss.md`, which is derived from this file. Sizing and proportions of the controls are in `Sizing.md` beside this file; Apple's published words on the material are `HIG.md` section 1.
 
 Every fact carries a status:
 - **[C]** read from Apple's code or shader IR, or from a live layer dump, with the file, function or symbol.
@@ -262,7 +262,7 @@ So the curve leaves each edge 1.528665 r from the vertex (`+[CALayer cornerCurve
 
 - `setCornerCurve:` knows `circular` (0), `continuous` (1) and two private curves `id0` (2) and `id1` (3). [C] `CALayer.mm`
 - `CIRoundedRectangleGenerator.smoothness`: 0 a plain radius, 1 "smooth like icons do (setting to 1 should match CA's result)". [C] Apple DTS, developer forums thread 787405
-- Apple's pill endcap measured on the green Accept button: lead-in 1.086 r, near the circular end. [I] `ShowStudio.Documentation/Design/Apple.Measured.Spec.md`
+- Apple's pill endcap measured on the green Accept button (2026-09-14): a superellipse fit minimizing pixel mismatch of the rendered silhouette against Apple's screenshot gives lead-in 1.086 r, exponent 2.06 (mismatch 0.390%, against 0.568% for a plain circular capsule and 1.162% for a 1.540 r, n 2.70 curve). A pill is circular at its short axis by the path above, so the fit is that blend seen through JPEG noise; the path wins. [I]
 - Concentric corners: inner radius = outer radius − padding; capsule radius = half the height; `concentric(minimum:)` for a floor. [C] API, WWDC25 session 356
 
 ## 11. Springs
@@ -281,6 +281,24 @@ So the curve leaves each edge 1.528665 r from the vertex (`+[CALayer cornerCurve
 | lens lift / unlift | lost to decompilation | [I] |
 | lens growth measured on frames | grow 10 to 90% in 83 ms with a 7% overshoot; release 10 to 90% in 83 ms, no overshoot | [I] MacStories 60 fps |
 | flex scale spring | lerped SmallLoupe to Loupe by size (damping, response, tracking) | [C] structure, [I] values |
+
+## 12. Measured on device screenshots [I]
+
+Pixel profiles through Jack's iPhone Air screenshots (1260 × 2736, 3x; Photos, the App Store, Collections, Target), device pixels, luminance 0 to 255, 2026-09-14. They are what the laws above produce on real frames.
+
+**Body.** Over black: 24 to 26 (Photos bar, App Store bar right of Search). Over a bright orange icon, centre: (131, 118, 103) (App Store bar over the Mini Motorways icon). Over a bright green photo, light appearance: (143, 160, 149) (Collections "Type to Create" pill). Brightness follows the backdrop, hue is damped. Text behind a bar reads as a shape, not letters.
+
+**Rim.** Through the top edge of the Photos bar over black: 56, 50, 40, then the 24 body: one device pixel at about 62, gone two pixels later; the bottom edge is the mirror (40, 50, 56). Around a round button over black (Photos search), by angle, 0 right and 90 down:
+
+| angle | 0 | 30 | 60 | 90 | 120 | 150 | 180 | 210 | 240 | 270 | 300 | 330 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| rim | 53 | 58 | 55 | 49 | 34 | 37 | 55 | 68 | 62 | 64 | 36 | 32 |
+
+Two peaks at opposite corners (68 top left, 58 bottom right) with the sides between falling to about a quarter over the body: the key and fill lights of section 5.1.
+
+**Lens.** In the first 2 to 3 CSS px inside the outline the glass shows what lies outside the panel: the App Store bar's top edge over the icon reads a dark band of 30 where the body is 70 (the sample lands above the icon, in black); its bottom edge a bright 96 band (the icon pulled down into the rim); the Collections pill's left edge a 10 CSS px band of 16 where the body is 109 (the black photo margin outside the pill). Past that band the interior is pulled toward the edge by about 5 CSS px, flat within about 12 CSS px; at the App Store bar's end cap the orange icon appears 16 device px closer to the edge than it is. This is the two-sided shift of section 3.1.
+
+**Shadow.** Nothing shows below the Photos bar over black. Over content the shadow rises over text and falls over a flat light ground, and follows text scrolling underneath; the backdrop decides, not the theme (section 1 of `HIG.md` quotes Apple on this).
 
 ## Sources
 

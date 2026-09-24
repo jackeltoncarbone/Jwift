@@ -3,7 +3,7 @@
 // MEASURED off Apple's own iOS 18 vs 26 comparison art, calibrated against the iOS 18 switch beside it,
 // whose geometry is known exactly (51 x 31 track, 27 thumb, 2 inset). Solving px/pt from that control
 // three ways agreed to 2.9%, and the iOS 18 numbers reproduce to 50.87 x 31.49 with a 26.64 thumb, so the
-// iOS 26 figures below carry roughly the same confidence. See Design/Apple.Measured.Spec.md.
+// iOS 26 figures below carry roughly the same confidence. See Jwift/Apple/Sizing.md section 6.
 //
 //                   iOS 18          iOS 26
 //   track           51 x 31         63 x 31      longer, same height
