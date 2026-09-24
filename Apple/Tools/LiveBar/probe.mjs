@@ -1,0 +1,14 @@
+import { chromium } from 'file:///C:/Users/jackc/Code/Repositories/show-studio/ShowStudio.Render/node_modules/playwright/index.mjs';
+const browser = await chromium.launch({ args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] });
+const page = await browser.newPage({ viewport: { width: 390, height: 240 }, deviceScaleFactor: 3 });
+page.on('pageerror', (e) => console.log('pageerror:', e.message.slice(0, 400)));
+await page.clock.install();
+await page.goto(`http://127.0.0.1:6806/LiveBar/page.html?theme=dark`);
+for (let i = 0; i < 200 && !(await page.evaluate(() => window.__ready)); i++) await page.clock.runFor(50);
+await page.clock.runFor(600);
+await page.evaluate(() => { window.Harness.Press(); });
+await page.clock.runFor(500);
+await page.evaluate(() => { window.Harness.Hover(264.4); });
+await page.clock.runFor(500);
+await page.screenshot({ path: 'out/probe-profile.png', clip: { x: 150, y: 140, width: 180, height: 100 } });
+await browser.close();

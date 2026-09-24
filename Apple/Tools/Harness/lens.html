@@ -1,0 +1,110 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas>
+<script type="module">
+// Mirrors Jiv.Panel.frag's glass lens and Jiv.Rim.frag's ring for one surface over a photo.
+const Q = new URLSearchParams(location.search);
+const SCENES = {
+  search: { bg: 'bg-list.png', cx: 300, cy: 250, hx: 112, hy: 112 },
+  wifi:   { bg: 'bg-wave.png', cx: 600, cy: 330, hx: 420, hy: 110 },
+  safari: { bg: 'bg-photo.png', cx: 600, cy: 300, hx: 380, hy: 72 },
+  speaker: { bg: 'bg-teal.png', cx: 300, cy: 250, hx: 142, hy: 142 },
+};
+const S = SCENES[Q.get('scene') || 'search'];
+const DPR = 3;
+const BAND_FRACTION = parseFloat(Q.get('band') || '0.8');
+const AMOUNT_FRACTION = parseFloat(Q.get('amount') || '1.0');
+const FROST_SCALE = parseFloat(Q.get('frost') || '1');
+const RIM_LOBE = parseFloat(Q.get('lobe') || '3.45');
+const RIM_SIDE = parseFloat(Q.get('side') || '1.15');
+const RIM_OLD = Q.get('old') === '1';
+const img = new Image(); img.src = S.bg; await img.decode();
+const W = img.width, H = img.height;
+const canvas = document.getElementById('c'); canvas.width = W; canvas.height = H;
+const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: true });
+const VS = `#version 300 es
+in vec2 aPos; void main(){ gl_Position = vec4(aPos,0.,1.); }`;
+function compile(fs) {
+  const p = gl.createProgram();
+  for (const [t, s] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, fs]]) {
+    const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+    gl.attachShader(p, sh);
+  }
+  gl.bindAttribLocation(p, 0, 'aPos'); gl.linkProgram(p); return p;
+}
+const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+const U = (p, n) => gl.getUniformLocation(p, n);
+function tex(src) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  if (src) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, src);
+  else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+  return t;
+}
+function fbo(t) { const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return f; }
+const COMMON = `#version 300 es
+precision highp float; out vec4 o; uniform vec2 uRes;
+vec2 px(){ return vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y); }
+`;
+const BLUR = compile(COMMON + `uniform sampler2D uT; uniform vec2 uDir; uniform float uSigma;
+void main(){ vec2 uv = px()/uRes; vec4 a = vec4(0.); float ws = 0.; int n = int(ceil(uSigma*3.));
+ for (int i=-90;i<=90;i++){ if (abs(i)>n) continue; float w = uSigma<0.01?(i==0?1.:0.):exp(-float(i*i)/(2.*uSigma*uSigma)); a += texture(uT, uv+uDir*float(i)/uRes)*w; ws += w; } o = a/ws; }`);
+const BLIT = compile(COMMON + `uniform sampler2D uT; void main(){ o = texture(uT, px()/uRes); }`);
+const LENS = compile(COMMON + `
+uniform sampler2D uBody; uniform vec2 uCenter, uHalf; uniform float uRadius, uBand, uAmount, uDpr, uRimLobe, uRimSide, uOld;
+float sdRR(vec2 p, vec2 b, float r){ vec2 q = abs(p)-b+r; return min(max(q.x,q.y),0.)+length(max(q,0.))-r; }
+vec2 nRR(vec2 p, vec2 b, float r){ vec2 q = abs(p)-b+r; vec2 g = (q.x>0.&&q.y>0.) ? normalize(q) : (q.x>q.y ? vec2(1,0) : vec2(0,1)); return g*sign(p); }
+const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+void main(){
+  vec2 p = px()-uCenter; float d = sdRR(p, uHalf, uRadius);
+  float cover = clamp(0.5-d, 0., 1.); if (cover<=0.) discard;
+  float minHalf = min(uHalf.x, uHalf.y);
+  vec2 N = nRR(p, uHalf, max(uRadius, min(uBand*1.5, minHalf)));
+  float inside = max(-d, 0.);
+  vec2 off = vec2(0.);
+  if (inside < uBand) { float k = 1. - inside/uBand; off = -N * uAmount * (1. - sqrt(max(1. - k*k, 0.))); }
+  vec3 c = texture(uBody, (px()+off)/uRes).rgb;
+  c = mix(vec3(dot(c, LUMA)), c, 1.15); c = c*(1.-0.06)+0.06;
+  // The rim, as Jiv.Rim.frag + RimDraw: gain then a white screen at 0.8 of it.
+  float k2 = dot(N, vec2(-0.7071,-0.7071)); float f = max(k2, -0.95*k2); float ff = f*f;
+  float g;
+  if (uOld > 0.5) {
+    float core = max(1., 0.85*uDpr), shoulder = 0.03*2.*minHalf;
+    float s = 1. - clamp(max(inside-core,0.)/shoulder, 0., 1.); s = s*s*s;
+    g = 0.25*mix(0.15,1.,ff)*s;
+  } else {
+    float w = mix(uRimSide, uRimLobe, ff);
+    float drawn = max(w, 1.); float share = w / drawn;
+    float core = 1. - smoothstep(drawn - 0.5, drawn + 0.5, inside);
+    float tail = 0.15 * ff * (1. - smoothstep(drawn, drawn + 0.75 * uRimLobe, inside));
+    g = 0.25*mix(0.15,1.,ff)*(core*share + tail);
+  }
+  c = c*(1.+g); c = min(c,1.); c = c + 0.8*g*(1.-c);
+  o = vec4(c*cover, cover);
+}`);
+const src = tex(img);
+const minHalfCss = Math.min(S.hx, S.hy) / DPR;
+const sigma = FROST_SCALE * Math.min(Math.max(0.06 * minHalfCss, 1.5), 8) * DPR;
+const a = tex(null), b = tex(null), fa = fbo(a), fb = fbo(b);
+gl.viewport(0, 0, W, H); gl.useProgram(BLUR); gl.uniform2f(U(BLUR, 'uRes'), W, H); gl.uniform1i(U(BLUR, 'uT'), 0); gl.uniform1f(U(BLUR, 'uSigma'), sigma);
+gl.bindFramebuffer(gl.FRAMEBUFFER, fa); gl.bindTexture(gl.TEXTURE_2D, src); gl.uniform2f(U(BLUR, 'uDir'), 1, 0); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.bindTexture(gl.TEXTURE_2D, a); gl.uniform2f(U(BLUR, 'uDir'), 0, 1); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+gl.useProgram(BLIT); gl.uniform2f(U(BLIT, 'uRes'), W, H); gl.bindTexture(gl.TEXTURE_2D, src); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+gl.useProgram(LENS); gl.uniform2f(U(LENS, 'uRes'), W, H); gl.bindTexture(gl.TEXTURE_2D, b);
+gl.uniform2f(U(LENS, 'uCenter'), S.cx, S.cy); gl.uniform2f(U(LENS, 'uHalf'), S.hx, S.hy);
+const minHalf = Math.min(S.hx, S.hy);
+gl.uniform1f(U(LENS, 'uRadius'), minHalf);
+const band = Math.min(Math.max(BAND_FRACTION * minHalf, 8 * DPR), 28 * DPR);
+gl.uniform1f(U(LENS, 'uBand'), band);
+gl.uniform1f(U(LENS, 'uAmount'), Math.min(AMOUNT_FRACTION * band, minHalf));
+gl.uniform1f(U(LENS, 'uDpr'), DPR);
+gl.uniform1f(U(LENS, 'uRimLobe'), RIM_LOBE); gl.uniform1f(U(LENS, 'uRimSide'), RIM_SIDE); gl.uniform1f(U(LENS, 'uOld'), RIM_OLD ? 1 : 0);
+gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+window.__done = true;
+</script></body></html>

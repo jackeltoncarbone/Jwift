@@ -1,0 +1,3 @@
+# Gallery: the ActiveLens frame extractor
+
+`al_extract.py` (from `SP\al\extract.py`, a collector lane's script) cuts clips and frames out of downloaded YouTube and WWDC videos into `C:\Users\jackc\Code\LiquidGlassGallery\ActiveLens` (`Clips`, `Frames`, `Crops`, `manifest.json`), per a `SOURCES` table of file, offset, fps and time ranges. It expects the videos in `hd/` beside it and ffmpeg on the PATH (ffmpeg 9.0 full build from WinGet `Gyan.FFmpeg` is installed). Caption files (`*.vtt`) in `SP\al` were used to find the moments. Its run is not in the glass agent's transcript; the result is the gallery's manifest, which records every source URL and timestamp.

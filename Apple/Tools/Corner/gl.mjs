@@ -1,0 +1,30 @@
+import { createRequire } from 'node:module';
+import fs from 'node:fs';
+const require = createRequire('C:/Users/jackc/Code/Repositories/show-studio/ShowStudio.Render/package.json');
+const { chromium } = require('playwright');
+const pb = JSON.parse(fs.readFileSync('pb.json', 'utf8'));
+const clip = fs.readFileSync('C:/Users/jackc/Code/Repositories/show-studio/ShowStudio.Libraries/Jaui/Jaui/src/Core/Shaders/Clip.Stack.glsl.gen.ts', 'utf8');
+const clipSrc = eval(clip.replace(/^\/\/.*\n/, '').replace('export default ', '(').replace(/;\s*$/, ')'));
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const page = await browser.newPage();
+await page.setContent('<canvas id=c width=200 height=120></canvas>');
+const out = await page.evaluate(({ pb, clipSrc }) => {
+  const gl = document.getElementById('c').getContext('webgl2');
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+  const link = (v, f) => { const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, v)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, f)); gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)); return p; };
+  link(pb.vert, pb.frag);
+  // The shared chunk on the GPU: signed distance of every pixel centre to a 160x80 box, r 30, s 0.6.
+  const v = '#version 300 es\nin vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+  const f = '#version 300 es\nprecision highp float;\nuniform sampler2D u_ClipTex;\n' + clipSrc + '\nout vec4 o;void main(){vec2 u;float d=ContinuousCorner(gl_FragCoord.xy-vec2(100.,60.),vec2(80.,40.),vec4(30.),0.6,u);o=vec4(clamp(d*0.05+0.5,0.,1.),0.,0.,1.);}';
+  const p = link(v, f);
+  gl.useProgram(p);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  const px = new Uint8Array(200 * 120 * 4); gl.readPixels(0, 0, 200, 120, gl.RGBA, gl.UNSIGNED_BYTE, px);
+  return { linked: true, px: Array.from(px.filter((_, i) => i % 4 === 0)) };
+}, { pb, clipSrc });
+fs.writeFileSync('gpu.json', JSON.stringify(out.px));
+console.log('progressive blur program linked:', out.linked);
+await browser.close();

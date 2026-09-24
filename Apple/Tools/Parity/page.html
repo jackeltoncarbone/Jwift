@@ -1,0 +1,11 @@
+<!doctype html><html><head><style>html,body{margin:0;background:#000}canvas{display:block}</style></head><body><canvas id="c"></canvas>
+<script type="module">
+const q = new URLSearchParams(location.search);
+await import(`./harness-apple.bundle.js`);
+try {
+  const spec = await (await fetch(q.get('spec'))).json();
+  const img = new Image(); img.src = spec.bg; await img.decode();
+  await window.JauiHarness.Render(document.getElementById('c'), img, spec.surfaces, spec.vars, spec.dpr || 3, spec.skip || 0);
+  window.__done = 'ok';
+} catch (e) { window.__done = 'error: ' + e.message; }
+</script></body></html>

@@ -1,0 +1,17 @@
+r/iOSBeta/search.rss?q=widgets&restrict_sr=1&sort=top&t=year&limit=100
+r/iOSBeta/search.rss?q=control+center&restrict_sr=1&sort=top&t=year&limit=100
+r/iOSBeta/search.rss?q=notification&restrict_sr=1&sort=top&t=year&limit=100
+r/iOSsetups/top/.rss?t=year&limit=100
+r/iOSBeta/search.rss?q=live+activity&restrict_sr=1&sort=top&t=year&limit=100
+r/iOSBeta/search.rss?q=keyboard&restrict_sr=1&sort=top&t=year&limit=100
+r/iOSBeta/search.rss?q=menu&restrict_sr=1&sort=top&t=year&limit=100
+r/iOSBeta/search.rss?q=settings&restrict_sr=1&sort=top&t=year&limit=100
+r/iOSBeta/top/.rss?t=year&limit=100
+r/iOSBeta/search.rss?q=iPadOS+26&restrict_sr=1&sort=top&t=year&limit=100
+r/ipad/search.rss?q=iPadOS+26&restrict_sr=1&sort=top&t=year&limit=100
+r/MacOS/search.rss?q=Tahoe+widgets&restrict_sr=1&sort=top&t=year&limit=100
+r/MacOS/search.rss?q=Tahoe+notification&restrict_sr=1&sort=top&t=year&limit=100
+r/MacOS/search.rss?q=Tahoe+control+center&restrict_sr=1&sort=top&t=year&limit=100
+r/MacOS/search.rss?q=Tahoe+corners&restrict_sr=1&sort=top&t=year&limit=100
+r/MacOSBeta/top/.rss?t=year&limit=100
+r/iOSsetups/search.rss?q=widgets&restrict_sr=1&sort=top&t=year&limit=100

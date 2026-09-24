@@ -1,0 +1,12 @@
+<!doctype html><canvas id=c></canvas><script type=module>
+const gl = document.getElementById('c').getContext('webgl2');
+const fs = (await (await fetch('text.frag')).text()).replace('#pragma ClipStack', await (await fetch('clip.glsl')).text());
+const vs = await (await fetch('text.vert')).text();
+const out = []; const p = gl.createProgram();
+for (const [t, s] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) {
+  const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) out.push(gl.getShaderInfoLog(sh)); gl.attachShader(p, sh);
+}
+gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) out.push('link ' + gl.getProgramInfoLog(p));
+window.__result = out.length ? out.join('\n') : 'ok';
+</script>
