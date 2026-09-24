@@ -56,13 +56,13 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _unbindPointer: (() => void) | null = null;
   private _shapeX = new Spring(1, 2500, 60, 1);
   private _shapeY = new Spring(1, 2500, 60, 1);
-  // Continuous press amount in [0, 1]. Drives the pad + size boost as a
-  // smooth curve so the indicator's size doesn't snap-then-chase when the
-  // boolean `isPressed` flips — every visual parameter (glass thickness,
-  // refraction, rim, tint, size) then springs in lockstep across the
-  // press/release transition. Stiffness/damping picked to roughly match
-  // the JSS @Transition durations on the glass props (280ms).
-  private _pressAmount = new Spring(0, 220, 26, 1);
+  private static readonly _GrowStiffness = 409;
+  private static readonly _GrowDamping = 25.3;
+  private static readonly _ReleaseStiffness = 2187;
+  private static readonly _ReleaseDamping = 112;
+  // How far the lens is in, [0, 1], on the same springs the pressed and resting classes time the lens with
+  // (Apple's, SelectionIndicator.jss): it holds the pill above the labels until the release has settled.
+  private _pressAmount = new Spring(0, SelectionIndicator._GrowStiffness, SelectionIndicator._GrowDamping, 1);
   private _firstValid = false;
   private _hidden = false;
   /** Whether we're currently holding the Layer:2 override (pill above the text)
@@ -256,13 +256,10 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       ? Math.min(0.033, Math.max(0.001, (now - this._lastT) / 1000))
       : 0.016;
 
-    // Smooth the press transition over a continuous spring rather than a
-    // boolean — every visual parameter (glass thickness, refraction, rim,
-    // tint, pad, size boost) then springs in lockstep across the
-    // press/release transition. Without this, baseWidth/baseHeight snap
-    // discontinuously when isPressed flips and the @Transition Width/Height
-    // springs chase the snap, producing a visible size "skip."
+    // The lens grows and lets go on Apple's two springs; this one only says how far in it is.
     this._pressAmount.Target = isPressed ? 1 : 0;
+    this._pressAmount.Stiffness = isPressed ? SelectionIndicator._GrowStiffness : SelectionIndicator._ReleaseStiffness;
+    this._pressAmount.Damping = isPressed ? SelectionIndicator._GrowDamping : SelectionIndicator._ReleaseDamping;
     this._pressAmount.Step(dt);
     const pressAmount = this._pressAmount.Value;
 
@@ -280,15 +277,11 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       else this.ClearStyleOverride('Layer');
     }
 
-    const [padTRaw, padRRaw, padBRaw, padLRaw] = this._lastPad;
-    const padT = padTRaw * pressAmount;
-    const padR = padRRaw * pressAmount;
-    const padB = padBRaw * pressAmount;
-    const padL = padLRaw * pressAmount;
-    const pressBoostY = 6 * pressAmount;
-    const pressBoostX = t.Height > 0 ? pressBoostY * (t.Width / t.Height) : 0;
-    const baseWidth = t.Width + padL + padR + pressBoostX * 2 + this._reachPx * 2;
-    const baseHeight = t.Height + padT + padB + pressBoostY * 2;
+    // The layout box is the resting pill, pressed or not: the lens's growth is the pressed class's VisualScale,
+    // render-time, on Apple's springs, so it never chases a layout spring.
+    const [, padR, , padL] = this._lastPad;
+    const baseWidth = t.Width + this._reachPx * 2;
+    const baseHeight = t.Height;
 
     let centerX = t.X + t.Width / 2;
     let overshoot = 0;
