@@ -17,7 +17,7 @@ import { Jaui, Jiv } from 'jaui-angular';
 import { JivHandle as JivCore } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { CanvasPress } from '../Internal/CanvasPress';
-import { FlexLiftScale } from '../Internal/FlexLift';
+import { FlexBigGlow, FlexLiftScale } from '../Internal/FlexLift';
 import { TabItem } from './TabItem';
 import TabBarJss from './TabBar.jss';
 
@@ -129,10 +129,15 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     // The bar swells while the indicator is engaged, by UIKit's flex lift for its size (FlexLift.ts). It rides
     // IsPressed(), the signal the <selection-indicator> reads, so bar and pill engage and release as one.
     effect(() => {
-      if (!this.IsPressed()) { this.ClearStyleOverride('VisualScale'); this.PressSwell.set(1); return; }
-      const scale = untracked(() => FlexLiftScale(this.Node.Width, this.Node.Height));
+      if (!this.IsPressed()) {
+        this.ClearStyleOverride('VisualScale');
+        this.ClearStyleOverride('GlassGlow');
+        this.PressSwell.set(1);
+        return;
+      }
+      const [scale, glow] = untracked(() => [FlexLiftScale(this.Node.Width, this.Node.Height), FlexBigGlow(this.Node.Width, this.Node.Height)]);
       this.PressSwell.set(scale);
-      this.SetStyleOverride({ VisualScale: scale.toFixed(4) });
+      this.SetStyleOverride({ VisualScale: scale.toFixed(4), GlassGlow: glow.toFixed(4) });
     });
   }
 

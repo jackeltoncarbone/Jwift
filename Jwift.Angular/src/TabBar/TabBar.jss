@@ -52,6 +52,8 @@ Jwift_TabBar : JwiftGlass {
   // indicator's own wobble, so bar and pill move as one body.
   VisualScale: 1
   @Spring VisualScale { Stiffness: 900, Damping: 18, Mass: 1 }
+  // The flex's big glow comes and goes with the swell (TabBar.ts, FlexLift.ts).
+  @Spring GlassGlow { Stiffness: 900, Damping: 60, Mass: 1 }
 }
 
 // The round accessory's pressed swell, worn while its lens is engaged. It sets ONLY VisualScale. The bar itself
