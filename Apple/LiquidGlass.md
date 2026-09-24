@@ -258,29 +258,38 @@ curve  (0.868407, 0)        (1.08849, 0)         (1.528665, 0)
 ```
 So the curve leaves each edge 1.528665 r from the vertex (`+[CALayer cornerCurveExpansionFactor:]` returns 1.528665 for `continuous`, 1.0 otherwise). [C]
 
-**Short sides and capsules** [C] CoreGraphics `append_continuous_rounded_rect`: per axis, `t = sat((1.52866 − half / r) / 0.52866)`, `half` that axis's half size, and every control point is `mix(continuous[i], circular[i], t)` from two static 10-number tables. With room for the whole curve (`half ≥ 1.52866 r`) the corner is the continuous one; at a capsule's short axis (`half = r`) it is the circular one, with the two axes blended independently. QuartzCore's GPU rounded rect uses the same factor (`CA::OGL::stroke_round_rect`, QuartzCore_22.mm:6568: `2.891557 − 1.4457785 · side / (1.528665 r)`, clamped 0 to 1). The radius is clamped to half of each side first; a full capsule in both axes is an ellipse (`CGPathCreateWithEllipseInRect`). The `continuous` table is the path above; the `circular` table's values are not in the dump, so its content, a quarter circle in the same three-cubic layout, is [I].
+**Short sides and capsules** [C] CoreGraphics `append_continuous_rounded_rect`: per axis, `t = sat((1.52866 − half / r) / 0.52866)`, `half` that axis's half size, and every control point is `mix(continuous[i], circular[i], t)` from two static 10-number tables. With room for the whole curve (`half ≥ 1.52866 r`) the corner is the continuous one; at a capsule's short axis (`half = r`) it is the circular one, with the two axes blended independently. QuartzCore's GPU rounded rect uses the same factor (`CA::OGL::stroke_round_rect`, QuartzCore_22.mm:6568: `2.891557 − 1.4457785 · side / (1.528665 r)`, clamped 0 to 1). The radius is clamped to half of each side first; a full capsule in both axes is an ellipse (`CGPathCreateWithEllipseInRect`). The `continuous` table is the path above; the `circular` table's values are not in the dump (see below).
 
 - `setCornerCurve:` knows `circular` (0), `continuous` (1) and two private curves `id0` (2) and `id1` (3). [C] `CALayer.mm`
 - `CIRoundedRectangleGenerator.smoothness`: 0 a plain radius, 1 "smooth like icons do (setting to 1 should match CA's result)". [C] Apple DTS, developer forums thread 787405
-- UIKit builds it a third way (`_addContinuousCornerToPath`, UIKitCore_13.mm; `+[UIBezierPath _continuousRoundedRectBezierPath:...smoothPillShapes:clampCornerRadii:]`): an eased cubic, a circular arc and an eased cubic from the constants 0.33, 0.666666667, 1.05304313, 0.67, an arc of radius 0.980263 × 0.95 × extent (1.0 when every side is clamped), and a pill's flats set in 5% of the extent (`smoothPillShapes`). With room, it traces the continuous table above to within 0.0015 r. [C]
-- Apple's pill endcap measured on the green Accept button (2026-09-14): lead-in 1.086 r, exponent 2.06 (0.390% silhouette mismatch). [I]
 
-**The GPU corner, open.** What draws glass on screen is QuartzCore's GPU shape renderer (`CASDFElementLayer` with continuous corners, and `CA::OGL::fill_round_rect`, which reads a corner mask), not the CPU paths above. Its corner (a shader in the QuartzCore metallib, or a precomputed mask texture or LUT) has not been found, so whether Apple evaluates it analytically or from a table is [I]. The CPU paths fit Apple's native captures no better than the model below, which suggests the GPU corner differs from them at pills and tight corners.
+**SwiftUI's renderer: the corner at every size** [C] RenderBox `RB::Path::Mapper::add_rounded_rect` (RenderBox_04.mm:6992). The same three cubics, with only each edge's lead-in cubic moving with that edge's room, and the middle cubic fixed:
+```
+t     = sat((side − (ra + rb)) / ((ra + rb) · 0.52866))      ra, rb the edge's two corner radii
+lead  = 1 + 0.528665 t        cp1 = 0.96 + 0.12849 t        cp2 = 0.82 + 0.048407 t      (× r)
+lead-in: (lead, 0) (cp1, 0) (cp2, 0) → (0.631494, 0.0749114); middle: (0.372824, 0.16906) (0.16906, 0.372824) → (0.0749114, 0.631494)
+```
+At t = 1 this is the continuous path above exactly; at a capsule's short edge (t = 0) the curve leaves the edge at r, with control points 0.96 r and 0.82 r. The blend constants are float literals in the code (`vmla_n_f32` of 1.0, 0.96 and 0.5286649, 0.1284900), so nothing here is inferred. `t` is CoreGraphics' factor seen from the other side (`t_RB = 1 − t_CG` for equal radii). A non-continuous corner is the plain circle, `1 − κ = 0.44771525`. **This is the corner Jaui ships** (`Corner.Continuous.glsl`, `Corner.Continuous.ts`).
 
-**The corner that matches Apple's screens** [I]: a circular arc of radius r eased into each edge by a cubic that starts (1 + s) r from the vertex, s = 0.6, the easing on a side giving way where the side is too short for it (smoothing falls to `half / r − 1`, down to 0). Fitted to Apple's native captures by edge rms (px, lower is better):
+CoreGraphics' own `circular` table is still not in the dump. It is most likely RenderBox's t = 0 values (only the lead-in cubic changes), but that is [I].
 
-| shape (half / r) | this model | CoreGraphics table + blend ([I] circular table) | UIKit construction |
-|---|---|---|---|
-| Apple app icon vector, 1024 (1.9) | 0.526 | 0.537 | |
-| Safari URL pill (≈ 1) | 0.108 | 0.19 to 0.75 | 0.178 |
-| Mac Wi-Fi pill (≈ 1) | 0.234 | 0.17 to 0.71 | 0.280 |
-| Mac circle (1.0) | 0.220 | 0.220 | 0.219 |
-| iOS notification card (1.46) | 0.149 | 0.14 to 0.30 | 0.216 |
-| Mac album art (1.49) | 0.222 | 0.34 | 0.453 |
-| widgets, cards, menus (2 to 14) | 0.08 to 0.26 | within 0.01 | |
+**The GPU corner.** Glass on screen is drawn by QuartzCore's GPU shape renderer (`CASDFElementLayer` with continuous corners, `CA::OGL::fill_round_rect` reading a corner mask). How it evaluates the corner, analytically or from a table, has not been found [I]. RenderBox is SwiftUI's own path renderer, and its construction matches Apple's iOS captures as closely as anything measured:
 
-Measured 2026-09-24 (`scratchpad/Corner`, edge points from the luminance gradient, least squares on box and radius).
+| shape (half / r) | RenderBox construction (shipped) | old model (figma-squircle s 0.6) |
+|---|---|---|
+| Apple app icon vector, 1024 (1.9) | 0.537 | 0.526 |
+| iOS Safari URL pill (1.0) | 0.109 | 0.108 |
+| iOS notification card (1.42) | 0.140 | 0.149 |
+| iOS answer card (13.6) | 0.079 | 0.109 |
+| iPad clock / weather widgets (3.0) | 0.082 / 0.091 | 0.094 / 0.102 |
+| iOS context menu / Safari tab menu (4.1 / 3.8) | 0.206 / 0.264 | 0.195 / 0.197 |
+| Mac control tile / weather widget (1.75 / 3.1) | 0.083 / 0.235 | 0.086 / 0.232 |
+| Mac circle, Wi-Fi pill, album art (1.0, 1.0, 1.48) | 0.331, 0.283, 0.344 | 0.220, 0.234, 0.222 |
 
+Edge rms in px against Apple's native captures, measured 2026-09-24 (`scratchpad/Corner`). iOS shapes agree within 0.03 px either way; the three macOS Control Center shapes sit further from RenderBox, evidence that AppKit's Control Center draws those shapes some other way (a circle as an ellipse, for one). [I]
+
+- UIKit builds the corner a third way (`_addContinuousCornerToPath`, UIKitCore_13.mm; `+[UIBezierPath _continuousRoundedRectBezierPath:...smoothPillShapes:clampCornerRadii:]`): an eased cubic, a circular arc and an eased cubic from 0.33, 0.666666667, 1.05304313, 0.67, an arc radius of 0.980263 × 0.95 × the extent, and a pill's flats set in 5% (`smoothPillShapes`). With room it traces the continuous path to within 0.0015 r. [C]
+- Apple's pill endcap measured on the green Accept button (2026-09-14): lead-in 1.086 r, exponent 2.06. [I]
 - Concentric corners: inner radius = outer radius − padding; capsule radius = half the height; `concentric(minimum:)` for a floor. [C] API, WWDC25 session 356
 
 ## 11. Springs
