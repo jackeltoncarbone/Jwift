@@ -60,9 +60,12 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private static readonly _GrowDamping = 25.3;
   private static readonly _ReleaseStiffness = 2187;
   private static readonly _ReleaseDamping = 112;
-  // Apple's active lens against its bar (iOS 26 tab bar, native capture): 316 x 217 px over a 185 px bar, so 1.71
-  // bar heights wide and 1.17 tall, standing 5.3 pt past the bar top and bottom whatever the tab count.
+  // Apple's active lens against its bar (iOS 26 tab bar, native capture): 316 x 217 px over a 185 px bar and a 234 px
+  // item pitch, so 1.17 bar heights tall (5.3 pt past the bar top and bottom) and 1.35 pitches wide, which is also
+  // 1.71 bar heights on Apple's four-item bar. A denser bar keeps the 1.35 pitches, so the lens stops short of the
+  // neighbours' labels as Apple's does.
   private static readonly _LensWidthPerBar = 1.708;
+  private static readonly _LensWidthPerPitch = 1.35;
   private static readonly _LensHeightPerBar = 1.173;
   /** The VisualScale override the lens is drawn at, or null at rest. */
   private _lensScale: string | null = null;
@@ -295,7 +298,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     // near-square cell; the pressed class's springs carry it there and back.
     const barHeight = parent?.Height ?? 0;
     const lensScale = isPressed && barHeight > 0 && baseWidth > 0 && baseHeight > 0
-      ? `${(SelectionIndicator._LensWidthPerBar * barHeight / baseWidth).toFixed(4)} ${(SelectionIndicator._LensHeightPerBar * barHeight / baseHeight).toFixed(4)}`
+      ? `${(Math.min(SelectionIndicator._LensWidthPerBar * barHeight, SelectionIndicator._LensWidthPerPitch * t.Width) / baseWidth).toFixed(4)} ${(SelectionIndicator._LensHeightPerBar * barHeight / baseHeight).toFixed(4)}`
       : null;
     // The items under the lens take the selection's tint, as Apple's do: the bar's accent, when it selects in it.
     const ink = this._tabBar && this._tabBar.AccentSelected() ? this._tabBar.Accent() ?? null : null;
