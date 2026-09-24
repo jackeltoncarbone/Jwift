@@ -94,11 +94,10 @@ JwiftSeparatorVibrancy {
 // right, recoloring what is under it by Apple's vibrant color matrix, so it carries the backdrop's hue
 // brightened and saturated rather than painting white. Each light's amount is 2 on Jaui's fitted lobe shape,
 // fitted to Apple's iOS 26 dark rims: the Games bar's lit lobe stands +100 over its body and its straight top +40
-// (the confirmed macOS 0.5 left them at a third). A hero's action is quieter: Apple's Games Play pills rim +11 to
-// +20, 0.25. A solid surface wears the rim over what is drawn under its edge.
+// (the confirmed macOS 0.5 left them at a third). Every glass surface, a hero's action included, wears this one
+// rim. A solid surface wears it over what is drawn under its edge.
 @JwiftRimWidth: 1pt
 @JwiftRimStrength: 2
-@JwiftRimHeroStrength: 0.25
 
 // ── THE SCREEN CORNER ───────────────────────────────────────────────
 // The app's outer corner (the iPhone's own, 52 CSS px) and the one floating sheet's corner. Chrome inside
