@@ -262,7 +262,25 @@ So the curve leaves each edge 1.528665 r from the vertex (`+[CALayer cornerCurve
 
 - `setCornerCurve:` knows `circular` (0), `continuous` (1) and two private curves `id0` (2) and `id1` (3). [C] `CALayer.mm`
 - `CIRoundedRectangleGenerator.smoothness`: 0 a plain radius, 1 "smooth like icons do (setting to 1 should match CA's result)". [C] Apple DTS, developer forums thread 787405
-- Apple's pill endcap measured on the green Accept button (2026-09-14): a superellipse fit minimizing pixel mismatch of the rendered silhouette against Apple's screenshot gives lead-in 1.086 r, exponent 2.06 (mismatch 0.390%, against 0.568% for a plain circular capsule and 1.162% for a 1.540 r, n 2.70 curve). A pill is circular at its short axis by the path above, so the fit is that blend seen through JPEG noise; the path wins. [I]
+- UIKit builds it a third way (`_addContinuousCornerToPath`, UIKitCore_13.mm; `+[UIBezierPath _continuousRoundedRectBezierPath:...smoothPillShapes:clampCornerRadii:]`): an eased cubic, a circular arc and an eased cubic from the constants 0.33, 0.666666667, 1.05304313, 0.67, an arc of radius 0.980263 × 0.95 × extent (1.0 when every side is clamped), and a pill's flats set in 5% of the extent (`smoothPillShapes`). With room, it traces the continuous table above to within 0.0015 r. [C]
+- Apple's pill endcap measured on the green Accept button (2026-09-14): lead-in 1.086 r, exponent 2.06 (0.390% silhouette mismatch). [I]
+
+**The GPU corner, open.** What draws glass on screen is QuartzCore's GPU shape renderer (`CASDFElementLayer` with continuous corners, and `CA::OGL::fill_round_rect`, which reads a corner mask), not the CPU paths above. Its corner (a shader in the QuartzCore metallib, or a precomputed mask texture or LUT) has not been found, so whether Apple evaluates it analytically or from a table is [I]. The CPU paths fit Apple's native captures no better than the model below, which suggests the GPU corner differs from them at pills and tight corners.
+
+**The corner that matches Apple's screens** [I]: a circular arc of radius r eased into each edge by a cubic that starts (1 + s) r from the vertex, s = 0.6, the easing on a side giving way where the side is too short for it (smoothing falls to `half / r − 1`, down to 0). Fitted to Apple's native captures by edge rms (px, lower is better):
+
+| shape (half / r) | this model | CoreGraphics table + blend ([I] circular table) | UIKit construction |
+|---|---|---|---|
+| Apple app icon vector, 1024 (1.9) | 0.526 | 0.537 | |
+| Safari URL pill (≈ 1) | 0.108 | 0.19 to 0.75 | 0.178 |
+| Mac Wi-Fi pill (≈ 1) | 0.234 | 0.17 to 0.71 | 0.280 |
+| Mac circle (1.0) | 0.220 | 0.220 | 0.219 |
+| iOS notification card (1.46) | 0.149 | 0.14 to 0.30 | 0.216 |
+| Mac album art (1.49) | 0.222 | 0.34 | 0.453 |
+| widgets, cards, menus (2 to 14) | 0.08 to 0.26 | within 0.01 | |
+
+Measured 2026-09-24 (`scratchpad/Corner`, edge points from the luminance gradient, least squares on box and radius).
+
 - Concentric corners: inner radius = outer radius − padding; capsule radius = half the height; `concentric(minimum:)` for a floor. [C] API, WWDC25 session 356
 
 ## 11. Springs
