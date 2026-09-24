@@ -91,13 +91,14 @@ JwiftSeparatorVibrancy {
 
 // ── THE RIM ─────────────────────────────────────────────────────────
 // Apple's highlight (Jaui Core/Glass.md): a band 1 pt deep, lit by a key light upper left and a fill lower
-// right at 0.5 each, recoloring what is under it by Apple's vibrant color matrix, so it carries the backdrop's
-// hue brightened and saturated rather than painting white. A press brightens it a step, as it brightens the
-// body. Every glass wears the same rim; a solid surface wears it over what is drawn under its edge.
+// right, recoloring what is under it by Apple's vibrant color matrix, so it carries the backdrop's hue
+// brightened and saturated rather than painting white. Each light's amount is 2 on Jaui's fitted lobe shape,
+// fitted to Apple's iOS 26 dark rims: the Games bar's lit lobe stands +100 over its body and its straight top +40
+// (the confirmed macOS 0.5 left them at a third). A hero's action is quieter: Apple's Games Play pills rim +11 to
+// +20, 0.25. A solid surface wears the rim over what is drawn under its edge.
 @JwiftRimWidth: 1pt
-@JwiftRimStrength: 0.5
-@JwiftRimHoverStrength: 0.62
-@JwiftRimPressStrength: 0.8
+@JwiftRimStrength: 2
+@JwiftRimHeroStrength: 0.25
 
 // ── THE SCREEN CORNER ───────────────────────────────────────────────
 // The app's outer corner (the iPhone's own, 52 CSS px) and the one floating sheet's corner. Chrome inside
@@ -286,9 +287,6 @@ JwiftScrollEdgeBottomScene : JwiftScrollEdgeBottom {
 // It changes what the element OWNS: a LIFT of whatever it rests on, @JwiftVibrancyFill /
 // @JwiftVibrancyFillPressed from the wash law above. No glass on glass -- and a lift is not a second material
 // either, it is the absence of one, which is why this is the one treatment every control can take.
-// The glass half below also brightens the rim (@JwiftRimHoverStrength / @JwiftRimPressStrength). The
-// rim paints above the panel's own content (BorderLayer), so it is the part of a press that still reads
-// when a photo or a glyph covers the lift.
 
 // The GESTURE, with nothing said about colour: the hit state, the swell, the squeeze, and the
 // one critically damped 140ms spring they ride. Every press in the app is this motion; what
@@ -329,22 +327,10 @@ JwiftPress:Active {
 }
 
 // ── JwiftPressGlass ─────────────────────────────────────────────────
-// The same press on a control made OF glass: the fill and the squeeze above, plus the one thing only
-// glass can say, a brighter rim.
+// The same press on a control made OF glass: the fill and the squeeze above, the fill folded into the
+// glass's own face (Jaui Core/Glass.md).
 JwiftPressGlass : JwiftPress {
-  @Transition RimStrength { Duration: 140ms }
   @Transition BackdropFilter { Duration: 140ms }
-}
-
-// The glass press is the same fill as the flat press (JwiftPress above: +30 hover, +50 press, carried
-// at 1), folded into the glass grade, plus a brighter rim. A brightness multiply scaled chroma, barely
-// moved a dark backdrop and blew out a bright one, which is what Apple's fills do not do.
-JwiftPressGlass:Hover {
-  RimStrength: @JwiftRimHoverStrength
-}
-
-JwiftPressGlass:Active {
-  RimStrength: @JwiftRimPressStrength
 }
 
 // ── JwiftWash / JwiftWashStrong / JwiftHoverWash ───────────────────
@@ -397,23 +383,6 @@ JwiftPressTint:Hover {
 
 JwiftPressTint:Active {
   Filter: Brightness(1.12) Saturate(1.08)
-}
-
-// ── JwiftPressTintGlass ─────────────────────────────────────────────
-// A tinted control that is also made of glass: an accent pill still lensing what sits behind it.
-// The grade carries the body; this adds the one thing only glass can say, a brighter rim.
-// No backdrop brightness here. The foreground grade already moves the lensed backdrop along with
-// the fill, and lifting it a second time is exactly what washes a tinted pill out.
-JwiftPressTintGlass : JwiftPressTint {
-  @Transition RimStrength { Duration: 140ms }
-}
-
-JwiftPressTintGlass:Hover {
-  RimStrength: @JwiftRimHoverStrength
-}
-
-JwiftPressTintGlass:Active {
-  RimStrength: @JwiftRimPressStrength
 }
 
 // ── JwiftProminent ──────────────────────────────────────────────────
