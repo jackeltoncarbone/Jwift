@@ -24,9 +24,9 @@
 // activates it". UIKit says the same of the part: "control thumbs, like those on switch and
 // segmentedControl, automatically have a new liquid glass appearance for interactions".
 //
-// At rest the thumb is an opaque white pill running no glass at all, because Thickness gates the whole
-// pipeline. Held, it thins just enough for the lens to read and SWELLS PAST THE TRACK: 34.5 x 23 becomes
-// Held, the thumb scales about 1.6x and KEEPS ITS ASPECT: 40.5 x 26 becomes 63.5 x 42.5, aspect 1.54
+// At rest the thumb is an opaque white pill with no glass at all (Glass: None). Held, it becomes Apple's
+// clear glass, the change springing, thins just enough for the lens to read and SWELLS PAST THE TRACK:
+// the thumb scales about 1.6x and KEEPS ITS ASPECT: 40.5 x 26 becomes 63.5 x 42.5, aspect 1.54
 // against 1.50 measured.
 //
 // Measuring this off the device needed a correction. A pressed pill is only visible where it stands
@@ -105,8 +105,8 @@ Jwift_ToggleKnob {
   Height: 26pt
   BorderRadius: 999pt
   Background: rgb(255, 255, 255)
-  Glass: Clear
-  Thickness: 0
+  // At rest no glass; held, Apple's clear glass, the change springing like any other.
+  Glass: None
   Refraction: 0
   ShadowColor: rgba(0, 0, 0, 0.25)
   ShadowBlur: 4pt
@@ -116,7 +116,7 @@ Jwift_ToggleKnob {
   @Transition Width { Duration: 160ms }
   @Transition Height { Duration: 160ms }
   @Transition Background { Duration: 160ms }
-  @Transition Thickness { Duration: 160ms }
+  @Transition Glass { Duration: 160ms }
   @Transition Refraction { Duration: 160ms }
   @Transition RimStrength { Duration: 160ms }
 }
@@ -133,6 +133,7 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   // is almost none here; the pill is carried by its rim and by the bend at its edge.
   // A WASH, not a scrim: the pressed knob: a quiet fill over the track, so it takes the quiet lift.
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
+  Glass: Clear
   Thickness: 2.5
   Refraction: 1
   // Grows for real rather than by VisualScale, so the rim re-renders as a hairline instead of magnifying

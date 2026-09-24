@@ -69,8 +69,6 @@ export class TabItem extends JivHost implements OnInit, OnDestroy {
   // just after the release commits a new selection.
   readonly _active = computed(() => this._parentBar.EffectiveSelected() === this._index());
   private _expanded = computed(() => this._parentBar.Expanded());
-  // The active item while a finger holds the bar: it lifts into the lens on its own layer (TabBar.jss).
-  private _lensed = computed(() => this._active() && this._parentBar.IsPressed());
 
   /** The tab the indicator is targeting — EffectiveSelected (`_dragIndex ?? selected`).
    *  A plain Angular signal set by pointer events + navigation, so changes always
@@ -108,18 +106,16 @@ export class TabItem extends JivHost implements OnInit, OnDestroy {
     // Label-only item (no icon): the label IS the tab — full reading size regardless of bar width.
     if (!this.icon()) return a ? 'Jwift_TabLabelSoloActive' : 'Jwift_TabLabelSolo';
     const e = this._expanded();
-    const lensed = this._lensed() ? ' Jwift_TabLabelLensed' : '';
-    if (e) return (a ? 'Jwift_TabLabelExpandedActive' : 'Jwift_TabLabelExpanded') + lensed;
-    return (a ? 'Jwift_TabLabelActive' : 'Jwift_TabLabel') + lensed;
+    if (e) return a ? 'Jwift_TabLabelExpandedActive' : 'Jwift_TabLabelExpanded';
+    return a ? 'Jwift_TabLabelActive' : 'Jwift_TabLabel';
   });
 
   constructor() {
     super('TabBar', TabBarJss, 'Jwift_TabItem', () => {
       const a = this._active();
       const e = this._expanded();
-      const lensed = this._lensed() ? ' Jwift_TabItemLensed' : '';
-      if (e) return (a ? 'Jwift_TabItemExpandedActive' : 'Jwift_TabItemExpanded') + lensed;
-      return (a ? 'Jwift_TabItemActive' : 'Jwift_TabItem') + lensed;
+      if (e) return a ? 'Jwift_TabItemExpandedActive' : 'Jwift_TabItemExpanded';
+      return a ? 'Jwift_TabItemActive' : 'Jwift_TabItem';
     });
   }
 

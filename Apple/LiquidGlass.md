@@ -117,7 +117,7 @@ The interior sits at 97%, the outer 1 to 2 pt at 100%. On an EDR display `(min(h
 
 ### 3.7 Dispersion [C]
 
-A 6-tap triangular-weight dispersion (normalization 0.5, 1/3, 0.5, alpha 1/7), gated by `aberration_amount`, which is 0 on standard glass (measured). macOS 27 adds a 1 device px dark ring-shadow contour (`ring_shadow_*`), absent on 26.x. [C] macOS 27 metallib (lennondotw/interaction-lab)
+On iOS 26.1 the glassBackground shader has no dispersion: its uniforms carry no aberration field (QuartzCore `default.metallib`, `glass_background_sdf_lpf`). The dispersion is `glass_foreground_sdf_lpf`: a glassForeground filter over the glass's content, with its own refraction (`refraction_amount`, `inv_refraction_height`, `refraction_offset`, `refraction_angle_x/y`), a six-tap triangular dispersion (`aberration_amount`, `inv_aberration_height`, `aberration_offset`, `aberration_angle_x/y`; red over the outer taps, blue over the inner, green over all, normalised 0.5, 1/3, 0.5, alpha 1/7) and an edge opacity ramp (`edge_start`, `edge_end`, `edge_opacity_start`, `edge_opacity_end`). DesignLibrary builds it (`0x18AF531A0`) from `GlassMaterialProvider.Parameters.Lensing` (refraction height, amount, inset; aberration height, amount, inset, angle; edge distances and opacities), turned on by the glass's content lensing. The macOS 27 glassBackground adds the same dispersion to the background shader and a 1 device px ring-shadow contour (`ring_shadow_*`) [C] (lennondotw/interaction-lab).
 
 ### 3.8 Variants
 
@@ -171,27 +171,28 @@ The pressed selection of the iPhone floating tab bar (`_UITabBarVisualProvider_F
 
 The lifted content is the tab bar's `contentView` (every item) or `UISegmentedControlSegmentContentView` (every segment label), via `setLiftedContentView:`. [C]
 
-### 7.1 Tree [C unless marked]
+### 7.1 The pipeline, bottom to top while lifted [C unless marked]
 
-```
-_UILiquidLensView
- └ contentWrapper        drawn through liftPortal (a _UIPortalView in liftedContainerView, or the window) while lifted:
-    │                    the lens floats above the bar, unclipped
-    ├ restingBackground  the resting pill, a plain view (segmented: selectedSegmentTintColor or _controlForegroundColor,
-    │                    optionally a plusL compositing filter); fades when lifted (alpha [I])
-    ├ BackdropView       (warpsContentBelow, sub_1891F4B84) a CABackdropLayer, capsule clip, index 0,
-    │                    filters [warpSDF {amount: unliftedDisplacement}, blur {radius: unliftedBlurRadius}],
-    │                    its own SDF child built with 36.0 ([I] its height); lifted values set by sub_1891F47F0 ([I] values)
-    └ glass = ClearGlassView     background _Glass(variant 14, smoothness 0) while lifted (style 0: variant 15 + tintColor)
-       ├ contentWrapper          CAFilter "warpSDF"; amount 0, -17.5 lifted, 0 under Reduce Transparency ([C] value, [I] key path)
-       ├ SDFView                 effect CASDFGlassDisplacementEffect (height, curvature, angle), built with 11.2 ([I] height)
-       ├ SDFElementView          continuous corners, gradientOvalization
-       ├ liftedContentPortalView a portal copy of the lifted content: matches alpha, position, transform; clips to the
-       │                         capsule. What the lens shows of the items is this copy, warped
-       └ innerShadowView         invertsShadow, shadowPathIsBounds; radius 3, opacity 0.12, offset y 7
- + DestOutView (liftedContentMode 0)   black, compositingFilter destOut, alpha = liftProgress, kept on the lens by a
-                                       CAMatchMove animation: erases the real items under the lens
-```
+Every line cites `UIKitCore_73.mm` (EthanArbuckle iOS 26.1 restore) unless it names another file.
+
+The bar it stands in (`_UIFloatingTabBar.mm` `_createViewHierarchy`, lines 500 to 540): a `UIVisualEffectView` (the bar's glass, its highlight included), whose `contentView` holds, in order, the selection container (the lens) and then the items' `contentView` (vibrancy overridden on, rendering mode 2). The items are the lifted content (`setLiftedContentView:`, line 540). The segmented control is the same: `UISegmentedControl.mm` 4340 to 4390, lifted content `UISegmentedControlSegmentContentView`.
+
+1. **The lens view** (`sub_1891F1E70`, 504 to 786). A `contentWrapper` (527 to 530, 668 to 674) holding, bottom to top: the `BackdropView` (inserted at index 0, 1591), the `restingBackground` (693 to 700), the `ClearGlassView` (brought to front, `sub_1891F56EC` 1724 to 1726). The lens layer carries one filter, an opacity pair (`kCAFilterOpacityPair`, `0x1891F27C4`).
+2. **Lifted** (`sub_1891F3B30`, 1079 to 1386): the `liftPortal`, a `_UIPortalView` of the `contentWrapper` (`sub_1891F1BC4` 479 to 502; matchesPosition, matchesTransform, allowsBackdropGroups, hidesSourceLayerInOtherPortals, 734 to 747), is added to `liftedContainerView` or the window (1120 to 1134): the lens is drawn above the bar, unclipped, its alpha the lift progress (`sub_1891F662C`, 2051 to 2052).
+3. **BackdropView** (`sub_1891F4B84`, 1478 to 1605), made on lift when `warpsContentBelow`: a `CABackdropLayer`, so it reads everything drawn under the lifted lens (the bar's glass and, past its edges, the page), at the backdrop layer's default scale 0.25 (`CABackdropLayer defaultValueForKey`; UIKit sets none); `clipsToBounds`, capsule corner (1502 to 1511); filters `[displacementMap {SDF: "warpSDF", inputAmount: unliftedDisplacement}, gaussianBlur {inputRadius: unliftedBlurRadius}]` (1521 to 1575; `0x46445370726177` is "warpSDF"); its own SDF child built with height 36 (`sub_1891F7498(a1, 36.0)`, 1582). On lift (`sub_1891F47F0`, `0x1891F4948` to `0x1891F4A6C`) `filters.displacementMap.inputAmount` takes the spec's `liftedDisplacement`, 9, and `filters.gaussianBlur.inputRadius` 0.
+4. **restingBackground** (693 to 700): its alpha is set as the lens lifts (`sub_1891F47F0` 1415 to 1418): 0 lifted, 1 at rest (`0x1891F4854` to `0x1891F4868`).
+5. **ClearGlassView** (`sub_1891F6D34`, 2122 to 2240; `sub_1891F7824`, 2290 to 2552): its background is `_Glass(variant, smoothness 0)` while lifted (2449, 2501 to 2505; the variant is the style-1 one, 7.2), a glassBackground like any glass (face, blur, refraction, rim, and the dispersion `aberration_amount` of that variant: its values are not in UIKit [I]). Its subviews, bottom to top:
+   - `contentWrapper` (2164 to 2209) with the filter `{SDF: "warpSDF", amount}`: `filters.displacementMap.inputAmount` -17.5 lifted (`0x1891F8354`) and 0 at rest (`0x1891F85C8`), 0 under Reduce Transparency (`sub_1891F869C`). It holds the `SDFView` and the `liftedContentPortalView` (2205 to 2208).
+   - `SDFView` (`sub_1891F7498`, 2242 to 2288): an SDF layer whose effect is `CASDFGlassDisplacementEffect`: height 11.2 here, curvature 1 (`0x1891F75F4`), angle 0 (`0x1891F7608`); holding the `SDFElementView` capsule: automatic pill radius, continuous corners, `gradientOvalization` 0.5 (`0x1891F7760`). QuartzCore's `sdf_glass_displacement` (uber shader) makes the map: `(1 - mix(0.7071 inside the height, sqrt(1 - (1 - t)^2), curvature))` along the (ovalized) SDF gradient, t = depth / height, none past the height; `displacement_map` adds `mat x (map - offset)` to the read.
+   - `liftedContentPortalView` (2126 to 2147): a `_UIPortalView` of the lifted content (matches alpha, position, transform; clips to the capsule; hides its source, `setLiftedContentMode`). What the lens shows of the items is this copy, drawn where the items lie, through the contentWrapper's warp.
+   - `innerShadowView` (2148 to 2233): inverted shadow, `shadowPathIsBounds`; radius, opacity and y offset from the spec while lifted (2527 to 2537).
+**The lens grows by bounds, not transform.** Lifted, the pill's bounds are inset -8 pt (`_UIFloatingTabBarSelectionContainerView _updateSelectionViewBounds`; iPhone: `_UITabBarVisualProvider_Floating`, `sub_188BF8DF0`). Its drag interaction is `_UIFlexInteraction` variant 4 (`0x1891F2690`): a loupe spec interpolated by size (`sub_188F76FD0`), with no lift scale.
+
+**The iPhone tab bar's lifted content** (`_UITabBarVisualProvider_Floating`, `sub_188B7B9CC`): a `selectedContentView` under the lens in the platter, holding a twin of every tab button in the selected state (`sub_188F53BF8(item, ..., 0)` with `overrideItemState` 2; the originals set `ignoresSelectedState`, UIKitCore_42 4950 to 4975). The lens (zPosition 10) lifts it with `liftedContentMode` 1, its punchout an override view. So inside the lens every item shows in its selected colour, and the twins are scaled by one transform, `CGAffineTransformMakeScale(s, s)` on each, as the lens lifts (`sub_188BF8DF0`).
+
+6. **DestOutView** (`sub_1891F5F7C`, 1892 to 1960): black, capsule, a destOut compositing filter, alpha the lift progress, kept on the lens by a `CAMatchMoveAnimation` whose source is the lens layer; inserted just above the lifted content in its own superview, so it erases the real items under the lens and nothing else.
+
+QuartzCore (`ios/QuartzCore/CASDFGlassDisplacementEffect.mm`): the displacement effect is SDF effect type 7 with height, curvature (clamped to 0..1), angle and mask offset. The glassBackground shader's dispersion is six triangular-weighted taps along `aberration_dir` scaled by `aberration_amount`, over `inv_aberration_height` from `aberration_offset` (the macOS 27 metallib, Algorithm.md). The kernels that turn these into pixels (warpSDF, the displacement effect, the glass variant) live in QuartzCore's metallib; section 7.4 lists what the restore alone does not give.
 
 ### 7.2 Values [C] (`_UILiquidLensViewVariantSpec`, `sub_188F78040`, UIKitCore_43.mm)
 
@@ -209,13 +210,13 @@ Unlift waits `0.22 × dragCoefficient − elapsed` on a timer. [C]
 ### 7.3 What it does NOT do [C]
 
 - No item scale: `_UIFloatingTabBarItemView` sets no transform on highlight (it swaps font, symbol, selected image, monochrome treatment); `selectionHighlightScale 0.95` exists only off the flexi-glass path.
-- No tint on style 1: the copy shows the items as they already render, the selected one in its selected color; glass metrics set `selectionBackgroundColor: 0`.
-- No aberration or dispersion anywhere in the lens code.
+- No tint on style 1: the copy shows the items as they render. On the iPhone tab bar the lifted items are the selected twins (7.1), so inside the lens every item shows in its selected colour; glass metrics set `selectionBackgroundColor: 0`.
+- No aberration or dispersion set in the lens code. The fringe is the glass's content lensing, a glassForeground filter (3.7) whose values come from DesignLibrary's recipe for the lens's `_Glass` variant, not from UIKit.
 - No glassBackground refraction override: the lens's refraction is the SDF displacement and the warpSDF filter.
 
 ### 7.4 Lost to decompilation [I]
 
-The warpSDF filter's key paths and law, the displacement effect's curvature and angle arguments, the lifted backdrop warp and blur values, the lens spec's spring values, variant 14's glass values.
+Recovered from the iOS 26.1 firmware since (7.1, 3.7): the warp law and both lifted amounts, the displacement effect's curvature and angle, the backdrop's lifted blur and capture scale, the resting background's lifted alpha, the lens layer's filter, gradient ovalization, the portal, grow-by-bounds, and the selected twins and their scale. Still open: the twins' scale value (the argument of `sub_188BF8DF0`, set by its caller), the lens spec's spring values, and the lens `_Glass` variant's face and content-lensing values, which DesignLibrary computes in its GlassMaterialProvider recipe (Swift code, not a table).
 
 ### 7.5 Measured on Apple's own frames [I] (MacStories iOS 26 tab bar, 1320 px at 3x, 60 fps; lens held and dragged against frames of the same backdrop with the lens elsewhere)
 

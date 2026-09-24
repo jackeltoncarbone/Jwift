@@ -16,12 +16,13 @@ Jwift_SelectionIndicator {
   BorderRadius: 100pt
   BackdropFilter: Vibrancy(@JwiftVibrancySelection, @JwiftVibrancySelectionCover)
 
-  // At rest it does not bend at all; the press brings the lens.
-  Glass: Clear
-  Thickness: 0
+  // At rest it is no glass at all; the press brings the lens (Glass: Lens), the change springing.
+  Glass: None
+  // As the lens lifts, UIKit scales the iPhone tab bar's selected twins (its lifted items) by its metric 1.16
+  // (Jwift/Apple/LiquidGlass.md 7.1, _UITabBarVisualProvider_Floating sub_188BF8DF0); the engine eases it in with the
+  // lens. A segmented control lifts its own labels unscaled (SelectionIndicator.ts).
+  LensLiftedScale: 1.16
   Refraction: 0
-  ChromaticAberration: 0
-  Lens: 0
 
 
   RimWidth: @JwiftRimWidth
@@ -42,10 +43,8 @@ Jwift_SelectionIndicator {
   // spring declared here times the change INTO this class, so it is the release; the press's is below.
   VisualScale: 1
   @Spring VisualScale { Stiffness: 2187, Damping: 112, Mass: 1 }
-  @Spring Lens { Stiffness: 2187, Damping: 112, Mass: 1 }
-  @Spring Thickness { Stiffness: 2187, Damping: 112, Mass: 1 }
+  @Spring Glass { Stiffness: 2187, Damping: 112, Mass: 1 }
   @Spring Refraction { Stiffness: 2187, Damping: 112, Mass: 1 }
-  @Spring ChromaticAberration { Stiffness: 2187, Damping: 112, Mass: 1 }
   @Spring RimStrength { Stiffness: 2187, Damping: 112, Mass: 1 }
   @Spring Tint { Stiffness: 2187, Damping: 112, Mass: 1 }
   @Spring BackdropFilter { Stiffness: 2187, Damping: 112, Mass: 1 }
@@ -79,27 +78,24 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   @Spring Y      { Stiffness: 987, Damping: 53.4, Mass: 1 }
   @Spring Width  { Stiffness: 438.6, Damping: 35.6, Mass: 1 }
   @Spring Height { Stiffness: 438.6, Damping: 35.6, Mass: 1 }
-  // ABOVE the tab text (text is Layer 1) ONLY while pressed, so the lens
-  // magnifies the label. Drops back to Layer 0 (below text) on release.
+  // ABOVE the tab text (Layer 1) ONLY while pressed: Apple's lens is lifted over the whole bar (its liftPortal).
+  // Drops back to Layer 0 on release.
   Layer: 2
 
   // The lens lifts its own body; the resting plate's vibrancy gives way to it.
   BackdropFilter: Brightness(1) Saturate(1) Contrast(1)
-  Thickness: 1
   Refraction: 1
-  // The lens takes in a wider area than it covers (Glass.Pipeline.glsl, GlassActiveLens); the item under it lifts on
-  // its own layer (TabBar.jss, Jwift_TabItemLensed).
-  Lens: 1
-  // THE ONE FRINGE. Glass at rest has none; the lens that moves under a finger disperses, in its bezel and
-  // its iridescent rim.
-  ChromaticAberration: 0.25
+  // Apple's lens, built as _UILiquidLensView is (Glass.Pipeline.glsl, GlassActiveLens): its backdrop warped by its
+  // SDF, its glass over that, the lifted copy of the bar's items over its glass.
+  Glass: Lens
   RimStrength: @JwiftRimStrength
+  // Its content lensing's dispersion: Auto is the lens variant's Lensing (Glass.Pipeline.glsl).
+  GlassDispersion: Auto
 
-  @Spring Lens { Stiffness: 409, Damping: 25.3, Mass: 1 }
-  @Spring Thickness { Stiffness: 409, Damping: 25.3, Mass: 1 }
+  @Spring Glass { Stiffness: 409, Damping: 25.3, Mass: 1 }
   @Spring Refraction { Stiffness: 409, Damping: 25.3, Mass: 1 }
-  @Spring ChromaticAberration { Stiffness: 409, Damping: 25.3, Mass: 1 }
   @Spring RimStrength { Stiffness: 409, Damping: 25.3, Mass: 1 }
+  @Spring GlassDispersion { Stiffness: 409, Damping: 25.3, Mass: 1 }
   @Spring Tint { Stiffness: 409, Damping: 25.3, Mass: 1 }
   @Spring BackdropFilter { Stiffness: 409, Damping: 25.3, Mass: 1 }
 }

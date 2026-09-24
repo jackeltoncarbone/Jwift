@@ -5,16 +5,19 @@ import {
   OnInit,
   computed,
   contentChildren,
+  effect,
   forwardRef,
   inject,
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
 import { JivHandle as JivCore } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { CanvasPress } from '../Internal/CanvasPress';
+import { FlexLiftScale } from '../Internal/FlexLift';
 import { TabItem } from './TabItem';
 import TabBarJss from './TabBar.jss';
 
@@ -99,6 +102,10 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
    *  authoritative drag flag here instead). */
   readonly IsPressed = computed(() => this._dragIndex() !== null);
 
+  /** The bar's pressed swell (1 at rest). The lens is drawn through its lift portal, which takes the bar's model
+   *  transform but not the flex's presentation modifier, so it does not swell with the bar (SelectionIndicator). */
+  readonly PressSwell = signal(1);
+
   /** Selected tab's underlying JivCore — drives `<selection-indicator>`. Null when nothing is selected. */
   readonly ActiveNode = computed<JivCore | null>(() => {
     const index = this.EffectiveSelected();
@@ -118,12 +125,15 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
   static readonly SlideLatchMs = 280;
 
   constructor() {
-    // Jwift_TabBar_Pressed is ADDITIVE and sets only VisualScale, so it swells the bar while the
-    // indicator is engaged without touching the geometry. It rides IsPressed() — the same signal the
-    // <selection-indicator> reads — so bar and pill engage and release as one, including through the
-    // post-release slide latch. The consumer's Class still resolves last and wins.
-    super('TabBar', TabBarJss, 'Jwift_TabBar', () =>
-      `Jwift_TabBar ${this.IsPressed() ? 'Jwift_TabBar_Pressed' : ''} ${this.Class()}`.replace(/\s+/g, ' ').trim());
+    super('TabBar', TabBarJss, 'Jwift_TabBar', () => `Jwift_TabBar ${this.Class()}`.trim());
+    // The bar swells while the indicator is engaged, by UIKit's flex lift for its size (FlexLift.ts). It rides
+    // IsPressed(), the signal the <selection-indicator> reads, so bar and pill engage and release as one.
+    effect(() => {
+      if (!this.IsPressed()) { this.ClearStyleOverride('VisualScale'); this.PressSwell.set(1); return; }
+      const scale = untracked(() => FlexLiftScale(this.Node.Width, this.Node.Height));
+      this.PressSwell.set(scale);
+      this.SetStyleOverride({ VisualScale: scale.toFixed(4) });
+    });
   }
 
   ngOnInit(): void {

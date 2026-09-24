@@ -15,7 +15,9 @@ Jwift_TabBarRow {
 // it reads brighter than its surround, as Apple's does.
 Jwift_TabBar : JwiftGlass {
   UserSelect: None
-
+  // Apple's bar draws its glass, highlight and all, under its items (the bar's UIVisualEffectView under its
+  // content view, Jwift/Apple/LiquidGlass.md 7.1), so the lens's backdrop holds the bar's rim.
+  BorderLayer: 0
 
   // A tab bar's height is intrinsic — it must NEVER be vertically compressed by sibling flex content.
   // Without this, dropping a <tab-bar> into a flex column (a modal header, a settings panel) lets a
@@ -52,11 +54,8 @@ Jwift_TabBar : JwiftGlass {
   @Spring VisualScale { Stiffness: 900, Damping: 18, Mass: 1 }
 }
 
-// Additive overlay worn alongside Jwift_TabBar while the indicator is pressed. It sets ONLY
-// VisualScale, so merging it over the base can never disturb the geometry above. Driven by the same
-// TabBar.IsPressed() signal the <selection-indicator> reads, so the bar and the pill engage and
-// release together — including through the post-release slide latch, which the engine's own :Active
-// cannot cover (a pointermove past 10px of slop clears Active while the pill is still travelling).
+// The round accessory's pressed swell, worn while its lens is engaged. It sets ONLY VisualScale. The bar itself
+// swells by UIKit's flex lift for its size instead (TabBar.ts, FlexLift.ts).
 Jwift_TabBar_Pressed {
   VisualScale: 1.02
 }
@@ -102,8 +101,7 @@ Jwift_TabItem {
   Gap: 0.625pt
   Padding: 0pt 3.75pt
   // Between the indicator's two states: ABOVE the resting pill (Layer 0) so the
-  // label is crisp at rest, but BELOW the pressed pill (Layer 2) so the press-
-  // glass lifts over and magnifies it.
+  // label is crisp at rest, but BELOW the pressed lens (Layer 2), which shows its own lifted copy of the items.
   Layer: 1
   FlexGrow: 1
   // Grow from a ZERO basis (not from content size) so every tab is an EQUAL slice of the bar. With the
@@ -113,24 +111,6 @@ Jwift_TabItem {
   BorderRadius: 999pt
   Interactive: true
   Cursor: Pointer
-  // The lift below lets go on the lens's release spring.
-  VisualScale: 1
-  @Spring VisualScale { Stiffness: 2187, Damping: 112, Mass: 1 }
-}
-
-// Worn with the active item while a finger holds the bar: the item under the lens lifts on its own layer, as Apple's
-// does (its glyph and label hold their place while the lens moves over them). 1.2 here, which the lens's own 0.97
-// brings to Apple's icon, 1.16 on its native frames; its label lifts a little more (1.19), below. Grows on the lens's
-// press spring. [I] UIKit scales no item: its lens draws a warped copy of the bar's items (_UILiquidLensView's lifted
-// content portal) whose warp values were lost to decompilation; this lift is that copy's measured result.
-Jwift_TabItemLensed {
-  VisualScale: 1.2
-  @Spring VisualScale { Stiffness: 409, Damping: 25.3, Mass: 1 }
-}
-
-Jwift_TabLabelLensed {
-  VisualScale: 1.035
-  @Spring VisualScale { Stiffness: 409, Damping: 25.3, Mass: 1 }
 }
 
 // The HTML bar never re-spaced the selected cell — it is the same box, differently inked.
@@ -203,9 +183,6 @@ Jwift_TabAccessoryIconActive : Jwift_TabAccessoryIcon {
 // ─── Tab label ───
 
 Jwift_TabLabel : JwiftLabelVibrancy {
-  // The label's own lift (Jwift_TabLabelLensed) lets go on the lens's release spring.
-  VisualScale: 1
-  @Spring VisualScale { Stiffness: 2187, Damping: 112, Mass: 1 }
   FontFamily: Inter
   // Apple's tab label: 10pt semibold (a 7.3pt cap height and 1pt strokes on the native capture).
   FontSize: 10pt
@@ -234,11 +211,16 @@ Jwift_TabLabelExpandedActive : Jwift_TabLabelExpanded {
   TextFilter: Vibrancy(0)
 }
 
-// Label-only item (no icon) — the label IS the tab, at full reading size in any bar width.
+// A label-only item (a segmented control). Apple's glass segmented control sets its titles at 15pt
+// (UISegmentedControlGlassStyleProvider fontWithBackgroundMaterial [C]); on Apple's frames the unselected title is a
+// secondary grey at the regular weight and the selected one the label ink at semibold [I, seg83: 166 and 0 over a
+// 237 bar, strokes 15 : 22].
 Jwift_TabLabelSolo : Jwift_TabLabel {
-  FontSize: 14pt
+  FontSize: 15pt
   LineHeight: 1.2
   Margin: 0pt
+  FontWeight: 400
+  TextFilter: Vibrancy(@JwiftVibrancySecondaryLabel, @JwiftVibrancySecondaryLabelCover)
 }
 
 Jwift_TabLabelSoloActive : Jwift_TabLabelSolo {

@@ -7,7 +7,7 @@ import clipStackSrc from 'JAUI/Core/Shaders/Clip.Stack.glsl.gen';
 import { ResolveStyle } from 'JAUI/Core/Style.Resolver';
 import { DefaultJivStyle } from 'JAUI/Jiv/Jiv.Defaults';
 import { JivInstanceBuffer, JivFrostCssPx, JivGlassSpan, JIV_FLOATS_PER_INSTANCE } from 'JAUI/Jiv/Jiv.InstanceBuffer';
-import { GlassBlurNeedsOf } from 'JAUI/Core/Glass.Pipeline';
+import { GlassBlurNeedsOf, GlassIsLens } from 'JAUI/Core/Glass.Pipeline';
 import { MAT_IDENTITY } from 'JAUI/Transform/Mat2x3';
 
 // `Rim`: 'Fragment' lights the band in the glass's own fragment; 'Pass' is the walk's rim pass, the face packed
@@ -133,7 +133,7 @@ export const Render = async (canvas: HTMLCanvasElement, image: HTMLImageElement,
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, sceneF); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, snapF);
     gl.blitFramebuffer(0, 0, W, H, 0, 0, W, H, gl.COLOR_BUFFER_BIT, gl.NEAREST);
     const frostPt = JivFrostCssPx(jiv, dpr);
-    const needs = GlassBlurNeedsOf(JivGlassSpan(jiv), dpr, rs.GlassVariant);
+    const needs = GlassBlurNeedsOf(JivGlassSpan(jiv), dpr, rs.GlassVariant, GlassIsLens(rs.Lens));
     const base = Math.log2(Math.max(1, frostPt * dpr));
     const levels = Math.min(Math.max(1, needs.MaxLod) + 2, 9);
     const pyr = tex(W, H, levels);

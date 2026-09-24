@@ -70,6 +70,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _lensScale: string | null = null;
   /** The colour the lens inks what it magnifies, or null. */
   private _lensInk: string | null = null;
+  private _segmented = false;
   // How far the lens is in, [0, 1], on the same springs the pressed and resting classes time the lens with
   // (Apple's, SelectionIndicator.jss): it holds the pill above the labels until the release has settled.
   private _pressAmount = new Spring(0, SelectionIndicator._GrowStiffness, SelectionIndicator._GrowDamping, 1);
@@ -255,6 +256,11 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
         parent.Layout.Padding, ctxNode.ResolveCtx, ['H', 'W', 'H', 'W']);
       this._reachPx = ResolveLengthTuple4(this.reach(), ctxNode.ResolveCtx, ['W', 'W', 'W', 'W'])[0];
       const segmented = this._tabBar !== null && this._tabBar.Items().every((item) => !item.icon());
+      if (segmented !== this._segmented) {
+        this._segmented = segmented;
+        if (segmented) this.SetStyleOverride({ LensLiftedScale: '1' });
+        else this.ClearStyleOverride('LensLiftedScale');
+      }
       const outset = ResolveLengthTuple4(segmented ? SelectionIndicator._SegmentOutset : SelectionIndicator._TabOutset, ctxNode.ResolveCtx, ['W', 'W', 'H', 'H']);
       this._outsetPx = [outset[0], outset[2]];
     }
@@ -279,8 +285,8 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     // Keep the pill ABOVE the label for the WHOLE press gesture INCLUDING the
     // release settle. The base/pressed JSS classes flip Layer (0↔2) the instant
     // the pressed flag changes — so on release the pill would drop below the text
-    // while the magnify spring is still relaxing, hiding the settle. Hold a
-    // Layer:2 style override (it merges over the class) until pressAmount has
+    // while the magnify spring is still relaxing, hiding the settle. Hold the
+    // pressed class's Layer as a style override (it merges over the class) until pressAmount has
     // fully relaxed, then clear it so the resting pill sits beneath the crisp
     // label again. Only fires on the two transitions, not per frame.
     const holdAbove = isPressed || pressAmount > 0.01;
@@ -298,9 +304,12 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
     // Pressed, the pill is drawn as Apple's lens, the pill outset by Apple's amount; the pressed class's springs
     // carry it there and back.
+    // The bar's swell is its flex's presentation modifier, which the lens's lift portal does not take [C:
+    // _UIFlexInteraction flexPresentationModifier; _UILiquidLensView liftPortal matchesTransform], so it is divided out.
     const [outX, outY] = this._outsetPx;
+    const swell = this._tabBar?.PressSwell() ?? 1;
     const lensScale = isPressed && baseWidth > 0 && baseHeight > 0
-      ? `${((baseWidth + 2 * outX) / baseWidth).toFixed(4)} ${((baseHeight + 2 * outY) / baseHeight).toFixed(4)}`
+      ? `${((baseWidth + 2 * outX) / baseWidth / swell).toFixed(4)} ${((baseHeight + 2 * outY) / baseHeight / swell).toFixed(4)}`
       : null;
     // The items under the lens take the selection's tint, as Apple's do: the bar's accent, when it selects in it.
     const ink = this._tabBar && this._tabBar.AccentSelected() ? this._tabBar.Accent() ?? null : null;
