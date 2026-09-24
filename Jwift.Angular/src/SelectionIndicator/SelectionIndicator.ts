@@ -60,13 +60,12 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private static readonly _GrowDamping = 25.3;
   private static readonly _ReleaseStiffness = 2187;
   private static readonly _ReleaseDamping = 112;
-  // Apple's active lens against its bar (iOS 26 tab bar, native capture): 316 x 217 px over a 185 px bar and a 234 px
-  // item pitch, so 1.17 bar heights tall (5.3 pt past the bar top and bottom) and 1.35 pitches wide, which is also
-  // 1.71 bar heights on Apple's four-item bar. A denser bar keeps the 1.35 pitches, so the lens stops short of the
-  // neighbours' labels as Apple's does.
-  private static readonly _LensWidthPerBar = 1.708;
-  private static readonly _LensWidthPerPitch = 1.35;
-  private static readonly _LensHeightPerBar = 1.173;
+  // Apple's lens (Jwift/Apple/Sizing.md 1, 2): the resting pill outset 8 pt all round on a tab bar
+  // (`CGRectInset(itemFrame, -8, -8)`), 12 pt across and 8 pt down on a segmented control (label-only items), so it
+  // is never narrower than the pill.
+  private static readonly _TabOutset = '8pt 8pt 8pt 8pt';
+  private static readonly _SegmentOutset = '12pt 12pt 8pt 8pt';
+  private _outsetPx: [number, number] = [0, 0];
   /** The VisualScale override the lens is drawn at, or null at rest. */
   private _lensScale: string | null = null;
   /** The colour the lens inks what it magnifies, or null. */
@@ -255,6 +254,9 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       this._lastPad = ResolveLengthTuple4(
         parent.Layout.Padding, ctxNode.ResolveCtx, ['H', 'W', 'H', 'W']);
       this._reachPx = ResolveLengthTuple4(this.reach(), ctxNode.ResolveCtx, ['W', 'W', 'W', 'W'])[0];
+      const segmented = this._tabBar !== null && this._tabBar.Items().every((item) => !item.icon());
+      const outset = ResolveLengthTuple4(segmented ? SelectionIndicator._SegmentOutset : SelectionIndicator._TabOutset, ctxNode.ResolveCtx, ['W', 'W', 'H', 'H']);
+      this._outsetPx = [outset[0], outset[2]];
     }
     if (t.Width <= 0 || t.Height <= 0) return;
 
@@ -294,11 +296,11 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     const baseWidth = t.Width + this._reachPx * 2;
     const baseHeight = t.Height;
 
-    // Pressed, the pill is drawn as Apple's lens, a capsule sized against the bar rather than scaled from our
-    // near-square cell; the pressed class's springs carry it there and back.
-    const barHeight = parent?.Height ?? 0;
-    const lensScale = isPressed && barHeight > 0 && baseWidth > 0 && baseHeight > 0
-      ? `${(Math.min(SelectionIndicator._LensWidthPerBar * barHeight, SelectionIndicator._LensWidthPerPitch * t.Width) / baseWidth).toFixed(4)} ${(SelectionIndicator._LensHeightPerBar * barHeight / baseHeight).toFixed(4)}`
+    // Pressed, the pill is drawn as Apple's lens, the pill outset by Apple's amount; the pressed class's springs
+    // carry it there and back.
+    const [outX, outY] = this._outsetPx;
+    const lensScale = isPressed && baseWidth > 0 && baseHeight > 0
+      ? `${((baseWidth + 2 * outX) / baseWidth).toFixed(4)} ${((baseHeight + 2 * outY) / baseHeight).toFixed(4)}`
       : null;
     // The items under the lens take the selection's tint, as Apple's do: the bar's accent, when it selects in it.
     const ink = this._tabBar && this._tabBar.AccentSelected() ? this._tabBar.Accent() ?? null : null;

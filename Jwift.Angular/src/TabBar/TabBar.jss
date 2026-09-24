@@ -113,6 +113,24 @@ Jwift_TabItem {
   BorderRadius: 999pt
   Interactive: true
   Cursor: Pointer
+  // The lift below lets go on the lens's release spring.
+  VisualScale: 1
+  @Spring VisualScale { Stiffness: 2187, Damping: 112, Mass: 1 }
+}
+
+// Worn with the active item while a finger holds the bar: the item under the lens lifts on its own layer, as Apple's
+// does (its glyph and label hold their place while the lens moves over them). 1.2 here, which the lens's own 0.97
+// brings to Apple's icon, 1.16 on its native frames; its label lifts a little more (1.19), below. Grows on the lens's
+// press spring. [I] UIKit scales no item: its lens draws a warped copy of the bar's items (_UILiquidLensView's lifted
+// content portal) whose warp values were lost to decompilation; this lift is that copy's measured result.
+Jwift_TabItemLensed {
+  VisualScale: 1.2
+  @Spring VisualScale { Stiffness: 409, Damping: 25.3, Mass: 1 }
+}
+
+Jwift_TabLabelLensed {
+  VisualScale: 1.035
+  @Spring VisualScale { Stiffness: 409, Damping: 25.3, Mass: 1 }
 }
 
 // The HTML bar never re-spaced the selected cell — it is the same box, differently inked.
@@ -185,6 +203,9 @@ Jwift_TabAccessoryIconActive : Jwift_TabAccessoryIcon {
 // ─── Tab label ───
 
 Jwift_TabLabel : JwiftLabelVibrancy {
+  // The label's own lift (Jwift_TabLabelLensed) lets go on the lens's release spring.
+  VisualScale: 1
+  @Spring VisualScale { Stiffness: 2187, Damping: 112, Mass: 1 }
   FontFamily: Inter
   // Apple's tab label: 10pt semibold (a 7.3pt cap height and 1pt strokes on the native capture).
   FontSize: 10pt
