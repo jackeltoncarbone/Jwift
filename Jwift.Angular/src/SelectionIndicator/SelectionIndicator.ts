@@ -66,6 +66,8 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private static readonly _LensHeightPerBar = 1.173;
   /** The VisualScale override the lens is drawn at, or null at rest. */
   private _lensScale: string | null = null;
+  /** The colour the lens inks what it magnifies, or null. */
+  private _lensInk: string | null = null;
   // How far the lens is in, [0, 1], on the same springs the pressed and resting classes time the lens with
   // (Apple's, SelectionIndicator.jss): it holds the pill above the labels until the release has settled.
   private _pressAmount = new Spring(0, SelectionIndicator._GrowStiffness, SelectionIndicator._GrowDamping, 1);
@@ -295,6 +297,13 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     const lensScale = isPressed && barHeight > 0 && baseWidth > 0 && baseHeight > 0
       ? `${(SelectionIndicator._LensWidthPerBar * barHeight / baseWidth).toFixed(4)} ${(SelectionIndicator._LensHeightPerBar * barHeight / baseHeight).toFixed(4)}`
       : null;
+    // The items under the lens take the selection's tint, as Apple's do: the bar's accent, when it selects in it.
+    const ink = this._tabBar && this._tabBar.AccentSelected() ? this._tabBar.Accent() ?? null : null;
+    if (ink !== this._lensInk) {
+      this._lensInk = ink;
+      if (ink === null) this.ClearStyleOverride('LensInk');
+      else this.SetStyleOverride({ LensInk: ink });
+    }
     if (lensScale !== this._lensScale) {
       this._lensScale = lensScale;
       if (lensScale === null) this.ClearStyleOverride('VisualScale');
