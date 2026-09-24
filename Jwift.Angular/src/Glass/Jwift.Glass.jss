@@ -116,6 +116,8 @@ JwiftGlass {
   GlassVariant: Regular
   RimWidth: @JwiftRimWidth
   RimStrength: @JwiftRimStrength
+  // The rim rides BorderLayer, so it paints above the glass's own content (a photo, a pill, a glyph).
+  BorderLayer: 10
 }
 
 // Apple's clear glass: one face for both themes, a lighter blur, a rim all the way round, no shadow.
@@ -181,6 +183,8 @@ JwiftScrollEdge {
   Align: Center
   Width: 100%
   ProgressiveBlurFeather: 0pt
+  // Chrome's strip over content, not a surface's own material: the glass in it reads the content undimmed.
+  ProgressiveBlurKind: ScrollEdge
   BackdropFilter: Blur(12pt) Saturate(1.1)
   Background: rgba(0, 0, 0, 0)
   PointerEvents: None
@@ -253,7 +257,7 @@ JwiftScrollEdgeTop : JwiftScrollEdge {
 //
 // THE BAR ABOVE IT IS NOT DIMMED, and that is the whole point of the effect. Jack: "the glass above it is
 // unaffected by that layer. It's brighter than it. And that way you get the contrast of the tab bar and
-// separated." The engine does it: a glass surface inside a progressive blur samples the strip's own
+// separated." The engine does it: a glass surface inside a scroll edge samples the strip's own
 // sharp-rooted pyramid, built from the scene BEFORE the strip dimmed it, at its own frost (Jaui.ts,
 // `edgeBackdrop`). So the bar shows the content at full brightness through its own material, over a
 // surround that is dimmed, and it costs no pyramid of its own.
