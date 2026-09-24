@@ -246,11 +246,23 @@ Glow opacity (big / little / dissipation): Small 1 / 0.3 / 50, Large 0 / 0.2 / 5
 
 ## 10. The corner
 
-- Apple has one corner model, the continuous-curve rounded rect (`CALayerCornerCurve.continuous`, SwiftUI `RoundedRectangle(style: .continuous)`); a capsule is the same model at radius half the short side. [C] API
-- `+[CALayer cornerCurveExpansionFactor:]` returns **1.528665** for `continuous`, 1.0 otherwise: the continuous corner reaches 1.528665 r along each edge from the vertex. [C] QuartzCore `CALayer.mm`
-- `setCornerCurve:` knows `circular` (0), `continuous` (1), and two private curves `id0` (2) and `id1` (3). [C] `CALayer.mm`
-- `CIRoundedRectangleGenerator.smoothness`: 0 a plain radius, 1 "smooth like icons do (setting to 1 should match CA's result)", values between interpolate. [C] Apple DTS, developer forums thread 787405
-- Apple's pill endcap, fitted to the green Accept button in Apple's own screenshot by pixel mismatch: a superellipse with lead-in 1.086 and exponent 2.06 (0.39% mismatch). [I] measured, `ShowStudio.Documentation/Design/Apple.Measured.Spec.md`
+One corner model, the continuous-curve rounded rect; a capsule is the same model at radius half the short side. [C] API (`CALayerCornerCurve.continuous`, SwiftUI `RoundedRectangle(style: .continuous)`)
+
+**The path** [C] QuartzCore `CA_CGContextAddRoundRect` (QuartzCore_50.mm:16532), CoreGraphics `CG::Path::append_continuous_rounded_rect` (CoreGraphics_18.mm:3779). Each corner is three cubics. In multiples of r, from the corner's vertex, along one edge then round to the other (the corner is symmetric about its diagonal):
+
+```
+move   (0, 1.528665)
+curve  (0, 1.08849)        (0, 0.868407)        (0.0749114, 0.631494)
+curve  (0.16906, 0.372824)  (0.372824, 0.16906)  (0.631494, 0.0749114)
+curve  (0.868407, 0)        (1.08849, 0)         (1.528665, 0)
+```
+So the curve leaves each edge 1.528665 r from the vertex (`+[CALayer cornerCurveExpansionFactor:]` returns 1.528665 for `continuous`, 1.0 otherwise). [C]
+
+**Short sides and capsules** [C] CoreGraphics `append_continuous_rounded_rect`: per axis, `t = sat((1.52866 − half / r) / 0.52866)`, `half` that axis's half size, and every control point is `mix(continuous[i], circular[i], t)` from two static 10-number tables. With room for the whole curve (`half ≥ 1.52866 r`) the corner is the continuous one; at a capsule's short axis (`half = r`) it is the circular one, with the two axes blended independently. QuartzCore's GPU rounded rect uses the same factor (`CA::OGL::stroke_round_rect`, QuartzCore_22.mm:6568: `2.891557 − 1.4457785 · side / (1.528665 r)`, clamped 0 to 1). The radius is clamped to half of each side first; a full capsule in both axes is an ellipse (`CGPathCreateWithEllipseInRect`). The `continuous` table is the path above; the `circular` table's values are not in the dump, so its content, a quarter circle in the same three-cubic layout, is [I].
+
+- `setCornerCurve:` knows `circular` (0), `continuous` (1) and two private curves `id0` (2) and `id1` (3). [C] `CALayer.mm`
+- `CIRoundedRectangleGenerator.smoothness`: 0 a plain radius, 1 "smooth like icons do (setting to 1 should match CA's result)". [C] Apple DTS, developer forums thread 787405
+- Apple's pill endcap measured on the green Accept button: lead-in 1.086 r, near the circular end. [I] `ShowStudio.Documentation/Design/Apple.Measured.Spec.md`
 - Concentric corners: inner radius = outer radius − padding; capsule radius = half the height; `concentric(minimum:)` for a floor. [C] API, WWDC25 session 356
 
 ## 11. Springs
@@ -276,6 +288,6 @@ Glow opacity (big / little / dissipation): Small 1 / 0.3 / 50, Large 0 / 0.2 / 5
 - SSFSKIM/designer, W12 G1 layer dump: https://github.com/SSFSKIM/designer/blob/main/packages/calibration/results/2026-09-03-w12-lens/g1/g1-layer-dump.md
 - Quince-Pie/walle (clear values, AIR SDF, blur and LOD, bit-exact shader replay, YCbCr constants): https://github.com/Quince-Pie/walle
 - lennondotw/interaction-lab (macOS 27 metallib uniforms, dispersion): https://github.com/lennondotw/interaction-lab/tree/main/archive/2026-08-liquid-glass-internals
-- EthanArbuckle/iPhone18-3_26.1_23B85_Restore (Hex-Rays of iOS 26.1): UIKitCore `_UITabBarVisualProvider_Floating` (UIKitCore_11, _14, _42), `_UIContextMenuPlatformMetrics_Glass`, `UISegmentedControlDefaultStyleProvider`, `UISearchTextField`; QuartzCore `GlassBackgroundFilter::render`, `ColorMatrix::set_ycc_composite`, `tex_vibrant_color_matrix`, `CALayer.mm`; DesignLibrary `GlassMaterialProvider`; UIKitCore `_UILiquidLensView` (UIKitCore_73.mm), `_UILiquidLensViewVariantSpec` and `liquidLensWithSize:` (UIKitCore_43.mm), `_UIFlexInteraction` specs (UIKitCore_16.mm, _34.mm), `_UIFloatingTabBarSelectionContainerView.mm`, `_UIFloatingTabBar.mm`, `UISegmentedControl.mm`, `UISegment.mm`: https://github.com/EthanArbuckle/iPhone18-3_26.1_23B85_Restore
+- EthanArbuckle/iPhone18-3_26.1_23B85_Restore (Hex-Rays of iOS 26.1): UIKitCore `_UITabBarVisualProvider_Floating` (UIKitCore_11, _14, _42), `_UIContextMenuPlatformMetrics_Glass`, `UISegmentedControlDefaultStyleProvider`, `UISearchTextField`; QuartzCore `GlassBackgroundFilter::render`, `ColorMatrix::set_ycc_composite`, `tex_vibrant_color_matrix`, `CALayer.mm`, `CA_CGContextAddRoundRect`; CoreGraphics `CG::Path::append_continuous_rounded_rect`; DesignLibrary `GlassMaterialProvider`; UIKitCore `_UILiquidLensView` (UIKitCore_73.mm), `_UILiquidLensViewVariantSpec` and `liquidLensWithSize:` (UIKitCore_43.mm), `_UIFlexInteraction` specs (UIKitCore_16.mm, _34.mm), `_UIFloatingTabBarSelectionContainerView.mm`, `_UIFloatingTabBar.mm`, `UISegmentedControl.mm`, `UISegment.mm`: https://github.com/EthanArbuckle/iPhone18-3_26.1_23B85_Restore
 - ktiays/GlassExplorer (`_UIViewGlass` variant, size and flex API): https://github.com/ktiays/GlassExplorer
 - MacStories iOS 26 tab bar native screen recording (1320 px, 60 fps) and the LiquidGlassGallery native captures, for the [I] measurements.
