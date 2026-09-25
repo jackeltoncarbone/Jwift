@@ -129,13 +129,6 @@ JwiftClearGlass : JwiftGlass {
   Glass: Clear
 }
 
-// Every menu platter. UIKit's is regular glass [C]; Apple's menus blur the page about 3.6 pt where our 4 pt law reads
-// 1.5 pt, and 9 pt lands 3.1 pt, our pyramid's nearest step [I] (Jwift/Apple/LiquidGlass.md 3.2).
-@JwiftMenuGlassBlur: 9pt
-JwiftMenuGlass : JwiftGlass {
-  GlassBlur: @JwiftMenuGlassBlur
-}
-
 // ── JwiftSolidGlass ─────────────────────────────────────────────────
 // A SOLID content surface (a card, a row, a tile) that carries the glass rim over its own content: not glass,
 // an opaque slab whose edge is lit the way glass's is. The consumer owns Background, BorderRadius and size.

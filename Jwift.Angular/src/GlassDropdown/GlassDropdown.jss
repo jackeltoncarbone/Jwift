@@ -162,8 +162,8 @@ Jwift_GlassDropdownCell_Ellipsis : Jwift_GlassDropdownCell {
 // Direction/Justify/Align re-stated explicitly: when the resolver swaps
 // from _Closed to _Open it rebuilds Layout from defaults, so anything not
 // declared on _Open falls back to default (Direction: Row), not the base.
-// The open menu is a menu's glass (JwiftMenuGlass; later base wins).
-Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftMenuGlass {
+// The open menu is the same glass at a menu's size (later base wins).
+Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   // Inert under the finger too: the closed avatar pill's flex stays with the closed pill.
   Flex: None
   Position: Placed

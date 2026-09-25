@@ -77,8 +77,21 @@ Apple's dump values (macOS 26) did not reproduce SwiftUI on macOS 27 or iOS 26 c
 |---|---|---|---|
 | menu platter = `_UIViewGlass initWithVariant:0`, adaptive 0, flexible, flex variant 5 | [C] | R: UIKitCore_84.mm 567 `_UIContextMenuListViewResolvedMaterial`; `_UIContextMenuListView.mm` 975 `_updateGlassBackgroundIfNeeded`; `_UIContextMenuPlatformMetrics_Glass.mm` (`menuBackgroundEffect` nil, `prefersGlassAppearance` 1) | no extra blur view in `_UIContextMenuView`, `_UIContextMenuContainerView`, `_UIMorphingPlatterView`, `_UIContextMenuUIController` (fetched with `gh api` into the lane's `.artifacts/MenuGlass/restore`) |
 | regular blur ramp 1.333 to 4 pt over 48 to 160 pt | [C] | `AA:ios/DesignLibrary/DesignLibrary_13.mm` 6640 to 6760 (`sub_18AF952E4`) | |
-| Apple menu backdrop σ 7.4 to 13.8 device px, median 10.9 (3x) | [I] | `G\Rects\Full\MacStories.iOS26.ContextMenu.Messages.jpg`, erf edge fits (`edge.py`, eight avatar edges behind the menu) | ours 4.6 px at the 4 pt law, 9.3 px at `GlassBlur: 9pt` |
+| Apple menu backdrop σ 7.4 to 13.8 device px, median 10.9 (3x) | [I] | `G\Rects\Full\MacStories.iOS26.ContextMenu.Messages.jpg`, erf edge fits (`edge.py`, eight avatar edges behind the menu) | ours then: 4.6 px at the 4 pt law, 9.3 px at `GlassBlur: 9pt`; the cause and the fix are 1b |
+| `GlassBackgroundFilter::render`: radius x transform scale x backdrop scale, then x1.6 (`v219 = v262 * 1.6`), read as a mip LOD; no Gaussian on the glass path | [C] | R: QuartzCore_33.mm 9684 to 10100; walle `replay_lod`, `replay_apple_sample` (trilinear, Q0.16 weights) | the x1.6 is 1 / 0.625, a mip read's texel share: BlurRadius reads as sigma in points [I] |
+| walle's `DownsampleBlurUniforms` (five binary16 weights, offsets 0.76 to 9.66 texels, sigma about 3.4 texels) belong to the SDF generator's smoothing, not the backdrop pyramid | [C] | `AA:dumps/walle_evidence.md` 1605 to 1675 ("This closes the private SDF generator") | the backdrop mip kernel stays unread |
 | secondary / tertiary / quaternary / quinary label colors, standard and vibrant, light and dark | [C] | FW: `043-54414-121.dmg` → `System/Library/PrivateFrameworks/CoreUI.framework/DesignLibrary-iOS.bundle/iOSRepositories/{Light,Dark}{,Vibrant}Standard.car`, extracted with 7-Zip, BOM `COLORS` tree parsed in Python (values BGRA) | values in `Sizing.md` 4; `UIColor.mm` maps secondaryLabelColor to coreUIColorName 16, tertiary 17 |
+
+## 1b. Blur spread on Apple's frames and ours (2026-09-25)
+
+Erf fits across edges behind the glass (`edge.py`; thin lines fitted as a box of known width under a Gaussian, `line.py`), device px at 3x. Ours from a bench in the real engine (Canvas + JivRegistry, the real `JwiftGlass` class, `?glass-skip=grade,rim,bleed,shadow`), black bands whose edges cross each glass at its centre and three quarters across; light and dark read alike to 0.05 px.
+
+| surface | Apple | ours before (Jaui e060057) | ours after | the law (0.62 share) |
+|---|---|---|---|---|
+| menu, 250 x 300 pt | 10.7 to 11.8 at k 0.85 (MacStories, `G\Rects\Full\MacStories.iOS26.ContextMenu.Messages.jpg`); 7.4 to 13.8 over 8 edges | 5.5 centre, 6.5 at 3/4 (with `GlassBlur: 9pt`) | 11.6, 8.4 | 11.9, 8.9 |
+| sheet, 390 x 340 pt | 44 to 166 (Find My, Newsroom render, 3.65 px/pt): another material | 2.9, 2.7 | 11.7, 9.0 | 11.9, 8.9 |
+| tab bar, 355 x 62 pt | 5.0 to 5.3 (App Store bar, 60 pt, `G\Web\Full\ios-appstore-tab-bar-native.jpg`) | 3.0, 2.9 | 4.9, 4.9 | 5.0 |
+| button, 44 pt | 2.5 to 2.7 (Photos 45 pt bar, `G\Web\Full\ios-photos-tab-bar-native.jpg`; size class 1 by its spread) | 3.3, 3.0 | 4.2, 3.4 | 4.5, 3.9 |
 
 ## 2. The liquid lens (`_UILiquidLensView`)
 
