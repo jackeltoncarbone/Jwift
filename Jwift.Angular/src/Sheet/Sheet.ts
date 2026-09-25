@@ -91,6 +91,20 @@ export class SheetEdits {
   Reset(): void { this._edited.set(false); }
 }
 
+/**
+ * `sheetCancel` on a Cancel or Close control inside a sheet: the press dismisses the way the X and a swipe do,
+ * asking "Discard Changes" first when the sheet holds unsaved work (Apple's Cancel). The owner reacts in `(close)`.
+ */
+@Directive({
+  selector: '[sheetCancel]',
+  standalone: true,
+  host: { '(click)': 'Cancel()' },
+})
+export class SheetCancel {
+  private readonly _sheet = inject(forwardRef(() => Sheet));
+  Cancel(): void { this._sheet.AttemptDismiss(); }
+}
+
 type SheetPhase = 'entering' | 'shown' | 'leaving';
 
 interface PanSample { readonly Y: number; readonly T: number }
