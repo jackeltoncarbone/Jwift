@@ -80,13 +80,13 @@ JwiftProgressFillShade {
   Background: LinearGradient(180deg, rgba(0, 0, 0, 0.022) 0%, rgba(0, 0, 0, 0) 100%)
 }
 
-// currentValueLabel: Caption, secondary. SwiftUI also sets monospaced digits, which the canvas has no
-// font-feature route for yet.
+// currentValueLabel: Caption, secondary, monospaced digits.
 JwiftProgressValue {
   Width: 100%
   FontFamily: Inter
   FontSize: 12pt
   FontWeight: 400
+  FontVariantNumeric: TabularNums
   Color: @SecondaryLabel
   UserSelect: None
 }
