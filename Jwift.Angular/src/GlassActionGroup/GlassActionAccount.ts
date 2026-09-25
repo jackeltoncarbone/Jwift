@@ -21,6 +21,8 @@ export interface GlassActionAccount {
   readonly Initials: Signal<string | null>;
   /** The signed-in photo, or null to fall back to the monogram and then the glyph. */
   readonly AvatarUrl: Signal<string | null>;
+  /** Sub-pages the account rows push with `Page` (Help › and its rows). A caller's own `[Pages]` wins. */
+  readonly Pages?: Signal<Readonly<Record<string, readonly GlassAction[]>>>;
   /** Consume an account action id. True when it was handled, so it never reaches the caller. */
   Handle(id: string): boolean;
 }

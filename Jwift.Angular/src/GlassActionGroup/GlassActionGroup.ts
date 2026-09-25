@@ -335,7 +335,7 @@ export class GlassActionGroup implements OnDestroy {
    *  sub-pages = whatever Pages[id] returns. */
   protected _OpenItems(page: string | null): readonly GlassAction[] {
     if (page === null) return [...this._OverflowActions(), ...this._Menu()];
-    return this.Pages()[page] ?? [];
+    return this.Pages()[page] ?? this._Account?.Pages?.()[page] ?? [];
   }
 
   /** Whether a host (glass/avatar) tap may open the sink to its root page —
