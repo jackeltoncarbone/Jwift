@@ -58,3 +58,31 @@ Jwift_SliderHit {
   Interactive: true
   Cursor: Pointer
 }
+
+// UISlider's thumb, opt-in: a white disc with the system shadow, riding a rail the track's full width.
+Jwift_SliderRail {
+  Position: Placed
+  Top: -3pt
+  Left: 0pt
+  Width: 100%
+  Height: 24pt
+  Direction: Row
+  Align: Center
+}
+
+Jwift_SliderRailLead {
+  FlexBasis: 0pt
+  FlexShrink: 1
+  Height: 100%
+}
+
+Jwift_SliderThumb {
+  Width: 24pt
+  Height: 24pt
+  FlexShrink: 0
+  BorderRadius: 999pt
+  Background: rgb(255, 255, 255)
+  ShadowColor: rgba(0, 0, 0, 0.25)
+  ShadowBlur: 4pt
+  ShadowOffsetY: 1pt
+}

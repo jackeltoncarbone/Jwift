@@ -26,8 +26,8 @@ export interface SliderScrubEvent {
  *
  *   <slider [min]="0" [max]="100" [value]="time()" (valueChange)="seek($event)" />
  *
- * Track + progress fill, no separate thumb (the fill's leading edge is
- * the thumb). Pointer drag updates `value` reactively; `(scrubStart)` /
+ * Track + progress fill; the fill's leading edge is the thumb unless
+ * `[thumb]` draws UISlider's. Pointer drag updates `value` reactively; `(scrubStart)` /
  * `(scrubMove)` / `(scrubEnd)` are emitted for callers that need to gate
  * other behavior on drag boundaries.
  *
@@ -42,6 +42,14 @@ export interface SliderScrubEvent {
     <jiv class="Jwift_SliderTrack">
       <jiv class="Jwift_SliderFill" [childLayout]="FillChildLayout()" />
     </jiv>
+    @if (thumb()) {
+      <!-- The thumb travels the track less its own width, so it rests inside both ends as UISlider's does. -->
+      <jiv class="Jwift_SliderRail">
+        <jiv class="Jwift_SliderRailLead" [childLayout]="{ FlexGrow: _Fraction() }" />
+        <jiv class="Jwift_SliderThumb" />
+        <jiv class="Jwift_SliderRailLead" [childLayout]="{ FlexGrow: 1 - _Fraction() }" />
+      </jiv>
+    }
     <jiv class="Jwift_SliderHit"
          (pointerdown)="onPointerDown($event)" />
   `,
@@ -56,6 +64,8 @@ export class Slider extends JivHost implements OnInit, OnDestroy {
   readonly max   = input<number>(100);
   readonly value = input<number>(0);
   readonly snapToClick = input<boolean>(true);
+  /** UISlider's thumb, for a value that is a position (a start point) rather than a level (a volume). */
+  readonly thumb = input<boolean>(false);
 
   readonly valueChange = output<number>();
   readonly scrubStart  = output<{ value: number; event: PointerEvent }>();
@@ -64,13 +74,12 @@ export class Slider extends JivHost implements OnInit, OnDestroy {
 
   private readonly _active = signal(false);
 
-  protected readonly FillChildLayout = computed<Partial<ChildLayout>>(() => {
+  protected readonly _Fraction = computed(() => {
     const span = this.max() - this.min();
-    if (span <= 0) return { Width: '0%' };
-    const pct = Math.max(0, Math.min(100,
-      100 * ((this.value() - this.min()) / span)));
-    return { Width: pct + '%' };
+    return span <= 0 ? 0 : Math.max(0, Math.min(1, (this.value() - this.min()) / span));
   });
+
+  protected readonly FillChildLayout = computed<Partial<ChildLayout>>(() => ({ Width: this._Fraction() * 100 + '%' }));
 
   private readonly _canvasRef = inject(Jaui, { optional: true });
 
