@@ -32,6 +32,14 @@ Jwift_SheetLayer_Form : Jwift_SheetLayer {
   Justify: Center
 }
 
+// Regular width, as SwiftUI's `inspector`: a trailing column from under the page's floating header bar to the
+// partial inset above the bottom, beside the content rather than over it. Nothing dims, so the page stays live,
+// and the toolbar control that opened it stays in reach to close it.
+Jwift_SheetLayer_Inspector : Jwift_SheetLayer {
+  Justify: End
+  Align: End
+}
+
 // The dimming view: black, at 0.2 in light and 0.48 in dark [C], never blurred. Its opacity is the component's.
 Jwift_SheetDim {
   Position: Placed
@@ -66,6 +74,10 @@ Jwift_SheetCard {
 Jwift_SheetCard_Grows : Jwift_SheetCard {
   PanClaim: Vertical
 }
+// The inspector column neither resizes nor swipes away: the control that opened it closes it.
+Jwift_SheetCard_Inspector : Jwift_SheetCard {
+  PanClaim: None
+}
 // Below half way to full height the sheet is Liquid Glass; above it, the opaque sheet background [C]. The sheet's
 // subvariant drops the outer refraction and the edge bleed's reach and keeps the drop shadow (Apple/Sheets.md) [C].
 Jwift_SheetGlass : JwiftGlass {
@@ -96,9 +108,22 @@ Jwift_SheetBody {
   Gap: 14pt
   Padding: @JwiftSheetBarHeight 20pt 0pt 20pt
   Overflow: Scroll
+  // Offset, so a navigation push can carry the page along X (Jwift_SheetPageMotion).
+  Position: Offset
 }
 Jwift_SheetBody_Fixed : Jwift_SheetBody {
   Overflow: Hidden
+}
+
+// A NAVIGATION PAGE'S ARRIVAL. The body is offset along X while a push or a pop brings the new page in: a push from
+// the trailing edge, a pop from a third of the way back with the dimmed look of a page that was pushed under. The
+// spring is UINavigationController's: damping ratio 1, response 0.5 s, so stiffness 157.9 and damping 25.1 [I].
+Jwift_SheetPageUnder {
+  Opacity: 0.6
+}
+Jwift_SheetPageMotion {
+  @Spring X { Stiffness: 157.9, Damping: 25.1, Mass: 1 }
+  @Transition Opacity { Duration: 250ms }
 }
 
 // THE BAR, drawn over the body's top: the X leading, the title centered on the buttons' line, the checkmark

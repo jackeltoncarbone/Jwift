@@ -32,9 +32,12 @@ export {
 export { Sheet, SheetBody, SheetCancel, SheetEdits, SheetStack, JWIFT_SHEET_OUTLET } from './Sheet/Sheet';
 export {
   type SheetDetent,
+  type SheetPresentation,
   type FormSheetSize,
   SHEET_METRICS,
   FormSheetSizeFor,
+  InspectorWidthFor,
+  PageEntryOffset,
   IsRegularWidth,
   LargeHeight,
   MediumHeight,

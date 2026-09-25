@@ -7,6 +7,7 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   forwardRef,
   inject,
   input,
@@ -27,15 +28,18 @@ import {
   FormSheetSizeFor,
   GrabberTarget,
   InsetFor,
+  InspectorWidthFor,
   IsRegularWidth,
   LargeHeight,
   MediumHeight,
+  PageEntryOffset,
   PercentFullHeight,
   ProjectedTravel,
   RubberBand,
   SettleIndex,
   SHEET_METRICS,
   type SheetDetent,
+  type SheetPresentation,
 } from './Sheet.Geometry';
 
 /**
@@ -122,6 +126,12 @@ interface PanSample { readonly Y: number; readonly T: number }
  *     </sheet>
  *   }
  *
+ * A NAVIGATION STACK, as a UINavigationController inside a sheet: the owner keeps the path and binds its length to
+ * `[navigationDepth]`. Past the root, the bar's leading X becomes the back chevron (emitting `back`), and each change
+ * of depth slides the new page in the way a push or a pop does. `[presentation]="'inspector'"` presents in regular
+ * width as SwiftUI's `inspector`: a trailing column beside the content, undimmed, with no X of its own (the control
+ * that opened it closes it); compact width is the same sheet as always.
+ *
  * `close` fires once the sheet has left, for every dismissal a person makes (the X, a swipe, a tap on the dim, the
  * grabber of a one-detent sheet). A sheet holding unsaved work asks "Discard Changes" or "Keep Editing" before any
  * of them discards, Apple's `isModalInPresentation` pattern. By default the work is whatever a person typed into
@@ -137,13 +147,21 @@ interface PanSample { readonly Y: number; readonly T: number }
     <ng-container sheetLayer>
     <jiv [class]="DimClass()" [jivStyle]="DimStyle()" (click)="AttemptDismiss()" />
     <jiv #card [class]="CardClass()" [jivStyle]="CardStyle()" [childLayout]="CardLayout()" (panclaim)="OnPanClaim($event)">
-      <jiv sheetBody [class]="bodyScrolls() ? 'Jwift_SheetBody' : 'Jwift_SheetBody_Fixed'" [layout]="BodyLayout()">
+      <jiv sheetBody [class]="BodyClass()" [layout]="BodyLayout()" [childLayout]="PageLayout()">
         <ng-content></ng-content>
       </jiv>
       <jiv class="Jwift_SheetBar">
-        <glass-button size="bar" (click)="AttemptDismiss()">
-          <icon class="Jwift_SheetBarGlyph" Name="xmark" />
-        </glass-button>
+        @if (navigationDepth() > 0) {
+          <glass-button size="bar" (click)="back.emit()">
+            <icon class="Jwift_SheetBarGlyph" Name="chevron.left" />
+          </glass-button>
+        } @else if (Inspector()) {
+          <jiv class="Jwift_SheetBarSpacer" />
+        } @else {
+          <glass-button size="bar" (click)="AttemptDismiss()">
+            <icon class="Jwift_SheetBarGlyph" Name="xmark" />
+          </glass-button>
+        }
         <jiv class="Jwift_SheetTitleBox">
           @if (sheetTitle()) {
             <jext class="Jwift_SheetTitle" [text]="sheetTitle()" />
@@ -204,6 +222,11 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   readonly bodyScrolls = input<boolean>(true);
   /** App classes merged onto the presentation layer (a higher Layer over a full-screen presentation). */
   readonly Class = input<string>('');
+  /** How the sheet presents in regular width: a centered form sheet, or a trailing inspector column. */
+  readonly presentation = input<SheetPresentation>('sheet');
+  /** The length of the owner's navigation path. Above 0 the bar leads with the back chevron. */
+  readonly navigationDepth = input<number>(0);
+  readonly back = output<void>();
   readonly close = output<void>();
   readonly confirm = output<void>();
   /** The sheet has finished rising: a DOM embed inside it can mount into a box that has stopped moving. */
@@ -246,8 +269,24 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
 
   constructor() {
     super('Sheet', SheetJss, 'Jwift_SheetLayer', () => {
-      const layer = this.Regular() ? 'Jwift_SheetLayer_Form' : 'Jwift_SheetLayer';
+      const layer = this.Inspector() ? 'Jwift_SheetLayer_Inspector' : this.Regular() ? 'Jwift_SheetLayer_Form' : 'Jwift_SheetLayer';
       return `${layer} ${this.Class()}`.trim();
+    });
+    // A change of depth is a push or a pop: the new page starts where UINavigationController starts it and springs home.
+    let depth = 0;
+    effect(() => {
+      const next = this.navigationDepth();
+      if (next === depth) return;
+      const direction = next > depth ? 'Push' : 'Pop';
+      depth = next;
+      this._pageMotion.set(false);
+      this._pageOffset.set(PageEntryOffset(direction, this._cardWidth()));
+      this._pageEntering.set(direction === 'Pop');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        this._pageMotion.set(true);
+        this._pageOffset.set(0);
+        this._pageEntering.set(false);
+      }));
     });
   }
 
@@ -268,14 +307,19 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
 
   /** The concentric chain's lengths, in points, from Jwift.Glass.jss. */
   private readonly _partialInset = computed(() => this._jss.VarPoints('JwiftSheetInset'));
+  /** The floating header bar's band: an inspector column starts under it, so the page's toolbar stays reachable. */
+  private readonly _headerBand = computed(() => this._jss.VarPoints('JwiftScrollEdgeBar'));
   private readonly _screenRadius = computed(() => this._jss.VarPoints('JwiftScreenRadius'));
   private readonly _sheetRadius = computed(() => this._jss.VarPoints('JwiftSheetRadius'));
   private readonly _barHeight = computed(() => this._jss.VarPoints('JwiftSheetBarHeight'));
 
   readonly Regular = computed(() => IsRegularWidth(this._container().Width, this._container().Height));
+  /** Regular width asked for an inspector: the trailing column. */
+  readonly Inspector = computed(() => this.presentation() === 'inspector' && this.Regular());
   private readonly _form = computed(() => FormSheetSizeFor(this._container().Width, this._container().Height));
   private readonly _large = computed(() => {
     const { Height } = this._container();
+    if (this.Inspector()) return Height - this._headerBand() - this._partialInset();
     if (this.Regular()) return Math.min(this._form().Height, Height - 2 * this._partialInset());
     return LargeHeight(Height - this._var('KeyboardInset'), this._var('SafeTop'));
   });
@@ -316,6 +360,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   private readonly _dimLevel = computed(() => {
     const undimmed = this.largestUndimmedDetent();
     const stops = this._stops();
+    if (this.Inspector()) return 0;
     let level = 1;
     if (undimmed !== null && !this.Regular()) {
       const at = stops.findIndex((s) => s.Detent === undimmed);
@@ -345,9 +390,12 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   readonly CardClass = computed(() => {
     const stops = this._stops();
     const grows = !this.Regular() && stops.length > 1 && this._index() < stops.length - 1;
+    const motion = this._motion() ? ' Jwift_SheetMotion' : '';
+    // The inspector column is solid, as Pages' and Keynote's are: it is read beside busy content, not over it.
+    if (this.Inspector()) return `Jwift_SheetCard_Inspector Jwift_SheetOpaque${motion}`;
     const material = this.Regular() || this._percentFull() > SHEET_METRICS.GlassBelow ? 'Jwift_SheetOpaque' : 'Jwift_SheetGlass';
     const shape = grows ? 'Jwift_SheetCard_Grows' : 'Jwift_SheetCard';
-    return `${shape} ${material}${this._motion() ? ' Jwift_SheetMotion' : ''}`;
+    return `${shape} ${material}${motion}`;
   });
 
   readonly CardStyle = computed(() => {
@@ -363,21 +411,51 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     return { BorderRadius: `${r1(top)}px ${r1(top)}px ${r1(bottom)}px ${r1(bottom)}px` };
   });
 
-  readonly CardLayout = computed(() => {
+  /** The card's width: the form sheet's, the inspector column's, or the screen's less the partial inset. */
+  private readonly _cardWidth = computed(() => {
     const { Width } = this._container();
+    if (this.Inspector()) return InspectorWidthFor(Width);
+    return this.Regular() ? Math.min(this._form().Width, Width - 32) : Width - 2 * this._inset();
+  });
+
+  readonly CardLayout = computed(() => {
+    if (this.Inspector()) {
+      return {
+        Width: `${r1(this._cardWidth())}px`,
+        Height: `${r1(this._height())}px`,
+        Margin: `0px ${r1(this._partialInset())}px ${r1(this._partialInset())}px 0px`,
+        OffsetX: `${r1(this._drop())}px`,
+        OffsetY: '0px',
+      };
+    }
     const inset = this._inset();
     const content = this._stops()[Math.min(this._index(), this._stops().length - 1)].Detent === 'content';
     const explicit = this._dragHeight() !== null || !content;
-    const width = this.Regular() ? Math.min(this._form().Width, Width - 32) : Width - 2 * inset;
+    const width = this._cardWidth();
     const bottom = this.Regular() ? 0 : inset + this._var('KeyboardInset');
     return {
       Width: `${r1(width)}px`,
       Height: explicit ? `${r1(this._height())}px` : 'Auto',
       MaxHeight: `${r1(Math.max(this._large(), this._dragHeight() ?? 0))}px`,
       Margin: `0px 0px ${r1(bottom)}px 0px`,
+      OffsetX: '0px',
       OffsetY: `${r1(this._drop())}px`,
     };
   });
+
+  // ── The navigation stack's page transition ─────────────────────────
+  private readonly _pageOffset = signal(0);
+  private readonly _pageMotion = signal(false);
+  /** A popped-to page brightens up from the dimmed underlay it was pushed under. */
+  private readonly _pageEntering = signal(false);
+
+  readonly BodyClass = computed(() => {
+    const base = this.bodyScrolls() ? 'Jwift_SheetBody' : 'Jwift_SheetBody_Fixed';
+    const under = this._pageEntering() ? ' Jwift_SheetPageUnder' : '';
+    return `${base}${under}${this._pageMotion() ? ' Jwift_SheetPageMotion' : ''}`;
+  });
+
+  readonly PageLayout = computed(() => ({ OffsetX: `${r1(this._pageOffset())}px` }));
 
   readonly BodyLayout = computed(() => {
     const scrollRoom = this.bodyScrolls() ? 16 : 0;
@@ -418,7 +496,9 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
       if (risen) return;
       risen = true;
       // Parked just below the screen at the card's own height, then sprung up: Apple's presentation.
-      this._drop.set(this._height() + this._partialInset() + (this.Regular() ? this._container().Height / 2 : 0));
+      this._drop.set(this.Inspector()
+        ? this._cardWidth() + this._partialInset()
+        : this._height() + this._partialInset() + (this.Regular() ? this._container().Height / 2 : 0));
       requestAnimationFrame(() => requestAnimationFrame(() => {
         if (this._phase() !== 'entering') return;
         this._motion.set(true);
@@ -490,7 +570,9 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   private _leave(): void {
     this._phase.set('leaving');
     this._motion.set(true);
-    const offscreen = this.Regular()
+    const offscreen = this.Inspector()
+      ? this._cardWidth() + this._partialInset()
+      : this.Regular()
       ? (this._container().Height + this._height()) / 2
       : this._height() + this._partialInset();
     this._drop.set(offscreen);
@@ -512,7 +594,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   /** The engine handed this card a vertical pan (its `PanClaim`); the event carries the press point. */
   OnPanClaim(event: Event): void {
     const e = event as PointerEvent;
-    if (this._phase() !== 'shown' || this._pan) return;
+    if (this._phase() !== 'shown' || this._pan || this.Inspector()) return;
     this._asking.set(false);
     const now = performance.now();
     this._pan = {

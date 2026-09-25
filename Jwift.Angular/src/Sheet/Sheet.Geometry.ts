@@ -5,6 +5,10 @@
  *  capped at the large detent; `medium` and `large` are Apple's two system detents. */
 export type SheetDetent = 'content' | 'medium' | 'large';
 
+/** How a sheet presents in regular width: a centered form sheet, or SwiftUI's `inspector`, a trailing column beside
+ *  the content that leaves it live. Compact width is always the edge-attached sheet. */
+export type SheetPresentation = 'sheet' | 'inspector';
+
 export const SHEET_METRICS = {
   /** The large detent's top edge sits this far below the top safe area (`_UISheetPresentationMetrics.topOffset`) [C]. */
   TopOffset: 10,
@@ -21,6 +25,11 @@ export const SHEET_METRICS = {
   DimDark: 0.48,
   /** A pan past this travel is a drag, not a tap (the engine's slop). */
   Slop: 10,
+  /** SwiftUI's `inspector` column on iPad: 320 pt ideal, never under 270 pt [D]. */
+  InspectorWidth: 320,
+  InspectorMinWidth: 270,
+  /** UINavigationController's push: the page underneath travels a third of the width as the new one covers it [I]. */
+  PushParallax: 0.3,
 } as const;
 
 export interface FormSheetSize { readonly Width: number; readonly Height: number }
@@ -31,6 +40,16 @@ export function FormSheetSizeFor(width: number, height: number): FormSheetSize {
   if (longest <= 1024) return { Width: 540, Height: 600 };
   if (longest <= 1590) return { Width: 580, Height: 640 };
   return { Width: 620, Height: 680 };
+}
+
+/** The inspector column's width: the ideal, narrowed to leave the content at least 60 percent of the window. */
+export function InspectorWidthFor(containerWidth: number): number {
+  return Math.max(SHEET_METRICS.InspectorMinWidth, Math.min(SHEET_METRICS.InspectorWidth, containerWidth * 0.4));
+}
+
+/** Where a navigation page enters from, in points of X: a push from the trailing edge, a pop from the parallax. */
+export function PageEntryOffset(direction: 'Push' | 'Pop', width: number): number {
+  return direction === 'Push' ? width : -width * SHEET_METRICS.PushParallax;
 }
 
 /** Regular width presents a centered form sheet; compact width, an edge-attached sheet [I]: the iPad's regular class. */
