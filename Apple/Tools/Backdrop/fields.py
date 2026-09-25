@@ -10,10 +10,11 @@ def luma(a): return a[..., :3] @ Yc
 def stadium(shape, cx, cy, LW, LH):
     yy, xx = np.mgrid[0:shape[0], 0:shape[1]]
     R = LH / 2; qx = np.maximum(np.abs(xx - cx) - (LW / 2 - R), 0); return np.hypot(qx, yy - cy) - R, yy, xx
+def tintmask(a):
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    return ((r > 140) & (g < 120) & (b < 140)) | ((r > 150) & (g > 110) & (b < 90))  # Apple's red, our gold/yellow
 def inkmask(a):
-    L = luma(a); r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    tint = ((r > 140) & (g < 120) & (b < 140)) | ((r > 150) & (g > 110) & (b < 90))  # Apple's red, our gold/yellow
-    return (L < 80) | tint
+    return (luma(a) < 80) | tintmask(a)
 def measure(P, R0, cx, cy, LW, LH, item_box=None):
     Gp, Gr = gradmag(P), gradmag(R0)
     sd, yy, xx = stadium(P.shape, cx, cy, LW, LH)
@@ -38,7 +39,9 @@ def measure(P, R0, cx, cy, LW, LH, item_box=None):
         def bb(mask, y0, y1):
             ys, xs = np.where(mask[y0:y1, x0:x1])
             return None if len(xs) < 20 else (xs.max() - xs.min() + 1, ys.max() - ys.min() + 1, (xs.min() + xs.max()) / 2 + x0)
-        mp, mr = inkmask(P), inkmask(R0) & (luma(R0) < 80)
+        # The lensed item is the selected twin, so it is read by its selection tint alone: darkness would also take
+        # the backdrop's own dark ink inside the box. The item at rest, the lens elsewhere, is read by its darkness.
+        mp, mr = tintmask(P), inkmask(R0) & (luma(R0) < 80)
         g = (bb(mp, gy0, gy1), bb(mr, gy0, gy1)); l = (bb(mp, ly0, ly1), bb(mr, ly0, ly1))
         out['item'] = dict(glyph_w=round(g[0][0] / g[1][0], 3), glyph_h=round(g[0][1] / g[1][1], 3),
                            label_w=round(l[0][0] / l[1][0], 3), label_h=round(l[0][1] / l[1][1], 3),
