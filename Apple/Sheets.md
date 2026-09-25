@@ -243,9 +243,13 @@ Jack's rule: "whatever Apple does, we do." Each use takes its closest first-part
 | Manage user (admin) | `Admin/Users/AdminUserSettings.ts` | content | dimmed, asks before discarding | the same |
 | Rename, Delete (picture, animation), Delete account, Report, Purchase, Points, Checkout, Donate, Share, Deliver, Seats, Plan, Publish composer, Service reason, Stage, Create Profile, Edit fundraiser, admin Packages / Users | many | content | dimmed | modal form sheets |
 
+### The sheet's glass, read
+
+`sub_1891102E0`'s iPhone non-large background is the once-built `qword_1EA93D080`, whose initializer (`0x18910A6F4`) is `[[_UIViewGlass alloc] initWithVariant:0]`, `setFlexible:1`, `setSubvariant:@"sheet"` [C]; the large background is `systemBackgroundColor` [C]. DesignLibrary maps the string to `GlassMaterialProvider.Subvariant` 28 (`Subvariant.init`, DesignLibrary_08.mm 7832) and stores it at `Configuration +9`; no read of that byte branches on 28 anywhere in the decompiled DesignLibrary [C, by absence], so the sheet is plain regular glass at its size, with no tint and no legibility layer of its own. Measured through our medium Pictures sheet over the drill sentence (light): the page's luma contrast is kept at 0.248 of itself, against Apple's 0.8 dim × 0.318 face = 0.254 before blur [I]. What remains between ours and Apple's is the body blur (Apple's 4 pt at S ≥ 160; LiquidGlass.md 3.2), which the glass lane owns.
+
 ## 9. Open (product calls for Jack)
 
-1. **`@JwiftScreenRadius` is still 52.** The app's own screen clip and the tab bar's inset read it; the sheets read the engine's `@DisplayCornerRadius` (62 on a 402 pt phone). Retargeting `@JwiftScreenRadius` to the engine value moves the tab bar and the screen corner, so it was left for its own call.
+1. **The screen corner is the display's.** `@JwiftScreenRadius` is the engine's `@DisplayCornerRadius` (62 pt on a 402 pt phone, 18 on an iPad, 0 on a desktop window, so the app's screen clip is square there). The tab bar no longer derives its inset from it: UIKit's floating bar sits 21 pt in on every iPhone (`Sizing.md` 1) [C].
 2. **The confirm checkmark is the app's prominent plate** (white in dark, black in light), not Apple's blue tint: the app's rule is that prominence is the inverted solid and gold is never a fill. No sheet uses the checkmark yet; forms keep their in-body primary action.
 3. **Unsaved-change asks** are wired where a form already knew its draft (Edit Profile, Start a fundraiser, Post a request, admin Manage user). Edit fundraiser and the CMS editors have no dirty state to read yet.
 4. **A programmatic close fades** (the engine's leave) rather than sliding down; every dismissal a person makes slides.

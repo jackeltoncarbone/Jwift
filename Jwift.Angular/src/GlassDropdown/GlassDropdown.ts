@@ -18,10 +18,8 @@ import type { JivHandle } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import GlassDropdownJss from './GlassDropdown.jss';
 
-/** The gap a floating glass surface keeps from the edge of the screen. Not invented here: the design
- *  system already names it. `Jwift.Glass.jss` derives `@JwiftSheetInset` as `@JwiftScreenRadius (52pt)
- *  - @JwiftSheetRadius (38pt)` = 14pt, the inset at which a sheet's corner nests concentrically inside
- *  the screen's. A menu is a sheet by another name, so it keeps the same distance. */
+/** The gap a capped menu keeps from the bottom edge of the screen. Ours: Apple's menu screen margin is
+ *  not read yet (Jwift/Apple/Sizing.md, Menu). */
 const SCREEN_GAP = 14;
 
 /** The shortest a capped menu is allowed to be: the glass's 6pt padding, three 44pt rows and the two

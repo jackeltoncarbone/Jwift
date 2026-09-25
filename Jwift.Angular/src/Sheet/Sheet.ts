@@ -58,6 +58,15 @@ export class SheetStack {
   Remove(sheet: object): void { this._open.update((open) => open.filter((s) => s !== sheet)); }
 }
 
+/** Parents the sheet's own layer children (the dim, the card) to the sheet. Scoped to its own element, because a
+ *  component's viewProviders also reach content declared inside a control-flow block, which must reach the body. */
+@Directive({
+  selector: '[sheetLayer]',
+  standalone: true,
+  providers: [{ provide: Jiv, useExisting: forwardRef(() => Sheet) }],
+})
+export class SheetLayer {}
+
 /** Marks the jiv projected content lands in. It registers with its sheet while the view is created, which is before
  *  any projected child attaches, so the sheet can hand that child its parent. */
 @Directive({ selector: '[sheetBody]', standalone: true })
@@ -90,13 +99,13 @@ interface PanSample { readonly Y: number; readonly T: number }
 @Component({
   selector: 'sheet',
   standalone: true,
-  imports: [Jiv, Jext, Icon, GlassButton, SheetBody],
+  imports: [Jiv, Jext, Icon, GlassButton, SheetBody, SheetLayer],
   template: `
+    <ng-container sheetLayer>
     <jiv [class]="DimClass()" [jivStyle]="DimStyle()" (click)="AttemptDismiss()" />
     <jiv #card [class]="CardClass()" [jivStyle]="CardStyle()" [childLayout]="CardLayout()" (panclaim)="OnPanClaim($event)">
       <jiv sheetBody [class]="bodyScrolls() ? 'Jwift_SheetBody' : 'Jwift_SheetBody_Fixed'" [layout]="BodyLayout()">
         <ng-content></ng-content>
-        <ng-content select="[sheetFooter]"></ng-content>
       </jiv>
       <jiv class="Jwift_SheetBar">
         <glass-button size="bar" (click)="AttemptDismiss()">
@@ -131,12 +140,12 @@ interface PanSample { readonly Y: number; readonly T: number }
         </jiv>
       }
     </jiv>
+    </ng-container>
   `,
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // Projected content parents to the body; the sheet's own template parents to the layer.
+  // Projected content, in a control-flow block or not, parents to the body; the layer's own children to the sheet.
   providers: [{ provide: Jiv, useFactory: () => inject(Sheet).ContentParent }],
-  viewProviders: [{ provide: Jiv, useExisting: forwardRef(() => Sheet) }],
 })
 export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   /** The inline title, centered on the bar. An untitled sheet still has its X. */

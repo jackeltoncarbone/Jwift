@@ -106,11 +106,10 @@ JwiftSeparatorVibrancy {
 @JwiftRimStrength: 2
 
 // ── THE SCREEN CORNER ───────────────────────────────────────────────
-// The app's outer corner (the iPhone's own, 52 CSS px) and the one floating sheet's corner. Chrome inside
-// the screen is concentric with it: inset = @JwiftScreenRadius - the element's own radius.
-@JwiftScreenRadius: 52pt
+// The app's outer corner is the display's own (`displayCornerRadius`): the engine's @DisplayCornerRadius,
+// 62 pt on a 402 pt iPhone, 18 on an iPad, 0 on a desktop window. The sheet's top corner is 38 pt [C].
+@JwiftScreenRadius: @DisplayCornerRadius
 @JwiftSheetRadius: 38pt
-@JwiftSheetInset: @JwiftScreenRadius - @JwiftSheetRadius
 
 // ── JwiftGlass ──────────────────────────────────────────────────────
 // Apple's regular Liquid Glass. A control with a colour of its own sets its Background, which is the glass's
