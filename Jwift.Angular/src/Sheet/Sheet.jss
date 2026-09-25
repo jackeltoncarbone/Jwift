@@ -127,6 +127,9 @@ Jwift_SheetBarSpacer {
   Height: 44pt
   FlexShrink: 0
 }
+// The box between the X and the trailing slot, which is always 44 pt (the checkmark or a spacer), so its
+// center is the sheet's. The title spans it and centers in it, as UINavigationBar's inline title centers on
+// the bar while it fits and truncates its tail between the items when it does not [I].
 Jwift_SheetTitleBox {
   FlexGrow: 1
   FlexShrink: 1
@@ -134,7 +137,7 @@ Jwift_SheetTitleBox {
   Height: 44pt
   Direction: Column
   Justify: Center
-  Align: Center
+  Align: Stretch
 }
 // The inline title: 17 pt semibold [I], one line, truncated between the buttons.
 Jwift_SheetTitle {
@@ -146,6 +149,7 @@ Jwift_SheetTitle {
   Color: @Ink
   TextAlign: Center
   MaxLines: 1
+  TextOverflow: Ellipsis
 }
 
 // THE GRABBER: 36 x 5 pt, a capsule 5 pt below the top edge, tertiary label through the glass [C]; a 44 pt square
