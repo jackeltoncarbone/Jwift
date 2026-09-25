@@ -254,7 +254,8 @@ export class GlassActionBar implements OnDestroy {
       const shed = cells.slice(counts[i] ?? cells.length).filter(a => !a.Spinner);
       if (!shed.length) return;
       if (out.length) out.push({ Id: `__div_${g.Id}`, Divider: true });
-      if (g.Label) out.push({ Id: `__hdr_${g.Id}`, Header: true, Label: g.Label });
+      // A header titles a section of several rows; a lone row, or a row that already says it, is its own title.
+      if (g.Label && shed.length > 1 && !shed.some(a => a.Label === g.Label)) out.push({ Id: `__hdr_${g.Id}`, Header: true, Label: g.Label });
       out.push(...shed);
     });
     const appended = this._EffectiveMenu();
