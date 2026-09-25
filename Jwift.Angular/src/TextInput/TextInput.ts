@@ -162,6 +162,10 @@ export class TextInput extends JivHost implements OnInit, OnDestroy {
   Focus = (): void => { this._jinput()?.Focus(); };
   Blur = (): void => { this._jinput()?.Blur(); };
 
+  /** Replace the words with the caret at `caret`, even while the field is being edited: an undo lands its
+   *  text and puts the caret where the change was. */
+  SetText = (value: string, caret?: number): void => { this._jinput()?.SetText(value, caret); };
+
   Clear = (): void => {
     this._jinput()?.SetText('');
     this.Cleared.emit();
