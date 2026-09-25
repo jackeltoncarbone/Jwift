@@ -9,3 +9,7 @@ export const FlexLiftScale = (width: number, height: number): number => {
 /** The flex's big glow while pressed: bigGlowOpacity, 1 on the small variant and 0 on the large, by the same
  *  interpolation (the glass's GlassGlow). */
 export const FlexBigGlow = (width: number, height: number): number => 1 - flexT(width, height);
+/** The flex loupe's movement scale for a velocity along x in pt/s: 1 + v / movementNormalizationFactor (2500), held
+ *  to movementMinScale 0.75 and movementMaxScale 1.15 (loupe setDefaultValues 0x188c4ed80). Signed, with the
+ *  cross axis taking the inverse, as fitted to Apple's own drag (WWDC25 session 284 frames); the consumer is unread. */
+export const FlexMovementScale = (velocity: number): number => Math.min(1.15, Math.max(0.75, 1 + velocity / 2500));

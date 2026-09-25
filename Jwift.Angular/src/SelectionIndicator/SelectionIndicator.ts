@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
 import { JivHandle as JivCore, ResolveLengthTuple4, Spring } from 'jaui';
+import { FlexMovementScale } from '../Internal/FlexLift';
 import { JivHost } from '../Internal/JivHost';
 import { TabBar } from '../TabBar/TabBar';
 import SelectionIndicatorJss from './SelectionIndicator.jss';
@@ -48,7 +49,6 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _lastPad: [number, number, number, number] = [0, 0, 0, 0];
   private _lastT = 0;
   private _lastX = 0;
-  private _lastY = 0;
   private _pointerX: number | null = null;
   private _pointerDownX: number | null = null;
   private _dragActive = false;
@@ -105,12 +105,8 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this._attachOnInit();
-    // Subscribe to per-frame rect snapshots of our OWN Node — _sync's
-    // watery-bounce stretch uses (this.Node.X - lastX)/dt to compute
-    // velocity, and in worker mode JivHandle.X stays at 0 on main
-    // without WatchRect(true). Without this the velocity reads as
-    // zero every frame and the shape springs target 1.0 forever
-    // (no stretch, no squish, no perpendicular bulge).
+    // Our own rect every frame: the drag's movement scale reads the lens's velocity from it, and in worker mode
+    // JivHandle.X stays 0 on main without WatchRect(true).
     this.Node.WatchRect(true);
     // This loop exists ONLY to drive the indicator's velocity-derived stretch and squish, and
     // pointer tracking only matters where there is a pointer. Neither has meaning under server
@@ -341,38 +337,24 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       }
     }
 
-    const vx = haveLast ? (this.Node.X - this._lastX) / dt : 0;
-    const vy = haveLast ? (this.Node.Y - this._lastY) / dt : 0;
+    // The lens's own centre, sprung behind the finger, so its width never reads as motion.
+    const lensX = this.Node.X + this.Node.Width / 2;
+    const vx = haveLast ? (lensX - this._lastX) / dt : 0;
     this._lastT = now;
-    this._lastX = this.Node.X;
-    this._lastY = this.Node.Y;
+    this._lastX = lensX;
 
-    const STRETCH_MAX = 0.35;
-    const SPEED_HALF = 500;
-    const PERP_GAIN = 1.35;
-    // Stretch is meant to react to USER motion (drag-while-pressed across
-    // tabs), not to the indicator's own animation settling. Gating by
-    // _dragActive (instead of isPressed) excludes both:
-    //   - press-in expansion (target X drifts left as baseWidth grows
-    //     symmetrically about centerX, would otherwise feed horizontal
-    //     squish on every tap)
-    //   - release settle (pressAmount shrinks, Y spring chases, vy reads
-    //     positive, would otherwise pile vertical compression on top of
-    //     the legitimate shrink)
-    // Squish now only fires during an actual drag across tabs.
-    const speed = this._dragActive ? Math.hypot(vx, vy) : 0;
-    const stretch = STRETCH_MAX * speed / (speed + SPEED_HALF);
-    const hShare = speed > 0 ? Math.abs(vx) / speed : 0;
-    const vShare = speed > 0 ? Math.abs(vy) / speed : 0;
-    let scaleX = 1 - stretch * hShare + stretch * vShare * PERP_GAIN;
-    let scaleY = 1 - stretch * vShare + stretch * hShare * PERP_GAIN;
+    // Dragged across the bar, the lens takes UIKit's flex movement scale along x, keeping its area (FlexLift.ts).
+    // Only an actual drag drives it: the press's growth and the release's settle move the box but are not motion.
+    let scaleX = this._dragActive ? FlexMovementScale(vx) : 1;
+    let scaleY = 1 / scaleX;
 
     if (overshoot !== 0) {
       const SQUISH_HALF = 120;
       const SQUISH_MAX = 0.22;
+      const SQUISH_BULGE = 1.35;
       const sq = SQUISH_MAX * Math.abs(overshoot) / (Math.abs(overshoot) + SQUISH_HALF);
       scaleX *= 1 - sq;
-      scaleY *= 1 + sq * PERP_GAIN;
+      scaleY *= 1 + sq * SQUISH_BULGE;
     }
 
     this._shapeX.Target = scaleX;
