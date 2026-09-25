@@ -137,7 +137,7 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
     // fire on a disabled button.
     effect(() => {
       if (this.disabled()) {
-        this.SetStyleOverride({ Opacity: '0.4', Interactive: false, Cursor: 'Default' });
+        this.SetStyleOverride({ Opacity: '0.4', Interactive: false, Cursor: 'Default' }); // @JwiftDisabledOpacity
       } else {
         this.ClearStyleOverride('Opacity');
         this.ClearStyleOverride('Interactive');

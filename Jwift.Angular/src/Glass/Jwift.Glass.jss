@@ -51,6 +51,12 @@ JwiftTertiaryLabelVibrancy {
   Color: rgb(255, 255, 255)
   TextFilter: Vibrancy(@JwiftVibrancyTertiaryLabel, @JwiftVibrancyTertiaryLabelCover)
 }
+// UIKit's isEnabled = false: the control stays in place, dimmed, and inert. Bind the jiv's [disabled] (Jaui's
+// reserved Disabled state stops pointer dispatch, hover and press) and add JwiftControl beside its own class.
+@JwiftDisabledOpacity: 0.4
+JwiftControl:Disabled {
+  Opacity: @JwiftDisabledOpacity
+}
 // A separator paints nothing of its own: its shape treats the glass under it.
 JwiftSeparatorVibrancy {
   Background: rgba(0, 0, 0, 0)

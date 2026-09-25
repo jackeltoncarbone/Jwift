@@ -101,7 +101,7 @@ Jwift_GlassDropdownCell_Active:Hover {
 // rather than paints, flattening it means Vibrancy(0). Zeroing Background stopped working the moment the
 // press became a lift, and a disabled cell has been lighting up under the pointer since.
 Jwift_GlassDropdownCell_Disabled : Jwift_GlassDropdownCell {
-  Opacity: 0.5
+  Opacity: @JwiftDisabledOpacity
   Cursor: Default
 }
 Jwift_GlassDropdownCell_Disabled:Hover {
@@ -286,7 +286,7 @@ Jwift_GlassDropdownItem {
 }
 
 Jwift_GlassDropdownItem_Disabled : Jwift_GlassDropdownItem {
-  Opacity: 0.75
+  Opacity: @JwiftDisabledOpacity
   Cursor: Default
 }
 
