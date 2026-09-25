@@ -21,7 +21,8 @@ JwiftProgress_Circular {
 }
 
 // The label keeps two slots so a new label crossfades over the old one in the same place. The slot in
-// flow sets the height; the leaving slot is placed over it while it fades.
+// flow sets the height; the leaving slot is placed over it while it fades. One line each, tail truncated,
+// so a longer leaving label can never spill past the slot onto the bar.
 JwiftProgressLabelSlot {
   Width: 100%
 }
@@ -32,6 +33,8 @@ JwiftProgressLabel {
   FontWeight: 400
   Color: @Ink
   UserSelect: None
+  MaxLines: 1
+  TextOverflow: Ellipsis
   Opacity: 1
   @Transition Opacity { Duration: 350ms, Easing: EaseInOut }
 }
