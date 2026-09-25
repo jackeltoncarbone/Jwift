@@ -232,6 +232,7 @@ Glass in one container unions its SDFs: smoothness 8 alone, 12 grouped (`_UIView
 
 - Scale while pressed: `s = (maxDim + liftScalePoints) / maxDim`.
 - Drag stretch (`sub_188EA6D8C`): `k = |it| / (4T) + (|t| − |it|) / T` (T = scaleDistanceThreshold); `sx = s + k`, `sy = s − k`, `tx = W k sign(t)`. Acceleration squash: `a / movementNormalizationFactor`, lerped inside `[max(minScale, (L − pts) / L), min(maxScale, (L + pts) / L)]`, plus an offset `(1 − lerp) 0.2 W` ([I] the lerp's exact arguments).
+- The tab lens's drag, as built [I] (WWDC25 session 284, the TV app's tab bar, 29.97 fps, 1.075 px per pt; 24 frames measured, `SelectionIndicator` via `FlexMovementScale`): `sx = clamp(1 + v / 2500, 0.75, 1.15)`, `sy = 1 / sx`, with `v` the lens centre's signed x velocity in pt/s, on the shape spring. The constants are the Loupe row's [C]. The footage keeps the area (width × height within 6.7%) and follows the signed velocity: the lens widens dragged right and narrows dragged left (correlation 0.79 against signed velocity, 0.52 against speed). Under the same spring fit, velocity leaves 0.064 of error and acceleration 0.097, so velocity is the input here although the decompiled term reads acceleration. The frames are iOS 26 beta 1.
 
 | variant | assocDim | liftScalePts | T | moveNorm | moveScalePts | min / max scale |
 |---|---|---|---|---|---|---|
