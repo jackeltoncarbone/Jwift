@@ -208,6 +208,11 @@ QuartzCore (`ios/QuartzCore/CASDFGlassDisplacementEffect.mm`): the displacement 
 
 Unlift waits `0.22 × dragCoefficient − elapsed` on a timer. [C]
 
+The lens glass's ring layers, as GlassMaterialProvider draws them (DesignLibrary; the lens recipe `sub_18AF84454` sets the values):
+- innerGlow {0.8, 0.3, 8}: `SDFLayer.shadow_v2` (inset 0, grey 0.8 with headroom only above 1, radius 8, no offset, knockout, inverted), grouped plusLighter at opacity 0.3 (`0x18AE87638` to `0x18AE87740`). Built.
+- contrastEdge {grey 0.1 or 0.2, opacity 0.2 or 0.15, width 0.75}: `SDFLayer.gradient` of three stops of that grey, the first transparent, at distances 0.25, 0.5 and width + 0.5 pt, grouped plusDarker at opacity 1 (`sub_18AF59778`). Not built: which side of the outline the distances run, and what the gradient does past its last stop, are open.
+- radiosity {1.0, -0.24, 1.8, 30}: its layer call is not yet found.
+
 ### 7.3 What it does NOT do [C]
 
 - No item scale: `_UIFloatingTabBarItemView` sets no transform on highlight (it swaps font, symbol, selected image, monochrome treatment); `selectionHighlightScale 0.95` exists only off the flexi-glass path.
