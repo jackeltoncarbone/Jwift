@@ -6,7 +6,7 @@ const JWIFT = process.env.JWIFT_SRC ?? 'C:/Users/jackc/Code/Repositories/show-st
 const INCLUDE = /^[ \t]*#include[ \t]+"([^"]+)"[ \t]*$/gm;
 const resolveInc = (p) => readFileSync(p, 'utf8').replace(INCLUDE, (_, rel) => resolveInc(join(dirname(p), rel)));
 const fresh = { name: 'fresh', setup(b) { b.onLoad({ filter: /\.(frag|vert|glsl|wgsl)\.gen\.ts$/ }, (a) => ({ contents: 'export default ' + JSON.stringify(resolveInc(a.path.replace(/\.gen\.ts$/, ''))) + ';', loader: 'ts' })); } };
-const common = { bundle: true, format: 'esm', alias: { JAUI: SRC, JWIFT }, plugins: [fresh], logLevel: 'error', loader: { '.glsl': 'text', '.jss': 'text' }, target: 'es2022' };
+const common = { bundle: true, format: 'esm', alias: { JAUI: SRC, JWIFT, jaui: SRC + '/Core/Jaui.ts' }, plugins: [fresh], logLevel: 'error', loader: { '.glsl': 'text', '.jss': 'text' }, target: 'es2022' };
 await esbuild.build({ ...common, entryPoints: ['Prep.ts'], platform: 'node', outfile: 'prep.bundle.mjs' });
 await esbuild.build({ ...common, entryPoints: ['Page.ts'], platform: 'browser', outfile: 'page.bundle.js' });
 console.log('built');

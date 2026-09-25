@@ -98,9 +98,10 @@ Jwift_TabItem {
   Direction: Column
   Justify: Center
   Align: Center
-  // The condensed cell's own metrics: gap 0.0625em and side padding 0.375em, both against the
-  // cell's 10px font, so 0.625px and 3.75px.
-  Gap: 0.625pt
+  // Apple's stacked item (_UITabButton layoutSubviews, Jwift/Apple/Sizing.md 1): the symbol centred 20pt below the
+  // 54pt item's top, the label's frame ending 7pt above its bottom, so its baseline sits at 54 - 7 - 2.41 = 44.6pt.
+  // This gap, with the label's line height below, lands our glyph and Inter's baseline on those two points.
+  Gap: 3.8pt
   Padding: 0pt 3.75pt
   // Between the indicator's two states: ABOVE the resting pill (Layer 0) so the
   // label is crisp at rest, but BELOW the pressed lens (Layer 2), which shows its own lifted copy of the items.
@@ -190,6 +191,8 @@ Jwift_TabLabel : JwiftLabelVibrancy {
   // _fallbackTitleFontForState, UIFontWeightMedium / UIFontWeightSemibold; Jwift/Apple/Sizing.md 1).
   FontSize: 10pt
   FontWeight: 500
+  // With the item's gap, puts the baseline where Apple's layout does (Jwift_TabItem).
+  LineHeight: 1.05
   TextAlign: Center
   LetterSpacing: 0pt
   Margin: 0pt

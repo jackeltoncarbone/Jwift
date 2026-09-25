@@ -5,7 +5,7 @@ const SRC = 'C:/Users/jackc/Code/Repositories/show-studio/ShowStudio.Libraries/J
 const INCLUDE = /^[ \t]*#include[ \t]+"([^"]+)"[ \t]*$/gm;
 const resolveInc = (p) => readFileSync(p, 'utf8').replace(INCLUDE, (_, rel) => resolveInc(join(dirname(p), rel)));
 const fresh = { name: 'fresh', setup(b) { b.onLoad({ filter: /\.(frag|vert|glsl|wgsl)\.gen\.ts$/ }, (a) => ({ contents: 'export default ' + JSON.stringify(resolveInc(a.path.replace(/\.gen\.ts$/, ''))) + ';', loader: 'ts' })); } };
-await esbuild.build({ entryPoints: ['HarnessApple.ts'], bundle: true, format: 'esm', outfile: 'harness-apple.bundle.js', alias: { JAUI: SRC }, plugins: [fresh], logLevel: 'error' });
-await esbuild.build({ entryPoints: ['Specs.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'specs-now.bundle.mjs', alias: { JAUI: SRC }, plugins: [fresh], logLevel: 'error', loader: { '.glsl': 'text' } });
-await esbuild.build({ entryPoints: ['LivePath.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'livepath.bundle.mjs', alias: { JAUI: SRC }, plugins: [fresh], logLevel: 'error', loader: { '.glsl': 'text' } });
+await esbuild.build({ entryPoints: ['HarnessApple.ts'], bundle: true, format: 'esm', outfile: 'harness-apple.bundle.js', alias: { JAUI: SRC, jaui: SRC + '/Core/Jaui.ts' }, plugins: [fresh], logLevel: 'error' });
+await esbuild.build({ entryPoints: ['Specs.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'specs-now.bundle.mjs', alias: { JAUI: SRC, jaui: SRC + '/Core/Jaui.ts' }, plugins: [fresh], logLevel: 'error', loader: { '.glsl': 'text' } });
+await esbuild.build({ entryPoints: ['LivePath.ts'], bundle: true, platform: 'node', format: 'esm', outfile: 'livepath.bundle.mjs', alias: { JAUI: SRC, jaui: SRC + '/Core/Jaui.ts' }, plugins: [fresh], logLevel: 'error', loader: { '.glsl': 'text' } });
 console.log('built');

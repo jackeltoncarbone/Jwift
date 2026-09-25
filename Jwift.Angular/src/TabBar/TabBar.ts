@@ -102,10 +102,6 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
    *  authoritative drag flag here instead). */
   readonly IsPressed = computed(() => this._dragIndex() !== null);
 
-  /** The bar's pressed swell (1 at rest). The lens is drawn through its lift portal, which takes the bar's model
-   *  transform but not the flex's presentation modifier, so it does not swell with the bar (SelectionIndicator). */
-  readonly PressSwell = signal(1);
-
   /** Selected tab's underlying JivCore — drives `<selection-indicator>`. Null when nothing is selected. */
   readonly ActiveNode = computed<JivCore | null>(() => {
     const index = this.EffectiveSelected();
@@ -132,11 +128,9 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
       if (!this.IsPressed()) {
         this.ClearStyleOverride('VisualScale');
         this.ClearStyleOverride('GlassGlow');
-        this.PressSwell.set(1);
         return;
       }
       const [scale, glow] = untracked(() => [FlexLiftScale(this.Node.Width, this.Node.Height), FlexBigGlow(this.Node.Width, this.Node.Height)]);
-      this.PressSwell.set(scale);
       this.SetStyleOverride({ VisualScale: scale.toFixed(4), GlassGlow: glow.toFixed(4) });
     });
   }

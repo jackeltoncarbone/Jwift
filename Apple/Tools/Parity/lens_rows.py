@@ -21,8 +21,11 @@ PILL_W, PILL_H = 69.4, 54.0
 # Width is read on our own bar in our engine (LiveBar), across the lens's middle row against the pressed bar with its
 # pill at rest; the live app has no such reference, and a chord above the bar cannot be widened without a model of
 # the continuous corner.
-row('active lens (engine, our bar): width, the pill outset 8 pt a side (Apple, UIKit)', f'{PILL_W + 16:.1f} pt', f'{dk["lens_w"]:.1f} pt', '|diff| <= 1.5 pt', abs(dk['lens_w'] - (PILL_W + 16)) <= 1.5)
-row('active lens (live app): height, the pill outset 8 pt a side (Apple, UIKit)', f'{PILL_H + 16:.1f} pt', f'{O["lens"]["H_pt"]:.1f} pt', '|diff| <= 1.5 pt', abs(O['lens']['H_pt'] - (PILL_H + 16)) <= 1.5)
+# The lens takes the bar's swell with its twins (LiquidGlass.md 7.1): ours by our bar's flex lift, Apple's measured 1.043.
+LENS_W = (PILL_W + 16) * (1 + (16 - 12 * (62 - 44) / 116) / 355)
+LENS_H = (PILL_H + 16) * 1.043
+row('active lens (engine, our bar): width, the pill outset 8 pt a side, times the bar swell (Apple, UIKit)', f'{LENS_W:.1f} pt', f'{dk["lens_w"]:.1f} pt', '|diff| <= 1.5 pt', abs(dk['lens_w'] - LENS_W) <= 1.5)
+row('active lens (live app): height, the pill outset 8 pt a side, times the bar swell (Apple, UIKit)', f'{LENS_H:.1f} pt', f'{O["lens"]["H_pt"]:.1f} pt', '|diff| <= 1.5 pt', abs(O['lens']['H_pt'] - LENS_H) <= 1.5)
 row("active lens (live app): lift past the bar, no more than Apple's", f'{APPLE_LIFT:.1f} pt', f'{O["lift_pt"]:.1f} pt', f'<= {APPLE_LIFT + 1:.1f} pt', O['lift_pt'] <= APPLE_LIFT + 1)
 row('active lens (live app): refraction fits the bar as drawn', f'profile fit correlation {A["corr"]:.2f}', f'{O["corr"]:.2f} (our lens reads our own bar and items)', '> 0.3', O['corr'] > 0.3)
 row('active lens (live app): centre magnification (our label, the resting one scaled to match)', '1.21 (the Home label, native)', f'{O["label_scale"]:.2f}', '|diff| <= 0.03', abs(O['label_scale'] - 1.207) <= 0.03)

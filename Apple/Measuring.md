@@ -82,7 +82,7 @@ EDR: holding tone off on HDR headroom                   | Apple lifts the 97% di
 
 A full sample output is `Tools/Parity/sample_output.txt` (09-24 11:58: 82 pass, 3 fail, 5 not built, 3 without a reference). `LivePath.ts` asserts resolved styles and source facts, for example `_TabOutset = '8pt 8pt 8pt 8pt'`, `_SegmentOutset = '12pt 12pt 8pt 8pt'`, `GlassShadowPeak(48, 0) = 0.10`, the rim lanes 44 and 45, no tab cross-fade, no press latch.
 
-Totals over time (pass / fail / not built / no ref): 48/1/5 (09-24 00:31), 55/2/5 (02:45), 71/2/6/1 (04:56), 73/2/6/2 (11:46), 77/2/5/3 (12:34), 83/2/5/3 (15:43), 82/3 (16:59), 75/10 with the source-exact lens (18:47, not committed). Standing FAILs: the Games search rim lobe (+130 over 72 vs ours +117 over 81) and the Play hero rim (a product call).
+Totals over time (pass / fail / not built / no ref): 48/1/5 (09-24 00:31), 55/2/5 (02:45), 71/2/6/1 (04:56), 73/2/6/2 (11:46), 77/2/5/3 (12:34), 83/2/5/3 (15:43), 82/3 (16:59), 75/10 with the source-exact lens (18:47, not committed). 76/8/5/4 (09-25 00:35, the lens in the bar's swell and the tab item on Apple's anchors; the lens width and height rows now carry the swell; two of the eight FAILs are `LivePath.ts` sheet asserts, the press fill and the size-class tracking, left behind by the flex commit, and the live `jaui` import in `FlexLift.ts` takes a `jaui` alias in both `build.mjs`). Standing FAILs: the Games search rim lobe (+130 over 72 vs ours +117 over 81) and the Play hero rim (a product call).
 
 ## 5. Gates
 

@@ -38,6 +38,7 @@ The iPhone bottom glass tab bar is `_UITabBarVisualProvider_Floating` (Swift; UI
 | part | value | status |
 |---|---|---|
 | lens size | `CGRectInset(itemFrame, -8, -8)`: the item + 16 pt wide and tall, capsule (UIKitCore_11.mm:6096, 6154; _42:6020; _14:1219) | [C] |
+| lens and twins while pressed | one space: the lens (platter subview, centred on the item) and the lifted twins (item frames in the `selectedContentView`, × 1.16 about the item centre) both take the bar's swell, so the twin baseline sits (35 - 17.6 × 1.16) × 1.043 = 15.2 pt above the lens outline (`LiquidGlass.md` 7.1) | [C] structure; [I] MacStories: lens 73.2 pt outer = 70 × 1.045, baseline 15.2 pt above it |
 | lens while dragging | centre x = the finger, clamped inside the items' union | [C] |
 | lens lift past the bar | the +8 pt outset; measured 5.3 pt past the bar top and bottom (217 px lens over a 185 px bar) | [C] rule, [I] measured |
 | lens width, measured | 316 px (105 pt) on the 78 pt pitch | [I] |

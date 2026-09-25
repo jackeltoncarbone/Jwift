@@ -299,13 +299,11 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     const baseHeight = t.Height;
 
     // Pressed, the pill is drawn as Apple's lens, the pill outset by Apple's amount; the pressed class's springs
-    // carry it there and back.
-    // The bar's swell is its flex's presentation modifier, which the lens's lift portal does not take [C:
-    // _UIFlexInteraction flexPresentationModifier; _UILiquidLensView liftPortal matchesTransform], so it is divided out.
+    // carry it there and back. The lens and its lifted twins sit in the bar, so the bar's swell scales them together
+    // (Jwift/Apple/LiquidGlass.md 7.1).
     const [outX, outY] = this._outsetPx;
-    const swell = this._tabBar?.PressSwell() ?? 1;
     const lensScale = isPressed && baseWidth > 0 && baseHeight > 0
-      ? `${((baseWidth + 2 * outX) / baseWidth / swell).toFixed(4)} ${((baseHeight + 2 * outY) / baseHeight / swell).toFixed(4)}`
+      ? `${((baseWidth + 2 * outX) / baseWidth).toFixed(4)} ${((baseHeight + 2 * outY) / baseHeight).toFixed(4)}`
       : null;
     // The items under the lens take the selection's tint, as Apple's do: the bar's accent, when it selects in it.
     const ink = this._tabBar && this._tabBar.AccentSelected() ? this._tabBar.Accent() ?? null : null;
