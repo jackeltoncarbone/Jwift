@@ -286,11 +286,13 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this._growRaf !== null) { cancelAnimationFrame(this._growRaf); this._growRaf = null; }
+    if (this._settleRaf !== null) { cancelAnimationFrame(this._settleRaf); this._settleRaf = null; }
     this._unbindDoc?.();
     this._detachOnDestroy();
   }
 
   Open(): void {
+    this._releaseTopLayer();
     this._open.set(true);
     this._fitToRoom();
     this._trackWhileGrowing();
@@ -398,12 +400,39 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     // which `ResolveBound` reads as Infinity), so this says no ceiling rather than hoping for one.
     this._cap = null;
     this.SetStyleOverride({ MaxHeight: 'none' });
+    this._holdTopLayerWhileClosing();
     this._open.set(false); this._page.set(null); this._hovered.set(null); this._pressed.set(false);
     // The output half of [(open)]. Emitted from Close() and Open() rather than from the click handler,
     // so every route into the state - a tap, the escape key, an outside click, the controlled input -
     // reports it. Same reason the open paths were unified.
     this.openChange.emit(false);
   }
+  /** The open class puts the panel on the top layer; the closed one does not. Hold it there until the panel has
+   *  shrunk back to its pill, or the last frames of a long menu would pass under the tab bar on the way. */
+  private _holdTopLayerWhileClosing(): void {
+    if (!this._open() || this._settleRaf !== null) return;
+    this.SetStyleOverride({ Layer: 'Top' });
+    const started = Date.now();
+    let lastHeight = NaN, agreeing = 0;
+    const step = (): void => {
+      this._settleRaf = null;
+      const height = this.Node.Height;
+      agreeing = height === lastHeight ? agreeing + 1 : 0;
+      lastHeight = height;
+      const elapsed = Date.now() - started;
+      if ((elapsed > 300 && agreeing >= 2) || elapsed > 600) { this._releaseTopLayer(); return; }
+      this._settleRaf = requestAnimationFrame(step);
+    };
+    this._settleRaf = requestAnimationFrame(step);
+  }
+
+  private _releaseTopLayer(): void {
+    if (this._settleRaf !== null) { cancelAnimationFrame(this._settleRaf); this._settleRaf = null; }
+    this.ClearStyleOverride('Layer');
+  }
+
+  private _settleRaf: number | null = null;
+
   Toggle(): void { if (this._open()) this.Close(); else this.Open(); }
 
   PushPage(id: string): void { this._page.set(id); }

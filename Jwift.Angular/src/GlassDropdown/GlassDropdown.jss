@@ -169,6 +169,9 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   Position: Placed
   Top: 0pt
   Right: 0pt
+  // A menu floats above ALL app content, the tab bar and scroll edges included, as on iOS. The dropdown sits
+  // in a page's header, and Layer is sibling-local, so only the engine's top layer gets it over the dock.
+  Layer: Top
   // 260pt, not 220pt. The rows carry leading icons now, and at 220 the icon plus its 12pt gap took enough
   // of the line that "Marching Arts Collective" truncated to "Marching Arts" - a persona switcher that
   // cannot say which persona. Apple's menus are content-width up to a max rather than a fixed narrow box;
