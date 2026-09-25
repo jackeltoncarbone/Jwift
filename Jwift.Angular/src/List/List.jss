@@ -45,13 +45,12 @@ Jwift_List_Glass : JwiftGlass {
   Overflow: Hidden
 }
 
-// A section that sits ON a glass surface (a sheet, a panel). The opaque grouped fill would block every
-// colour the glass lets through, and a second material would be glass on glass, so it is a translucent
-// FILL: a veil toward the theme's ground over a backdrop that is enriched (and in dark, sunk). The section
-// reads as recessed into the glass and keeps the colour behind it.
+// A section inside a sheet. UIKit's inset-grouped cell is secondarySystemGroupedBackground, and a sheet's
+// content is at the elevated level: white in light, (44, 44, 46) in dark (UIKitCore_13, Apple/Sheets.md). The
+// cell stays that opaque colour whether the sheet is glass (a partial height) or opaque (large), and the
+// ground around it is the sheet's: its glass, or systemGroupedBackground (@Sheet) once it is opaque.
 Jwift_List_Translucent : Jwift_List {
-  Background: @Recess
-  BackdropFilter: Saturate(2) Brightness(0.75 * @Dark + 1 * @Light)
+  Background: @GroupedCell
 }
 
 Jwift_ListRow {

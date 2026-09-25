@@ -100,6 +100,17 @@ top           = lerp(percentCapsular, 38, bottom)     // edge attached: 38 pt at
 ### Background and dimming
 
 - **Glass below the halfway point, opaque above.** `sub_1891102E0` picks `nonLargeBackground` while `percentFullHeight <= 0.5` and `largeBackground` above it. The iPhone default for the non-large background is a `_UIViewGlass` marked flexible, with a subvariant (the variant argument was not recovered) [C]. WWDC: "partial height sheets are inset by default with a Liquid Glass background... When transitioning to a full height sheet, the glass background gradually transitions, becoming opaque and anchoring to the edge of the screen." [D] (323) "when focus shifts, like dragging a sheet upward, Liquid Glass subtly recedes, becoming more opaque and gently growing in size" [D] (356).
+- **Grouped lists in a sheet** [C]. A sheet's content is at the elevated level
+  (`userInterfaceLevel` 1), so its grouped colours are the elevated pair. `systemGroupedBackgroundColor`
+  (`_colorsByThemeKeysystemGroupedBackgroundColor`, UIKitCore_11): light (0.949, 0.949, 0.969) = (242, 242, 247),
+  dark black, dark elevated (0.110, 0.110, 0.118) = (28, 28, 30). `secondarySystemGroupedBackgroundColor`, which
+  `tableCellGroupedBackgroundColor` resolves to (UIColor.mm), UIKitCore_13: light white, dark (28, 28, 30), dark
+  elevated (0.173, 0.173, 0.180) = (44, 44, 46). Increased contrast: light grouped (235, 235, 240); dark elevated
+  (36, 36, 38) and (54, 54, 56). Both have a white pair behind `_UIUnifiedSystemBackgroundColorsEnabled()`, which
+  is on only when the internal preference `UnifiedSystemBackgroundColorsEnabled` is set (UIKitCore_80), so it is
+  off in a shipping build. So at the large (opaque) height the section cells are white on (242, 242, 247) in light
+  and (44, 44, 46) on (28, 28, 30) in dark; at a partial (glass) height the same cells sit on the glass. Jwift:
+  `@Sheet` and `@GroupedCell`, `Jwift_List_Translucent`.
 - **Dimming:** by default "the system adds a noninteractive dimming view underneath the sheet at all detents." Set `largestUndimmedDetentIdentifier` for a nonmodal sheet over live content [D]. "When a task interrupts the main flow, pair Liquid Glass with a dimming layer... when a task happens in parallel, Liquid Glass creates a natural separation" [D] (356).
 - **Motion:** spring damping ratio 1.0, response 0.344144233 s; 0.8 damping on a high-speed flick (`transitionSpringParametersHighSpeed:`) [C].
 - **iPad form sheet default size** (`defaultFormSheetSizeForScreenSize:`) [C]: longest screen side ≤ 1024: 540 × 600; ≤ 1590: 580 × 640; larger: 620 × 680; wide-margin screens: 414 × 394.
