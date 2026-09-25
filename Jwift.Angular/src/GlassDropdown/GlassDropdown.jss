@@ -170,6 +170,8 @@ Jwift_GlassDropdownCell_Ellipsis : Jwift_GlassDropdownCell {
 Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   // Inert under the finger too: the closed avatar pill's flex stays with the closed pill.
   Flex: None
+  // The open menu is UIKit's platter, outside the header's pocket: Automatic frost, where the closed pill takes None.
+  GlassFrost: Automatic
   Position: Placed
   Top: 0pt
   Right: 0pt

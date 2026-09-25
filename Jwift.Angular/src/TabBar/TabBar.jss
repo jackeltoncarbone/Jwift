@@ -46,6 +46,9 @@ Jwift_TabBar : JwiftGlass {
     Gap: 0pt
   }
   BorderRadius: 999pt
+  // Automatic although it floats in the dock's pocket: Apple's App Store tab bar reads class 0's blur there
+  // (5.0 to 5.3 px at 3x), where the Photos bar in the same pocket reads None's (Jwift/Apple/Evidence.md 1b).
+  GlassFrost: Automatic
 
   // The bar swells a touch while the selection indicator is engaged. VisualScale is render-time, so
   // the swell never disturbs layout or the indicator's placement maths. Same spring as the

@@ -36,6 +36,9 @@ Jwift_PageHeader {
   Padding: 18pt
   Layer: 22
   PointerEvents: None
+  // The header is UIKit's navigation bar pocket container, and its pocket blurs what scrolls under it, so the
+  // glass in it takes frost None: the quarter-scale capture with no blur of its own (Jwift/Apple/LiquidGlass.md 3.2).
+  GlassFrost: None
 }
 
 // Leading / trailing group wrappers — every consumer toolbar needs to

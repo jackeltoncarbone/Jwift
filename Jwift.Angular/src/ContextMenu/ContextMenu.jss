@@ -36,6 +36,8 @@ Jwift_ContextMenuPanel : JwiftGlass {
   MinWidth: 180pt
   MaxWidth: 280pt
   PointerEvents: Auto
+  // UIKit's platter sits outside every scroll pocket, so its frost is Automatic wherever it opens.
+  GlassFrost: Automatic
 
   BorderRadius: 12pt
 }

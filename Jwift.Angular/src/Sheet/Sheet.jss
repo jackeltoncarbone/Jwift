@@ -20,6 +20,8 @@ Jwift_SheetLayer {
   Justify: End
   Align: Center
   PointerEvents: None
+  // A sheet presents outside the page's scroll pockets.
+  GlassFrost: Automatic
 }
 // A sheet raised from a full-screen presentation sits above that presentation.
 Jwift_SheetLayer_Over {

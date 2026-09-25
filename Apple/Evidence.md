@@ -91,7 +91,21 @@ Erf fits across edges behind the glass (`edge.py`; thin lines fitted as a box of
 | menu, 250 x 300 pt | 10.7 to 11.8 at k 0.85 (MacStories, `G\Rects\Full\MacStories.iOS26.ContextMenu.Messages.jpg`); 7.4 to 13.8 over 8 edges | 5.5 centre, 6.5 at 3/4 (with `GlassBlur: 9pt`) | 11.6, 8.4 | 11.9, 8.9 |
 | sheet, 390 x 340 pt | 44 to 166 (Find My, Newsroom render, 3.65 px/pt): another material | 2.9, 2.7 | 11.7, 9.0 | 11.9, 8.9 |
 | tab bar, 355 x 62 pt | 5.0 to 5.3 (App Store bar, 60 pt, `G\Web\Full\ios-appstore-tab-bar-native.jpg`) | 3.0, 2.9 | 4.9, 4.9 | 5.0 |
-| button, 44 pt | 2.5 to 2.7 (Photos 45 pt bar, `G\Web\Full\ios-photos-tab-bar-native.jpg`; size class 1 by its spread) | 3.3, 3.0 | 4.2, 3.4 | 4.5, 3.9 |
+| button, 44 pt | 2.5 to 2.7 (Photos 45 pt bar, `G\Web\Full\ios-photos-tab-bar-native.jpg`; frost None by its spread, 1c) | 3.3, 3.0 | 4.2, 3.4 | 4.5, 3.9 |
+
+## 1c. Frost, the recipe's blur class (2026-09-25)
+
+| fact | status | source | notes |
+|---|---|---|---|
+| the recipe's class byte is `GlassMaterialProvider.Configuration.frost`, `Frost.Base { automatic, reduced, none }` | [C] structure, [I] offset | `AA:ios/DesignLibrary/DesignLibrary_13.mm` 6478 to 6805 (`sub_18AF952E4` reads `*(a1 + 14)`); `D:\AppleIPSW\dl_swift.txt` 1337 to 1437 (`Configuration`, `Frost.Base`, `Size`) | Automatic: 1.33 to 4 pt at scale 0.25; Reduced: 0.667 pt at 0.5; None: 0 at 0.25 |
+| UIKit `_Glass._GlassVariant { config, frost, size, controlTint }`; automatic 0, reduced 1, none 2, `pocketDefault` automatic | [C] | `D:\AppleIPSW\uikit_swift.txt` 3453 to 3499; `uikit_all.s` `sub_188f66668` (1), `sub_188f66674` (2), `sub_188f66680` (0) | |
+| `_UIViewGlass.size` is not the class: UIKit passes size 0 everywhere | [C] | FW: selector stubs `objc_msgSend$initWithVariant:size:smoothness:` 0x18ADAEE60 and `…subdued:` 0x18ADAEE80; callers found with `D:\AppleIPSW\stub_callers.py` (x3 = 0 at each) | Swift callers use only `initWithVariant:` and `initWithVariant:state:` (`sel_users.py`) |
+| frost is the `GlassFrostTrait`, written by the scroll pocket container | [C] | R: UIKitCore_06.mm 3617, UIKitCore_72.mm 211 to 262 and 880 to 1000, UIKitCore_22.mm 7879, UIKitCore_35.mm `sub_188EB3AA8` | |
+| per edge: any Reduced wins, else any None, else Automatic; an element reports its pocket's frost only in a window | [C] | R: UIKitCore_46.mm `sub_188FAAF08`; UIKitCore_53.mm `sub_18904AA54` | |
+| a pocket's frost: None when its blur alpha is 0 or its blur is on while the effect shows, else Reduced | [C] | R: UIKitCore_53.mm 8757 to 8800, blur switch 440 to 515 | the soft style's blur flag is not recovered |
+| containers: phone tab bar controller bottom edge; navigation bar; bottom tab bar; compose accessory | [C] | R: UIKitCore_53.mm 7361; FW selectors (`ipsw dyld objc sel`, `D:\AppleIPSW\allsels.txt`) | |
+| Photos bar in its pocket reads None; App Store tab bar in its pocket reads Automatic | [I] | 1b rows; None's floor 0.62 x 4 px = 2.48 px | the tab bar's exemption is unread |
+| ours, 44 pt glass over a hard edge at 3x, `?glass-skip=grade,rim,bleed,shadow`, `/dev/controls` GLASS FROST | [I] | `SP\SmallGlass\SmallGlass.Sheet.png`, `SP\SmallGlass\edge.py` | Automatic 4.21 px at the centre (3.92 at 3/4), Reduced 1.22 (1.21), None 2.38 (2.39); Apple's Photos bar 2.5 to 2.7 |
 
 ## 2. The liquid lens (`_UILiquidLensView`)
 

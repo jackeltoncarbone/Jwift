@@ -197,6 +197,8 @@ JwiftScrollEdge {
   BackdropFilter: Blur(12pt) Saturate(1.1)
   Background: rgba(0, 0, 0, 0)
   PointerEvents: None
+  // The strip is Apple's scroll pocket, and it blurs, so glass placed in it takes frost None (LiquidGlass.md 3.2).
+  GlassFrost: None
 }
 
 JwiftScrollEdgeBottom : JwiftScrollEdge {
