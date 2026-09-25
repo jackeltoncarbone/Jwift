@@ -186,9 +186,10 @@ Jwift_TabAccessoryIconActive : Jwift_TabAccessoryIcon {
 
 Jwift_TabLabel : JwiftLabelVibrancy {
   FontFamily: Inter
-  // Apple's tab label: 10pt semibold (a 7.3pt cap height and 1pt strokes on the native capture).
+  // Apple's tab label: the system font at 10pt, medium, semibold when selected (_UITabBarItemData
+  // _fallbackTitleFontForState, UIFontWeightMedium / UIFontWeightSemibold; Jwift/Apple/Sizing.md 1).
   FontSize: 10pt
-  FontWeight: 600
+  FontWeight: 500
   TextAlign: Center
   LetterSpacing: 0pt
   Margin: 0pt

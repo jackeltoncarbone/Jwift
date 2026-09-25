@@ -81,6 +81,27 @@ rgb' = toRGB(Y', Cb', Cr') * (1 - Fill.a) + Fill.rgb        (Fill premultiplied)
 
 Thin glass (`tracksLuma = 1`) animates these toward backdrop-adaptive values over about 1 to 8 s. The line is S ≤ 64 [C: DesignLibrary `GlassMaterialProvider.updateState` keeps the adaptive state while min(w, h) ≤ 64]; Jaui holds its adaptive face at 56 until the brightness drive is read from source, so the 62 pt tab bar keeps its settled face. Settled light-appearance values seen: checkerboard 0.35 / 0.95 / fill 0.50; photo 0.319 / 0.919 / 0.516; light solid 0.819 / 1.03 / 0.266; dark thin capsule over dark solid 0.1 / 0.45 / black 0.25. [C] values, [I] the interpolation law.
 
+**The adaptive drive, from source (iOS 26.1).** The drive does not interpolate: it switches between the light and dark appearance, with hysteresis.
+- **The statistic** [C]. QuartzCore averages each `tracksLuma` backdrop on the GPU (`CA::OGL::MetalContext::calculate_average_luma`, QuartzCore_40.mm:2665). It samples the capture, cut to `lumaSubrect` when one is set, and takes the Rec. 709 luma of the alpha-divided mean, clamped to 1.
+  - The value is rounded to 1/64 before it reaches the app (QuartzCore_19.mm:2294).
+  - SwiftUI rounds it again to 1/32 and drops values that have not changed (`SDFLayer.backdropLayer(_:didChangeLuma:)`, 0x18D2DA568).
+  - It is resampled only when the backdrop changes, at 0.25 s steps, and at most 50 backdrops are sampled per frame (QuartzCore_09.mm:4613 to 4666).
+  - It reaches DesignLibrary as `backdropLuminance` (`sub_18AFCD5A4`).
+- **The switch** [C]. `modifyColorScheme` (0x18AF4A4A0) uses one of two `HysteresisRange` pairs.
+  - A light system appearance uses [0.2, 0.5]: the glass goes dark below 0.2 and comes back to light above 0.5.
+  - A dark system appearance uses [0.6, 0.9]: the glass goes light above 0.9 and back to dark below 0.6.
+  - Between the two values the previous choice holds.
+  - The defaults are in `sub_18AF49DDC` and `sub_18AF49E98`. They can be overridden with the defaults keys `AdaptiveGlassHysteresisLightRangeArray` / `AdaptiveGlassHysteresisDarkRangeArray`.
+  - One unnamed style uses 0.70 / 0.75 (`xmmword_18AFDAF50`).
+  - The config at +68 can fix the luma, give it an initial value, or keep the last value (DesignLibrary.mm:1709 to 1747).
+- **The face** [C for the mechanism, I for the conclusion]. The choice is a `ColorScheme`, and it replaces the environment's scheme when the style is resolved (`sub_18AE83120`). So thin glass settles on its style's regular light or dark face; there is no third, blended face.
+  - The settled values above are probably those faces as seen through a capture [I].
+- **The animation** [C]. A change is animated with `Animation.default` (0x18AE7E338) unless the config is `adaptive(animatable: false)` (bit 0x400000). One branch also sets a 1/30 s frame interval.
+- **The gate** [C]. The adaptive mode is bit 0x4000 (`.adaptive(true)`). Above 64 pt the stored luma is cleared (DesignLibrary.mm:1689, 1873).
+  - Whether UIKit's floating tab bar sets the bit was not read. The App Store capture (`G\Web\Full\ios-appstore-tab-bar-native.jpg`) shows a dark-appearance bar with white labels over a mid-dark photo while the page around it is light, which fits it [I].
+
+Consequence for Jaui: moving the 56 to 64 would put our blended fitted face on the 62 pt bar, which is not Apple's law. The source-exact change is the switch above. It is not built (Jaui `Glass.Jss.md`).
+
 Output clamp: straight rgb to `[-0.75, ClampLimit]`, ClampLimit 1.0696 light thick (26.5), 1.0 adapted, 1.376 clear. [C]
 
 ### 3.4 Edge bleed [C]
