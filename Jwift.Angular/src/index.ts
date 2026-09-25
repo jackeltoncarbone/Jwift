@@ -11,6 +11,8 @@ export { Avatar } from './Avatar/Avatar';
 // The caller's own bottom rung: `<ng-template avatarFallback>`, shown INSTEAD of the monogram when the
 // ladder bottoms out. Exported beside the primitive because it is useless without it.
 export { AvatarFallback } from './Avatar/Avatar.Fallback';
+// Who is here: overlapping avatars beside a shared document's collaboration button.
+export { AvatarStack, type AvatarStackPerson } from './AvatarStack/AvatarStack';
 export {
   type AvatarSize,
   AvatarDiameter,

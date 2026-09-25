@@ -166,6 +166,18 @@ Jwift_ListChevron {
   FlexShrink: 0
 }
 
+// The trailing checkmark on the chosen row of a pick list (Settings' choices, a permission): the system
+// draws it in the tint at the label's size, bolder than the label.
+Jwift_ListCheck {
+  FontFamily: JwiftIcons
+  FontSize: 15pt
+  FontWeight: 700
+  Color: @GoldInk
+  Width: 20pt
+  TextAlign: Center
+  FlexShrink: 0
+}
+
 // The hairline between rows. Full bleed by default; the inset variant starts where the LABEL starts so
 // it clears a leading icon, which is how the system draws a list whose rows carry symbols.
 Jwift_ListSeparator {

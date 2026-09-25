@@ -171,6 +171,10 @@ interface PanSample { readonly Y: number; readonly T: number }
           <glass-button size="bar" variant="prominent" [disabled]="confirmDisabled()" (click)="confirm.emit()">
             <icon class="Jwift_SheetBarGlyph JwiftProminentInk" Name="checkmark" />
           </glass-button>
+        } @else if (barAction(); as glyph) {
+          <glass-button size="bar" (click)="barActionPress.emit()">
+            <icon class="Jwift_SheetBarGlyph" [Name]="glyph" />
+          </glass-button>
         } @else {
           <jiv class="Jwift_SheetBarSpacer" />
         }
@@ -227,7 +231,10 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   /** The length of the owner's navigation path. Above 0 the bar leads with the back chevron. */
   readonly navigationDepth = input<number>(0);
   readonly back = output<void>();
+  /** A glyph for a trailing bar button (Notes' compose, Mail's new message). Ignored while `confirmable`. */
+  readonly barAction = input<string | null>(null);
   readonly close = output<void>();
+  readonly barActionPress = output<void>();
   readonly confirm = output<void>();
   /** The sheet has finished rising: a DOM embed inside it can mount into a box that has stopped moving. */
   readonly presented = output<void>();
