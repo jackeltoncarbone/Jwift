@@ -154,6 +154,14 @@ export interface GlassAction {
         }
       } @else {
         @let pg = dd.Page();
+        <!-- A pushed page leads with its way back, as UIKit's submenu does: the chevron and the row that pushed it. -->
+        @if (_PageParent(pg); as parent) {
+          <glass-dropdown-item [keepOpen]="true" (click)="dd.PopPage()">
+            <icon class="Jwift_GlassDropdownItemIcon" Name="chevron.left" />
+            <jext class="Jwift_GlassDropdownItemLabel_Back" [text]="parent.Label ?? ''" />
+          </glass-dropdown-item>
+          <jiv class="Jwift_GlassDropdownDivider" />
+        }
         @for (item of _OpenItems(pg); track item.Id) {
           @if (item.Divider) {
             <jiv class="Jwift_GlassDropdownDivider" />
@@ -336,6 +344,12 @@ export class GlassActionGroup implements OnDestroy {
   protected _OpenItems(page: string | null): readonly GlassAction[] {
     if (page === null) return [...this._OverflowActions(), ...this._Menu()];
     return this.Pages()[page] ?? this._Account?.Pages?.()[page] ?? [];
+  }
+
+  /** The root row that pushes this page, or null on the root and on a page only the avatar opens. */
+  protected _PageParent(page: string | null): GlassAction | null {
+    if (page === null) return null;
+    return this._OpenItems(null).find((action) => action.Page === page) ?? null;
   }
 
   /** Whether a host (glass/avatar) tap may open the sink to its root page —

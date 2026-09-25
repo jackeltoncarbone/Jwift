@@ -356,6 +356,11 @@ Jwift_GlassDropdownItemLabel {
 // indicator for hover and press, because a second press treatment per variant is
 // exactly what the single-press rewrite retired. Same red as the context menu's
 // destructive label, so the two menus say danger with one voice.
+// A pushed page's back row names the page it returns from, a step heavier than the rows under it.
+Jwift_GlassDropdownItemLabel_Back : Jwift_GlassDropdownItemLabel {
+  FontWeight: 600
+}
+
 Jwift_GlassDropdownItemLabel_Destructive : Jwift_GlassDropdownItemLabel {
   Color: @Ink
 }
