@@ -79,7 +79,7 @@ rgb' = toRGB(Y', Cb', Cr') * (1 - Fill.a) + Fill.rgb        (Fill premultiplied)
 | regular dark | 0.6 | 0.2 | 1.0 | black 0.4 | Y → 0.24 Y + 0.12, chroma × 0.60 |
 | clear (light and dark identical) | 1.15 | 0.075 | 1.06 | none | Y → 1.075 Y + 0.075, chroma × 1.06 |
 
-Thin glass (S ≤ 56, `tracksLuma = 1`) animates these toward backdrop-adaptive values over about 1 to 8 s. Settled light-appearance values seen: checkerboard 0.35 / 0.95 / fill 0.50; photo 0.319 / 0.919 / 0.516; light solid 0.819 / 1.03 / 0.266; dark thin capsule over dark solid 0.1 / 0.45 / black 0.25. [C] values, [I] the interpolation law.
+Thin glass (`tracksLuma = 1`) animates these toward backdrop-adaptive values over about 1 to 8 s. The line is S ≤ 64 [C: DesignLibrary `GlassMaterialProvider.updateState` keeps the adaptive state while min(w, h) ≤ 64]; Jaui holds its adaptive face at 56 until the brightness drive is read from source, so the 62 pt tab bar keeps its settled face. Settled light-appearance values seen: checkerboard 0.35 / 0.95 / fill 0.50; photo 0.319 / 0.919 / 0.516; light solid 0.819 / 1.03 / 0.266; dark thin capsule over dark solid 0.1 / 0.45 / black 0.25. [C] values, [I] the interpolation law.
 
 Output clamp: straight rgb to `[-0.75, ClampLimit]`, ClampLimit 1.0696 light thick (26.5), 1.0 adapted, 1.376 clear. [C]
 
