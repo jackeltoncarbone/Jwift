@@ -314,3 +314,31 @@ The page is about DELIVERING a notification: the banner, the badge, the detail v
 - A detail view "that contains **up to four buttons**". "**Avoid providing an action that merely opens your app.**" "**Prefer nondestructive actions.** ... **The system gives a distinct appearance to the actions you identify as destructive.**" An interface icon per action, on the **trailing** side of its title; "a short, **title-case** term". watchOS: "a double tap runs the first nondestructive action, consider placing the action that people use most frequently at the top."
 - Badges: "a small, filled oval containing a number"; "**Use a badge only to show people how many unread notifications they have.**" "**Make sure badging isn't the only method you use to communicate essential information.**" "**Keep badges up to date.** ... reducing a badge's count to zero **removes all related notifications from Notification Center**." "**Avoid creating a custom image or component that mimics the appearance or behavior of a badge.**"
 - "**Avoid sending multiple notifications for the same thing, even if someone hasn't responded.**" "**Use an alert — not a notification — to display an error message.**" "**Handle notifications gracefully when your app is in the foreground.** ... **Mail simply adds it to the list of unread messages**." "**Avoid including sensitive, personal, or confidential information in a notification.**"
+
+## 21. Loading and progress indicators [C] HIG Loading (change log June 9, 2025), HIG Progress indicators (change log September 12, 2023), fetched 2026-09-25 from the DocC JSON
+
+Loading:
+- "**Show something as soon as possible.** If you make people wait for loading to complete before displaying anything, they can interpret the lack of content as a problem with your app or game. Instead, consider showing placeholder text, graphics, or animations as content loads, replacing these elements as content becomes available."
+- "**Let people do other things in your app or game while they wait for content to load.** Loading content in the background helps give people access to other actions."
+- "**If loading takes an unavoidably long time, give people something interesting to view while they wait.** For example, you might provide gameplay hints, display tips, or introduce people to new features. Gauge the remaining loading time as accurately as possible to help you avoid giving people too little time to enjoy your placeholder content or having so much time that you need to repeat it."
+- "**Clearly communicate that content is loading and how long it might take to complete.** Ideally, content displays instantly, but for situations where loading takes more than a moment or two, you can use system-provided components ... In general, you use a *determinate* progress indicator when you know how long loading will take, and you use an *indeterminate* progress indicator when you don't."
+
+Progress indicators:
+- Two types: determinate "for a task with a well-defined duration", indeterminate "for unquantifiable tasks". A progress bar's track "fills from the leading side to the trailing side"; an activity indicator "uses an animated image to indicate progress".
+- "**When possible, use a determinate progress indicator.**"
+- "**Be as accurate as possible when reporting advancement in a determinate progress indicator.** Consider evening out the pace of advancement ..."
+- "**Keep progress indicators moving so people know something is continuing to happen.** People tend to associate a stationary indicator with a stalled process or a frozen app."
+- "**When possible, switch a progress bar from indeterminate to determinate.**" (an indeterminate bar exists only on macOS)
+- "**Don't switch from the circular style to the bar style.** Activity indicators (also called *spinners*) and progress bars are different shapes and sizes, so transitioning between them can disrupt your interface and confuse people."
+- "**If it's helpful, display a description that provides additional context for the task.** Be accurate and succinct. Avoid vague terms like *loading* or *authenticating* because they seldom add value."
+- "**Display a progress indicator in a consistent location.**"
+- "**When it's feasible, let people halt processing.**" with Cancel (and Pause where cancelling loses work); confirm a cancel that loses progress.
+- macOS only: "Avoid labeling a spinning progress indicator."
+
+What Apple does not publish, and what we take instead [I]:
+- **The ellipsis.** The HIG defines it only for menu items and buttons that need more input (Menus, Buttons), and the Apple Style Guide only for menu commands. Apple's own in-progress labels carry one ("Preparing Update…", "Estimating time remaining…" in Software Update), so a loading label ends in "…", added by the presenter, never stored in the copy.
+- **A percentage in the label.** Not stated. SwiftUI's `currentValueLabel` is optional and a bar already shows the amount, so a label beside a bar carries none.
+- **How long before an indicator appears.** Only "more than a moment or two"; we wait 1 s.
+- **Rotating messages.** In order, not shuffled, so a long wait shows each before any repeats ("so much time that you need to repeat it"), 2.5 s apiece.
+- **Blocking or not.** "Let people do other things" rules out a modal whenever anything else on the screen works; the indicator stands where the content will appear.
+

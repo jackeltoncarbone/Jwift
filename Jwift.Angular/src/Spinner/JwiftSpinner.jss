@@ -1,47 +1,18 @@
-// JwiftSpinner — Apple-style 12-tick activity indicator. Each tick is a thin
-// rounded-cap rectangle arranged radially every 30°; the head tick is full
-// opacity, each behind it fades to a 25% floor matching iOS 17/iOS 26
-// UIActivityIndicatorView. Animation is driven by the consumer flipping the
-// parent's Transform rotation through a rAF loop — JSS owns shape, the
-// component owns motion.
+// JwiftSpinner: UIActivityIndicatorView's eight spokes. The component places and lights them; this sheet
+// only says what a spoke is. Geometry and timing are in JwiftSpinner.Geometry.ts.
 
-// Container — square box that sets the spinner's diameter. Consumers pass
-// concrete size via [style]; this is the JSS-level identity. Position:Placed
-// on the wrapper so ticks land at absolute offsets from the wrapper's
-// top-left rather than flexing the wrapper.
-// No Position here: `Placed` on a child is already resolved against its direct
-// parent, so Jaui needs no CSS-style `position: relative` to make this box the
-// containing block. This said `Position: Relative`, which is not a PositionMode
-// — the value was dropped and the box has always been `Flow`, which is correct.
+// The box. Spokes are placed from its top left, so it neither flexes nor centres them.
 JwiftSpinner {
-  Direction: Row
-  Justify: Center
-  Align: Center
-  // Default 20pt mirrors UIActivityIndicatorView.medium. Consumers usually
-  // override via [style]="{Width:'24pt', Height:'24pt'}".
   Width: 20pt
   Height: 20pt
+  UserSelect: None
 }
 
-// Inner rotating wrapper. Sits absolutely centered inside JwiftSpinner so
-// the rotation pivot is the spinner's center. Ticks are Position:Placed
-// children offset from this wrapper's center.
-JwiftSpinnerStage {
+// A capsule: UIKit fills a rounded rect whose corner radius is half its thickness. UIKit swaps whole image
+// frames, so a spoke's alpha snaps from step to step; Jaui would otherwise spring it into a fade.
+JwiftSpinnerSpoke {
   Position: Placed
-  Top: 0pt
-  Left: 0pt
-  Width: 100%
-  Height: 100%
-}
-
-// Single tick. Size matches iOS reference — 7% width, 25% height of the
-// spinner box. Background: white-with-alpha applied per-tick on the consumer
-// side (the head tick is full opacity, trailing ticks step down to 25%).
-// Rounded caps via BorderRadius:999pt so any thickness reads as a soft pill.
-JwiftSpinnerTick {
-  Position: Placed
-  Width: 7%
-  Height: 25%
   BorderRadius: 999pt
-  Background: @Ink
+  Background: @SecondaryLabel
+  @Transition Opacity { Duration: 0ms }
 }

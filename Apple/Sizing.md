@@ -138,8 +138,51 @@ Older notes in this repo carried these; the decompile replaces them.
 | iPhone tab bar "64 px tall at 3x with 20 px insets" | an earlier note | 54 pt content, 21 pt side margins (section 1) [C] |
 | tab label "10 pt Regular" | March 2026 secondary research | 10 pt [C]; weight heavier than regular, likely medium, measured semibold (section 1) [I] |
 | large button 64 pt | visionOS extra large, read as iOS | large 50, medium 34, small and mini 28 (section 3) |
+| activity indicator: 12 ticks, 25% floor, the ring rotating at 360 deg/s | the first Jwift spinner, from memory of iOS 6 | 8 spokes stepping in 16 image frames per 0.8 s, 0.32 floor, alpha x 0.85 (section 8) [C] |
 | Apple's pill endcap as a superellipse, lead-in 1.086 r, exponent 2.06 | fitted on a screenshot | continuous corner, circular at a capsule's short axis (`LiquidGlass.md` section 10) [C] |
+
+## 8. Activity indicator (UIActivityIndicatorView, SwiftUI circular ProgressView)
+
+SwiftUI's circular `ProgressView` on iOS is `CircularUIKitProgressView.SwiftUIActivityIndicatorView`, a UIActivityIndicatorView subclass (R: SwiftUI_128.mm, SwiftUI_19.mm `makeUIView`), so one implementation covers both. On iPhone no visual style view is registered, so UIKit draws the spokes itself as an image sequence (`_refreshStyle`, `_imagesForStyle:color:highlight:`, `_generateImagesForColor:`). File: R: `UIKitCore/UIActivityIndicatorView.mm`; the values Hex-Rays dropped were read from FW (addresses below). [C]
+
+| part | value | status |
+|---|---|---|
+| styles | `.medium` = 100 resolves to internal 9, `.large` = 101 to 10 (`_customStyleForStyle:`) | [C] |
+| box | medium 20 x 20, large 37 x 37 (`defaultSizeForStyle:`) | [C] |
+| spokes | 8 at every size; 2 image frames per spoke, so 16 frames per loop (`_updateLayoutInfo`: `_spokeCount` 8, `_spokeFrameRatio` 2) | [C] |
+| spoke shape | `bezierPathWithRoundedRect:(0, W/2 - w, L, 2w) cornerRadius:w`: a capsule from the ring's edge inward, thickness 2w, drawn at 9 o'clock and turned by `-2 pi / 8 x i` about the ring centre (FW `-[UIActivityIndicatorView _imageForStep:withColor:]` 0x189e29440: d0 0, d1 W/2 - w, d2 L, d3 2w, d4 w) | [C] |
+| spoke half-thickness w | medium 1.25, large 2.5 (FW `_spokeWidthForGearWidth:` 0x189e28ec8; 1.0 and 1.5 are the 12-spoke values) | [C] |
+| spoke length L | medium 6.5, passed through `UIRoundToViewScale` (6.67 at 3x); large 12 (FW `_spokeLengthForGearWidth:` 0x189e29084: `fmov d0, #6.5` then `b _UIRoundToViewScale`; the large path ends `fcsel` 10 (12 spokes) / 12) | [C] |
+| ring width | the box, except large draws a 35pt ring (`_widthForGearWidth:` 37 -> 35, FW constants 0x18a6786b8 = 37, 0x18a678658 = 35) at the image's top left: its centre sits 1pt up and left of the 37pt box's centre | [C] |
+| inner radius | medium 10 - 6.5 = 3.5; large 17.5 - 12 = 5.5 | [C] |
+| other widths | UIKit's custom-width style (16) interpolates: w 1.0 below 20, 1.25 below 30, 1.75 below 32, 2.0 below 37, 2.5 below 42.75, 3.0 below 54.25, 3.5 to 60, then round(W / 7.5) / 2; L is linear between the knots (14, 4) (20, 6.5) (24, 7.5) (30, 9.5) (32, 10) (40, 14) (60, 19) (64, 22), 4W/14 below 14, W / 2.84 above 64 (FW 0x189e28ec8, 0x189e29084; 0x18a681268 = 2.84) | [C] |
+| step alpha | spoke i in image s: `max(0.32, 1 - 0.68 / 8 x ((s + 2i) mod 16))`: a ramp of 0.085 per frame from 1 down to a 0.32 floor, half the ring on the ramp and half on the floor (FW `_alphaValueForStep:` 0x189e293b8: 0x18a67e660 = -0.68, 0x18a6778a8 = 0.32) | [C] |
+| fill | `colorWithAlphaComponent:(colour alpha x step alpha)`, then `fillWithBlendMode:kCGBlendModeCopy (17) alpha:0.85` (FW 0x189e297ac `mov w2, #0x11`; 0x18a6779d0 = 0.85): a spoke's alpha is colour alpha x step alpha x 0.85 | [C] |
+| colour | styles 100 and 101 default to `secondaryLabelColor` (`_defaultColorForStyle:`): light rgb(60, 60, 67) at 0.6, dark rgb(235, 235, 245) at 0.6, so the head spoke is 0.51 | [C] |
+| direction | image 0 has the bright head at 9 o'clock; the head moves one spoke clockwise every two images, the tail trailing counterclockwise | [C] |
+| timing | `UIImageView` animationImages, repeat forever, `animationDuration` = `_UIActivityIndicatorSettings.fullLoopDuration` 0.8 s unless `setAnimationDuration:` is set: 50 ms per image, 100 ms per spoke. Discrete image frames, not a fade and not a rotation | [C] |
+| measured on ours | Jwift spinner at 20pt, DPR 3, 80 timed clips: 50.0 to 50.6 ms per frame; head alpha 0.514, floor 0.164 (UIKit 0.51, 0.163); aligned against a render of the UIKit drawing code, 3.9 to 4.5 luma RMS over 60 x 60 px (light) | [I] |
+
+Not the same control: the **refresh control** (`_UIRefreshControlModernContentView`) draws its own spinner as a `CAReplicatorLayer` of 8 instances with `instanceAlphaOffset`, a linear ramp across all 8 spokes and no floor. HIG `refresh-controls@2x.png` (Mail) shows it: spoke contrast falls 108.9, 94.9, 81.9, 69, 55.1, 41.9, 29, 16.9 levels from the head, the head exactly secondaryLabel's 0.6. Do not measure the activity indicator on it. [C] structure (R: `_UIRefreshControlModernContentView.mm` `setInstanceCount:8`, `setInstanceAlphaOffset:`), [I] levels.
+
+## 9. Progress bar (UIProgressView, SwiftUI linear ProgressView)
+
+SwiftUI's linear `ProgressView` on iOS is `LinearUIKitProgressView.Base.SwiftUIProgressView`, a UIProgressView subclass (R: `SwiftUIProgressView.mm`, SwiftUI_128.mm). The bar is drawn by `UIProgressViewModernVisualElement` (R: UIKitCore). [C]
+
+| part | value | status |
+|---|---|---|
+| height | 4pt for the default style (`intrinsicSizeWithinSize:control:`, 2 before the current SDK); `defaultSize` 160 x 11 is only the initial frame | [C] |
+| track | `systemFillColor` (`_defaultTrackColorForCurrentStyle`, style 0; the bar style has a clear track): light rgba(120, 120, 128, 0.2), dark rgba(120, 120, 128, 0.36) | [C] |
+| fill | `progressTintColor`, else the view's inherited tint (`_inheritedInteractionTintColor`) | [C] |
+| shape | track and fill are each a capsule: an image `2h + 1` wide with corner radius h/2 on all corners, stretched with cap insets h each side (`_tintedImageWithTraitCollection:forHeight:andColors:roundingRectCorners:`) | [C] |
+| fill shading | a vertical `CGContextDrawLinearGradient` from the colour x 0.978378 (top) to the colour (bottom), for track and fill | [C] |
+| fill width | `round(width x progress)`, never narrower than the two caps (2h = 8pt); alpha 0 at progress 0 (`layoutSubviews`) | [C] |
+| animation | `setProgress:animated:` animates over `abs(delta)` seconds, linear, from the current state (options 0x30004); an observed `NSProgress` animates each change over 0.1 s, ease in out, from the current state; from 0, at least 0.2 s (`UIProgressView.mm`, `setProgress:animated:duration:delay:options:`) | [C] |
+| glass or vibrancy | none: plain images in a content view | [C] |
+| SwiftUI layout | `LinearProgressViewStyle.makeBody`: `VStack(alignment: .leading, spacing: 4)` of the label, the bar, and `currentValueLabel` with `.foregroundColor(.secondary)`, `.font(.caption)`, `.monospacedDigit()`; the label keeps the environment font (Body) | [C] (R: SwiftUI_78.mm; 0x4010000000000000 = 4.0) |
+| SwiftUI circular layout | `CircularProgressViewStyle.makeBody`: `VStack(alignment: .center)` of the indicator, the label, the current value label, at the default spacing | [C] structure (R: SwiftUI_81.mm), spacing value [I] |
+| measured on ours | 12 px tall at 3x; track over the drill page's veil 64 (dark) and 190 (light) against systemFill's 63.7 and 189.6 | [I] |
 
 ## Not found
 
-These need the binary's `__const` data section, which the decompile does not carry: every `dbl_*` / `xmmword_*` table value (button insets, segmented font sizes, the tab config slots 88, 184, 304 and the bottom offset at vtable+0x138), the segmented pill inset and divider width, the `off_1E70ECD20` / `off_1E70ECD28` font weights. DesignLibrary holds iOS metrics only for Switch, Stepper and ProgressView (`DesignLibrary_01` to `_15`); there are no iOS token plists or asset catalogs in the restore. [C] for the absence.
+These need the binary's `__const` data section, which the decompile does not carry: every `dbl_*` / `xmmword_*` table value (button insets, segmented font sizes, the tab config slots 88, 184, 304 and the bottom offset at vtable+0x138), the segmented pill inset and divider width, the `off_1E70ECD20` / `off_1E70ECD28` font weights. DesignLibrary holds iOS metrics only for Switch, Stepper and ProgressView (`DesignLibrary_01` to `_15`; its `iOSProgressView` is a SwiftUI mock whose frame values are float arguments the decompile dropped, and UIKit's own files, sections 8 and 9, supersede it); there are no iOS token plists or asset catalogs in the restore. [C] for the absence.

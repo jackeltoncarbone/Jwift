@@ -55,6 +55,7 @@ export { ContextMenuService, type ContextMenuItem } from './ContextMenu/ContextM
 export { TextInput, type TextInputSpan, type TextInputPeerCaret, type TextInputMaterial } from './TextInput/TextInput';
 export { NumberTicker } from './NumberTicker/NumberTicker';
 export { JwiftSpinner } from './Spinner/JwiftSpinner';
+export { JwiftProgress } from './Progress/JwiftProgress';
 export { JwiftState, type JwiftStateTone } from './State/JwiftState';
 export { WheelPicker } from './WheelPicker/WheelPicker';
 export { WheelItem } from './WheelPicker/WheelItem';
