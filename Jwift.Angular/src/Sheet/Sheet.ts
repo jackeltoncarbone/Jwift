@@ -241,7 +241,8 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
       .sort((a, b) => a.Height - b.Height);
   });
 
-  readonly ShowsGrabber = computed(() => this.grabber() ?? this._stops().length > 1);
+  // A form sheet does not resize, so it has no grabber unless one is asked for.
+  readonly ShowsGrabber = computed(() => this.grabber() ?? (!this.Regular() && this._stops().length > 1));
   readonly Covered = computed(() => this._stack.Top() !== this);
 
   private readonly _restHeight = computed(() => {
@@ -325,7 +326,8 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   });
 
   readonly BodyLayout = computed(() => {
-    const bottom = this.Regular() ? 16 : Math.max(this._var('SafeBottom') - this._inset(), 0);
+    const scrollRoom = this.bodyScrolls() ? 16 : 0;
+    const bottom = this.Regular() ? scrollRoom : Math.max(this._var('SafeBottom') - this._inset(), 0);
     return { Padding: `${SHEET_METRICS.BarHeight}px 20px ${r1(bottom)}px 20px` };
   });
 
