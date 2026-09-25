@@ -249,7 +249,7 @@ Jack's rule: "whatever Apple does, we do." Each use takes its closest first-part
 
 ## 9. Open (product calls for Jack)
 
-1. **The screen corner is the display's.** `@JwiftScreenRadius` is the engine's `@DisplayCornerRadius` (62 pt on a 402 pt phone, 18 on an iPad, 0 on a desktop window, so the app's screen clip is square there). The tab bar no longer derives its inset from it: UIKit's floating bar sits 21 pt in on every iPhone (`Sizing.md` 1) [C].
+1. **The screen corner is the display's.** `@JwiftScreenRadius` is the engine's `@DisplayCornerRadius` (62 pt on a 402 pt phone, 18 on an iPad, 26 in a desktop window: macOS 26's unified-toolbar window, `Sizing.md` 10). The tab bar no longer derives its inset from it: UIKit's floating bar sits 21 pt in on every iPhone (`Sizing.md` 1) [C].
 2. **The confirm checkmark is the app's prominent plate** (white in dark, black in light), not Apple's blue tint: the app's rule is that prominence is the inverted solid and gold is never a fill. No sheet uses the checkmark yet; forms keep their in-body primary action.
 3. **Unsaved-change asks** are wired where a form already knew its draft (Edit Profile, Start a fundraiser, Post a request, admin Manage user). Edit fundraiser and the CMS editors have no dirty state to read yet.
 4. **A programmatic close fades** (the engine's leave) rather than sliding down; every dismissal a person makes slides.

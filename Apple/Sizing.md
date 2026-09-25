@@ -184,6 +184,23 @@ SwiftUI's linear `ProgressView` on iOS is `LinearUIKitProgressView.Base.SwiftUIP
 | SwiftUI circular layout | `CircularProgressViewStyle.makeBody`: `VStack(alignment: .center)` of the indicator, the label, the current value label, at the default spacing | [C] structure (R: SwiftUI_81.mm), spacing value [I] |
 | measured on ours | 12 px tall at 3x; track over the drill page's veil 64 (dark) and 190 (light) against systemFill's 63.7 and 189.6 | [I] |
 
+## 10. Window corners (macOS 26.1) [C]
+
+`-[NSThemeFrame _getCachedWindowCornerRadius]` (AppKit, macOS 26.1 25B78, Mac16,1 dyld cache, `0x1855874D0`), on the Solarium (`_hasSolariumAppearance`) path; the pre-26 path reads CoreUI's `kCUIWindowFrameShapeCornerRadius` in `+_cornerRadiusForWindowType:window:` instead:
+
+| window | radius |
+|---|---|
+| utility (`_isUtilityWindow`) | 15 pt |
+| sheet (`isSheet`), alert (`_isAlertWindow`) | 26 pt |
+| no toolbar, or a hidden one | 16 pt |
+| toolbar, style expanded (1) or preference (2) | 16 pt |
+| toolbar, style unified compact (4) | 20 pt |
+| toolbar, style unified (3) | 26 pt |
+
+Read as `fmov d8, #15 / #26 / #16`, then `fcsel d8, #20, #26` on `_effectiveToolbarStyle == 4` after excluding styles 1 and 2 (`sub x8, style, #3; cmn x8, #3; b.hi`). `_topCornerSize` and `_bottomCornerSize` build on this value. Measured renders of a titled window read 24 pt [I] (theclifmeister/toe `SystemCornerRadius.swift`), within antialiasing of 26 for a toolbar window. Jaui's `@DisplayCornerRadius` uses the unified-toolbar 26 for any screen that is not a known iPhone or iPad, since the app's window carries a unified glass toolbar.
+
+Recipe: `ipsw download ipsw --macos --device Mac16,1 --version 26.1 --pattern "043-56976-105.dmg"`, `ipsw fw aea` (Apple's published key), `7z x -sns` of `System/Library/dyld/dyld_shared_cache_arm64e*`, the LZBITMAP forks through `Tools/Ipsw/decmpfs` (Methods.md 3.3), then `ipsw dyld symaddr --image AppKit` and `ipsw dyld disass`. Files in `D:\AppleIPSW\macos26\`.
+
 ## Not found
 
 These need the binary's `__const` data section, which the decompile does not carry: every `dbl_*` / `xmmword_*` table value (button insets, segmented font sizes, the tab config slots 88, 184, 304 and the bottom offset at vtable+0x138), the segmented pill inset and divider width, the `off_1E70ECD20` / `off_1E70ECD28` font weights. DesignLibrary holds iOS metrics only for Switch, Stepper and ProgressView (`DesignLibrary_01` to `_15`; its `iOSProgressView` is a SwiftUI mock whose frame values are float arguments the decompile dropped, and UIKit's own files, sections 8 and 9, supersede it); there are no iOS token plists or asset catalogs in the restore. [C] for the absence.

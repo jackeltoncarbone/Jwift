@@ -107,7 +107,8 @@ JwiftSeparatorVibrancy {
 
 // ── THE SCREEN CORNER ───────────────────────────────────────────────
 // The app's outer corner is the display's own (`displayCornerRadius`): the engine's @DisplayCornerRadius,
-// 62 pt on a 402 pt iPhone, 18 on an iPad, 0 on a desktop window. The sheet's top corner is 38 pt [C].
+// 62 pt on a 402 pt iPhone, 18 on an iPad, 26 in a desktop window (macOS 26's toolbar window). The sheet's top
+// corner is 38 pt [C].
 @JwiftScreenRadius: @DisplayCornerRadius
 @JwiftSheetRadius: 38pt
 
