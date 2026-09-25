@@ -247,15 +247,24 @@ Jack's rule: "whatever Apple does, we do." Each use takes its closest first-part
 
 `sub_1891102E0`'s iPhone non-large background is the once-built `qword_1EA93D080`, whose initializer (`0x18910A6F4`) is `[[_UIViewGlass alloc] initWithVariant:0]`, `setFlexible:1`, `setSubvariant:@"sheet"` [C]; the large background is `systemBackgroundColor` [C]. DesignLibrary maps the string to `GlassMaterialProvider.Subvariant` 28 (`Subvariant.init`, DesignLibrary_08.mm 7832) and stores it at `Configuration +9`; no read of that byte branches on 28 anywhere in the decompiled DesignLibrary [C, by absence], so the sheet is plain regular glass at its size, with no tint and no legibility layer of its own. Measured through our medium Pictures sheet over the drill sentence (light): the page's luma contrast is kept at 0.248 of itself, against Apple's 0.8 dim × 0.318 face = 0.254 before blur [I]. What remains between ours and Apple's is the body blur (Apple's 4 pt at S ≥ 160; LiquidGlass.md 3.2), which the glass lane owns.
 
-### The sheet's blur, read (open)
+### The sheet's blur, read
 
-Evidence reads a partial sheet's backdrop far softer than regular glass's 4 pt: 12 to 45 pt on the Find My Newsroom render and about 15 pt on the Home Screen Customize sheet (`G\Dark\Full\ios-customize-sheet-dark-maroon.png`, blue widget edge behind the sheet, erf median 30.5 px at about 2.07 px/pt) [I]. The source read so far does not explain it [C]:
-- The sheet's glass is `_UIViewGlass initWithVariant:0`, `setFlexible:1`, `setSubvariant:@"sheet"`; no per-detent `backgroundEffect` by default (`sub_1891102E0`).
-- DesignLibrary compares the subvariant byte (`Configuration +9`) only against 3, 6, 7, 8 and 21 (`dl_full.s`, `ldrb [x, #0x9]` uses); nothing branches on 28 (sheet).
-- The recipe modifier `sub_18AF812C4` (DesignLibrary_12.mm 3968) has two blur overrides: option 0x20 multiplies the ramp (min × 4, max = max(max × 2, min × 4): 5.3 to 8 pt) and option 0x10 fixes it at 10 pt with a denser face. `sub_18AFA8DFC` sets 0x10 from a global setting read by `sub_18AFA46B0` (the lock-guarded settings object, which is where `_UIViewGlassGetLegibilitySetting`'s Clear / Tinted choice lives) and 0x20 from a state field not yet named.
-- UIKit glass also reads `GlassFrostTrait` and `_UITraitGlassElevationLevel` (UIKitCore_22.mm 7870); Frost is none, reduced, automatic, pocketDefault. What sets them under a sheet is not yet read.
+No source path gives a presented sheet a softer blur than regular glass at default settings [C]. The sheet keeps regular glass's blur ramp; what its subvariant changes is two exterior layers.
 
-Until the state behind 0x20 or the frost trait is traced to the sheet, the sheet keeps plain regular glass.
+- **The sheet's glass.** iPhone: `_UIViewGlass initWithVariant:0`, `setFlexible:1`, `setSubvariant:@"sheet"` (UIKit `sub_18910A6F4`); iPad: the same without the subvariant (`sub_18910A6A0`). `SheetLayoutInfo` picks it at or below half height (`sub_1891102E0`), and the sheet glass joins the sheet's backdrop group (`setBackdropGroupName:`). A detent's own `backgroundEffect` wins when set; none is by default.
+- **Subvariant 28 (`sheet`) does branch** (correcting the earlier read). DesignLibrary `sub_18AE83CAC` returns Layers to remove, applied as `layers & ~mask` in `sub_18AE834E4`. For base `regular`, subvariants 27, 28 and 29 (mapsSign, sheet, messagesTapback) remove `0x50`. `0x10` is outer refraction: the `SolariumDisableOuterRefraction` default removes the same bit on every other glass. `0x40` is another exterior layer: the keyboard's "no exterior effects" path clears `0x1 | 0x10 | 0x40 | 0x2000`, and `0x1` / `0x2000` are the two drop-shadow forms (switched by `SolariumForcesDarkShadow`). Reading `0x40` as the edge bleed is an inference [I]. The drop shadow stays.
+- **Recipe option `0x20` (ramp ×4, 5.3 to 8 pt) is Reduce Motion.** `sub_18AFA8DFC` sets it from `Environment.accessibilityReduceMotion` (metadata field offset `0x48`). The environment is built in declaration order: appearsActive, windowAppearsActive, glassMaterialForeground, hasTintedElements, reduceTransparency, reduceMotion, showButtonShapes, lowPower, frost (`0x18AE7D314` to `0x18AE7D3FC`).
+- **Option `0x10` (10 pt, denser face) is Reduce Transparency** (`0x44`) or the caller's input option `0x800`. Increased contrast adds `0x1000008`, and Show Button Shapes adds `0x800000`.
+- **Not the Clear / Tinted setting.** `sub_18AFA46B0` is the internal `SolariumDisableOuterRefraction` default: `GlassMaterialProvider.Defaults.Storage` byte 29, lock-guarded at +32 and initial copy at +72, with key strings `Solarium*` in the DesignLibrary cstrings. It is not the Liquid Glass Clear / Tinted choice, so the earlier inference was wrong. The environment's `diffusion` (automatic / increased) comes from SwiftUI's `glassDiffusion` and `SolariumIncreasedDiffusion`. Which of those the Tinted setting drives is unread.
+- **The frost trait comes from scroll-edge pockets, not sheets.** `GlassFrostTrait` is written only by the pocket container code (UIKit `sub_188AF8544`, `sub_1891DBB68`, `sub_1891DCD64`). `_UITraitGlassElevationLevel` is a Bool fed into SwiftUI's environment (`UITraitCollection.coreResolvedGlassMaterialEnvironment`). No sheet code sets either one in the dumps read.
+- **The sheet's own trait is layout only.** The sheet writes trait token 20 (`_presentationSemanticContext`) = 2 (`_containerViewLayoutSubviews`). Its readers are navigation bar sizing and split view picker behavior.
+
+The soft frames in Evidence are not UIKit sheets:
+- The Customize sheet is SpringBoard's own `customizeSheet` subvariant (14).
+- The Find My frame is a Newsroom render.
+
+On a real UIKit medium sheet (Maps directions, `G\Apple\Crops
+ewsroom-ios26-maps-preferred-routes-sheet-edge-over-map.png`), thin streets vanish under regular glass's roughly 4 pt blur plus its light face [I].
 
 ## 9. Open (product calls for Jack)
 
