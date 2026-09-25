@@ -154,7 +154,7 @@ interface PanSample { readonly Y: number; readonly T: number }
       </jiv>
       <jiv class="Jwift_SheetBar">
         @if (navigationDepth() > 0) {
-          <glass-button size="bar" (click)="back.emit()">
+          <glass-button size="bar" (click)="AttemptBack()">
             <icon class="Jwift_SheetBarGlyph" Name="chevron.left" />
           </glass-button>
         } @else if (Inspector()) {
@@ -270,6 +270,8 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   private readonly _contentHeight = signal(0);
   private readonly _asking = signal(false);
   readonly Asking = this._asking.asReadonly();
+  /** The open ask is the Back's, not a dismissal's. */
+  private _askingBack = false;
 
   private _pan: { Id: number; StartY: number; StartExtent: number; Samples: PanSample[] } | null = null;
   private _unbindPan: (() => void) | null = null;
@@ -584,6 +586,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   /** Every dismissal a person makes comes here: with unsaved changes it asks first. */
   AttemptDismiss(): void {
     if (this._phase() !== 'shown') return;
+    this._askingBack = false;
     if (this.Unsaved()) {
       this._settle(0);
       this._asking.set(true);
@@ -592,12 +595,32 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     this._leave();
   }
 
+  /** The bar's Back on a pushed page: it leaves that page's fields behind, so with unsaved work it asks first. */
+  AttemptBack(): void {
+    if (this._phase() !== 'shown') return;
+    if (this.Unsaved()) {
+      this._askingBack = true;
+      this._asking.set(true);
+      return;
+    }
+    this._back();
+  }
+
   Discard(): void {
     this._asking.set(false);
-    this._leave();
+    if (this._askingBack) this._back();
+    else this._leave();
+  }
+
+  /** Pop the page; what was typed into it went with it. */
+  private _back(): void {
+    this._askingBack = false;
+    this.Edits.Reset();
+    this.back.emit();
   }
 
   KeepEditing(): void {
+    this._askingBack = false;
     this._asking.set(false);
   }
 
@@ -636,6 +659,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   OnPanClaim(event: Event): void {
     const e = event as PointerEvent;
     if (this._phase() !== 'shown' || this._pan || this.Inspector()) return;
+    this._askingBack = false;
     this._asking.set(false);
     const now = performance.now();
     this._pan = {
