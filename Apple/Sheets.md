@@ -247,6 +247,16 @@ Jack's rule: "whatever Apple does, we do." Each use takes its closest first-part
 
 `sub_1891102E0`'s iPhone non-large background is the once-built `qword_1EA93D080`, whose initializer (`0x18910A6F4`) is `[[_UIViewGlass alloc] initWithVariant:0]`, `setFlexible:1`, `setSubvariant:@"sheet"` [C]; the large background is `systemBackgroundColor` [C]. DesignLibrary maps the string to `GlassMaterialProvider.Subvariant` 28 (`Subvariant.init`, DesignLibrary_08.mm 7832) and stores it at `Configuration +9`; no read of that byte branches on 28 anywhere in the decompiled DesignLibrary [C, by absence], so the sheet is plain regular glass at its size, with no tint and no legibility layer of its own. Measured through our medium Pictures sheet over the drill sentence (light): the page's luma contrast is kept at 0.248 of itself, against Apple's 0.8 dim × 0.318 face = 0.254 before blur [I]. What remains between ours and Apple's is the body blur (Apple's 4 pt at S ≥ 160; LiquidGlass.md 3.2), which the glass lane owns.
 
+### The sheet's blur, read (open)
+
+Evidence reads a partial sheet's backdrop far softer than regular glass's 4 pt: 12 to 45 pt on the Find My Newsroom render and about 15 pt on the Home Screen Customize sheet (`G\Dark\Full\ios-customize-sheet-dark-maroon.png`, blue widget edge behind the sheet, erf median 30.5 px at about 2.07 px/pt) [I]. The source read so far does not explain it [C]:
+- The sheet's glass is `_UIViewGlass initWithVariant:0`, `setFlexible:1`, `setSubvariant:@"sheet"`; no per-detent `backgroundEffect` by default (`sub_1891102E0`).
+- DesignLibrary compares the subvariant byte (`Configuration +9`) only against 3, 6, 7, 8 and 21 (`dl_full.s`, `ldrb [x, #0x9]` uses); nothing branches on 28 (sheet).
+- The recipe modifier `sub_18AF812C4` (DesignLibrary_12.mm 3968) has two blur overrides: option 0x20 multiplies the ramp (min × 4, max = max(max × 2, min × 4): 5.3 to 8 pt) and option 0x10 fixes it at 10 pt with a denser face. `sub_18AFA8DFC` sets 0x10 from a global setting read by `sub_18AFA46B0` (the lock-guarded settings object, which is where `_UIViewGlassGetLegibilitySetting`'s Clear / Tinted choice lives) and 0x20 from a state field not yet named.
+- UIKit glass also reads `GlassFrostTrait` and `_UITraitGlassElevationLevel` (UIKitCore_22.mm 7870); Frost is none, reduced, automatic, pocketDefault. What sets them under a sheet is not yet read.
+
+Until the state behind 0x20 or the frost trait is traced to the sheet, the sheet keeps plain regular glass.
+
 ## 9. Open (product calls for Jack)
 
 1. **The screen corner is the display's.** `@JwiftScreenRadius` is the engine's `@DisplayCornerRadius` (62 pt on a 402 pt phone, 18 on an iPad, 26 in a desktop window: macOS 26's unified-toolbar window, `Sizing.md` 10). The tab bar no longer derives its inset from it: UIKit's floating bar sits 21 pt in on every iPhone (`Sizing.md` 1) [C].
