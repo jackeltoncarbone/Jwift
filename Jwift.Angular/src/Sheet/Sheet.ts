@@ -130,7 +130,9 @@ interface PanSample { readonly Y: number; readonly T: number }
  * `[navigationDepth]`. Past the root, the bar's leading X becomes the back chevron (emitting `back`), and each change
  * of depth slides the new page in the way a push or a pop does. `[presentation]="'inspector'"` presents in regular
  * width as SwiftUI's `inspector`: a trailing column beside the content, undimmed, with no X of its own (the control
- * that opened it closes it); compact width is the same sheet as always.
+ * that opened it closes it); compact width is the same sheet as always. The column publishes the width it takes as
+ * `@JwiftInspectorInset`, springing with it, and the app's Screen reserves it, so every page reflows beside the
+ * column rather than under it. Teleport an inspector to `JWIFT_SHEET_OUTLET` so it stands outside what reflows.
  *
  * `close` fires once the sheet has left, for every dismissal a person makes (the X, a swipe, a tap on the dim, the
  * grabber of a one-detent sheet). A sheet holding unsaved work asks "Discard Changes" or "Keep Editing" before any
@@ -451,6 +453,36 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   });
 
   // ── The navigation stack's page transition ─────────────────────────
+  // ── The inspector's reserved width ─────────────────────────────────
+  /** What the content beside the column gives up: the column and a partial inset either side of it. */
+  private readonly _reserveTarget = computed(() =>
+    this.Inspector() && this._phase() === 'shown' ? this._cardWidth() + 2 * this._partialInset() : 0);
+  private readonly _reserve = { Value: 0, Velocity: 0 };
+  private _reserveFrame = 0;
+  private _lastFrameAt = 0;
+
+  /** The sheet spring, stepped here because the var it drives moves layout the page did not author a spring for. */
+  private _stepReserve = (now: number): void => {
+    const target = this._reserveTarget();
+    const dt = Math.min(Math.max((now - this._lastFrameAt) / 1000, 0), 1 / 30);
+    this._lastFrameAt = now;
+    const omega = (2 * Math.PI) / SHEET_METRICS.SpringResponse;
+    const r = this._reserve;
+    r.Velocity += (-omega * omega * (r.Value - target) - 2 * omega * r.Velocity) * dt;
+    r.Value += r.Velocity * dt;
+    const settled = Math.abs(r.Value - target) < 0.5 && Math.abs(r.Velocity) < 5;
+    if (settled) { r.Value = target; r.Velocity = 0; }
+    this._jss.SetVar('JwiftInspectorInset', `${r1(r.Value)}px`);
+    this._reserveFrame = settled ? 0 : requestAnimationFrame(this._stepReserve);
+  };
+
+  private readonly _reserveWatch = effect(() => {
+    const target = this._reserveTarget();
+    if (this._reserveFrame || target === this._reserve.Value) return;
+    this._lastFrameAt = performance.now();
+    this._reserveFrame = requestAnimationFrame(this._stepReserve);
+  });
+
   private readonly _pageOffset = signal(0);
   private readonly _pageMotion = signal(false);
   /** A popped-to page brightens up from the dimmed underlay it was pushed under. */
@@ -527,6 +559,8 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._stack.Remove(this);
+    cancelAnimationFrame(this._reserveFrame);
+    if (this._reserve.Value !== 0) this._jss.SetVar('JwiftInspectorInset', '0px');
     this._unbindPan?.();
     this._unbindDoc?.();
     for (const t of this._timers) clearTimeout(t);

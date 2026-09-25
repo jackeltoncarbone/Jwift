@@ -113,6 +113,8 @@ JwiftSeparatorVibrancy {
 @JwiftTabBarInset: 21pt
 @JwiftScreenRadius: @JwiftTabBarHeight / 2 + @JwiftTabBarInset
 @JwiftSheetInset: 8pt
+// The width an open inspector column takes from the content beside it; the sheet sets it live, 0 when none is open.
+@JwiftInspectorInset: 0pt
 @JwiftSheetRadius: @JwiftScreenRadius - @JwiftSheetInset
 @JwiftSheetBarInset: @JwiftSheetRadius - 22pt
 

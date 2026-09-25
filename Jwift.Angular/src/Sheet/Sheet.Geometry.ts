@@ -30,6 +30,8 @@ export const SHEET_METRICS = {
   InspectorMinWidth: 270,
   /** UINavigationController's push: the page underneath travels a third of the width as the new one covers it [I]. */
   PushParallax: 0.3,
+  /** The sheet spring's response in seconds, damping ratio 1 [C]. */
+  SpringResponse: 0.344,
 } as const;
 
 export interface FormSheetSize { readonly Width: number; readonly Height: number }
