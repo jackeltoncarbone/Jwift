@@ -4,15 +4,13 @@
 //
 //   rest              Vibrancy(@JwiftVibrancySecondaryFill)   +18 dark / -12 light, the secondary fill
 //   hover             Vibrancy(@JwiftVibrancyFill)            +30 / -20, the button's hover
-//   pressed           Vibrancy(@JwiftVibrancyFillPressed)     +50 / -29, the button's press, squeezed to 0.985
+//   pressed           Vibrancy(@JwiftVibrancyFillPressed)     +50 / -29, the button's press
 //   editing           Vibrancy(@JwiftVibrancyFill)            +30 / -20, the fill, and the accent ring
 //   editing + hover   Vibrancy(@JwiftFieldEditingHover)       +42 / -28, the hover step taken from the editing step
 //   invalid           @DangerWash, no lift; @DangerWashStrong under a hover; the ring turns @Danger
 //   disabled          Vibrancy(@JwiftVibrancyTertiaryFill), no response to the pointer; the text dims
 //
-// A field does not swell on hover. A button is a target and grows toward the finger; a field is a place,
-// 300pt wide, and 1.06 of it is 18pt of furniture moving. So the squeeze is the button's travel scaled to
-// the field: 0.985, a few points on a wide pill, felt more than seen.
+// A field neither swells nor squeezes: a button is a target and takes UIKit's flex, a field is a place.
 //
 // The ring is a stroke in @GoldInk, the accent as a line, which is the one use of gold a control makes.
 // BorderWidth is paint only (it never moves layout), so it springs from 0 to 2pt with no reflow.
@@ -45,16 +43,7 @@ Jwift_Field : JwiftPress {
   @Transition Background { Duration: 140ms }
 }
 
-Jwift_Field:Hover {
-  VisualScale: 1
-}
-
-Jwift_Field:Active {
-  VisualScale: 0.985
-}
-
 Jwift_Field:(Editing) {
-  VisualScale: 1
   BackdropFilter: Vibrancy(@JwiftVibrancyFill)
   BorderWidth: @JwiftFieldRing
 }
@@ -75,7 +64,6 @@ Jwift_Field:(Invalid && Hover) {
 }
 
 Jwift_Field:Disabled {
-  VisualScale: 1
   Cursor: Default
   BackdropFilter: Vibrancy(@JwiftVibrancyTertiaryFill)
   BorderWidth: 0pt
@@ -91,8 +79,8 @@ Jwift_Field_Tall : Jwift_Field {
   BorderRadius: 24pt
 }
 
-// The one field a page leads with, over its ground: the glass button's material and press, the field's
-// geometry. Editing and an invalid value draw a hairline in the accent or the danger color at the
+// The one field a page leads with, over its ground: the glass button's material and hover, the field's
+// geometry, and no flex. Editing and an invalid value draw a hairline in the accent or the danger color at the
 // rim's own width, over the rim.
 Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   Direction: Row
@@ -108,6 +96,7 @@ Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   Padding: 0pt 18pt
   BorderRadius: 999pt
   Cursor: Text
+  Flex: None
 }
 
 // A number or a short code, in a field of its own width so a run of them reads as a column.
@@ -127,16 +116,7 @@ Jwift_Field_Bare {
   FlexGrow: 1
 }
 
-Jwift_Field_Glass:Hover {
-  VisualScale: 1
-}
-
-Jwift_Field_Glass:Active {
-  VisualScale: 0.985
-}
-
 Jwift_Field_Glass:(Editing) {
-  VisualScale: 1
   BorderWidth: @JwiftRimWidth
   BorderColor: @GoldInk
 }
@@ -147,7 +127,6 @@ Jwift_Field_Glass:(Invalid) {
 }
 
 Jwift_Field_Glass:Disabled {
-  VisualScale: 1
   Cursor: Default
   Opacity: 0.4
 }

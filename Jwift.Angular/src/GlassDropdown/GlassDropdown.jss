@@ -62,7 +62,7 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
 
 // Closed-state cell — flat 40pt round hit-target inside a closed dropdown.
 // No own glass material (the wrapping dropdown owns the glass), so it takes the plain
-// JwiftPress: a fill and the squeeze, no second material on top of the pill's. A cell in
+// JwiftPress: a fill, no second material on top of the pill's. A cell in
 // a group and a button on its own are the same control at two densities, and JwiftPress
 // is why they answer a finger identically. Consumers stop click propagation when the cell
 // should fire a direct action without toggling the dropdown; let it bubble when the cell
@@ -124,7 +124,7 @@ Jwift_GlassDropdownCell_Avatar : Jwift_GlassDropdownCell {
 
 // The June special case, restored: a sink holding ONLY the avatar drops the
 // pill's padding so the avatar fills the whole glass — a true circle, not a
-// ring around a smaller circle — and the PILL takes the button squeeze while
+// ring around a smaller circle — and the PILL takes the button's flex while
 // the cell inside stays still (two nested squeezes read as a flinch).
 // The pill is glass, so it takes the glass press, and its rim paints above the avatar
 // (BorderLayer), which is what keeps the press legible when a photo fills the circle.
@@ -135,12 +135,6 @@ Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGla
 Jwift_GlassDropdownCell_Avatar_Fill : Jwift_GlassDropdownCell_Avatar {
   Width: 48pt
   Height: 48pt
-}
-Jwift_GlassDropdownCell_Avatar_Fill:Hover {
-  VisualScale: 1
-}
-Jwift_GlassDropdownCell_Avatar_Fill:Active {
-  VisualScale: 1
 }
 
 // Ellipsis "open the dropdown" trigger cell — sits between the action
@@ -170,6 +164,8 @@ Jwift_GlassDropdownCell_Ellipsis : Jwift_GlassDropdownCell {
 // declared on _Open falls back to default (Direction: Row), not the base.
 // The open menu is the same glass at a menu's size (later base wins).
 Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
+  // Inert under the finger too: the closed avatar pill's flex stays with the closed pill.
+  Flex: None
   Position: Placed
   Top: 0pt
   Right: 0pt
@@ -250,13 +246,12 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
 // :Active was also declared TWICE -- a second block already held these resting values, so someone had
 // started this fix and left both declarations standing, with merge order deciding which won. One now.
 Jwift_GlassDropdown_Open:Hover {
-  VisualScale: 1
+  Flex: None
   Background: @GlassTint
   BackdropFilter: None
   RimStrength: @JwiftRimStrength
 }
 Jwift_GlassDropdown_Open:Active {
-  VisualScale: 1
   Background: @GlassTint
   BackdropFilter: None
   RimStrength: @JwiftRimStrength

@@ -290,9 +290,9 @@ JwiftScrollEdgeBottomScene : JwiftScrollEdgeBottom {
 // @JwiftVibrancyFillPressed from the wash law above. No glass on glass -- and a lift is not a second material
 // either, it is the absence of one, which is why this is the one treatment every control can take.
 
-// The GESTURE, with nothing said about colour: the hit state, the swell, the squeeze, and the
-// one critically damped 140ms spring they ride. Every press in the app is this motion; what
-// differs is only what the control does with its own paint, which is the two classes below.
+// The GESTURE, with nothing said about colour: the hit state and the pointer. It neither swells nor
+// squeezes: Apple's rows and cells answer a press with their highlight alone, and a button's motion is
+// UIKit's flex, which `JwiftFlex` below adds (Jaui Core/Flex.ts, Jwift/Apple/LiquidGlass.md 9).
 JwiftPressMotion {
   Interactive: true
   Cursor: Pointer
@@ -300,17 +300,17 @@ JwiftPressMotion {
   @Transition VisualScale { Duration: 140ms }
 }
 
-JwiftPressMotion:Hover {
-  VisualScale: 1.06
-}
-
-JwiftPressMotion:Active {
-  VisualScale: 0.92
+// ── JwiftFlex ───────────────────────────────────────────────────────
+// UIKit's press on a button, `_UIFlexInteraction` as interactive glass wears it (variant Auto, by size):
+// it grows by liftScalePoints on its longer side, stretches toward a finger that travels and past its
+// edge, squashes with the finger's acceleration, and on glass lays the big glow over itself and the little
+// glow under the finger. Every value is Apple's; FlexLift, FlexBigGlow, FlexLittleGlow and FlexMovement
+// tune it per control.
+JwiftFlex {
+  Flex: Auto
 }
 
 // The NEUTRAL press: the motion above plus the theme's press fill over whatever the control rests on.
-// Fill and squeeze share the one spring, so the colour and the shrink land together instead
-// of the highlight flashing ahead of the squeeze.
 // A PRESS IS A LIFT, NOT A PAINT. Restored: it was backed out while hunting the hover snap, and the
 // snap survived the revert, so the press was never the cause. The lift is measured -- over a violet bed
 // a hovered control reads (125,85,197) against the bed's (96,56,168), exactly +29/+29/+29 with hue and
@@ -329,10 +329,14 @@ JwiftPress:Active {
 }
 
 // ── JwiftPressGlass ─────────────────────────────────────────────────
-// The same press on a control made OF glass: the fill and the squeeze above, the fill folded into the
-// glass's own face (Jaui Core/Glass.md).
-JwiftPressGlass : JwiftPress {
+// The press on a control made OF glass: UIKit's flex. Its pressed colour is the flex's glows, not a fill,
+// so the press lays none; the hover's fill is folded into the glass's own face (Jaui Core/Glass.md).
+JwiftPressGlass : JwiftPress, JwiftFlex {
   @Transition BackdropFilter { Duration: 140ms }
+}
+
+JwiftPressGlass:Active {
+  BackdropFilter: None
 }
 
 // ── JwiftWash / JwiftWashStrong / JwiftHoverWash ───────────────────
@@ -368,8 +372,8 @@ JwiftHoverWash : JwiftWash {
 //
 // Hover lifts it, the way a lamp coming up reads, and press lifts it FURTHER: pressed glass
 // brightens, it never darkens, so the control answers the finger by coming toward you. Press sits
-// above hover (1.12 over 1.08) so the two never reverse direction under a held finger. Same 1.06
-// swell, same 0.92 squeeze, same 140ms spring as everything else.
+// above hover (1.12 over 1.08) so the two never reverse direction under a held finger, on the same
+// 140ms spring as everything else.
 //
 // The grade cascades to children, which is what keeps a label with its button: black ink stays
 // black under a multiply, white ink stays white, and neither drifts off the pill.
@@ -398,9 +402,8 @@ JwiftPressTint:Active {
 // would have to argue with the per-item accents the app derives from artwork, and an inverted solid
 // never does.
 //
-// THE STATES. It extends `JwiftPressMotion`, which is the app's one press gesture — the hit state,
-// the 1.06 swell, the 0.92 squeeze and the single critically damped 140ms spring they all ride — so
-// a prominent button answers a finger exactly as every glass button, cell and avatar does. What it
+// THE STATES. It extends `JwiftPressMotion`, the app's one press gesture, and `JwiftFlex`, UIKit's
+// press on a button, so a prominent button answers a finger exactly as every glass button does. What it
 // cannot inherit is the PAINT half of either shared press:
 //
 //   * `JwiftPress` lifts what is BEHIND the control, by @JwiftVibrancyFill / @JwiftVibrancyFillPressed. A
@@ -429,7 +432,7 @@ JwiftPressTint:Active {
 // DISABLED is the consumer's (`<glass-button [disabled]>` fades the whole node, label included, so
 // the contrast INSIDE the pill survives the fade). `JwiftProminentOff` is here for the app classes
 // that are not glass buttons and need the same read.
-JwiftProminent : JwiftPressMotion {
+JwiftProminent : JwiftPressMotion, JwiftFlex {
   Background: @Prominent
   @Transition Background { Duration: 140ms }
 }
@@ -477,8 +480,8 @@ JwiftProminentInk {
 
 // The filled destructive CONFIRM. A solid plate, so — exactly as JwiftProminent — there is no backdrop
 // to lens and the bezel, the refraction, the frost and the fresnel rim are all deliberately absent.
-// It extends JwiftPressMotion for the app's one press gesture (the hit state, the 1.06 swell, the 0.92
-// squeeze, the critically damped 140ms spring) and steps the FILL for the paint half, because neither
+// It extends JwiftPressMotion and JwiftFlex for the app's one button press (the hit state and UIKit's
+// flex) and steps the FILL for the paint half, because neither
 // shared press paint works on a saturated plate: JwiftPress lays a white or black veil that washes the
 // red out, which is precisely why the four sheets this replaces had to restate their fill on :Hover and
 // :Active, and JwiftPressTint grades the finished pixels, which on a fill this saturated slides the hue
@@ -488,7 +491,7 @@ JwiftProminentInk {
 // direction as every other press in this sheet: brighter in dark, denser in light. Both halves are
 // theme tokens, measured so the label clears WCAG AA on the resting plate in both themes (Apple's own
 // white-on-system-red computes at 3.4:1 in dark and does not) — see Ui/Theme.Tokens.ts.
-JwiftDangerProminent : JwiftPressMotion {
+JwiftDangerProminent : JwiftPressMotion, JwiftFlex {
   Background: @DangerProminent
   @Transition Background { Duration: 140ms }
 }

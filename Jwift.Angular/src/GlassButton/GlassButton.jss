@@ -1,6 +1,6 @@
 // Inherits the canonical Liquid-Glass look from JwiftGlass (border
 // luminosity + flat 0.15 outline, backdrop, refraction, fresnel) and the
-// app-wide press from JwiftPressGlass (fill + rim + backdrop + squeeze).
+// app-wide press from JwiftPressGlass (the hover fill and UIKit's flex).
 // Only the differences are set below: crisper bevel + no specular for the
 // small pill edge.
 // @GlassTint is the accent fill a themed scope can set. By default the button paints no fill: its colour
@@ -10,7 +10,7 @@
 Jwift_GlassBtn : JwiftGlass, JwiftPressGlass {
   Background: @GlassTint
 
-  // Hover, press, squeeze and their 140ms spring all come from JwiftPressGlass.
+  // Hover and press (the flex) come from JwiftPressGlass.
   // PointScale is the button's own: it cascades through the layout solver, shrinking the
   // pill AND every pt-based property in its subtree, so a consumer that springs it takes
   // the glyph along, like a CSS font-size change cascading through em units.
