@@ -46,6 +46,9 @@ export type GlassButtonShape = 'round' | 'pill' | 'square';
  */
 export type GlassButtonVariant = 'glass' | 'prominent' | 'danger' | 'danger-prominent';
 
+/** The button's size: `regular` (48 pt) or `bar`, iOS 26's 44 pt bar button (a sheet's X and checkmark). */
+export type GlassButtonSize = 'regular' | 'bar';
+
 /** The class stem each variant resolves to. The shape suffix (`_Round` / `_Pill` / `_Square`) is
  *  appended, and every stem declares all three, so a variant change never moves the button. */
 const VARIANT_STEM: Record<GlassButtonVariant, string> = {
@@ -68,7 +71,7 @@ const VARIANT_STEM: Record<GlassButtonVariant, string> = {
  *     <jext class="ToolbarAvatarGlyph" [text]="AvatarIcon" />
  *   </glass-button>
  *
- * Shapes: `round` (default, 48×48 circle), `pill` (auto + pad), `square`.
+ * Shapes: `round` (default, 48×48 circle), `pill` (auto + pad), `square`. Sizes: `regular`, `bar` (44 pt).
  * Variants: `glass` (default — today's liquid glass), `prominent` (the inverted solid), `danger` (the
  * same glass under a red label) and `danger-prominent` (the filled red confirm).
  */
@@ -88,6 +91,8 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
    *  inverted solid, for the one action a screen leads with; `danger` is the same glass under a red
    *  label; `danger-prominent` is the filled red confirm. See {@link GlassButtonVariant}. */
   readonly variant = input<GlassButtonVariant>('glass');
+  /** `bar` draws Apple's 44 pt bar button in place of the 48 pt control; every variant and shape takes it. */
+  readonly size = input<GlassButtonSize>('regular');
   /**
    * A colour of the button's own, as a fill.
    *
@@ -121,8 +126,9 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
       // One stem per variant, then the shape suffix, so promoting or de-escalating a button never
       // moves it a point: every stem carries the same three geometries.
       const stem = VARIANT_STEM[this.variant()] ?? 'Jwift_GlassBtn';
-      const shape = this.shape() === 'pill' ? `${stem}_Pill` : this.shape() === 'square' ? `${stem}_Square` : `${stem}_Round`;
-      return `${shape} ${this.Class()}`.trim();
+      const suffix = this.shape() === 'pill' ? '_Pill' : this.shape() === 'square' ? '_Square' : '_Round';
+      const bar = this.size() === 'bar' ? ` Jwift_GlassBtnBar${suffix}` : '';
+      return `${stem}${suffix}${bar} ${this.Class()}`.trim();
     });
     // The colour override, on the same style-override channel as `disabled` so it layers over
     // whichever shape and variant class is active rather than racing it.

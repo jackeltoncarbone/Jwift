@@ -140,3 +140,24 @@ Jwift_GlassBtn_DangerProminent_Square : Jwift_GlassBtn_DangerProminent {
   Height: 48pt
   BorderRadius: 14pt
 }
+
+// ── The bar size ────────────────────────────────────────────────────
+// `size="bar"`: iOS 26's bar button, the 44 pt glass circle a sheet's X and checkmark are drawn in (Jwift/Apple/
+// Sheets.md 3) [I], at the HIG's 44 pt hit floor. Geometry only, laid over any variant's shape class, so a bar
+// button is every variant's glass, solid or red, at Apple's bar size.
+Jwift_GlassBtnBar_Round {
+  Width: 44pt
+  Height: 44pt
+  BorderRadius: 22pt
+}
+
+Jwift_GlassBtnBar_Pill {
+  MinHeight: 44pt
+  Padding: 0pt 16pt
+}
+
+Jwift_GlassBtnBar_Square {
+  Width: 44pt
+  Height: 44pt
+  BorderRadius: 12pt
+}

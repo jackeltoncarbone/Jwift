@@ -1,6 +1,6 @@
 # Sheets, grabbers and the sheet close button (iOS 26)
 
-What Apple's iOS 26 sheet does, read from UIKit 26.1 and the HIG, then where Jwift's `<drawer>` and modal host differ from it, then a JSS mapping for the fix. No code was changed by this research.
+What Apple's iOS 26 sheet does, read from UIKit 26.1 and the HIG, then what Jwift's `<sheet>` builds from it (sections 6 to 9).
 
 Tags, as used in this file:
 - **[C]**: read from Apple's own code: the Hex-Rays restore of iOS 26.1 (23B85, iPhone18,3) or the firmware's dyld cache, with the function or class named.
@@ -152,100 +152,100 @@ WWDC25 [D]:
 - **iPad and Mac:** a docked side panel is a sidebar or inspector (HIG Sidebars, Split views). A centered modal is a form sheet at the sizes in section 2 [C]. A popover only in regular width [D].
 - **How our uses map** (the list is in section 6):
   - Fixed task sheets with a title and X, content-sized, dimmed, no grabber: Rename, Delete, Confirm Purchase, Report, Add user, Manage user, Checkout, Donate, Points, Seats, Plan, Deliver, Post a request, Edit Profile, Create/Edit fundraiser, Sign in, Owner chooser, Prompt host, Publish composer, Delete account. These are Apple's modal form sheet: X leading, the confirm checkmark trailing when there is one, **no grabber**.
-  - Tall browsers (`[sheetFill]`): Pictures library, Export, Versions, Messaging, Annotations, Block inspector, Changelog, Palette, Publish panel, Edit Cover. On iPhone these are either a large-detent sheet (opaque, edge attached, no side inset) or a medium + large sheet with a grabber. Which one is a product call (section 8).
+  - Tall browsers (`[sheetFill]`): Pictures library, Export, Versions, Messaging, Annotations, Block inspector, Changelog, Palette, Publish panel, Edit Cover. On iPhone these are either a large-detent sheet (opaque, edge attached, no side inset) or a medium + large sheet with a grabber. Section 8 maps each one to its Apple precedent.
   - Tool palettes over live work (Drill Band, Sections, Show menu, Section menu, Picture Shapes, Field/Uniform color and palette, Camera panel, Library New/Show, Stage): Apple's nonmodal sheet (Notes Format): content-sized, no grabber unless resizable, undimmed if the work behind must stay live.
 
-## 6. Gap table
+## 6. What Jwift builds (the `<sheet>`)
 
-Paths are under `ShowStudio.Libraries/Jwift/Jwift.Angular/src/`.
+Built 2026-09-25. Jwift's `<drawer>` and `ModalHost` are deleted; `<sheet>` (`Jwift.Angular/src/Sheet/`) is the one presentation for every size. Paths are under `ShowStudio.Libraries/Jwift/Jwift.Angular/src/`.
 
-| component | what we do | what Apple does | file:line |
+| part | now | Apple | where |
 |---|---|---|---|
-| grabber visibility | `<jiv class="Jwift_DrawerHandle" />` is unconditional: every drawer draws a grabber, including single-height sheets that cannot be dragged at all (the drawer has no drag or detents) | off by default; only on a resizable sheet, or when it is not apparent it can resize or it cannot be swiped away [C][D] | `Drawer/Drawer.ts:52` |
-| grabber in layout | a flow child: 12 pt card padding + 2 pt margin + 5 pt bar + 14 pt gap before the title. It pushes the title and (by the hand-computed `Top: 30pt`) the X down | an overlay at 5 pt from the top edge; content and the nav bar do not move [C] | `Drawer/Drawer.jss:26-27, 47-55, 80-81` |
-| grabber look | 38 × 5 pt, radius 5 pt (not a capsule), `@InkFaint` flat fill | 36 × 5 pt capsule, `tertiaryLabelColor` through a color-matrix + 30 pt blur effect, 44 × 44 hit region, tap cycles detents or dismisses [C] | `Drawer/Drawer.jss:47-55` |
-| close button size | 32 × 32 pt, a `JwiftPress` circle with a secondary-fill vibrancy backdrop, not a glass button | a 44 pt Liquid Glass circle with its own glass background (bar button platter), `xmark` in label ink [D][I] | `Drawer/Drawer.jss:77-90` |
-| close button inset | `Top: 30pt; Left: 20pt`, so its center is at (36, 46) against a 38 pt corner: not concentric (a concentric 32 pt button would sit at 22, 22) | 16 pt from the top and side: center (38, 38), concentric with the 38 pt corner [C][I] | `Drawer/Drawer.jss:81-82` |
-| close glyph | 12 pt `JwiftIcons` weight 600 with secondary-label vibrancy | about 16.5 pt ink, regular weight, label ink [I] | `Drawer/Drawer.jss:92-97` |
-| close shown only with a title | the X (and title) render only when `sheetTitle` is set; an untitled drawer has a grabber and no way to close but the scrim | every modal sheet has an obvious dismiss: the X in the top bar or a swipe [D] | `Drawer/Drawer.ts:53-58` |
-| confirm button | none built in; each sheet draws its own primary action in its body | Done is a tinted 44 pt checkmark circle, trailing, mirroring the X [D][I] | `Drawer/Drawer.ts:51-61` |
-| title | 22 pt / 700 Inter, centered, 40 pt side margins, on its own row below the grabber | inline nav title 17 pt semibold, centered on the buttons' center line (38 pt below the top) [I] | `Drawer/Drawer.jss:59-70` |
-| card inset | a constant `@JwiftSheetInset` = 52 - 38 = 14 pt on the sides and bottom at every height | 8 pt at partial heights (a uniform scale), 0 at the large detent [C] | `Drawer/Drawer.jss:21-22`, `Glass/Jwift.Glass.jss:105-107` |
-| corner radii | 38 pt on all four corners | top 38 pt; bottom `max(displayCorner - 14 v24, 20)` following the display; environment corners at large [C] | `Drawer/Drawer.jss:28`, `Glass/Jwift.Glass.jss:106` |
-| screen corner | a constant 52 pt | the device's `displayCornerRadius` trait [C] | `Glass/Jwift.Glass.jss:105` |
-| tall sheet (`[sheetFill]`) | 82vh, still glass, still inset 14 pt, still 38 pt everywhere | the large detent: edge attached (no inset), opaque background above halfway, bottom corners are the screen's [C][D] | `Drawer/Drawer.jss:43-45` |
-| material | always `JwiftGlass` | glass while `percentFullHeight <= 0.5`, the opaque large background above [C] | `Drawer/Drawer.jss:15` |
-| gestures | none on the drawer: no swipe to dismiss, no drag between heights (the old HTML `ss-drawer` in `ShowStudio.App/src/Design/Drawer.ts:148-153` had them) | swipe down to dismiss (with an action sheet if there are unsaved changes); drag or tap the grabber between detents [D][C] | `Drawer/Drawer.ts` (whole file) |
-| rise motion | `VisualTranslate` 380 ms, `Opacity` 240 ms, a timed transition from 900 pt below | spring, damping 1.0, response 0.344 s [C] | `Drawer/Drawer.jss:30-31, 36-38` |
-| width | 660 pt, centered, on every size class | iPhone: full width (minus the 8 pt inset). iPad: a form sheet, 540 × 600 up to 620 × 680 by screen size [C] | `Drawer/Drawer.jss:18` |
-| modal host | a 520 pt centered outlet over a scrim blurred 24 pt; no chrome of its own | on iPhone a modal is a sheet. On iPad, a form sheet on a dimmed (not blurred) background [D][C] | `Modal/ModalHost.jss:8-41` |
-| glass button size | the round glass button is 48 pt | the sheet bar's buttons are 44 pt [I]. 48 stays right where it is copying another Apple control; the sheet close should not reuse it as is | `GlassButton/GlassButton.jss:20-27` |
+| presentation | one component owns the dimming view, the card, the bar, the grabber, the pan, the rise and the exit; a page writes `@if (open) { <sheet (close)=...> }` and nothing else | UISheetPresentationController owns all of it [C] | `Sheet/Sheet.ts` |
+| grabber | shown when the sheet has more than one detent, or `[grabber]="true"`; 36 × 5 pt capsule 5 pt below the top, tertiary label vibrancy through the glass, a 44 pt hit square; tap steps one detent down and wraps, one detent dismisses; hidden when another sheet covers it; an overlay, never a flow row | section 1 [C] | `Sheet.jss` `Jwift_SheetGrabber*`, `Sheet.Geometry.ts` `GrabberTarget` |
+| bar | the X leading and the checkmark trailing (`[confirmable]`, `(confirm)`), each the 44 pt bar button (`<glass-button size="bar">`) at 16 pt, so its center is the 38 pt corner's; untitled sheets keep the X; the title 17 pt semibold on the buttons' center line | section 3 [C][I] | `Jwift_SheetBar`, `GlassButton.jss` `Jwift_GlassBtnBar_*` |
+| inset | 8 pt sides and bottom at partial heights, closing to 0 at the large detent, as layout (the content reflows rather than scaling, so hit testing stays exact) | a uniform scale to the same 8 pt [C] | `InsetFor`, `PercentFullHeight` |
+| corners | top 38 pt; bottom `max(display - 14 v, 20)`; capped at half the height; a form sheet 32 pt all round | `sub_189108DF4` [C] | `BottomRadius`, `SHEET_METRICS.FormRadius` |
+| display corner | one engine var, `@DisplayCornerRadius`: the shell's `--DisplayCornerRadius` when a native host provides it, else Apple's value for the device class by screen size (402 × 874: 62 pt; iPad: 18; desktop: 0) | `displayCornerRadius` trait [C] | Jaui.Angular `Jaui/Jaui.DisplayCorner.ts` |
+| material | Liquid Glass while at most half way to full height, the opaque `@Sheet` above; a form sheet is opaque | `sub_1891102E0` [C] | `Jwift_SheetGlass`, `Jwift_SheetOpaque` |
+| dimming | black at 0.2 (light) / 0.48 (dark), never blurred, at every detent unless `[largestUndimmedDetent]`; fades in between that detent and the next and as the sheet is dragged away; a tap on it dismisses | `_alertControllerDimmingViewColor` [C] | `Jwift_SheetDim*`, `SHEET_METRICS.Dim*` |
+| detents | `content` (fitted, capped at large), `medium` (0.56 of large; 0.63 at 568 pt), `large` (10 pt under the top safe area); smallest is the resting one | `UISheetDetentBlockMedium` [C], `topOffset` 10 [C] | `LargeHeight`, `MediumHeight` |
+| pan | a vertical pan the content cannot use goes to the card: down when the scroller under the finger rests at its top (or there is none), up too below the largest detent; drags between detents with a rubber band past the largest; release settles to the detent the momentum carries it nearest to (UIScrollView projection), or dismisses | UIKit's sheet pan [C] | Jaui `PanClaim` (engine, `Core/Jaui.ts`), `Sheet.ts` `OnPanClaim` |
+| unsaved changes | `[hasUnsavedChanges]`: a swipe rubber-bands, and every dismissal asks with Apple's menu from the X: "Discard Changes" (red) or "Keep Editing" | `isModalInPresentation` + an action sheet [D] | `Jwift_SheetAsk*` |
+| motion | Apple's sheet spring (damping 1, response 0.344 s: stiffness 333.3, damping 36.5) on the offset, size, corners and dim | [C] | `Sheet.jss` `Jwift_SheetMotion` |
+| body | scrolls under the bar by default, so a sheet never runs past the screen; `[bodyScrolls]="false"` for a sheet that pins its own parts (a search, a footer) | | `Jwift_SheetBody*` |
+| regular width | a centered form sheet: 540 × 600, 580 × 640 or 620 × 680 by the screen's longer side, a fitted sheet as tall as its content up to that; swipe down still dismisses | `defaultFormSheetSizeForScreenSize:` [C] | `FormSheetSizeFor`, `IsRegularWidth` |
 
-## 7. Proposed JSS mapping
+Read for this build, beyond sections 1 to 3 [C]:
+- A centered floating (form) sheet's corner is `qword_1EA93D070`, set once by `0x1890FBAC0` to `0x4040000000000000` = 32.0 (`ipsw dyld disass` at the `swift_once` call in `sub_189108DF4`, `D:\AppleIPSW\sub_189108DF4.s`).
+- `+[UIColor _dimmingViewColor]` is `_alertControllerDimmingViewColor`: white 0 at alpha `0x3FC999999999999A` = 0.2 (light) and `0x3FDEB851EB851EB8` = 0.48 (dark), read at `0x18a64c4d0` and `0x18a6788c0`.
+- The medium detent is `maximumDetentValue × dbl_18A682B20[height > 568]`: 0.63 at 568 pt and under, 0.56 above (`0x18A682B20`).
 
-A sketch for the fix lane. Names follow Jwift's conventions; values are Apple's defaults with their tags. Our @JwiftScreenRadius stays as the stand-in for `displayCornerRadius` until Jaui can read the real device value.
+## 7. The JSS levers
+
+Every lever has Apple's value as its default; a page sets only what differs.
 
 ```
-// ── THE SHEET (Jwift.Glass.jss) ─────────────────────────────────────
-@JwiftSheetTopRadius:    38pt   // [C] edge-attached top corners, every normal height
-@JwiftSheetInsetPartial: 8pt    // [C] side and bottom gap below the large detent (16 / width as a scale)
-@JwiftSheetMinRadius:    20pt   // [C] floor for the bottom corners
-// bottom radius: max(@JwiftScreenRadius - 14 * t, @JwiftSheetMinRadius), t = how far down the top edge sits [C]
-
-// ── THE GRABBER (Drawer.jss) ────────────────────────────────────────
-Jwift_SheetGrabber {
-  Position: Placed           // overlay: never a flow row [C]
-  Top: 5pt                   // [C] grabberSpacing
-  Width: 36pt                // [C]
-  Height: 5pt                // [C]
-  BorderRadius: 2.5pt        // capsule [C]
-  // tertiaryLabel through a color matrix over a 30 pt blur [C]; closest Jwift token: tertiary-label vibrancy
-  // hit region 44 x 44 [C]; tap = next detent down, wrapping; with one detent, tap = dismiss [C]
-}
-// Rendered only when the sheet is resizable (more than one detent) or [grabber]="true" is asked for [C][D].
-
-// ── THE SHEET BAR (Drawer.jss) ──────────────────────────────────────
-Jwift_SheetClose : Jwift_GlassBtn_Round {   // a real glass bar button, its own glass background [D]
-  Position: Placed
-  Top: 16pt                  // [I] 38 (corner) - 22 (radius): concentric [C]
-  Left: 16pt                 // leading edge [D]
-  Width: 44pt                // [I]
-  Height: 44pt
-  BorderRadius: 22pt
-}
-Jwift_SheetConfirm : Jwift_GlassBtn_Prominent_Round {   // the tinted checkmark, trailing [D]
-  Position: Placed
-  Top: 16pt
-  Right: 16pt
-  Width: 44pt
-  Height: 44pt
-  BorderRadius: 22pt
-}
-Jwift_SheetCloseGlyph { FontSize: 17pt  FontWeight: 400 }   // xmark ink about 16.5 pt, label ink [I]
-Jwift_SheetTitle {
-  // centered between the two 44 pt buttons, its line centered on y = 38pt [I]
-  FontSize: 17pt  FontWeight: 600  TextAlign: Center
-  Margin: 0pt 68pt           // 16 + 44 + 8 each side, so a long title never runs under a button
-}
-Jwift_SheetBody { Padding: 76pt 16pt 0pt 16pt }   // content starts below the bar (16 + 44 + 16) [I]
-
-// ── HEIGHTS ────────────────────────────────────────────────────────
-// Fixed (default): content-sized, glass, inset 8pt, top radius 38pt, bottom radius from the screen.
-// Large ([sheetFill] on iPhone): edge attached, inset 0, opaque background, the screen's bottom corners.
-// Medium + large (opt in): grabber on, drag and tap between them, glass below halfway and opaque above.
+<sheet
+  sheetTitle="..."                        // the inline title; untitled sheets still get the X
+  [detents]="['medium', 'large']"         // default ['content']: fitted, dimmed, no grabber
+  [largestUndimmedDetent]="'medium'"      // default null: dimmed at every detent
+  [grabber]="true"                        // default: shown only when resizable
+  [confirmable]="true" (confirm)="..."    // the tinted checkmark, trailing
+  [hasUnsavedChanges]="Dirty()"           // Apple's discard ask on every dismissal
+  [bodyScrolls]="false"                   // the content pins its own parts
+  [TeleportTo]="JWIFT_SHEET_OUTLET"       // present over the tab bar from inside a page
+  Class="Jwift_SheetLayer_Over"           // over a full-screen presentation
+  (presented)="..."                       // the rise has settled: a DOM embed may mount
+  (close)="open.set(false)">
 ```
 
-Rules the mapping encodes:
-1. Grabber visibility = resizable (more than one detent) OR an explicit opt in. Never for a fixed sheet, a centered modal, or a popover.
-2. The grabber never takes layout space. The bar sits at the same place with or without it.
-3. The X is the standard 44 pt glass close button, 16 pt from the corner, concentric with the 38 pt top radius. The same rule gives the checkmark trailing.
-4. The inset is a function of height: 8 pt at partial heights, 0 at large. It is not a constant derived from a guessed screen radius.
-5. Every modal sheet can be closed: the X shows even without a title, and a vertical swipe dismisses.
+```
+Jwift_SheetGrabber   { Width: 36pt  Height: 5pt  BorderRadius: 2.5pt  Margin-top 5pt, tertiary label vibrancy }
+Jwift_SheetBar       { Height: 76pt  Padding: 16pt  Gap: 8pt }          // 16 + 44 + 16
+Jwift_GlassBtnBar_Round { Width: 44pt  Height: 44pt  BorderRadius: 22pt }
+Jwift_SheetTitle     { FontSize: 17pt  FontWeight: 600 }
+Jwift_SheetDim       { Background: black }  opacity 0.2 / 0.48 × the detent's dim
+Jwift_SheetMotion    { @Spring X / Y / Width / Height / BorderRadius { Stiffness: 333.3, Damping: 36.5 } }
+Jwift_SheetCard      { PanClaim: Down }     Jwift_SheetCard_Grows { PanClaim: Vertical }
+@DisplayCornerRadius  // Jaui engine var
+```
 
-## 8. Open questions (product calls for Jack)
+## 8. Every sheet in the app, and its Apple precedent
 
-1. **Which tall sheets get detents?** Pictures library, Messaging, Annotations, Notifications and Export read like Maps-style medium + large sheets (grabber on). Block inspector, Palette, Changelog, Publish and Edit Cover read like large-only form sheets (no grabber, like Mail compose). Apple permits both; the HIG leans toward medium for progressive disclosure on iPhone.
-2. **Nonmodal tool sheets on the drill and picture editors** (Band, Sections, Shapes, color palettes, Camera panel): dimmed like a modal (today's scrim), or undimmed so the field stays live, like Notes Format with `largestUndimmedDetentIdentifier`?
-3. **Swipe to dismiss:** the HIG expects it on every sheet. Adding it to `<drawer>` is a gesture lane of its own. It also needs the "unsaved changes" confirmation on the form sheets (Edit Profile, Create fundraiser, Post a request).
-4. **The desktop and iPad presentation:** today a 660 pt centered card. Apple's iPad answer is a form sheet (540 × 600 up to 620 × 680, centered, dimmed). The `ModalHost` 520 pt outlet with a 24 pt blurred scrim is closer to that than the drawer is. Do both become one "form sheet" at regular width?
-5. **Screen corner:** Apple reads the device's real corner radius. We assume 52 pt. On a phone with a different corner, the bottom corners won't nest. Is the web shell able to provide the device's corner radius (a Capacitor bridge value), or does 52 stay?
+Jack's rule: "whatever Apple does, we do." Each use takes its closest first-party equivalent's detents and dimming. Default where not listed otherwise: a fitted (`content`) detent, dimmed, no grabber, the X leading.
+
+| sheet | file | detents | dim | Apple precedent |
+|---|---|---|---|---|
+| Pictures (drill library) | `App/Drill/Drill.Page.ts` | medium, large (grabber) | dimmed | Photos picker (PHPicker): medium and large, dimmed |
+| Export | `App/Drill/Export/DrillExportSheet.ts` | medium, large (grabber) | dimmed | the share sheet (UIActivityViewController): medium and large |
+| Versions | `App/Drill/Versions/DrillVersionsSheet.ts` | large | dimmed | Pages / Numbers "Browse All Versions": full height |
+| Band, Sections | `App/Drill/Drill.Page.ts` | content | undimmed (the field stays live) | Notes' Format sheet: a nonmodal tool sheet, `largestUndimmedDetentIdentifier` |
+| Show menu, Section menu | `App/Drill/Drill.Page.ts` | content | dimmed | an action list presented as a sheet (Files' "…" on iPhone) |
+| Notes (Annotations) | `Annotations/AnnotationsPane.ts` | medium, large (grabber) | undimmed at medium | Maps / Photos info sheets: resizable, the work live behind at medium |
+| Messaging | `Messaging/MessagingSheet.ts` | large | dimmed | Messages and Mail compose "display only at full height" (HIG) |
+| Notifications | `Notifications/NotificationsSheet.ts` | large | dimmed | the App Store account sheet |
+| Block inspector | `Content/Editor/BlockInspector.ts` | medium, large (grabber) | undimmed at medium | Keynote / Pages Format inspector on iPhone |
+| Palette (CMS) | `Content/Editor/PaletteSheet.ts` | medium, large (grabber) | undimmed at medium | the same Format inspector |
+| What's New (changelog editor) | `Content/Editor/ChangelogEditor.ts` | large | dimmed | Mail compose: a long form, full height |
+| Publish (CMS) | `Content/Editor/PublishPanel.ts` | large | dimmed | Mail compose |
+| Edit Cover | `Item/Item.CoverEditor.ts` | large | dimmed | Photos "Edit" as a full-height sheet |
+| Shapes (picture) | `App/Picture/Picture.Page.ts` | content | undimmed (the picture stays live) | Notes' Format sheet |
+| Field / Uniform color, Environment and Uniform palette | `Field/Designer/*`, `Uniform/*` | medium, large (grabber) | undimmed at medium | the system color picker (UIColorPickerViewController) |
+| Camera panels | `Reality/Camera/CameraPage.ts` | content | dimmed | modal by Jack's standing call ("make it a modal"), `Camera.PanelPlacement.spec.ts` |
+| New (library), Show filter | `Library/Library.ts` | content, scrolls past the screen | dimmed | a chooser sheet (Reminders "New List"): fitted, capped at large |
+| Sign in | `Authentication/SignInChooser.ts` | content | dimmed | the Sign in with Apple sheet |
+| Owner chooser | `Profile/OwnerChooser.ts` | content | dimmed | an account chooser (Settings "Choose account") |
+| Prompt host | `Design/Prompt/PromptHost.ts` | content | dimmed | a modal form sheet |
+| Edit Profile | `Profile/EditProfileFlow.ts` | content | dimmed, asks before discarding | Contacts "Edit": Cancel asks "Discard Changes" |
+| Start a fundraiser | `Fundraiser/CreateFundraiserFlow.ts` | content | dimmed, asks before discarding | the same |
+| Post a request | `Services/ServiceRequestComposer.ts` | content | dimmed, asks before discarding | Mail compose's discard ask |
+| Manage user (admin) | `Admin/Users/AdminUserSettings.ts` | content | dimmed, asks before discarding | the same |
+| Rename, Delete (picture, animation), Delete account, Report, Purchase, Points, Checkout, Donate, Share, Deliver, Seats, Plan, Publish composer, Service reason, Stage, Create Profile, Edit fundraiser, admin Packages / Users | many | content | dimmed | modal form sheets |
+
+## 9. Open (product calls for Jack)
+
+1. **`@JwiftScreenRadius` is still 52.** The app's own screen clip and the tab bar's inset read it; the sheets read the engine's `@DisplayCornerRadius` (62 on a 402 pt phone). Retargeting `@JwiftScreenRadius` to the engine value moves the tab bar and the screen corner, so it was left for its own call.
+2. **The confirm checkmark is the app's prominent plate** (white in dark, black in light), not Apple's blue tint: the app's rule is that prominence is the inverted solid and gold is never a fill. No sheet uses the checkmark yet; forms keep their in-body primary action.
+3. **Unsaved-change asks** are wired where a form already knew its draft (Edit Profile, Start a fundraiser, Post a request, admin Manage user). Edit fundraiser and the CMS editors have no dirty state to read yet.
+4. **A programmatic close fades** (the engine's leave) rather than sliding down; every dismissal a person makes slides.

@@ -186,6 +186,7 @@ export abstract class JivHost {
       OnPointerDown: (e) => this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointerdown', e)),
       OnPointerMove: (e) => this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointermove', e)),
       OnPointerUp: (e) => this._host.nativeElement.dispatchEvent(_clonePointerEvent('pointerup', e)),
+      OnPanClaim: (e) => this._host.nativeElement.dispatchEvent(_clonePointerEvent('panclaim', e)),
     });
 
     effect(() => {
@@ -324,7 +325,7 @@ const _ELEMENT_KEYS = [
   // JivHost class's `Clip: Hidden` stays in the style bag and never reaches the element,
   // so a rounded glass host (e.g. the drill library panel) silently never clips its content.
   'Overflow', 'Clip', 'Visible', 'Interactive', 'PointerEvents',
-  'Cursor', 'UserSelect', 'PointScale',
+  'Cursor', 'UserSelect', 'PointScale', 'PanClaim',
 ];
 
 function _clonePointerEvent(type: string, src: PointerPayload): PointerEvent {

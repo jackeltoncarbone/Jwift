@@ -29,9 +29,25 @@ export {
   type AvatarPhotoVerdict,
   type AvatarPhotoState,
 } from './Avatar/Avatar.Photo';
-export { Drawer, JWIFT_SHEET_OUTLET } from './Drawer/Drawer';
+export { Sheet, SheetBody, SheetStack, JWIFT_SHEET_OUTLET } from './Sheet/Sheet';
+export {
+  type SheetDetent,
+  type FormSheetSize,
+  SHEET_METRICS,
+  FormSheetSizeFor,
+  IsRegularWidth,
+  LargeHeight,
+  MediumHeight,
+  PercentFullHeight,
+  InsetFor,
+  BottomRadius,
+  RubberBand,
+  ProjectedTravel,
+  GrabberTarget,
+  SettleIndex,
+} from './Sheet/Sheet.Geometry';
 export { Slider, type SliderScrubEvent } from './Slider/Slider';
-export { GlassButton, type GlassButtonShape, type GlassButtonVariant } from './GlassButton/GlassButton';
+export { GlassButton, type GlassButtonShape, type GlassButtonVariant, type GlassButtonSize } from './GlassButton/GlassButton';
 export { GlassDropdown } from './GlassDropdown/GlassDropdown';
 export { GlassDropdownItem } from './GlassDropdown/GlassDropdownItem';
 export { GlassActionGroup, type GlassAction } from './GlassActionGroup/GlassActionGroup';
@@ -44,7 +60,6 @@ export { TabItem } from './TabBar/TabItem';
 export { TabBarAccessory } from './TabBar/TabBarAccessory';
 export { SelectionIndicator } from './SelectionIndicator/SelectionIndicator';
 export { MorphSurface, MorphFace, MorphContent } from './Morph/MorphSurface';
-export { ModalHost, ModalOutletService, JWIFT_MODAL_OUTLET } from './Modal/ModalHost';
 export { Card, type CardSize } from './Card/Card';
 export { CardFooter } from './Card/CardFooter';
 export { SectionHeader } from './SectionHeader/SectionHeader';
