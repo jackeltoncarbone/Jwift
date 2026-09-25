@@ -351,15 +351,18 @@ Jwift_GlassDropdownItemLabel_Destructive : Jwift_GlassDropdownItemLabel {
   Color: @Ink
 }
 
-// Non-interactive section header — labels a consolidated overflow section in
-// the multi-group action bar's sink menu (e.g. "CAMERA", "FILE"). Small,
-// uppercase, dim; sits above its group's rows.
-Jwift_GlassDropdownSectionHeader : JwiftTertiaryLabelVibrancy {
+// A section title in a menu, as UIKit's `_UIContextMenuHeaderView` draws it (Apple/Sizing.md section 4):
+// Footnote medium, case as written, 12pt above the text and 16pt from its baseline to the rows, lined up
+// with the rows' content. The 6pt row gaps on either side are part of both.
+// Its ink is plain secondaryLabelColor with no compositing filter, 60% of (235, 235, 245) dark and of
+// (60, 60, 67) light, which is 0.4 of the glass under it plus 141 or 36; the fitted secondary level is
+// far lighter than that in light and washed the header out.
+Jwift_GlassDropdownSectionHeader : JwiftSecondaryLabelVibrancy {
+  TextFilter: Vibrancy(141 * @Dark + 36 * @Light, 0.6)
   FontFamily: Inter
-  FontSize: 10pt
-  FontWeight: 700
-  LetterSpacing: 0.6pt
-  Padding: 8pt 14pt 4pt 14pt
+  FontSize: 13pt
+  FontWeight: 500
+  Padding: 6pt 14pt 7pt 14pt
   MaxLines: 1
 }
 
