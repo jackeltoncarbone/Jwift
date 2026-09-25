@@ -64,8 +64,11 @@ Jwift_SheetCard {
 Jwift_SheetCard_Grows : Jwift_SheetCard {
   PanClaim: Vertical
 }
-// Below half way to full height the sheet is Liquid Glass; above it, the opaque sheet background [C].
+// Below half way to full height the sheet is Liquid Glass; above it, the opaque sheet background [C]. The sheet's
+// subvariant drops the outer refraction and the edge bleed's reach and keeps the drop shadow (Apple/Sheets.md) [C].
 Jwift_SheetGlass : JwiftGlass {
+  GlassOuterRefraction: None
+  GlassBleed: None
 }
 Jwift_SheetOpaque {
   Glass: None
@@ -174,7 +177,7 @@ Jwift_SheetGrabber_Hidden : Jwift_SheetGrabber {
 
 // THE DISCARD ASK: dismissing a sheet with unsaved changes asks first. iOS 26 presents the action sheet from the
 // control that raised it, as a menu under the X: Apple's menu platter, 250 pt wide, 32 pt corners [C].
-Jwift_SheetAsk : JwiftMenuGlass {
+Jwift_SheetAsk : JwiftGlass {
   Layer: 4
   Position: Placed
   Top: 66pt
