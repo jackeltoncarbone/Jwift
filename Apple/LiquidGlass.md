@@ -125,7 +125,7 @@ On iOS 26.1 the glassBackground shader has no dispersion: its uniforms carry no 
 |---|---|---|
 | 0 regular | the tables above | [C] |
 | 1 clear | the clear columns above | [C] |
-| 14 | the liquid lens's glass (section 7), `_Glass._GlassVariant` behind `_UIViewGlass` variant 14 (`sub_188AFE79C` case 14 → `qword_1EA930C80`) | [C] that it is used; its values not in the dump [I] |
+| 14 | the liquid lens's glass (section 7), `_Glass._GlassVariant` behind `_UIViewGlass` variant 14 (`sub_188AFE79C` case 14 → `qword_1EA930C80`): DesignLibrary `GlassMaterialProvider.Configuration.control` (0x18AF49034). The material dispatch (DesignLibrary.mm 2300 to 2840) sends the lens to its recipe `sub_18AF84454` (case 6), which takes its face from `sub_18AF97C20` for that configuration (through `sub_18AF96894`, `sub_18AF6FCC0` and `sub_18AF4CBF0`); the regular face table (1.03 / 0.5 light, 0.6 / 0.2 dark) sits in `sub_18AF7DBA4` (case 10) and `sub_18AF94940`. Which face the control resolution lands on is not yet decoded. Neither the regular nor the clear face, with the contrast edge as read, reaches Apple's release lens body (238 over a 177 bar; they give about 189 and 160) | [C] configuration and path; face values open |
 | 15 | the style-0 lens's glass, with a tint (case 15 → `qword_1EA9310C8`) | [C] used; values [I] |
 
 ## 4. Tint (`.tint(color)`) [C]
