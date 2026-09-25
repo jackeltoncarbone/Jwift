@@ -3,7 +3,7 @@ Jwift_SelectionIndicator {
   // RESTING: below the tab text (text is Layer 1) so the label renders crisp ON
   // TOP — the resting pill is just a background highlight refracting the bar.
   // PRESSED state raises this to Layer 2 (above the text) so the lens magnifies
-  // the label. Layer isn't animated, so it flips instantly on press.
+  // the label. Layer isn't animated: the engine moves a lens across it only while it lenses (Jiv.StyleAnimator).
   Layer: 0
 
   // Apple's selected tab at rest is a NEUTRAL grey plate lifted over the bar: the Photos bar's selected
@@ -79,7 +79,7 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   @Spring Width  { Stiffness: 438.6, Damping: 35.6, Mass: 1 }
   @Spring Height { Stiffness: 438.6, Damping: 35.6, Mass: 1 }
   // ABOVE the tab text (Layer 1) ONLY while pressed: Apple's lens is lifted over the whole bar (its liftPortal).
-  // Drops back to Layer 0 on release.
+  // Drops back to Layer 0 once the released lens has let go.
   Layer: 2
 
   // The lens lifts its own body; the resting plate's vibrancy gives way to it.

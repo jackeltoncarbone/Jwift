@@ -56,10 +56,6 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _unbindPointer: (() => void) | null = null;
   private _shapeX = new Spring(1, 2500, 60, 1);
   private _shapeY = new Spring(1, 2500, 60, 1);
-  private static readonly _GrowStiffness = 409;
-  private static readonly _GrowDamping = 25.3;
-  private static readonly _ReleaseStiffness = 2187;
-  private static readonly _ReleaseDamping = 112;
   // Apple's lens (Jwift/Apple/Sizing.md 1, 2): the resting pill outset 8 pt all round on a tab bar
   // (`CGRectInset(itemFrame, -8, -8)`), 12 pt across and 8 pt down on a segmented control (label-only items), so it
   // is never narrower than the pill.
@@ -71,15 +67,8 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   /** The colour the lens inks what it magnifies, or null. */
   private _lensInk: string | null = null;
   private _segmented = false;
-  // How far the lens is in, [0, 1], on the same springs the pressed and resting classes time the lens with
-  // (Apple's, SelectionIndicator.jss): it holds the pill above the labels until the release has settled.
-  private _pressAmount = new Spring(0, SelectionIndicator._GrowStiffness, SelectionIndicator._GrowDamping, 1);
   private _firstValid = false;
   private _hidden = false;
-  /** Whether we're currently holding the Layer:2 override (pill above the text)
-   *  through a press + its release settle. Tracked so we only set/clear the
-   *  override on transitions, not every frame. */
-  private _holdAbove = false;
   // The current target / parent we've subscribed to per-frame rect
   // snapshots from. With Jaui in the worker, JivHandle.X/Y/Width/Height
   // on main are zero unless WatchRect(true) has been set; the worker
@@ -270,27 +259,6 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     const dt = haveLast
       ? Math.min(0.033, Math.max(0.001, (now - this._lastT) / 1000))
       : 0.016;
-
-    // The lens grows and lets go on Apple's two springs; this one only says how far in it is.
-    this._pressAmount.Target = isPressed ? 1 : 0;
-    this._pressAmount.Stiffness = isPressed ? SelectionIndicator._GrowStiffness : SelectionIndicator._ReleaseStiffness;
-    this._pressAmount.Damping = isPressed ? SelectionIndicator._GrowDamping : SelectionIndicator._ReleaseDamping;
-    this._pressAmount.Step(dt);
-    const pressAmount = this._pressAmount.Value;
-
-    // Keep the pill ABOVE the label for the WHOLE press gesture INCLUDING the
-    // release settle. The base/pressed JSS classes flip Layer (0↔2) the instant
-    // the pressed flag changes — so on release the pill would drop below the text
-    // while the magnify spring is still relaxing, hiding the settle. Hold the
-    // pressed class's Layer as a style override (it merges over the class) until pressAmount has
-    // fully relaxed, then clear it so the resting pill sits beneath the crisp
-    // label again. Only fires on the two transitions, not per frame.
-    const holdAbove = isPressed || pressAmount > 0.01;
-    if (holdAbove !== this._holdAbove) {
-      this._holdAbove = holdAbove;
-      if (holdAbove) this.SetStyleOverride({ Layer: 2 });
-      else this.ClearStyleOverride('Layer');
-    }
 
     // The layout box is the resting pill, pressed or not: the lens's growth is the pressed class's VisualScale,
     // render-time, on Apple's springs, so it never chases a layout spring.
