@@ -115,6 +115,8 @@ JwiftSeparatorVibrancy {
 @JwiftSheetInset: 8pt
 // The width an open inspector column takes from the content beside it; the sheet sets it live, 0 when none is open.
 @JwiftInspectorInset: 0pt
+// 1 while a sheet stands up from the bottom edge (compact width): the page's bottom controls fade under it.
+@JwiftSheetCovers: 0
 @JwiftSheetRadius: @JwiftScreenRadius - @JwiftSheetInset
 @JwiftSheetBarInset: @JwiftSheetRadius - 22pt
 

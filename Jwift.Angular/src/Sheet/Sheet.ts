@@ -59,7 +59,22 @@ export class SheetStack {
     return open.length > 0 ? open[open.length - 1] : null;
   });
   Add(sheet: object): void { this._open.update((open) => [...open, sheet]); }
-  Remove(sheet: object): void { this._open.update((open) => open.filter((s) => s !== sheet)); }
+  Remove(sheet: object): void {
+    this._open.update((open) => open.filter((s) => s !== sheet));
+    this.SetCovering(sheet, false);
+  }
+
+  private readonly _covering = signal<ReadonlySet<object>>(new Set());
+  /** A sheet risen from the bottom edge stands over the page's bottom controls, which step aside under it. */
+  readonly Covers = computed(() => this._covering().size > 0);
+  SetCovering(sheet: object, covering: boolean): void {
+    if (this._covering().has(sheet) === covering) return;
+    this._covering.update((set) => {
+      const next = new Set(set);
+      if (covering) next.add(sheet); else next.delete(sheet);
+      return next;
+    });
+  }
 }
 
 /** Parents the sheet's own layer children (the dim, the card) to the sheet. Scoped to its own element, because a
@@ -485,6 +500,16 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     this._reserveFrame = requestAnimationFrame(this._stepReserve);
   });
 
+  // ── Over the page's bottom controls ────────────────────────────────
+  // An edge attached sheet stands where the page's transport and toolbars are, and its glass would show their
+  // glyphs through its own controls. They step aside while it is up, as Maps moves its controls off a sheet.
+  private readonly _coveringWatch = effect(() => {
+    this._stack.SetCovering(this, this._phase() === 'shown' && !this.Regular());
+  });
+  private readonly _coversVar = effect(() => {
+    this._jss.SetVar('JwiftSheetCovers', this._stack.Covers() ? '1' : '0');
+  });
+
   private readonly _pageOffset = signal(0);
   private readonly _pageMotion = signal(false);
   /** A popped-to page brightens up from the dimmed underlay it was pushed under. */
@@ -561,6 +586,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._stack.Remove(this);
+    this._jss.SetVar('JwiftSheetCovers', this._stack.Covers() ? '1' : '0');
     cancelAnimationFrame(this._reserveFrame);
     if (this._reserve.Value !== 0) this._jss.SetVar('JwiftInspectorInset', '0px');
     this._unbindPan?.();
