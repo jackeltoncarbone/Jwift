@@ -1,10 +1,11 @@
 import {
   ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit,
-  computed, effect, forwardRef, input, model, output, signal, viewChild,
+  computed, effect, forwardRef, inject, input, model, output, signal, viewChild,
 } from '@angular/core';
 import { Jinput, type JinputSpan, type JinputPeerCaret, Jiv } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
 import { Icon } from '../Icon/Icon';
+import { SheetEdits } from '../Sheet/Sheet';
 import TextInputJss from './TextInput.jss';
 
 export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret };
@@ -41,7 +42,7 @@ export type TextInputMaterial = 'Fill' | 'Glass' | 'None';
       <jinput
         #jinput
         [Text]="Text()"
-        (TextChange)="Text.set($event)"
+        (TextChange)="OnTyped($event)"
         [Spans]="Spans()"
         [PeerCarets]="PeerCarets()"
         [Placeholder]="Placeholder()"
@@ -109,6 +110,8 @@ export class TextInput extends JivHost implements OnInit, OnDestroy {
   /** Opt in to native QuickType suggestions and autocorrect (see Jinput.Autocorrect). */
   readonly Autocorrect = input(false);
   readonly EnterKeyHint = input<'enter' | 'done' | 'go' | 'search' | 'send'>('enter');
+  /** Whether typing here is work its sheet asks before discarding. A search field never is. */
+  readonly TracksEdits = input(true);
 
   readonly PositionClicked = output<{ index: number; event: PointerEvent; summonedFocus?: boolean }>();
   readonly PositionHovered = output<{ index: number | null }>();
@@ -131,6 +134,7 @@ export class TextInput extends JivHost implements OnInit, OnDestroy {
   private readonly _jinput = viewChild<Jinput>('jinput');
   private readonly _jinputHost = viewChild('jinput', { read: ElementRef });
   private readonly _editing = signal(false);
+  private readonly _sheetEdits = inject(SheetEdits, { optional: true });
 
   protected readonly ShowsSearchGlyph = computed(() => this.InputMode() === 'search' && this.Material() !== 'None');
   protected readonly ShowsClear = computed(() =>
@@ -162,6 +166,11 @@ export class TextInput extends JivHost implements OnInit, OnDestroy {
     this._jinput()?.SetText('');
     this.Cleared.emit();
   };
+
+  protected OnTyped(text: string): void {
+    this.Text.set(text);
+    if (this.TracksEdits() && this.InputMode() !== 'search') this._sheetEdits?.Mark();
+  }
 
   protected OnFocusChanged(focused: boolean): void {
     this._editing.set(focused);

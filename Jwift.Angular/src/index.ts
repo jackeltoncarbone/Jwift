@@ -29,7 +29,7 @@ export {
   type AvatarPhotoVerdict,
   type AvatarPhotoState,
 } from './Avatar/Avatar.Photo';
-export { Sheet, SheetBody, SheetStack, JWIFT_SHEET_OUTLET } from './Sheet/Sheet';
+export { Sheet, SheetBody, SheetEdits, SheetStack, JWIFT_SHEET_OUTLET } from './Sheet/Sheet';
 export {
   type SheetDetent,
   type FormSheetSize,

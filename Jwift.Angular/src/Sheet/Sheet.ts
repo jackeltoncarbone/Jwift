@@ -76,6 +76,21 @@ export class SheetBody {
   }
 }
 
+/**
+ * The edits a person has typed into a sheet since it opened. A field inside a sheet reports each change it
+ * takes from the person (never one bound in by the app), so a form sheet knows it holds work without every
+ * owner tracking it by hand.
+ */
+@Injectable()
+export class SheetEdits {
+  private readonly _edited = signal(false);
+  readonly Edited = this._edited.asReadonly();
+  /** A person changed something in the sheet. */
+  Mark(): void { this._edited.set(true); }
+  /** The sheet's work was kept (saved in place): nothing is left to lose. */
+  Reset(): void { this._edited.set(false); }
+}
+
 type SheetPhase = 'entering' | 'shown' | 'leaving';
 
 interface PanSample { readonly Y: number; readonly T: number }
@@ -94,7 +109,11 @@ interface PanSample { readonly Y: number; readonly T: number }
  *   }
  *
  * `close` fires once the sheet has left, for every dismissal a person makes (the X, a swipe, a tap on the dim, the
- * grabber of a one-detent sheet). A sheet with `[hasUnsavedChanges]` asks before any of them discards.
+ * grabber of a one-detent sheet). A sheet holding unsaved work asks "Discard Changes" or "Keep Editing" before any
+ * of them discards, Apple's `isModalInPresentation` pattern. By default the work is whatever a person typed into
+ * the sheet's fields; `[hasUnsavedChanges]` states it exactly (a form that compares against what it opened with),
+ * and `[asksBeforeDiscarding]="false"` turns the ask off for a sheet whose fields are not work (a search, a chat
+ * composer that keeps its draft).
  */
 @Component({
   selector: 'sheet',
@@ -145,7 +164,10 @@ interface PanSample { readonly Y: number; readonly T: number }
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // Projected content, in a control-flow block or not, parents to the body; the layer's own children to the sheet.
-  providers: [{ provide: Jiv, useFactory: () => inject(Sheet).ContentParent }],
+  providers: [
+    { provide: Jiv, useFactory: () => inject(Sheet).ContentParent },
+    { provide: SheetEdits, useFactory: () => inject(Sheet).Edits },
+  ],
 })
 export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   /** The inline title, centered on the bar. An untitled sheet still has its X. */
@@ -160,8 +182,10 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   /** Shows the checkmark trailing the bar; a press emits `confirm`. */
   readonly confirmable = input<boolean>(false);
   readonly confirmDisabled = input<boolean>(false);
-  /** Apple's `isModalInPresentation` pattern: a dismissal asks "Discard Changes" or "Keep Editing" first. */
-  readonly hasUnsavedChanges = input<boolean>(false);
+  /** Apple's `isModalInPresentation`, per sheet: whether a dismissal with unsaved work asks before it discards. */
+  readonly asksBeforeDiscarding = input<boolean>(true);
+  /** The sheet's unsaved work, stated by its owner. Null (the default) means whatever was typed into its fields. */
+  readonly hasUnsavedChanges = input<boolean | null>(null);
   /** False when the content scrolls its own parts (a pinned search, a pinned footer); the body then only clips. */
   readonly bodyScrolls = input<boolean>(true);
   /** App classes merged onto the presentation layer (a higher Layer over a full-screen presentation). */
@@ -178,6 +202,10 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   private readonly _card = viewChild.required<Jiv>('card');
 
   private _body: Jiv | null = null;
+  /** What the sheet's fields report typing into. */
+  readonly Edits = new SheetEdits();
+  /** Whether a dismissal now would lose work, and so asks first. */
+  readonly Unsaved = computed(() => this.asksBeforeDiscarding() && (this.hasUnsavedChanges() ?? this.Edits.Edited()));
   /** What projected content parents to: the body, once it exists. */
   readonly ContentParent: Jiv = ((sheet: Sheet) => ({
     get Node(): JivHandle { return sheet._bodyNode(); },
@@ -421,7 +449,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   /** Every dismissal a person makes comes here: with unsaved changes it asks first. */
   AttemptDismiss(): void {
     if (this._phase() !== 'shown') return;
-    if (this.hasUnsavedChanges()) {
+    if (this.Unsaved()) {
       this._settle(0);
       this._asking.set(true);
       return;
@@ -510,7 +538,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     const stops = this._stops();
     const min = this.Regular() ? this._restHeight() : stops[0].Height;
     const max = this.Regular() ? this._restHeight() : stops[stops.length - 1].Height;
-    const dismissable = !this.hasUnsavedChanges();
+    const dismissable = !this.Unsaved();
     if (extent > max) {
       this._dragHeight.set(max + RubberBand(extent - max, Height));
       this._drop.set(0);

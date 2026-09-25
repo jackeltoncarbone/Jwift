@@ -171,7 +171,7 @@ Built 2026-09-25. Jwift's `<drawer>` and `ModalHost` are deleted; `<sheet>` (`Jw
 | dimming | black at 0.2 (light) / 0.48 (dark), never blurred, at every detent unless `[largestUndimmedDetent]`; fades in between that detent and the next and as the sheet is dragged away; a tap on it dismisses | `_alertControllerDimmingViewColor` [C] | `Jwift_SheetDim*`, `SHEET_METRICS.Dim*` |
 | detents | `content` (fitted, capped at large), `medium` (0.56 of large; 0.63 at 568 pt), `large` (10 pt under the top safe area); smallest is the resting one | `UISheetDetentBlockMedium` [C], `topOffset` 10 [C] | `LargeHeight`, `MediumHeight` |
 | pan | a vertical pan the content cannot use goes to the card: down when the scroller under the finger rests at its top (or there is none), up too below the largest detent; drags between detents with a rubber band past the largest; release settles to the detent the momentum carries it nearest to (UIScrollView projection), or dismisses | UIKit's sheet pan [C] | Jaui `PanClaim` (engine, `Core/Jaui.ts`), `Sheet.ts` `OnPanClaim` |
-| unsaved changes | `[hasUnsavedChanges]`: a swipe rubber-bands, and every dismissal asks with Apple's menu from the X: "Discard Changes" (red) or "Keep Editing" | `isModalInPresentation` + an action sheet [D] | `Jwift_SheetAsk*` |
+| unsaved changes | on by default: whatever a person typed into the sheet's `<text-input>`s (a search field never counts) makes a swipe rubber-band and every dismissal ask with Apple's menu from the X: "Discard Changes" (red) or "Keep Editing". `[hasUnsavedChanges]` states the work exactly instead (a form compared against what it opened with); `[asksBeforeDiscarding]="false"` is the per-sheet setting for a sheet whose fields are not work (a rename, a prompt, a composer that keeps its draft, an inspector whose edits are already kept); `SheetEdits.Reset()` after a save that keeps the sheet open | `isModalInPresentation` + an action sheet [D] | `Jwift_SheetAsk*`, `SheetEdits` |
 | motion | Apple's sheet spring (damping 1, response 0.344 s: stiffness 333.3, damping 36.5) on the offset, size, corners and dim | [C] | `Sheet.jss` `Jwift_SheetMotion` |
 | body | scrolls under the bar by default, so a sheet never runs past the screen; `[bodyScrolls]="false"` for a sheet that pins its own parts (a search, a footer) | | `Jwift_SheetBody*` |
 | regular width | a centered form sheet: 540 × 600, 580 × 640 or 620 × 680 by the screen's longer side, a fitted sheet as tall as its content up to that; swipe down still dismisses | `defaultFormSheetSizeForScreenSize:` [C] | `FormSheetSizeFor`, `IsRegularWidth` |
@@ -192,7 +192,8 @@ Every lever has Apple's value as its default; a page sets only what differs.
   [largestUndimmedDetent]="'medium'"      // default null: dimmed at every detent
   [grabber]="true"                        // default: shown only when resizable
   [confirmable]="true" (confirm)="..."    // the tinted checkmark, trailing
-  [hasUnsavedChanges]="Dirty()"           // Apple's discard ask on every dismissal
+  [hasUnsavedChanges]="Dirty()"           // default null: the ask follows what was typed into the sheet
+  [asksBeforeDiscarding]="false"          // default true: the per-sheet isModalInPresentation setting
   [bodyScrolls]="false"                   // the content pins its own parts
   [TeleportTo]="JWIFT_SHEET_OUTLET"       // present over the tab bar from inside a page
   Class="Jwift_SheetLayer_Over"           // over a full-screen presentation
@@ -229,7 +230,7 @@ Jack's rule: "whatever Apple does, we do." Each use takes its closest first-part
 | Palette (CMS) | `Content/Editor/PaletteSheet.ts` | medium, large (grabber) | undimmed at medium | the same Format inspector |
 | What's New (changelog editor) | `Content/Editor/ChangelogEditor.ts` | large | dimmed | Mail compose: a long form, full height |
 | Publish (CMS) | `Content/Editor/PublishPanel.ts` | large | dimmed | Mail compose |
-| Edit Cover | `Item/Item.CoverEditor.ts` | large | dimmed | Photos "Edit" as a full-height sheet |
+| Edit Cover | `Item/Item.CoverEditor.ts` | large | dimmed, asks before discarding | Photos "Edit" as a full-height sheet: Cancel asks "Discard Changes" |
 | Shapes (picture) | `App/Picture/Picture.Page.ts` | content | undimmed (the picture stays live) | Notes' Format sheet |
 | Field / Uniform color, Environment and Uniform palette | `Field/Designer/*`, `Uniform/*` | medium, large (grabber) | undimmed at medium | the system color picker (UIColorPickerViewController) |
 | Camera panels | `Reality/Camera/CameraPage.ts` | content | dimmed | modal by Jack's standing call ("make it a modal"), `Camera.PanelPlacement.spec.ts` |
@@ -270,5 +271,5 @@ ewsroom-ios26-maps-preferred-routes-sheet-edge-over-map.png`), thin streets vani
 
 1. **The screen corner is derived, the same on every device** (Jack, 2026-09-25): `@JwiftScreenRadius` is the tab bar's radius plus UIKit's 21 pt inset, 52 pt. The sheet's corners and its bar buttons follow it (44 pt corners, buttons 22 pt in), which departs from Apple's 38 pt top and display-following bottom. Apple's display and window corners stay recorded in `Sizing.md` 10 and 11.
 2. **The confirm checkmark is the app's prominent plate** (white in dark, black in light), not Apple's blue tint: the app's rule is that prominence is the inverted solid and gold is never a fill. No sheet uses the checkmark yet; forms keep their in-body primary action.
-3. **Unsaved-change asks** are wired where a form already knew its draft (Edit Profile, Start a fundraiser, Post a request, admin Manage user). Edit fundraiser and the CMS editors have no dirty state to read yet.
+3. **Unsaved-change asks** are on for every form sheet by default (typing marks the sheet), exact where the form compares itself (Edit Profile, Start a fundraiser, Edit fundraiser, Edit Cover, Post a request, admin Manage and Add user), and off where closing loses nothing: the CMS block inspector and What's New editor (their edits are kept in the surface draft and publish when editing ends), admin plan records (the page's commit bar), Notes and Messages composers (the draft stays), renames, prompts, delete confirmations, donation, plan and seat counts.
 4. **A programmatic close fades** (the engine's leave) rather than sliding down; every dismissal a person makes slides.
