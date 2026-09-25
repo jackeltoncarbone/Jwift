@@ -197,9 +197,15 @@ SwiftUI's linear `ProgressView` on iOS is `LinearUIKitProgressView.Base.SwiftUIP
 | toolbar, style unified compact (4) | 20 pt |
 | toolbar, style unified (3) | 26 pt |
 
-Read as `fmov d8, #15 / #26 / #16`, then `fcsel d8, #20, #26` on `_effectiveToolbarStyle == 4` after excluding styles 1 and 2 (`sub x8, style, #3; cmn x8, #3; b.hi`). `_topCornerSize` and `_bottomCornerSize` build on this value. Measured renders of a titled window read 24 pt [I] (theclifmeister/toe `SystemCornerRadius.swift`), within antialiasing of 26 for a toolbar window. Jaui's `@DisplayCornerRadius` uses the unified-toolbar 26 for any screen that is not a known iPhone or iPad, since the app's window carries a unified glass toolbar.
+Read as `fmov d8, #15 / #26 / #16`, then `fcsel d8, #20, #26` on `_effectiveToolbarStyle == 4` after excluding styles 1 and 2 (`sub x8, style, #3; cmn x8, #3; b.hi`). `_topCornerSize` and `_bottomCornerSize` build on this value. Measured renders of a titled window read 24 pt [I] (theclifmeister/toe `SystemCornerRadius.swift`), within antialiasing of 26 for a toolbar window. Recorded as a fact; the app's outer corner does not follow it (section 11).
 
 Recipe: `ipsw download ipsw --macos --device Mac16,1 --version 26.1 --pattern "043-56976-105.dmg"`, `ipsw fw aea` (Apple's published key), `7z x -sns` of `System/Library/dyld/dyld_shared_cache_arm64e*`, the LZBITMAP forks through `Tools/Ipsw/decmpfs` (Methods.md 3.3), then `ipsw dyld symaddr --image AppKit` and `ipsw dyld disass`. Files in `D:\AppleIPSW\macos26\`.
+
+## 11. Display corners, and the app's outer corner
+
+The display's own corner (`UITraitCollection.displayCornerRadius`), by portrait screen in points [I], read off each device: 375 x 812: 44 (X, XS, 11 Pro: 39); 414 x 896: 41.5 (XS Max, 11 Pro Max: 39); 390 x 844: 47.33; 428 x 926: 53.33; 393 x 852 and 430 x 932: 55; 402 x 874, 420 x 912 and 440 x 956: 62; every iPad: 18. A macOS 26 window: section 10.
+
+These are recorded facts; the app does not clip to them. Jack's rule (2026-09-25): concentric means the same thing on every device, so the app's outer corner is DERIVED from the tab bar, `@JwiftScreenRadius = @JwiftTabBarHeight / 2 + @JwiftTabBarInset` (31 + 21 = 52 pt), on a phone, an iPad and the web alike. Everything near the edge is that radius less its gap (Apple's ConcentricRectangle rule): the expanded 60 pt bar sits 52 - 30 = 22 pt in, a partial sheet 8 pt in wears 44 pt corners and 52 at the edge, a menu's 28 pt panel keeps 24 pt from the screen's foot.
 
 ## Not found
 

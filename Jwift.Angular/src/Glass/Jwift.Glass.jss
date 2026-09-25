@@ -106,11 +106,15 @@ JwiftSeparatorVibrancy {
 @JwiftRimStrength: 2
 
 // ── THE SCREEN CORNER ───────────────────────────────────────────────
-// The app's outer corner is the display's own (`displayCornerRadius`): the engine's @DisplayCornerRadius,
-// 62 pt on a 402 pt iPhone, 18 on an iPad, 26 in a desktop window (macOS 26's toolbar window). The sheet's top
-// corner is 38 pt [C].
-@JwiftScreenRadius: @DisplayCornerRadius
-@JwiftSheetRadius: 38pt
+// Concentric means the same on every device: the app's outer corner is the tab bar's radius plus its inset from
+// the edge, 31 + 21 = 52 pt on a phone, an iPad and the web alike (Apple/Sizing.md 11). Everything near the
+// edge is that corner less its gap: the partial sheet 8 pt in wears 44 pt, and its 22 pt buttons sit 22 pt in.
+@JwiftTabBarHeight: 62pt
+@JwiftTabBarInset: 21pt
+@JwiftScreenRadius: @JwiftTabBarHeight / 2 + @JwiftTabBarInset
+@JwiftSheetInset: 8pt
+@JwiftSheetRadius: @JwiftScreenRadius - @JwiftSheetInset
+@JwiftSheetBarInset: @JwiftSheetRadius - 22pt
 
 // ── JwiftGlass ──────────────────────────────────────────────────────
 // Apple's regular Liquid Glass. A control with a colour of its own sets its Background, which is the glass's

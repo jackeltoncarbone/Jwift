@@ -163,10 +163,10 @@ Built 2026-09-25. Jwift's `<drawer>` and `ModalHost` are deleted; `<sheet>` (`Jw
 |---|---|---|---|
 | presentation | one component owns the dimming view, the card, the bar, the grabber, the pan, the rise and the exit; a page writes `@if (open) { <sheet (close)=...> }` and nothing else | UISheetPresentationController owns all of it [C] | `Sheet/Sheet.ts` |
 | grabber | shown when the sheet has more than one detent, or `[grabber]="true"`; 36 × 5 pt capsule 5 pt below the top, tertiary label vibrancy through the glass, a 44 pt hit square; tap steps one detent down and wraps, one detent dismisses; hidden when another sheet covers it; an overlay, never a flow row | section 1 [C] | `Sheet.jss` `Jwift_SheetGrabber*`, `Sheet.Geometry.ts` `GrabberTarget` |
-| bar | the X leading and the checkmark trailing (`[confirmable]`, `(confirm)`), each the 44 pt bar button (`<glass-button size="bar">`) at 16 pt, so its center is the 38 pt corner's; untitled sheets keep the X; the title 17 pt semibold on the buttons' center line | section 3 [C][I] | `Jwift_SheetBar`, `GlassButton.jss` `Jwift_GlassBtnBar_*` |
+| bar | the X leading and the checkmark trailing (`[confirmable]`, `(confirm)`), each the 44 pt bar button (`<glass-button size="bar">`) at `@JwiftSheetBarInset` (22 pt; Apple's is 16 in a 38 pt corner), so its center is the corner's; untitled sheets keep the X; the title 17 pt semibold on the buttons' center line | section 3 [C][I] | `Jwift_SheetBar`, `GlassButton.jss` `Jwift_GlassBtnBar_*` |
 | inset | 8 pt sides and bottom at partial heights, closing to 0 at the large detent, as layout (the content reflows rather than scaling, so hit testing stays exact) | a uniform scale to the same 8 pt [C] | `InsetFor`, `PercentFullHeight` |
-| corners | top 38 pt; bottom `max(display - 14 v, 20)`; capped at half the height; a form sheet 32 pt all round | `sub_189108DF4` [C] | `BottomRadius`, `SHEET_METRICS.FormRadius` |
-| display corner | one engine var, `@DisplayCornerRadius`: the shell's `--DisplayCornerRadius` when a native host provides it, else Apple's value for the device class by screen size (402 × 874: 62 pt; iPad: 18; desktop: 0) | `displayCornerRadius` trait [C] | Jaui.Angular `Jaui/Jaui.DisplayCorner.ts` |
+| corners | Apple: top 38 pt, bottom `max(display - 14 v, 20)` [C]. Ours, by Jack's concentric rule (2026-09-25): every corner is the app's outer corner less its gap, `@JwiftSheetRadius` 52 - 8 = 44 on top, bottom `max(52 - inset, 20)` (44 partial, 52 at the edge); capped at half the height; a form sheet the same 44 all round, so its bar buttons stay concentric (Apple's is 32 [C], `qword_1EA93D070`) | `sub_189108DF4` [C] | `BottomRadius`, `@JwiftSheetRadius` |
+| outer corner | `@JwiftScreenRadius`, the tab bar's radius plus its inset (31 + 21 = 52 pt) on every device; Apple's display corners are recorded in `Sizing.md` 11 and not used | `displayCornerRadius` trait [C] | `Jwift.Glass.jss` |
 | material | Liquid Glass while at most half way to full height, the opaque `@Sheet` above; a form sheet is opaque | `sub_1891102E0` [C] | `Jwift_SheetGlass`, `Jwift_SheetOpaque` |
 | dimming | black at 0.2 (light) / 0.48 (dark), never blurred, at every detent unless `[largestUndimmedDetent]`; fades in between that detent and the next and as the sheet is dragged away; a tap on it dismisses | `_alertControllerDimmingViewColor` [C] | `Jwift_SheetDim*`, `SHEET_METRICS.Dim*` |
 | detents | `content` (fitted, capped at large), `medium` (0.56 of large; 0.63 at 568 pt), `large` (10 pt under the top safe area); smallest is the resting one | `UISheetDetentBlockMedium` [C], `topOffset` 10 [C] | `LargeHeight`, `MediumHeight` |
@@ -202,13 +202,13 @@ Every lever has Apple's value as its default; a page sets only what differs.
 
 ```
 Jwift_SheetGrabber   { Width: 36pt  Height: 5pt  BorderRadius: 2.5pt  Margin-top 5pt, tertiary label vibrancy }
-Jwift_SheetBar       { Height: 76pt  Padding: 16pt  Gap: 8pt }          // 16 + 44 + 16
+Jwift_SheetBar       { Height: @JwiftSheetBarHeight  Padding: @JwiftSheetBarInset  Gap: 8pt }   // 22 + 44 + 16
 Jwift_GlassBtnBar_Round { Width: 44pt  Height: 44pt  BorderRadius: 22pt }
 Jwift_SheetTitle     { FontSize: 17pt  FontWeight: 600 }
 Jwift_SheetDim       { Background: black }  opacity 0.2 / 0.48 × the detent's dim
 Jwift_SheetMotion    { @Spring X / Y / Width / Height / BorderRadius { Stiffness: 333.3, Damping: 36.5 } }
 Jwift_SheetCard      { PanClaim: Down }     Jwift_SheetCard_Grows { PanClaim: Vertical }
-@DisplayCornerRadius  // Jaui engine var
+@JwiftScreenRadius: @JwiftTabBarHeight / 2 + @JwiftTabBarInset   @JwiftSheetRadius: @JwiftScreenRadius - @JwiftSheetInset
 ```
 
 ## 8. Every sheet in the app, and its Apple precedent
@@ -268,7 +268,7 @@ ewsroom-ios26-maps-preferred-routes-sheet-edge-over-map.png`), thin streets vani
 
 ## 9. Open (product calls for Jack)
 
-1. **The screen corner is the display's.** `@JwiftScreenRadius` is the engine's `@DisplayCornerRadius` (62 pt on a 402 pt phone, 18 on an iPad, 26 in a desktop window: macOS 26's unified-toolbar window, `Sizing.md` 10). The tab bar no longer derives its inset from it: UIKit's floating bar sits 21 pt in on every iPhone (`Sizing.md` 1) [C].
+1. **The screen corner is derived, the same on every device** (Jack, 2026-09-25): `@JwiftScreenRadius` is the tab bar's radius plus UIKit's 21 pt inset, 52 pt. The sheet's corners and its bar buttons follow it (44 pt corners, buttons 22 pt in), which departs from Apple's 38 pt top and display-following bottom. Apple's display and window corners stay recorded in `Sizing.md` 10 and 11.
 2. **The confirm checkmark is the app's prominent plate** (white in dark, black in light), not Apple's blue tint: the app's rule is that prominence is the inverted solid and gold is never a fill. No sheet uses the checkmark yet; forms keep their in-body primary action.
 3. **Unsaved-change asks** are wired where a form already knew its draft (Edit Profile, Start a fundraiser, Post a request, admin Manage user). Edit fundraiser and the CMS editors have no dirty state to read yet.
 4. **A programmatic close fades** (the engine's leave) rather than sliding down; every dismissal a person makes slides.

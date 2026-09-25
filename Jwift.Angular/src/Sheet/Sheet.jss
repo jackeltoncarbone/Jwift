@@ -4,8 +4,8 @@
 
 // Every spring below is Apple's sheet spring: damping ratio 1, response 0.344 s [C], so stiffness
 // (2 pi / 0.344)^2 = 333.3 and damping 4 pi / 0.344 = 36.5.
-// The bar's height: 16 + a 44 pt button + 16 [I].
-@JwiftSheetBarHeight: 76pt
+// The bar's height: the buttons' concentric inset, a 44 pt button, then 16 pt [I].
+@JwiftSheetBarHeight: @JwiftSheetBarInset + 44pt + 16pt
 
 // The presentation layer: fills the surface it presents over and passes every press through to what is under it,
 // so only the dim and the card take hits.
@@ -100,7 +100,7 @@ Jwift_SheetBody_Fixed : Jwift_SheetBody {
 }
 
 // THE BAR, drawn over the body's top: the X leading, the title centered on the buttons' line, the checkmark
-// trailing. Each button is 16 pt from the top and the side, so its center is the 38 pt corner's center [C][I].
+// trailing. Each button sits @JwiftSheetBarInset from the top and the side, so its center is the corner's.
 Jwift_SheetBar {
   Layer: 2
   Position: Placed
@@ -111,7 +111,7 @@ Jwift_SheetBar {
   Direction: Row
   Align: Start
   Gap: 8pt
-  Padding: 16pt 16pt 0pt 16pt
+  Padding: @JwiftSheetBarInset @JwiftSheetBarInset 0pt @JwiftSheetBarInset
   PointerEvents: None
 }
 // The xmark and the checkmark: label ink, about 16.5 pt of ink in the 44 pt circle [I].
@@ -180,8 +180,8 @@ Jwift_SheetGrabber_Hidden : Jwift_SheetGrabber {
 Jwift_SheetAsk : JwiftGlass {
   Layer: 4
   Position: Placed
-  Top: 66pt
-  Left: 16pt
+  Top: @JwiftSheetBarInset + 50pt
+  Left: @JwiftSheetBarInset
   Width: 250pt
   Direction: Column
   Align: Stretch

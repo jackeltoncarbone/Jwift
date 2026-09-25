@@ -1,3 +1,7 @@
+// The open panel's corner. A capped panel keeps the concentric gap from the screen's foot: the app's outer
+// corner less this (Jwift.Glass.jss).
+@JwiftDropdownRadius: 28pt
+
 // Inherits the canonical Liquid-Glass look from JwiftGlass. Overrides
 // only the heavier floating shadow (the dropdown lifts above content)
 // and its own radius + interactive springs.
@@ -204,7 +208,7 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   // Rows sit 6pt apart, the same 6pt the glass keeps around them, so the
   // shared hover pill never touches a neighbour or a divider hairline.
   Gap: 6pt
-  BorderRadius: 28pt
+  BorderRadius: @JwiftDropdownRadius
 
   // THE OPEN PANEL EASES ITS OWN HOVER, and this is the fix for a defect Jack found by using it:
   // "all of our glass, like our dropdowns, have this weird issue where when I'm hovering over it, it

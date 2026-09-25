@@ -224,11 +224,17 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     return Number.isFinite(value) ? value : 0;
   }
 
+  /** The concentric chain's lengths, in points, from Jwift.Glass.jss. */
+  private readonly _partialInset = computed(() => this._jss.VarPoints('JwiftSheetInset'));
+  private readonly _screenRadius = computed(() => this._jss.VarPoints('JwiftScreenRadius'));
+  private readonly _sheetRadius = computed(() => this._jss.VarPoints('JwiftSheetRadius'));
+  private readonly _barHeight = computed(() => this._jss.VarPoints('JwiftSheetBarHeight'));
+
   readonly Regular = computed(() => IsRegularWidth(this._container().Width, this._container().Height));
   private readonly _form = computed(() => FormSheetSizeFor(this._container().Width, this._container().Height));
   private readonly _large = computed(() => {
     const { Height } = this._container();
-    if (this.Regular()) return Math.min(this._form().Height, Height - 2 * SHEET_METRICS.InsetPartial);
+    if (this.Regular()) return Math.min(this._form().Height, Height - 2 * this._partialInset());
     return LargeHeight(Height - this._var('KeyboardInset'), this._var('SafeTop'));
   });
   private readonly _medium = computed(() =>
@@ -261,7 +267,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   private readonly _height = computed(() => this._dragHeight() ?? this._restHeight());
   private readonly _percentFull = computed(() =>
     this.Regular() ? 1 : PercentFullHeight(this._height(), this._medium(), this._large()));
-  private readonly _inset = computed(() => (this.Regular() ? 0 : InsetFor(this._percentFull())));
+  private readonly _inset = computed(() => (this.Regular() ? 0 : InsetFor(this._percentFull(), this._partialInset())));
 
   // ── What the template binds ───────────────────────────────────────
 
@@ -305,16 +311,13 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   readonly CardStyle = computed(() => {
     const h = this._height();
     if (this.Regular()) {
-      const r = Math.min(SHEET_METRICS.FormRadius, h / 2);
+      // The sheet's one radius on every device, so its bar buttons stay concentric (Apple's form sheet is 32 [C]).
+      const r = Math.min(this._sheetRadius(), h / 2);
       return { BorderRadius: `${r}px` };
     }
-    const { Height } = this._container();
-    const inset = this._inset();
-    const topY = Height - inset - h + this._drop();
-    const largeTop = Height - this._large();
     const cap = h / 2;
-    const top = Math.min(SHEET_METRICS.TopRadius, cap);
-    const bottom = Math.min(BottomRadius(this._var('DisplayCornerRadius'), topY, largeTop, Height), cap);
+    const top = Math.min(this._sheetRadius(), cap);
+    const bottom = Math.min(BottomRadius(this._screenRadius(), this._inset()), cap);
     return { BorderRadius: `${r1(top)}px ${r1(top)}px ${r1(bottom)}px ${r1(bottom)}px` };
   });
 
@@ -337,7 +340,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   readonly BodyLayout = computed(() => {
     const scrollRoom = this.bodyScrolls() ? 16 : 0;
     const bottom = this.Regular() ? scrollRoom : Math.max(this._var('SafeBottom') - this._inset(), 0);
-    return { Padding: `${SHEET_METRICS.BarHeight}px 20px ${r1(bottom)}px 20px` };
+    return { Padding: `${this._barHeight()}px 20px ${r1(bottom)}px 20px` };
   });
 
   // ── Lifecycle ──────────────────────────────────────────────────────
@@ -373,7 +376,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
       if (risen) return;
       risen = true;
       // Parked just below the screen at the card's own height, then sprung up: Apple's presentation.
-      this._drop.set(this._height() + SHEET_METRICS.InsetPartial + (this.Regular() ? this._container().Height / 2 : 0));
+      this._drop.set(this._height() + this._partialInset() + (this.Regular() ? this._container().Height / 2 : 0));
       requestAnimationFrame(() => requestAnimationFrame(() => {
         if (this._phase() !== 'entering') return;
         this._motion.set(true);
@@ -447,7 +450,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     this._motion.set(true);
     const offscreen = this.Regular()
       ? (this._container().Height + this._height()) / 2
-      : this._height() + SHEET_METRICS.InsetPartial;
+      : this._height() + this._partialInset();
     this._drop.set(offscreen);
     this._later(() => this.close.emit(), 320);
   }

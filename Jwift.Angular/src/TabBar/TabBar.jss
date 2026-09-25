@@ -41,7 +41,7 @@ Jwift_TabBar : JwiftGlass {
   // 440pt device at 3x): the bar 62pt tall, the selected pill 54pt tall and so inset 4pt, the cells
   // side by side with no gap, as Apple's pill fills its slot.
   @If (Width < 880) {
-    Height: 62pt
+    Height: @JwiftTabBarHeight
     Padding: 4pt
     Gap: 0pt
   }
@@ -69,7 +69,7 @@ Jwift_TabAccessory : Jwift_TabBar {
   Justify: Center
   Width: 60pt
   @If (Width < 880) {
-    Width: 62pt
+    Width: @JwiftTabBarHeight
   }
 }
 

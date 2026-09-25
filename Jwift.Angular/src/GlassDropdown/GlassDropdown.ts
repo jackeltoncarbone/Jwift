@@ -18,10 +18,6 @@ import type { JivHandle } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import GlassDropdownJss from './GlassDropdown.jss';
 
-/** The gap a capped menu keeps from the bottom edge of the screen. Ours: Apple's menu screen margin is
- *  not read yet (Jwift/Apple/Sizing.md, Menu). */
-const SCREEN_GAP = 14;
-
 /** The shortest a capped menu is allowed to be: the glass's 6pt padding, three 44pt rows and the two
  *  6pt gaps between them. Below three rows a menu stops reading as a list, so a panel with less room
  *  than this overhangs rather than shrinking into a stub. */
@@ -323,7 +319,9 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   private _fitToRoom(): void {
     const el = this._canvasRef?.Canvas?.Element;
     if (!el) return;
-    const room = el.getBoundingClientRect().height - this.Node.Y - this._bottomInset() - SCREEN_GAP;
+    // Concentric with the screen's corner: the outer radius less the panel's own.
+    const gap = this._jss.VarPoints('JwiftScreenRadius') - this._jss.VarPoints('JwiftDropdownRadius');
+    const room = el.getBoundingClientRect().height - this.Node.Y - this._bottomInset() - gap;
     const cap = `${Math.round(Math.max(room, PANEL_FLOOR))}px`;
     // Rounded, and written only on a CHANGE. `SetStyleOverride` re-fires `JivHost`'s effect, which
     // re-applies the whole resolved class bag; this runs on every frame of the 600ms growth track, so

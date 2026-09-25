@@ -11,22 +11,14 @@ export const SHEET_METRICS = {
   /** The medium detent, as a fraction of the large one, for containers taller than 568 pt; 0.63 at or under [C]. */
   MediumFraction: 0.56,
   MediumFractionShort: 0.63,
-  /** The side and bottom gap at partial heights, closing to 0 at the large detent [C]. */
-  InsetPartial: 8,
-  /** Edge-attached top corners, every normal height [C]. */
-  TopRadius: 38,
-  /** Bottom corners follow the display, pulled in 14 pt as the sheet shortens, never under 20 [C]. */
-  BottomRadiusPull: 14,
+  /** Bottom corners never under 20 pt [C]. The corners themselves are the app's outer corner less the gap
+   *  (`@JwiftSheetRadius`, `@JwiftScreenRadius`), and the 8 pt partial gap [C] is `@JwiftSheetInset`. */
   MinBottomRadius: 20,
-  /** A floating (form) sheet's corners, all four [C] (`qword_1EA93D070`, 32.0). */
-  FormRadius: 32,
   /** Glass while the sheet is at most half way to full height, opaque above [C]. */
   GlassBelow: 0.5,
   /** The dimming view's black: 0.2 in light, 0.48 in dark (`_alertControllerDimmingViewColor`) [C]. */
   DimLight: 0.2,
   DimDark: 0.48,
-  /** The bar: a 44 pt button 16 pt from the top edge and 16 pt below it [I], concentric with the 38 pt corner [C]. */
-  BarHeight: 16 + 44 + 16,
   /** A pan past this travel is a drag, not a tap (the engine's slop). */
   Slop: 10,
 } as const;
@@ -62,16 +54,14 @@ export function PercentFullHeight(height: number, medium: number, large: number)
   return Clamp01((height - medium) / (large - medium));
 }
 
-/** The side and bottom gap for a percent full height [C]. */
-export function InsetFor(percentFull: number): number {
-  return SHEET_METRICS.InsetPartial * (1 - percentFull);
+/** The side and bottom gap for a percent full height: the partial gap, closing to 0 at the large detent [C]. */
+export function InsetFor(percentFull: number, partialInset: number): number {
+  return partialInset * (1 - percentFull);
 }
 
-/** The bottom corner radius: the display's own, pulled in as the sheet's top edge sits lower [C] (`sub_189108DF4`). */
-export function BottomRadius(displayCorner: number, topY: number, largeTop: number, containerHeight: number): number {
-  const span = containerHeight - largeTop;
-  const lower = span > 0 ? Clamp01((topY - largeTop) / span) : 0;
-  return Math.max(displayCorner - SHEET_METRICS.BottomRadiusPull * lower, SHEET_METRICS.MinBottomRadius);
+/** The bottom corners, concentric with the app's outer corner across the gap between them, never under 20 pt. */
+export function BottomRadius(screenRadius: number, inset: number): number {
+  return Math.max(screenRadius - inset, SHEET_METRICS.MinBottomRadius);
 }
 
 /** UIScrollView's rubber band [I]: `(1 - 1 / (x c / d + 1)) d`, c = 0.55. */
