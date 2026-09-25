@@ -19,22 +19,22 @@
 // Apple's vibrancy (UIVibrancyEffectStyle: label, secondaryLabel, tertiaryLabel, fill, secondaryFill,
 // tertiaryFill, separator) drawn by Jaui's one model, `Vibrancy(amount, cover)`: out = (1 - cover) x what
 // is under it + amount (Jaui Core/Vibrancy.md). Each level is an AMOUNT (of 255, signed: light levels
-// darken) and a COVER, fitted per theme off Apple's native captures as each ink pixel against the glass
-// beside it. Text takes a white `Color` and the amount carries its ink.
+// darken) and a COVER per theme. Text takes a white `Color` and the amount carries its ink.
 //
-//   level            dark amount / cover   light amount / cover   measured on
-//   label            242 / 0.95            0 / 1                  Apple's own: white at 95% on dark glass, black on
-//                                                                 light (Jaui Core/Glass.md, content vibrancy)
-//   secondary label  160 / 0.51            -7 / 0.24              light: macOS menu shortcuts; dark: between
-//                                                                 label and tertiary (no clean dark capture)
-//   tertiary label   108 / 0.47            -4 / 0.26              macOS widget footnote; macOS disabled items
-//   separator        33 / 0.13             -2 / 0.11              macOS widget and menu separators
+// The label levels are iOS 26's own catalog colors (CoreUI DesignLibrary-iOS.bundle, iOSRepositories Light/
+// DarkStandard.car [C], Jwift/Apple/Sizing.md 4): a color c at alpha a over the glass is amount a x c, cover a.
+//   level            dark amount / cover   light amount / cover   Apple's color
+//   label            242 / 0.95            0 / 1                  white at 95% on dark glass, black on light
+//                                                                 (Jaui Core/Glass.md, content vibrancy)
+//   secondary label  141 / 0.6             36 / 0.6               (235, 235, 245) / (60, 60, 67) at 0.6
+//   tertiary label   70 / 0.3              18 / 0.3               (235, 235, 245) / (60, 60, 67) at 0.3
+//   separator        33 / 0.13             -2 / 0.11              macOS widget and menu separators [I]
 @JwiftVibrancyLabel: 242 * @Dark
 @JwiftVibrancyLabelCover: 0.95 * @Dark + 1 * @Light
-@JwiftVibrancySecondaryLabel: 160 * @Dark - 7 * @Light
-@JwiftVibrancySecondaryLabelCover: 0.51 * @Dark + 0.24 * @Light
-@JwiftVibrancyTertiaryLabel: 108 * @Dark - 4 * @Light
-@JwiftVibrancyTertiaryLabelCover: 0.47 * @Dark + 0.26 * @Light
+@JwiftVibrancySecondaryLabel: 141 * @Dark + 36 * @Light
+@JwiftVibrancySecondaryLabelCover: 0.6
+@JwiftVibrancyTertiaryLabel: 70 * @Dark + 18 * @Light
+@JwiftVibrancyTertiaryLabelCover: 0.3
 @JwiftVibrancySeparator: 33 * @Dark - 2 * @Light
 @JwiftVibrancySeparatorCover: 0.13 * @Dark + 0.11 * @Light
 // The levels as classes, one per Apple level, so every vibrant label and separator names its level once.
@@ -122,6 +122,13 @@ JwiftGlass {
 // Apple's clear glass: one face for both themes, a lighter blur, a rim all the way round, no shadow.
 JwiftClearGlass : JwiftGlass {
   Glass: Clear
+}
+
+// Every menu platter. UIKit's is regular glass [C]; Apple's menus blur the page about 3.6 pt where our 4 pt law reads
+// 1.5 pt, and 9 pt lands 3.1 pt, our pyramid's nearest step [I] (Jwift/Apple/LiquidGlass.md 3.2).
+@JwiftMenuGlassBlur: 9pt
+JwiftMenuGlass : JwiftGlass {
+  GlassBlur: @JwiftMenuGlassBlur
 }
 
 // ── JwiftSolidGlass ─────────────────────────────────────────────────

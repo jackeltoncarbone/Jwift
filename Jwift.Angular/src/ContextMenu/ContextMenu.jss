@@ -24,9 +24,9 @@ Jwift_ContextMenuBackdrop {
   PointerEvents: Auto
 }
 
-// A menu is glass (JwiftGlass); its size gives it Apple's heavier blur, edge bleed and colored shadow. Only
+// A menu is a menu's glass (JwiftMenuGlass); its size gives it Apple's edge bleed and colored shadow. Only
 // the panel's own geometry is declared here.
-Jwift_ContextMenuPanel : JwiftGlass {
+Jwift_ContextMenuPanel : JwiftMenuGlass {
   Position: Placed
   Direction: Column
   Justify: Start

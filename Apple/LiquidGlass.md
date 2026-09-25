@@ -65,6 +65,11 @@ lod = r < 2 ? log2(1 + 0.5 r) : log2(r)
 ```
 BlurRadius = `1.3333 + 2.6667 u` pt regular (1.33 small, 4 at S ≥ 160); 1.0 pt clear. The ×0.5 on the CA side and the ×1.6 are in `GlassBackgroundFilter::render`. [C]
 
+The recipe's ramp, read again in iOS 26.1 DesignLibrary (`sub_18AF952E4`, DesignLibrary_13.mm 6640 to 6760): size class 0 sets min 1.33333333 and max 4.0, stored with the knots 48.0 and 160.0 at +360 to +384 of the spec; class 1 sets 0.666666667 (0 when `sub_18AFA4B74` is true) with backdropScale 0.5; other classes 0. [C] How the backdrop mips are made before that LOD read is not in the restore: walle found a radius-dependent downsample blur (`DownsampleBlurUniforms`, five binary16 weights) whose inputs it could not observe. [C] structure, [I] its law.
+
+**Menus.** The context menu and pull-down platter is plain regular glass: `_UIContextMenuListViewResolvedMaterial` (UIKitCore_84.mm 567) builds `[[_UIViewGlass alloc] initWithVariant:0]`, then `setAdaptive:0`, `setFlexible:1`, `_setFlexVariant:5` (Menu), unless the caller passed a material; `_UIContextMenuPlatformMetrics_Glass` sets `menuBackgroundEffect` and `menuBackgroundColor` to nil and `prefersGlassAppearance` 1, and `_UIContextMenuListView _updateGlassBackgroundIfNeeded` sets that glass as the list view's `_background`. No blur view is added under or around the platter (`_UIContextMenuView`, `_UIContextMenuContainerView`, `_UIMorphingPlatterView`; the controller's `backgroundEffectView` is the full-screen effect of a long-press preview, empty for a pull-down). [C] So the menu takes the regular recipe at its size: BlurRadius 4 pt. [C]
+Measured on Apple's frames, a menu's backdrop reads much softer than that 4 pt through our LOD mapping: over the MacStories Messages pull-down (native 1320 px, 3x), erf fits across eight avatar edges behind the menu give a Gaussian σ of 7.4 to 13.8 device px, median 10.9 (about 3.6 pt); 13 pt grey names under the menu vanish. Walle's large regular macOS glass measured 5.6 px at 2x (2.8 pt). Our large regular glass at the 4 pt law reads 4.6 px at 3x (1.5 pt). [I] (`Evidence.md` 1a)
+
 ### 3.3 Face color matrix (body tone) [C]
 
 `M_face = set_ycc_composite(White, Black, Saturation, Fill)` (QuartzCore `ColorMatrix::set_ycc_composite`):

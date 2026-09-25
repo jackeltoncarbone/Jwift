@@ -219,14 +219,16 @@ Jwift_TabLabelExpandedActive : Jwift_TabLabelExpanded {
 
 // A label-only item (a segmented control). Apple's glass segmented control sets its titles at 15pt
 // (UISegmentedControlGlassStyleProvider fontWithBackgroundMaterial [C]); on Apple's frames the unselected title is a
-// secondary grey at the regular weight and the selected one the label ink at semibold [I, seg83: 166 and 0 over a
-// 237 bar, strokes 15 : 22].
+// grey at the regular weight and the selected one the label ink at semibold [I, seg83: 166 and 0 over a 237 bar,
+// strokes 15 : 22]. The grey is not secondaryLabelColor: UISegment takes its ink from the style provider's
+// `fontColorForSegment` (UISegment _updateTextColors [C]; its value is not in the restore), and 166 over 237 is
+// far lighter than secondaryLabel's 131. So the segment keeps the level it was measured at.
 Jwift_TabLabelSolo : Jwift_TabLabel {
   FontSize: 15pt
   LineHeight: 1.2
   Margin: 0pt
   FontWeight: 400
-  TextFilter: Vibrancy(@JwiftVibrancySecondaryLabel, @JwiftVibrancySecondaryLabelCover)
+  TextFilter: Vibrancy(160 * @Dark - 7 * @Light, 0.51 * @Dark + 0.24 * @Light)
 }
 
 Jwift_TabLabelSoloActive : Jwift_TabLabelSolo {

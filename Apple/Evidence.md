@@ -71,6 +71,15 @@ Apple's dump values (macOS 26) did not reproduce SwiftUI on macOS 27 or iOS 26 c
 - Inside our engine the recipe rendered about 30 levels too dark (Games bar 54 vs Apple 84; `Tools/Face/face_gate_caps.py`, 15:25; parity 66 pass / 19 fail), so the fitted face stays (coordinator, 15:35). Open cause, candidates: the 64 pt switch, the scroll-edge-processed backdrop, pre-blur.
 - Light captures (`Tools/Face/light_caps.py`, 15:19): Phone Edit button over white reads 242; thick, thin-solid and ours all predict 255 (error 13); thin-photo predicts 245 (error 3).
 
+## 1a. Menus: the platter's glass and the label inks (2026-09-25)
+
+| fact | status | source | notes |
+|---|---|---|---|
+| menu platter = `_UIViewGlass initWithVariant:0`, adaptive 0, flexible, flex variant 5 | [C] | R: UIKitCore_84.mm 567 `_UIContextMenuListViewResolvedMaterial`; `_UIContextMenuListView.mm` 975 `_updateGlassBackgroundIfNeeded`; `_UIContextMenuPlatformMetrics_Glass.mm` (`menuBackgroundEffect` nil, `prefersGlassAppearance` 1) | no extra blur view in `_UIContextMenuView`, `_UIContextMenuContainerView`, `_UIMorphingPlatterView`, `_UIContextMenuUIController` (fetched with `gh api` into the lane's `.artifacts/MenuGlass/restore`) |
+| regular blur ramp 1.333 to 4 pt over 48 to 160 pt | [C] | `AA:ios/DesignLibrary/DesignLibrary_13.mm` 6640 to 6760 (`sub_18AF952E4`) | |
+| Apple menu backdrop σ 7.4 to 13.8 device px, median 10.9 (3x) | [I] | `G\Rects\Full\MacStories.iOS26.ContextMenu.Messages.jpg`, erf edge fits (`edge.py`, eight avatar edges behind the menu) | ours 4.6 px at the 4 pt law, 9.3 px at `GlassBlur: 9pt` |
+| secondary / tertiary / quaternary / quinary label colors, standard and vibrant, light and dark | [C] | FW: `043-54414-121.dmg` → `System/Library/PrivateFrameworks/CoreUI.framework/DesignLibrary-iOS.bundle/iOSRepositories/{Light,Dark}{,Vibrant}Standard.car`, extracted with 7-Zip, BOM `COLORS` tree parsed in Python (values BGRA) | values in `Sizing.md` 4; `UIColor.mm` maps secondaryLabelColor to coreUIColorName 16, tertiary 17 |
+
 ## 2. The liquid lens (`_UILiquidLensView`)
 
 `LiquidGlass.md` 7. Line numbers are `R: UIKitCore_73.mm` unless named.
