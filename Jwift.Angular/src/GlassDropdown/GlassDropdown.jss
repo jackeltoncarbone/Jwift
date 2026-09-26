@@ -168,8 +168,16 @@ Jwift_GlassDropdownCell_Ellipsis : Jwift_GlassDropdownCell {
 // declared on _Open falls back to default (Direction: Row), not the base.
 // The open menu is the same glass at a menu's size (later base wins).
 Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
-  // Inert under the finger too: the closed avatar pill's flex stays with the closed pill.
-  Flex: None
+  // A VERY SLIGHT FLEX, HELD RATHER THAN CHASED. Jack: "shouldn't an open dropdown have a very slight
+  // flex?" So the panel takes Auto -- which sizes itself into the Large class at a menu's dimensions and
+  // calms its own lift and glow accordingly, the mechanism Glass.Jss.md 3a names -- and holds a fraction of
+  // that lift and glow with nobody touching it (FlexHold), the same held swell a glass field keeps while
+  // its caret sits in it (TextInput.jss). No stretch toward a finger: a menu is a place, not a target, so
+  // FlexStretch stays 0 and the hold is the only motion.
+  Flex: Auto
+  FlexStretch: 0
+  FlexHold: 0.3
+  @Spring FlexHold { Stiffness: 900, Damping: 60, Mass: 1 }
   // The open menu is UIKit's platter, outside the header's pocket: Automatic frost, where the closed pill takes None.
   GlassFrost: Automatic
   Position: Placed
@@ -229,18 +237,21 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   @Transition RimStrength { Duration: 140ms }
 }
 
-// AN OPEN MENU IS INERT UNDER THE POINTER. ITS ROWS ARE NOT.
+// AN OPEN MENU DOES NOT REACT TO THE POINTER. ITS ROWS DO.
 //
 // Jack has now said this three times, each time closer to the principle. First: "just from hovering
 // over the expanded drop-down, it has the same scaling effects that the collapse button does, and it's
 // very large for that ... It's closed when it's a button or a button group and it's open when it's a
 // menu." Then: "Can we maybe do like 10% of the effect ... Because it felt good, it was just very
 // large." And finally, the question that settles it: "Why is the deepness even changing on hover? For
-// an expanded dropdown."
+// an expanded dropdown." Then a fourth: "shouldn't an open dropdown have a very slight flex?" -- which is
+// answered above by a CONSTANT hold (FlexHold), not by anything the pointer does.
 //
-// It should not. An open menu highlights the ROW under the pointer -- one shared indicator springs
-// between rows -- and that is the whole feedback. A panel that also brightens is saying the same thing
-// twice, in a way that reads as a glitch because the panel is large and the change is global.
+// So the panel still answers no hover and no press of its own: it highlights the ROW under the pointer
+// -- one shared indicator springs between rows -- and that is the whole POINTER feedback. A panel that
+// also brightened or deepened under the pointer was saying the same thing twice, in a way that read as a
+// glitch because the panel is large and the change was global. The held flex above is different in kind:
+// it is there whether or not anything is hovered, so it never doubles what the row already says.
 //
 // THESE RULES EXIST TO CANCEL AN INHERITANCE, NOT TO ADD AN EFFECT, and deleting them would make the
 // problem worse. The open sink probes as `Jwift_GlassDropdown_Open.Jwift_GlassDropdown_Closed.
@@ -249,13 +260,14 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
 // takes a 48pt control's physics whole: VisualScale 1.06 and the press's backdrop fill. The previous answer scaled that to a tenth (1.006 / 1.085). A tenth
 // of a thing that should not happen is still the thing happening.
 //
-// So both states now restate the panel's RESTING appearance. The pointer changes nothing; the
-// indicator does all of it.
+// So both states restate the panel's RESTING Background/BackdropFilter/RimStrength. Flex is NOT restated
+// here any more: the resting state's own Auto + FlexHold is the whole of the panel's flex, and a hover
+// that put `Flex: None` back would erase the very hold Jack asked for the moment a finger sat still over
+// the menu. The pointer changes nothing about the panel; the indicator does all of the pointer's work.
 //
 // :Active was also declared TWICE -- a second block already held these resting values, so someone had
 // started this fix and left both declarations standing, with merge order deciding which won. One now.
 Jwift_GlassDropdown_Open:Hover {
-  Flex: None
   Background: @GlassTint
   BackdropFilter: None
   RimStrength: @JwiftRimStrength
