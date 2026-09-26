@@ -1,9 +1,11 @@
 // THE LIVE TAB BAR, in the real engine: Jaui's own Canvas and JivRegistry (the worker's path), the real Jwift
 // classes (Prep.ts), our glyphs and labels, over a real page backdrop drawn by the same engine. Nothing
 // Apple-sourced is ever drawn here. The selection indicator is driven the way SelectionIndicator.ts drives it:
-// its layout is the resting pill on the active item, and pressed it takes the pressed class, the lens's
-// VisualScale override (sized against the bar) and Layer 11 (above the bar rim).
+// its box is SelectionIndicator.Geometry's, the pill grown by bounds on its lift spring, and pressed it takes the
+// pressed class and Layer 2 (above the items).
 import { Jaui } from 'JAUI/Core/Jaui';
+import { Spring } from 'JAUI/Animation/Spring';
+import { LensGeometry } from 'JWIFT/SelectionIndicator/SelectionIndicator.Geometry';
 import { JivRegistry } from 'JAUI/Worker/Jiv.Registry';
 
 type Rules = Record<string, Record<string, unknown>>;
@@ -93,9 +95,10 @@ flush();
 jaui.Start();
 
 // The indicator, as SelectionIndicator.ts drives it.
-// SelectionIndicator.ts: 1.35 item pitches wide, capped at 1.708 bar heights; 1.173 bar heights tall.
-// SelectionIndicator.ts: Apple's lens, the pill outset 8 pt a side.
+// SelectionIndicator.ts: Apple's lens, the pill outset 8 pt a side (12 across on a segmented bar), on its lift spring.
 const LENS_OUT_X = segment ? 12 : 8, LENS_OUT_Y = 8;
+const liftSpring = new Spring(0);
+let liftFrame = 0;
 let pressed = false, dragX: number | null = null, holdAbove = false;
 // The bar swells while pressed (Jwift_TabBar_Pressed, additive over Jwift_TabBar), as TabBar.ts does.
 const barOpts = (on: boolean): Record<string, unknown> => {
@@ -113,15 +116,20 @@ const place = (): void => {
   if (!t || t.Width <= 0) return;
   const w = t.Width, h = t.Height;
   const cx = dragX ?? t.X + w / 2;
+  liftSpring.Stiffness = pressed ? 409 : 2187;
+  liftSpring.Damping = pressed ? 25.3 : 112;
+  liftSpring.Set(pressed ? 1 : 0);
+  const lens = LensGeometry({ Bar: { Width: b.Width, Height: b.Height, Radius: b.Height / 2 }, Center: cx - b.X, Width: w, Height: h,
+    OutsetX: LENS_OUT_X, OutsetY: LENS_OUT_Y, Lift: liftSpring.Value, Squash: 1 });
   const style: Record<string, unknown> = {};
-  if (pressed) style.VisualScale = `${((w + 2 * LENS_OUT_X) / w).toFixed(4)} ${((h + 2 * LENS_OUT_Y) / h).toFixed(4)}`;
   // SelectionIndicator.ts holds the pill above the labels through the release settle.
   if (pressed || holdAbove) style.Layer = 2;
   // SelectionIndicator.ts: the items under the lens take the bar's accent when it selects in it.
   if (!segment) style.LensInk = accent;
   apply(indicator, pressed ? 'Jwift_SelectionIndicator_Pressed' : 'Jwift_SelectionIndicator',
-    { Style: style, ChildLayout: { Position: 'Placed', Left: `${cx - w / 2 - b.X}px`, Top: `${t.Y - b.Y}px`, Width: `${w}px`, Height: `${h}px` } });
+    { Style: style, SnapLayout: true, ChildLayout: { Position: 'Placed', Left: `${lens.Left}px`, Top: `${lens.Top}px`, Width: `${lens.Width}px`, Height: `${lens.Height}px` } });
   flush();
+  if (!liftFrame && !liftSpring.IsSettled) liftFrame = requestAnimationFrame(() => { liftFrame = 0; liftSpring.Step(1 / 60); place(); });
 };
 const select = (i: number): void => {
   if (i === selected) return;
@@ -141,8 +149,9 @@ w.Harness = {
   Place: place,
   Rects: (): unknown => {
     const r = (id: number): unknown => { const n = node(id) as never as Record<string, number>; return { X: n.X, Y: n.Y, Width: n.Width, Height: n.Height }; };
-    const ind = reg.Get(indicator) as never as { RenderStyle: { VisualScaleX: number; VisualScaleY: number } };
-    return { bar: r(bar), items: itemIds.map(r), indicator: r(indicator), scale: [ind.RenderStyle.VisualScaleX, ind.RenderStyle.VisualScaleY] };
+    // The lens's size over its pill, per axis: its grow and release timeline.
+    const ind = node(indicator), item = node(itemIds[selected]);
+    return { bar: r(bar), items: itemIds.map(r), indicator: r(indicator), scale: [ind.Width / item.Width, ind.Height / item.Height] };
   },
 };
 // First layout, then the resting pill on the active item.

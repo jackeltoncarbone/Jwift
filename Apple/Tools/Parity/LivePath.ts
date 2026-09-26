@@ -97,9 +97,11 @@ check('backdrop: glass on a surface blur sees it blurred; in a scroll edge, undi
 // our live bar (LiveBar), never over an Apple frame.
 const lens = resolve('selection', 'Jwift_SelectionIndicator_Pressed');
 const ts = norm(J + 'SelectionIndicator/SelectionIndicator.ts');
-const grows = /const baseWidth = t\.Width \+ this\._reachPx \* 2;/.test(ts) && /_TabOutset = '8pt 8pt 8pt 8pt'/.test(ts) && /_SegmentOutset = '12pt 12pt 8pt 8pt'/.test(ts)
-  && /this\.SetStyleOverride\(\{ VisualScale: lensScale \}\)/.test(ts);
-check('live: the lens is the pill outset by the Apple amount, drawn by VisualScale', '+8 pt a side (tab), +12 / 8 (segmented)', grows ? 'layout stays the pill; VisualScale from the outset' : 'missing', 'component source', grows);
+const geometry = norm(J + 'SelectionIndicator/SelectionIndicator.Geometry.ts');
+const grows = /_TabOutset = '8pt 8pt 8pt 8pt'/.test(ts) && /_SegmentOutset = '12pt 12pt 8pt 8pt'/.test(ts)
+  && /this\.Node\.SnapLayout = true;/.test(ts) && !/VisualScale/.test(ts)
+  && /input\.Width \+ 2 \* input\.OutsetX \* lift/.test(geometry) && /barRadius - inset/.test(geometry);
+check('live: the lens is the pill outset by the Apple amount, grown by bounds, concentric with the bar', '+8 pt a side (tab), +12 / 8 (segmented)', grows ? 'layout grows by the outset; corner the bar\'s less the inset' : 'missing', 'component source', grows);
 const edgeScope = /closesEdge = true;/.test(walk) && /else if \(closesEdge\) edgeBackdrop = null;/.test(walk);
 check('live: glass inside a drawn glass surface samples it, not the scroll edge content', 'the lens sees the bar', edgeScope ? 'a drawn surface closes the edge for its subtree' : 'lens reads the edge', 'walk source', edgeScope);
 const tabBar = norm(J + 'TabBar/TabBar.ts');

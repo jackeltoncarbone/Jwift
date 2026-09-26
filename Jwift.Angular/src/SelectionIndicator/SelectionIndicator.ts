@@ -12,9 +12,10 @@ import {
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
 import { JivHandle as JivCore, ResolveLengthTuple4, Spring } from 'jaui';
-import { FlexMovementScale } from '../Internal/FlexMovement';
+import { FlexMovementScale, TuneSpring } from '../Internal/FlexMovement';
 import { JivHost } from '../Internal/JivHost';
 import { TabBar } from '../TabBar/TabBar';
+import { LensGeometry, type LensBar } from './SelectionIndicator.Geometry';
 import SelectionIndicatorJss from './SelectionIndicator.jss';
 
 @Component({
@@ -48,24 +49,26 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   private _canvasRef = inject(Jaui, { optional: true });
   private _rafId = 0;
   private _autoPressed = signal(false);
-  private _lastPad: [number, number, number, number] = [0, 0, 0, 0];
   private _lastT = 0;
-  private _lastX = 0;
   private _pointerX: number | null = null;
   private _pointerDownX: number | null = null;
   private _dragActive = false;
   private static readonly _DragThresholdPx = 4;
   private _unbindPointer: (() => void) | null = null;
+  // The lens's box is sprung here and laid out snapped, so its centre, its pill and its lift never lag one another.
+  // Position and bounds take UIKit's selection springs (Jwift/Apple/Sizing.md 1), the lift the fitted MacStories one.
+  private _center = new Spring(0);
+  private _width = new Spring(0);
+  private _height = new Spring(0);
+  private _lift = new Spring(0);
   private _shapeX = new Spring(1, 2500, 60, 1);
-  private _shapeY = new Spring(1, 2500, 60, 1);
   // Apple's lens (Jwift/Apple/Sizing.md 1, 2): the resting pill outset 8 pt all round on a tab bar
   // (`CGRectInset(itemFrame, -8, -8)`), 12 pt across and 8 pt down on a segmented control (label-only items), so it
   // is never narrower than the pill.
   private static readonly _TabOutset = '8pt 8pt 8pt 8pt';
   private static readonly _SegmentOutset = '12pt 12pt 8pt 8pt';
   private _outsetPx: [number, number] = [0, 0];
-  /** The VisualScale override the lens is drawn at, or null at rest. */
-  private _lensScale: string | null = null;
+  private _pointScale = 1;
   /** The colour the lens inks what it magnifies, or null. */
   private _lensInk: string | null = null;
   private _segmented = false;
@@ -96,16 +99,12 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this._attachOnInit();
-    // Our own rect every frame: the drag's movement scale reads the lens's velocity from it, and in worker mode
-    // JivHandle.X stays 0 on main without WatchRect(true).
-    this.Node.WatchRect(true);
-    // This loop exists ONLY to drive the indicator's velocity-derived stretch and squish, and
-    // pointer tracking only matters where there is a pointer. Neither has meaning under server
-    // rendering, which has no frames at all — unguarded, this threw out of ngOnInit and cost the
-    // page every semantic node that would have been built after it.
+    // Every rect this lens takes is final: its springs run here (_sync).
+    this.Node.SnapLayout = true;
+    // The loop and pointer tracking mean nothing under server rendering, which has no frames at all; unguarded,
+    // this threw out of ngOnInit and cost the page every semantic node built after it.
     if (typeof requestAnimationFrame === 'undefined') return;
     this._running = true;
-    this._unbindOwnRect = this.Node.OnRect(this._kick);
     window.addEventListener('resize', this._kick);
     this._kick();
     this._wirePointerTracking();
@@ -116,14 +115,11 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     if (this._rafId) cancelAnimationFrame(this._rafId);
     this._rafId = 0;
     this._unbindPointer?.();
-    this._unbindOwnRect?.();
     if (typeof window !== 'undefined') window.removeEventListener('resize', this._kick);
     this._unwatchTargets();
-    this.Node.WatchRect(false);
     this._detachOnDestroy();
   }
 
-  private _unbindOwnRect: (() => void) | null = null;
   private _unbindTargetRects: Array<() => void> = [];
 
   // The loop runs while anything can still move the pill and parks after a frame that changed nothing.
@@ -277,8 +273,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     let ctxNode: JivCore | null = parent;
     while (ctxNode && !ctxNode.ResolveCtx) ctxNode = ctxNode.Parent as (JivCore | null);
     if (parent && ctxNode?.ResolveCtx) {
-      this._lastPad = ResolveLengthTuple4(
-        parent.Layout.Padding, ctxNode.ResolveCtx, ['H', 'W', 'H', 'W']);
+      this._pointScale = ctxNode.ResolveCtx.PointScale || 1;
       this._reachPx = ResolveLengthTuple4(this.reach(), ctxNode.ResolveCtx, ['W', 'W', 'W', 'W'])[0];
       const segmented = this._tabBar !== null && this._tabBar.Items().every((item) => !item.icon());
       if (segmented !== this._segmented) {
@@ -289,30 +284,15 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       const outset = ResolveLengthTuple4(segmented ? SelectionIndicator._SegmentOutset : SelectionIndicator._TabOutset, ctxNode.ResolveCtx, ['W', 'W', 'H', 'H']);
       this._outsetPx = [outset[0], outset[2]];
     }
-    if (t.Width <= 0 || t.Height <= 0) return false;
+    if (!parent || t.Width <= 0 || t.Height <= 0 || parent.Width <= 0 || parent.Height <= 0) return false;
 
     const isPressed = this._resolvePressed();
 
     const now = performance.now();
-    // Upper clamp prevents first-frame Euler blowup (dt of billions of ms).
-    const haveLast = this._lastT > 0;
-    const dt = haveLast
-      ? Math.min(0.033, Math.max(0.001, (now - this._lastT) / 1000))
-      : 0.016;
+    // Upper clamp prevents first-frame blowup (dt of billions of ms).
+    const dt = this._lastT > 0 ? Math.min(0.033, Math.max(0.001, (now - this._lastT) / 1000)) : 0.016;
+    this._lastT = now;
 
-    // The layout box is the resting pill, pressed or not: the lens's growth is the pressed class's VisualScale,
-    // render-time, on Apple's springs, so it never chases a layout spring.
-    const [, padR, , padL] = this._lastPad;
-    const baseWidth = t.Width + this._reachPx * 2;
-    const baseHeight = t.Height;
-
-    // Pressed, the pill is drawn as Apple's lens, the pill outset by Apple's amount; the pressed class's springs
-    // carry it there and back. The lens and its lifted twins sit in the bar, so the bar's swell scales them together
-    // (Jwift/Apple/LiquidGlass.md 7.1).
-    const [outX, outY] = this._outsetPx;
-    const lensScale = isPressed && baseWidth > 0 && baseHeight > 0
-      ? `${((baseWidth + 2 * outX) / baseWidth).toFixed(4)} ${((baseHeight + 2 * outY) / baseHeight).toFixed(4)}`
-      : null;
     // The items under the lens take the selection's tint, as Apple's do: the bar's accent, when it selects in it.
     const ink = this._tabBar && this._tabBar.AccentSelected() ? this._tabBar.Accent() ?? null : null;
     if (ink !== this._lensInk) {
@@ -320,69 +300,55 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       if (ink === null) this.ClearStyleOverride('LensInk');
       else this.SetStyleOverride({ LensInk: ink });
     }
-    if (lensScale !== this._lensScale) {
-      this._lensScale = lensScale;
-      if (lensScale === null) this.ClearStyleOverride('VisualScale');
-      else this.SetStyleOverride({ VisualScale: lensScale });
+
+    // Pressed, the dragging springs (position 0.85 / 0.2 s, bounds 0.85 / 0.3 s), else the release's (0.4 s, 0.6 s).
+    // The lift grows on the fitted MacStories spring (7% overshoot) and lets go in about five frames, no overshoot.
+    TuneSpring(this._center, 0.85, isPressed ? 0.2 : 0.4);
+    TuneSpring(this._width, 0.85, isPressed ? 0.3 : 0.6);
+    TuneSpring(this._height, 0.85, isPressed ? 0.3 : 0.6);
+    this._lift.Stiffness = isPressed ? 409 : 2187;
+    this._lift.Damping = isPressed ? 25.3 : 112;
+
+    // The capsule bar (TabBar.jss, BorderRadius 999pt) in its layout space: its flex carries bar and lens as one body.
+    const bar: LensBar = { Width: parent.Width, Height: parent.Height, Radius: parent.Height / 2 };
+    const pill = {
+      Bar: bar, Width: t.Width + this._reachPx * 2, Height: t.Height,
+      OutsetX: this._outsetPx[0], OutsetY: this._outsetPx[1],
+    };
+    // Tap-and-hold stays on its tab; past the drag threshold the lens follows the finger, clamped where the lifted
+    // lens clamps (Sizing.md 1: centre x = the finger, clamped inside the items' union).
+    const aim = this._dragActive && this._pointerX !== null
+      ? LensGeometry({ ...pill, Center: this._pointerX - parent.X, Lift: 1, Squash: 1 })
+      : null;
+    this._center.Set(aim ? aim.Left + aim.Width / 2 : t.X + t.Width / 2 - parent.X);
+    this._width.Set(pill.Width);
+    this._height.Set(pill.Height);
+    this._lift.Set(isPressed ? 1 : 0);
+    if (!this._firstValid) {
+      this._firstValid = true;
+      for (const spring of [this._center, this._width, this._height, this._lift]) spring.Snap();
     }
 
-    let centerX = t.X + t.Width / 2;
-    let overshoot = 0;
-    // Dead-zone the pointer follow: only swap centerX → finger position once
-    // the pointer has actually moved past the drag threshold. Tap-and-hold
-    // (finger registers a few px off the visual center, as fingers do) then
-    // stays centered on the tab. Only an actual drag-across-tabs engages
-    // the liquid follow.
-    if (this._dragActive && this._pointerX !== null) {
-      centerX = this._pointerX;
-      if (parent) {
-        const minCenter = parent.X + padL + t.Width / 2;
-        const maxCenter = parent.X + parent.Width - padR - t.Width / 2;
-        if (centerX < minCenter) { overshoot = centerX - minCenter; centerX = minCenter; }
-        else if (centerX > maxCenter) { overshoot = centerX - maxCenter; centerX = maxCenter; }
-      }
+    // Dragged, the lens takes UIKit's loupe movement scale from its own velocity, keeping its area (FlexMovement.ts).
+    // The press's growth and the release's settle move the lens but are not a drag.
+    this._shapeX.Target = this._dragActive ? FlexMovementScale(this._center.Velocity / this._pointScale) : 1;
+
+    let springing = false;
+    for (const spring of [this._center, this._width, this._height, this._lift, this._shapeX]) {
+      if (spring.Step(dt)) springing = true;
     }
 
-    // The lens's own centre, sprung behind the finger, so its width never reads as motion.
-    const lensX = this.Node.X + this.Node.Width / 2;
-    const vx = haveLast ? (lensX - this._lastX) / dt : 0;
-    this._lastT = now;
-    this._lastX = lensX;
+    const lens = LensGeometry({
+      ...pill, Width: this._width.Value, Height: this._height.Value,
+      Center: this._center.Value, Lift: this._lift.Value, Squash: this._shapeX.Value,
+    });
 
-    // Dragged across the bar, the lens takes UIKit's loupe movement scale along x, keeping its area (FlexMovement.ts).
-    // The bar's own flex (lift, stretch, squash) reaches it as the bar's child, so this adds the loupe's part alone.
-    // Only an actual drag drives it: the press's growth and the release's settle move the box but are not motion.
-    let scaleX = this._dragActive ? FlexMovementScale(vx) : 1;
-    let scaleY = 1 / scaleX;
-
-    if (overshoot !== 0) {
-      const SQUISH_HALF = 120;
-      const SQUISH_MAX = 0.22;
-      const SQUISH_BULGE = 1.35;
-      const sq = SQUISH_MAX * Math.abs(overshoot) / (Math.abs(overshoot) + SQUISH_HALF);
-      scaleX *= 1 - sq;
-      scaleY *= 1 + sq * SQUISH_BULGE;
-    }
-
-    this._shapeX.Target = scaleX;
-    this._shapeY.Target = scaleY;
-    const springingX = this._shapeX.Step(dt);
-    const springingY = this._shapeY.Step(dt);
-    const springing = springingX || springingY;
-
-    const width = baseWidth * this._shapeX.Value;
-    const height = baseHeight * this._shapeY.Value;
-    // Placed: cl.Left/Top are relative to parent's box.
-    const parentX = parent?.X ?? 0;
-    const parentY = parent?.Y ?? 0;
-    const left = centerX - width / 2 - parentX;
-    const top = t.Y + t.Height / 2 - height / 2 - parentY;
-
+    // Placed: Left and Top are relative to the bar's box.
     const cl = this.Node.ChildLayout;
-    const leftPx = `${left}px`;
-    const topPx = `${top}px`;
-    const widthPx = `${width}px`;
-    const heightPx = `${height}px`;
+    const leftPx = `${lens.Left}px`;
+    const topPx = `${lens.Top}px`;
+    const widthPx = `${lens.Width}px`;
+    const heightPx = `${lens.Height}px`;
     let dirty = false;
     if (cl.Left !== leftPx) { cl.Left = leftPx; dirty = true; }
     if (cl.Top !== topPx) { cl.Top = topPx; dirty = true; }
@@ -390,14 +356,9 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     if (cl.Height !== heightPx) { cl.Height = heightPx; dirty = true; }
     if (dirty) this.Node.MarkLayoutDirty();
 
-    if (!this._firstValid) {
-      this._firstValid = true;
-      this.Node.SnapLayout = true;
-      requestAnimationFrame(() => { this.Node.SnapLayout = false; });
-    }
-
-    const pressedNow = (parent?.Active ?? false) || t.Active;
+    const pressedNow = parent.Active || t.Active;
     if (pressedNow !== this._autoPressed()) this._autoPressed.set(pressedNow);
     return dirty || springing || this._dragActive;
   }
 }
+
