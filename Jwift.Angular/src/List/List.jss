@@ -19,7 +19,13 @@
 // the label, @InkSoft for the value, @InkFaint for the chevron. On a page the fill is opaque, as Apple's grouped
 // background is; inside a sheet it follows the sheet's material (the variants below).
 
-Jwift_List {
+// EVERY GROUPED LIST WEARS THE HOUSE RIM. JwiftSolidGlass is already exactly "the rim, no shadow" — a
+// solid content surface that carries the glass highlight over its own edge without the drop shadow
+// JwiftElevated adds for a LIFTED tile (a card, a row's artwork). A list section sits flush on its ground
+// rather than floating above it, so it takes the rim alone: composing JwiftSolidGlass here reuses that
+// one definition rather than a second mixin repeating the same two tokens. In dark mode the rim is what
+// separates the section from its ground; there is no shadow to do that work instead.
+Jwift_List : JwiftSolidGlass {
   Direction: Column
   Justify: Start
   Align: Stretch
