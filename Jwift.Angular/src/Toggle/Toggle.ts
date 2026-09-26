@@ -6,6 +6,7 @@ import {
   OnInit,
   booleanAttribute,
   computed,
+  effect,
   forwardRef,
   inject,
   input,
@@ -92,6 +93,7 @@ export class Toggle extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('Toggle', ToggleJss, 'Jwift_Toggle', () => (this.disabled() ? 'Jwift_Toggle_Disabled' : 'Jwift_Toggle'));
+    effect(() => this.SetDisabled(this.disabled()));
     inject(DestroyRef).onDestroy(() => this._teardown());
   }
 

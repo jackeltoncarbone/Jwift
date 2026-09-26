@@ -137,18 +137,14 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
       if (tint) this.SetStyleOverride({ Background: tint, Tint: '0' });
       else { this.ClearStyleOverride('Background'); this.ClearStyleOverride('Tint'); }
     });
-    // Disabled = dimmed + inert. Routed through the JivHost style-override channel (not a JSS pseudo) so
-    // it layers over whichever shape class is active. Interactive:false is the important half — it stops
-    // the engine hit-testing the pill, so neither the click nor the :Hover/:Active brightness springs
-    // fire on a disabled button.
+    // Disabled = dimmed + inert. The dim rides the style-override channel so it layers over whichever shape
+    // class is active; the inert half is Jaui's Disabled state, which stops every press, click and pointer event
+    // on the pill and on its glyph or label, and the cursor with them.
     effect(() => {
-      if (this.disabled()) {
-        this.SetStyleOverride({ Opacity: '0.4', Interactive: false, Cursor: 'Default' }); // @JwiftDisabledOpacity
-      } else {
-        this.ClearStyleOverride('Opacity');
-        this.ClearStyleOverride('Interactive');
-        this.ClearStyleOverride('Cursor');
-      }
+      const disabled = this.disabled();
+      this.SetDisabled(disabled);
+      if (disabled) this.SetStyleOverride({ Opacity: '0.4' }); // @JwiftDisabledOpacity
+      else this.ClearStyleOverride('Opacity');
     });
   }
 

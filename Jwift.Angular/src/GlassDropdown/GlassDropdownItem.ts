@@ -4,6 +4,7 @@ import {
   OnDestroy,
   OnInit,
   booleanAttribute,
+  effect,
   forwardRef,
   inject,
   input,
@@ -37,6 +38,7 @@ export class GlassDropdownItem extends JivHost implements OnInit, OnDestroy, Gla
     super('GlassDropdownItem', GlassDropdownJss, 'Jwift_GlassDropdownItem', () => {
       return this.disabled() ? 'Jwift_GlassDropdownItem_Disabled' : 'Jwift_GlassDropdownItem';
     });
+    effect(() => this.SetDisabled(this.disabled()));
   }
 
   IsDisabled(): boolean { return this.disabled(); }

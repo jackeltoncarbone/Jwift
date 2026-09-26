@@ -120,6 +120,10 @@ export abstract class JivHost {
     this._styleOverride.set(rest);
   }
 
+  /** UIKit's isEnabled, as Jaui's reserved Disabled state: the node and everything inside it take no press. */
+  private readonly _disabled: WritableSignal<boolean | undefined> = signal(undefined);
+  protected SetDisabled(disabled: boolean): void { this._disabled.set(disabled); }
+
   /** Subclass setter for runtime TextStyle overrides (e.g. an accent Color on a
    *  glyph/label). Same untracked-read + re-fire contract as SetStyleOverride. */
   protected SetTextStyleOverride(patch: Record<string, unknown>): void {
@@ -194,6 +198,7 @@ export abstract class JivHost {
       this._className();
       this._styleOverride();
       this._textStyleOverride();
+      this._disabled();
       this._apply();
     });
 
@@ -316,6 +321,7 @@ export abstract class JivHost {
       Springs:           fromClass?.Springs           as Record<string, Record<string, unknown>> | undefined,
       ElementProps:      Object.keys(elementProps).length > 0 ? elementProps : undefined,
       Classes:           className.split(/\s+/).filter(Boolean),
+      States:            this._disabled() === undefined ? undefined : { Disabled: !!this._disabled() },
     };
   }
 }
