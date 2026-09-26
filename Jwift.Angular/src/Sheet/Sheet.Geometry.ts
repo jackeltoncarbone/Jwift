@@ -85,6 +85,13 @@ export function BottomRadius(screenRadius: number, inset: number): number {
   return Math.max(screenRadius - inset, SHEET_METRICS.MinBottomRadius);
 }
 
+/** The body's bottom inset, so an action pinned last shares its bottom corners' center, as a bottom button
+ *  "should share the same corner center with the corners of the sheet" [D]: the side inset, grown by what the
+ *  bottom corner has over the top one. A sheet reaching the screen's edge also clears the home indicator. */
+export function FooterInset(sideInset: number, bottomRadius: number, topRadius: number, safeBottom: number, percentFull: number): number {
+  return Math.max(sideInset + bottomRadius - topRadius, safeBottom * percentFull);
+}
+
 /** UIScrollView's rubber band [I]: `(1 - 1 / (x c / d + 1)) d`, c = 0.55. */
 export function RubberBand(overshoot: number, dimension: number): number {
   if (overshoot <= 0 || dimension <= 0) return 0;

@@ -6,6 +6,11 @@
 // (2 pi / 0.344)^2 = 333.3 and damping 4 pi / 0.344 = 36.5.
 // The bar's height: the buttons' concentric inset, a 44 pt button, then 16 pt [I].
 @JwiftSheetBarHeight: @JwiftSheetBarInset + 44pt + 16pt
+// The body's side inset: concentric with the 44 pt corner for a 48 pt capsule action, 44 - 24 = 20 pt. The bottom
+// inset is the component's (FooterInset), so an action pinned last sits the same distance from its corners.
+@JwiftSheetContentInset: @JwiftSheetRadius - 24pt
+// The top sheet's bottom inset, live: a footer that bleeds to the card's edges pads its own bottom by it.
+@JwiftSheetFooterInset: 20pt
 
 // The presentation layer: fills the surface it presents over and passes every press through to what is under it,
 // so only the dim and the card take hits.
@@ -84,6 +89,9 @@ Jwift_SheetGlass : JwiftGlass {
   GlassOuterRefraction: None
   GlassBleed: None
 }
+// The form sheet in regular width floats as glass at every size: regular glass, no subvariant [C].
+Jwift_SheetGlass_Form : JwiftGlass {
+}
 Jwift_SheetOpaque {
   Glass: None
   Background: @Sheet
@@ -106,7 +114,7 @@ Jwift_SheetBody {
   FlexShrink: 1
   MinHeight: 0pt
   Gap: 14pt
-  Padding: @JwiftSheetBarHeight 20pt 0pt 20pt
+  Padding: @JwiftSheetBarHeight @JwiftSheetContentInset 0pt @JwiftSheetContentInset
   Overflow: Scroll
   // Offset, so a navigation push can carry the page along X (Jwift_SheetPageMotion).
   Position: Offset

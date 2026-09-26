@@ -25,6 +25,7 @@ import SheetJss from './Sheet.jss';
 import {
   BottomRadius,
   Clamp01,
+  FooterInset,
   FormSheetSizeFor,
   GrabberTarget,
   InsetFor,
@@ -338,6 +339,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   private readonly _screenRadius = computed(() => this._jss.VarPoints('JwiftScreenRadius'));
   private readonly _sheetRadius = computed(() => this._jss.VarPoints('JwiftSheetRadius'));
   private readonly _barHeight = computed(() => this._jss.VarPoints('JwiftSheetBarHeight'));
+  private readonly _contentInset = computed(() => this._jss.VarPoints('JwiftSheetContentInset'));
 
   readonly Regular = computed(() => IsRegularWidth(this._container().Width, this._container().Height));
   /** Regular width asked for an inspector: the trailing column. */
@@ -377,8 +379,9 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     return stops[Math.min(this._index(), stops.length - 1)].Height;
   });
   private readonly _height = computed(() => this._dragHeight() ?? this._restHeight());
+  // A form sheet floats clear of every edge, so it never goes full height: it stays glass [C].
   private readonly _percentFull = computed(() =>
-    this.Regular() ? 1 : PercentFullHeight(this._height(), this._medium(), this._large()));
+    this.Regular() ? 0 : PercentFullHeight(this._height(), this._medium(), this._large()));
   private readonly _inset = computed(() => (this.Regular() ? 0 : InsetFor(this._percentFull(), this._partialInset())));
 
   // ── What the template binds ───────────────────────────────────────
@@ -419,10 +422,16 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     const motion = this._motion() ? ' Jwift_SheetMotion' : '';
     // The inspector column is solid, as Pages' and Keynote's are: it is read beside busy content, not over it.
     if (this.Inspector()) return `Jwift_SheetCard_Inspector Jwift_SheetOpaque${motion}`;
-    const material = this.Regular() || this._percentFull() > SHEET_METRICS.GlassBelow ? 'Jwift_SheetOpaque' : 'Jwift_SheetGlass';
+    // iPad's form sheet is regular glass without the sheet subvariant (`sub_18910A6A0`) [C].
+    if (this.Regular()) return `Jwift_SheetCard Jwift_SheetGlass_Form${motion}`;
+    const material = this._percentFull() > SHEET_METRICS.GlassBelow ? 'Jwift_SheetOpaque' : 'Jwift_SheetGlass';
     const shape = grows ? 'Jwift_SheetCard_Grows' : 'Jwift_SheetCard';
     return `${shape} ${material}${motion}`;
   });
+
+  /** The bottom corners' radius before the half-height cap: the form sheet's one radius, or the edge sheet's. */
+  private readonly _bottomRadius = computed(() =>
+    this.Regular() ? this._sheetRadius() : BottomRadius(this._screenRadius(), this._inset()));
 
   readonly CardStyle = computed(() => {
     const h = this._height();
@@ -433,7 +442,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     }
     const cap = h / 2;
     const top = Math.min(this._sheetRadius(), cap);
-    const bottom = Math.min(BottomRadius(this._screenRadius(), this._inset()), cap);
+    const bottom = Math.min(this._bottomRadius(), cap);
     return { BorderRadius: `${r1(top)}px ${r1(top)}px ${r1(bottom)}px ${r1(bottom)}px` };
   });
 
@@ -523,10 +532,18 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
 
   readonly PageLayout = computed(() => ({ OffsetX: `${r1(this._pageOffset())}px` }));
 
+  /** Where the last thing in the body stops: concentric with the bottom corners, as the side inset is with the top. */
+  private readonly _footerInset = computed(() => FooterInset(
+    this._contentInset(), this._bottomRadius(), this._sheetRadius(), this._var('SafeBottom'), this._percentFull()));
+
   readonly BodyLayout = computed(() => {
-    const scrollRoom = this.bodyScrolls() ? 16 : 0;
-    const bottom = this.Regular() ? scrollRoom : Math.max(this._var('SafeBottom') - this._inset(), 0);
-    return { Padding: `${this._barHeight()}px 20px ${r1(bottom)}px 20px` };
+    const side = this._contentInset();
+    return { Padding: `${this._barHeight()}px ${side}px ${r1(this._footerInset())}px ${side}px` };
+  });
+
+  // A footer that bleeds to the card's edges (a recessed commit bar) reaches the bottom by this, the top sheet's.
+  private readonly _footerVar = effect(() => {
+    if (this._stack.Top() === this) this._jss.SetVar('JwiftSheetFooterInset', `${r1(this._footerInset())}px`);
   });
 
   // ── Lifecycle ──────────────────────────────────────────────────────
