@@ -682,6 +682,21 @@ function WriteFont(glyphs, notice) {
     .Tag('wght').Fixed(WEIGHT.Min).Fixed(WEIGHT.Default).Fixed(WEIGHT.Max).U16(0).U16(256)
     .U16(2).U16(0).Fixed(WEIGHT.Default);
 
+  // STAT: WITHOUT IT WEBKIT IGNORES THE wght AXIS. CoreText (Safari, and every WebKit canvas) reads a
+  // variable font's axes through STAT, and a font that ships fvar/gvar with no STAT is drawn at the axis
+  // MINIMUM whatever weight was asked for -- every icon at wght 100, the hairline house and sparkles the
+  // M4 showed in Safari's tab bar, faux-bolded on top at 600 and up. Chromium reads fvar directly and
+  // was right all along. Measured 2026-09-26 by drawing this font at 100-900 in both engines: without
+  // STAT WebKit differs from Chromium at every weight but 100; with this table it differs by 0-3 px.
+  // Version 1.1: one design axis (wght, named by nameID 256) and one elidable axis value, Regular at the
+  // default, whose name and the elided fallback are both nameID 2 ('Regular').
+  const stat = new Bytes();
+  const statHeader = 20, axisRecords = 8, valueOffsets = 2;
+  stat.U16(1).U16(1).U16(8).U16(1).U32(statHeader).U16(1).U32(statHeader + axisRecords).U16(2)
+    .Tag('wght').U16(256).U16(0)
+    .U16(valueOffsets)
+    .U16(1).U16(0).U16(0x0002).U16(2).Fixed(WEIGHT.Default);
+
   const variations = all.map(EncodeGlyphVariations);
   const gvar = new Bytes();
   const sharedTuplesOffset = 20 + 4 * (all.length + 1);
@@ -707,7 +722,7 @@ function WriteFont(glyphs, notice) {
   });
 
   const tables = {
-    'OS/2': os2.ToBuffer(), cmap: CmapTable(glyphs), fvar: fvar.ToBuffer(), glyf, gvar: gvar.ToBuffer(),
+    'OS/2': os2.ToBuffer(), STAT: stat.ToBuffer(), cmap: CmapTable(glyphs), fvar: fvar.ToBuffer(), glyf, gvar: gvar.ToBuffer(),
     head: head.ToBuffer(), hhea: hhea.ToBuffer(), hmtx: hmtx.ToBuffer(), loca: loca.ToBuffer(),
     maxp: maxp.ToBuffer(), name, post: post.ToBuffer(),
   };
