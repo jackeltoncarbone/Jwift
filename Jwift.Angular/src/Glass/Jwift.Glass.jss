@@ -96,11 +96,12 @@ JwiftSeparatorVibrancy {
 // on the app's grounds (dark 26, light 15): 0.22 x 229 = 50.4 and 0.12 x 240 = 28.8. Kept apart from the
 // fill so a press reads a clear step past a selection.
 @JwiftVibrancyFillPressed: 50 * @Dark - 29 * @Light
-// THE SELECTED TAB at rest: a neutral plate, not a fill. Apple's Photos bar keeps 0.3 of the color under
-// its selected segment and lands it +22 to +30 over the body: cover 0.7 in dark, and the amount lands it
-// +26 over Apple's bar body of 67. In light, cover 0.5 and 100 land it at Apple's 221 over 242.
-@JwiftVibrancySelection: 68 * @Dark + 100 * @Light
-@JwiftVibrancySelectionCover: 0.7 * @Dark + 0.5 * @Light
+// THE SELECTED TAB at rest: Apple's _UITabSelectionView, the bar blurred 2 and color-matrixed, hue kept and lifted
+// (Jwift/Apple/LiquidGlass.md 7.1 item 4): dark 0.958 (Y + 1.165 chroma) + 0.135, light 1.13 (Y + 1.062 chroma) - 0.2.
+@JwiftSelectionBlur: 2pt
+@JwiftSelectionBrightness: 1.228 * @Dark + 0.73 * @Light
+@JwiftSelectionContrast: 0.78 * @Dark + 1.548 * @Light
+@JwiftSelectionSaturation: 1.165 * @Dark + 1.062 * @Light
 
 // ── THE RIM ─────────────────────────────────────────────────────────
 // Apple's highlight (Jaui Core/Glass.md): a band 1 pt deep, lit by a key light upper left and a fill lower

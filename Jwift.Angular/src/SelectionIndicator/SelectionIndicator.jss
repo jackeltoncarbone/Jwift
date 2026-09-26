@@ -6,15 +6,12 @@ Jwift_SelectionIndicator {
   // the label. Layer isn't animated: the engine moves a lens across it only while it lenses (Jiv.StyleAnimator).
   Layer: 0
 
-  // Apple's selected tab at rest is a NEUTRAL grey plate lifted over the bar: the Photos bar's selected
-  // segment sits +22 to +30 over the body and keeps a third of its colour (Jwift.Glass.jss,
-  // @JwiftVibrancySelection). Only the selected glyph and label take the tint, as Apple's do. At rest it
-  // is FLAT: no glass, no rim, no bend. It becomes the glass lens only while a finger is on it (the
-  // pressed class below).
+  // At rest, Apple's vibrancy of the bar under it (Jwift.Glass.jss, THE SELECTED TAB): flat, no tint, no rim.
+  // A finger on it brings the lens (the pressed class below).
   Background: rgba(0, 0, 0, 0)
   Tint: 0
   BorderRadius: 100pt
-  BackdropFilter: Vibrancy(@JwiftVibrancySelection, @JwiftVibrancySelectionCover)
+  BackdropFilter: Blur(@JwiftSelectionBlur) Brightness(@JwiftSelectionBrightness) Contrast(@JwiftSelectionContrast) Saturate(@JwiftSelectionSaturation)
 
   // At rest it is no glass at all; the press brings the lens (Glass: Lens), the change springing.
   Glass: None
@@ -69,7 +66,7 @@ Jwift_SelectionIndicator_Pressed : Jwift_SelectionIndicator {
   Layer: 2
 
   // The lens lifts its own body; the resting plate's vibrancy gives way to it.
-  BackdropFilter: Brightness(1) Saturate(1) Contrast(1)
+  BackdropFilter: Blur(0pt) Brightness(1) Saturate(1) Contrast(1)
   Refraction: 1
   // Apple's lens, built as _UILiquidLensView is (Glass.Pipeline.glsl, GlassActiveLens): its backdrop warped by its
   // SDF, its glass over that, the lifted copy of the bar's items over its glass.
