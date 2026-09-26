@@ -31,7 +31,8 @@
 //   separator        33 / 0.13             -2 / 0.11              macOS widget and menu separators [I]
 @JwiftVibrancyLabel: 242 * @Dark
 @JwiftVibrancyLabelCover: 0.95 * @Dark + 1 * @Light
-@JwiftVibrancySecondaryLabel: 141 * @Dark + 36 * @Light
+@JwiftVibrancySecondaryLabelDark: 141
+@JwiftVibrancySecondaryLabel: @JwiftVibrancySecondaryLabelDark * @Dark + 36 * @Light
 @JwiftVibrancySecondaryLabelCover: 0.6
 @JwiftVibrancyTertiaryLabel: 70 * @Dark + 18 * @Light
 @JwiftVibrancyTertiaryLabelCover: 0.3
@@ -46,6 +47,12 @@ JwiftLabelVibrancy {
 JwiftSecondaryLabelVibrancy {
   Color: rgb(255, 255, 255)
   TextFilter: Vibrancy(@JwiftVibrancySecondaryLabel, @JwiftVibrancySecondaryLabelCover)
+}
+// A label over imagery follows the picture, not the theme: the dark appearance's level in both, as a UIKit view
+// over artwork overrides its interface style to dark (App Store Today card copy).
+JwiftSecondaryLabelVibrancyOnArt {
+  Color: rgb(255, 255, 255)
+  TextFilter: Vibrancy(@JwiftVibrancySecondaryLabelDark, @JwiftVibrancySecondaryLabelCover)
 }
 JwiftTertiaryLabelVibrancy {
   Color: rgb(255, 255, 255)
