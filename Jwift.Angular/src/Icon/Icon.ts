@@ -13,8 +13,9 @@ import { IconData } from './Icon.Data';
 import IconJss from './Icon.jss';
 
 /**
- * `<icon>` — Jwift canvas icon. Looks up an SF Symbols-style name in the
- * Jwift icon font's codepoint map and renders the glyph onto Jaui canvas.
+ * `<icon>` — Jwift canvas icon. Looks up an SF style name in the Jwift icon
+ * font's codepoint map and renders the glyph onto Jaui canvas. The glyphs are
+ * open source (see Icon.Names.json and NOTICE); the names are only a vocabulary.
  *
  *   <icon Name="play.fill" />
  *   <icon class="RowChevron" Name="chevron.right" />

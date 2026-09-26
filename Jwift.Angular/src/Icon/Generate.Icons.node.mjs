@@ -1,631 +1,818 @@
 /**
- * Jwift Icon Font Generator — PURE NODE.JS port of Generate.py.
+ * Jwift icon font generator. Builds the app's icon font from OPEN SOURCE glyphs only.
  *
- * Produces byte-for-behavior-identical output to the Python generator with NO
- * Python dependency:
- *   - Show Studio:  public/fonts/JwiftIcons/Icon.Font.woff2
- *   - Jwift:        Jwift.Angular/src/Icon/Icon.Data.ts (codepoint map)
+ *   Icon.Names.json   the vocabulary: an SF style name ("house.fill") -> a glyph in a licensed pack
+ *   Icon.Manifest     the app's shopping list (src/Icons/Icon.Manifest in the consuming app)
  *
- * Pipeline (mirrors Generate.py step-for-step):
- *   1. Read Icon.Source.otf (CFF2 variable font) via fontkit; build name->codepoint
- *      from the best cmap ('_' -> '.').
- *   2. Read the manifest (lowercased, '#' comments skipped) and resolve to codepoints.
- *   3. Subset to those codepoints with harfbuzz (subset-font): desubroutinized,
- *      name_IDs/layout_features kept, notdef outline kept, CFF2 preserved.
- *   4. Vertically center each glyph's ink at y=0 by shifting the first moveto's
- *      y-base in the CFF2 charstring (skip |dy|<2). Ink bounds from fontkit's
- *      default-master bbox; dy uses Python round-half-to-even. Patches CFF2
- *      charstrings in pure JS (see CenterCff2).
- *   5. Rewrite OS/2 + hhea to symmetric ascender=UPM/2, descender=-UPM/2, gap 0,
- *      win asc/desc = UPM.
- *   6. Re-wrap to woff2 (wawoff2).
- *   7. Write Icon.Data.ts (sorted codepoint map).
+ * Outputs:
+ *   - app:   public/fonts/JwiftIcons/Icon.Font.woff2 + NOTICE.txt (the packs' licenses)
+ *   - Jwift: Jwift.Angular/src/Icon/Icon.Data.ts (name -> codepoint)
  *
- * Requires (npm devDependencies): fontkit, subset-font, wawoff2.
+ * Every glyph is read from its pack's SVG, normalized the way <icon> expects (ink scaled so its
+ * longer side is one em, ink centered on the baseline, advance = ink width), and written as a
+ * variable TrueType font with a wght axis (100-900) made by offsetting the outline. The build
+ * refuses a pack that is not in PACKS and verifies the written font: private use codepoints only
+ * (U+E000-U+F8FF), and the license notice in its name table.
  *
- * Usage (from the consuming app dir, with SHOWSTUDIO_ROOT set, as the npm hook does):
- *   node Jwift/Jwift.Angular/src/Icon/Generate.Icons.node.mjs
- *   node ...Generate.Icons.node.mjs --check
- *   node ...Generate.Icons.node.mjs --list [pattern]
+ *   node Generate.Icons.node.mjs          build from the manifest
+ *   node Generate.Icons.node.mjs --list   list the vocabulary (optionally filtered)
+ *   node Generate.Icons.node.mjs --check  verify the shipped font without rebuilding
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import * as fontkit from 'fontkit';
-import subsetFont from 'subset-font';
 import wawoff2 from 'wawoff2';
 
 const ICON_DIR = path.dirname(fileURLToPath(import.meta.url));
-// The consuming app owns the manifest + font output. Resolution order:
-//   1. SHOWSTUDIO_ROOT env var (explicit override), else
-//   2. the cwd the generator was invoked from (npm runs it in the app dir) if it
-//      looks like an app (has src/Icons), else
-//   3. legacy fallback: the app is this script's 4th-level ancestor (nested layout).
-function resolveAppRoot() {
+const require = createRequire(import.meta.url);
+
+// The consuming app owns the manifest and the font output: SHOWSTUDIO_ROOT, else the cwd npm ran in.
+function ResolveAppRoot() {
   if (process.env.SHOWSTUDIO_ROOT) return path.resolve(process.env.SHOWSTUDIO_ROOT);
   const cwd = process.cwd();
   if (fs.existsSync(path.join(cwd, 'src', 'Icons', 'Icon.Manifest'))) return cwd;
-  return path.resolve(ICON_DIR, '..', '..', '..', '..');
+  throw new Error('Run from the app directory (it has src/Icons/Icon.Manifest) or set SHOWSTUDIO_ROOT.');
 }
-const SHOWSTUDIO = resolveAppRoot();
-const SOURCE_FONT = path.join(ICON_DIR, 'Icon.Source.otf');
+
+const NAMES_FILE = path.join(ICON_DIR, 'Icon.Names.json');
 const DATA_FILE = path.join(ICON_DIR, 'Icon.Data.ts');
-const MANIFEST_FILE = path.join(SHOWSTUDIO, 'src', 'Icons', 'Icon.Manifest');
-const FONT_OUT = path.join(SHOWSTUDIO, 'public', 'fonts', 'JwiftIcons', 'Icon.Font.woff2');
+const FAMILY = 'JwiftIcons';
+const UPM = 2048;
+const HALF = UPM / 2;
+const FIRST_CODEPOINT = 0xE000;
+const LAST_CODEPOINT = 0xF8FF;
+const WEIGHT = { Min: 100, Default: 400, Max: 900 };
+// Outline offset per side, in font units, at the axis ends and at the default. Measured against the
+// stroke growth of a system symbol font: a bar is ~12% of the em at 400 and ~25% at 900.
+const OFFSET = { Min: -64, Default: 16, Max: 150 };
+// Largest distance a cubic may drift from its quadratic replacement, in font units.
+const CURVE_TOLERANCE = 0.5;
+
+// The only packs a glyph may come from. A pack is added here with its license, never silently.
+const PACKS = {
+  Framework7: {
+    Title: 'Framework7 Icons',
+    License: 'MIT',
+    Url: 'https://github.com/framework7io/framework7-icons',
+    Root: () => path.dirname(require.resolve('framework7-icons/package.json')),
+    Svg: (root, glyph) => path.join(root, 'svg', `${glyph}.svg`),
+    LicenseFile: (root) => path.join(root, 'LICENSE'),
+  },
+  MaterialSymbolsRounded: {
+    Title: 'Material Symbols Rounded (weight 400)',
+    License: 'Apache-2.0',
+    Url: 'https://github.com/google/material-design-icons',
+    Root: () => path.join(ICON_DIR, 'Source', 'MaterialSymbolsRounded'),
+    Svg: (root, glyph) => path.join(root, `${glyph}.svg`),
+    LicenseFile: (root) => path.join(root, 'LICENSE'),
+  },
+};
 
 // ---------------------------------------------------------------------------
-// Codepoint map (mirrors load_codepoints): best cmap, glyph name '_' -> '.'.
-// fontkit exposes the cmap via characterSet + glyphForCodePoint(cp).name.
+// Vocabulary and manifest
 // ---------------------------------------------------------------------------
-function LoadCodepoints(font) {
-  const map = {};
-  for (const cp of font.characterSet) {
-    const g = font.glyphForCodePoint(cp);
-    const name = g && g.name;
-    if (name) map[name.replace(/_/g, '.')] = cp;
-  }
-  return map;
+
+function ReadNames() {
+  const names = JSON.parse(fs.readFileSync(NAMES_FILE, 'utf8'));
+  const entries = Object.entries(names).filter(([key]) => !key.startsWith('$'));
+  if (FIRST_CODEPOINT + entries.length - 1 > LAST_CODEPOINT) throw new Error('Icon.Names.json outgrew the private use area.');
+  // Codepoints follow the order of Icon.Names.json, so the file is append only.
+  return new Map(entries.map(([name, entry], index) => {
+    for (const part of [entry, ...(entry.Ring ? [entry.Ring] : [])]) {
+      if (!PACKS[part.Pack]) throw new Error(`${name}: pack "${part.Pack}" is not a licensed pack (${Object.keys(PACKS).join(', ')}).`);
+    }
+    return [name, { ...entry, Codepoint: FIRST_CODEPOINT + index }];
+  }));
 }
 
-function ReadManifest() {
-  if (!fs.existsSync(MANIFEST_FILE)) {
-    console.error(`No manifest at ${MANIFEST_FILE}`);
-    process.exit(1);
-  }
-  return fs.readFileSync(MANIFEST_FILE, 'utf8')
+function ReadManifest(appRoot) {
+  const file = path.join(appRoot, 'src', 'Icons', 'Icon.Manifest');
+  return [...new Set(fs.readFileSync(file, 'utf8')
     .split(/\r?\n/)
-    .map((l) => l.trim().toLowerCase())
-    .filter((l) => l && !l.startsWith('#'));
-}
-
-// Python's round(): round-half-to-even (banker's rounding) on the exact float.
-function PyRound(x) {
-  const f = Math.floor(x);
-  const diff = x - f;
-  if (diff < 0.5) return f;
-  if (diff > 0.5) return f + 1;
-  return f % 2 === 0 ? f : f + 1; // exactly .5 -> nearest even
+    .map((line) => line.trim().toLowerCase())
+    .filter((line) => line && !line.startsWith('#')))];
 }
 
 // ---------------------------------------------------------------------------
-// SFNT helpers
+// SVG path -> contours of line, quadratic and cubic segments
 // ---------------------------------------------------------------------------
-function ParseSfnt(buf) {
-  const numTables = buf.readUInt16BE(4);
-  const tables = new Map();
-  for (let i = 0; i < numTables; i++) {
-    const rec = 12 + i * 16;
-    const tag = buf.toString('latin1', rec, rec + 4);
-    tables.set(tag, {
-      tag,
-      checksum: buf.readUInt32BE(rec + 4),
-      offset: buf.readUInt32BE(rec + 8),
-      length: buf.readUInt32BE(rec + 12),
-      recOffset: rec,
-    });
+
+function ReadSvg(file) {
+  const text = fs.readFileSync(file, 'utf8');
+  if (/<(circle|rect|ellipse|polygon|polyline|line|use|g)\b/.test(text)) {
+    throw new Error(`${file}: only <path> elements are supported`);
   }
-  return { numTables, tables };
+  const paths = [...text.matchAll(/<path\b([^>]*)>/g)].map((m) => m[1]);
+  if (!paths.length) throw new Error(`${file}: no path`);
+  const contours = paths.flatMap((attributes) => {
+    const d = /\sd="([^"]+)"/.exec(attributes)?.[1];
+    if (!d) throw new Error(`${file}: a path has no d`);
+    const transform = /\stransform="([^"]*)"/.exec(attributes)?.[1];
+    if (!transform) return ParsePath(d);
+    const translate = /^\s*translate\(\s*([-+.\deE]+)(?:[\s,]+([-+.\deE]+))?\s*\)\s*$/.exec(transform);
+    if (!translate) throw new Error(`${file}: unsupported transform "${transform}"`);
+    const tx = Number(translate[1]), ty = Number(translate[2] ?? 0);
+    return MapContours(ParsePath(d), (x, y) => [x + tx, y + ty]);
+  });
+  return { EvenOdd: /fill-rule(="|:\s*)evenodd/.test(text), Contours: contours };
 }
 
-function CalcChecksum(buf, offset, length) {
-  let sum = 0;
-  const end = offset + length;
-  let i = offset;
-  for (; i + 4 <= end; i += 4) sum = (sum + buf.readUInt32BE(i)) >>> 0;
-  if (i < end) {
-    // pad final partial word with zeros
-    let last = 0;
-    for (let b = 0; b < 4; b++) {
-      last = (last << 8) | (i + b < end ? buf[i + b] : 0);
-    }
-    sum = (sum + (last >>> 0)) >>> 0;
-  }
-  return sum >>> 0;
-}
+const IsCommand = (token) => /^[MmLlHhVvCcSsQqTtZzAa]$/.test(token);
 
-// Recompute every table checksum + head.checkSumAdjustment in place (whole-font buffer).
-function FixChecksums(buf) {
-  const { tables } = ParseSfnt(buf);
-  for (const t of tables.values()) {
-    let cs;
-    if (t.tag === 'head') {
-      // head checksum computed with checkSumAdjustment field treated as 0
-      const saved = buf.readUInt32BE(t.offset + 8);
-      buf.writeUInt32BE(0, t.offset + 8);
-      cs = CalcChecksum(buf, t.offset, t.length);
-      buf.writeUInt32BE(saved, t.offset + 8);
-    } else {
-      cs = CalcChecksum(buf, t.offset, t.length);
-    }
-    buf.writeUInt32BE(cs, t.recOffset + 4);
-  }
-  // checkSumAdjustment = 0xB1B0AFBA - checksum(whole font with field=0)
-  const head = tables.get('head');
-  if (head) {
-    buf.writeUInt32BE(0, head.offset + 8);
-    const whole = CalcChecksum(buf, 0, buf.length);
-    const adj = (0xb1b0afba - whole) >>> 0;
-    buf.writeUInt32BE(adj, head.offset + 8);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// CFF2 charstring centering
-// ---------------------------------------------------------------------------
-const MOVERS = { 21: 'rmoveto', 22: 'hmoveto', 4: 'vmoveto' };
-
-function ReadIndex2(buf, pos) {
-  const count = buf.readUInt32BE(pos);
-  pos += 4;
-  if (count === 0) return { objects: [], offsets: [], dataStart: pos, end: pos };
-  const offSize = buf.readUInt8(pos);
-  pos += 1;
-  const readOff = (i) => {
-    let v = 0;
-    const p = pos + i * offSize;
-    for (let b = 0; b < offSize; b++) v = (v << 8) | buf.readUInt8(p + b);
-    return v >>> 0;
-  };
-  const offsets = [];
-  for (let i = 0; i <= count; i++) offsets.push(readOff(i));
-  const dataStart = pos + (count + 1) * offSize - 1;
-  const objects = [];
-  for (let i = 0; i < count; i++) objects.push(buf.subarray(dataStart + offsets[i], dataStart + offsets[i + 1]));
-  return { objects, offsets, dataStart, end: dataStart + offsets[count] };
-}
-
-function BuildIndex2(objects) {
-  let dataLen = 0;
-  for (const o of objects) dataLen += o.length;
-  const total = dataLen + 1;
-  let offSize;
-  if (total <= 0xff) offSize = 1;
-  else if (total <= 0xffff) offSize = 2;
-  else if (total <= 0xffffff) offSize = 3;
-  else offSize = 4;
-  const count = objects.length;
-  const out = Buffer.alloc(4 + 1 + (count + 1) * offSize + dataLen);
-  out.writeUInt32BE(count, 0);
-  out.writeUInt8(offSize, 4);
-  const writeOff = (idx, val) => {
-    const p = 5 + idx * offSize;
-    for (let b = offSize - 1; b >= 0; b--) {
-      out.writeUInt8(val & 0xff, p + b);
-      val = Math.floor(val / 256);
-    }
-  };
-  let acc = 1;
-  writeOff(0, acc);
-  let dataPos = 5 + (count + 1) * offSize;
-  for (let i = 0; i < count; i++) {
-    objects[i].copy(out, dataPos);
-    dataPos += objects[i].length;
-    acc += objects[i].length;
-    writeOff(i + 1, acc);
-  }
-  return out;
-}
-
-function ParseTopDict(buf) {
-  const ops = [];
+function ParsePath(d) {
+  const tokens = d.match(/[MmLlHhVvCcSsQqTtZzAa]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g) ?? [];
+  const contours = [];
+  let contour = null;
+  let x = 0, y = 0, startX = 0, startY = 0;
+  let lastCubic = null, lastQuad = null;
+  let command = '';
   let i = 0;
-  let operands = [];
-  let operandStart = 0;
-  while (i < buf.length) {
-    const b0 = buf[i];
-    if (b0 <= 21) {
-      let op = b0;
-      let len = 1;
-      if (b0 === 12) { op = 1200 + buf[i + 1]; len = 2; }
-      ops.push({ op, operands: operands.slice(), start: operandStart, end: i + len });
-      i += len;
-      operands = [];
-      operandStart = i;
-    } else if (b0 === 28) { operands.push((((buf[i + 1] << 8) | buf[i + 2]) << 16) >> 16); i += 3; }
-    else if (b0 === 29) { operands.push((buf[i + 1] << 24) | (buf[i + 2] << 16) | (buf[i + 3] << 8) | buf[i + 4]); i += 5; }
-    else if (b0 === 30) {
-      let s = ''; i += 1; let done = false;
-      while (!done && i < buf.length) {
-        const byte = buf[i++];
-        for (const nib of [byte >> 4, byte & 0xf]) {
-          if (nib <= 9) s += nib;
-          else if (nib === 0xa) s += '.';
-          else if (nib === 0xb) s += 'E';
-          else if (nib === 0xc) s += 'E-';
-          else if (nib === 0xe) s += '-';
-          else if (nib === 0xf) { done = true; break; }
+  const number = () => {
+    const token = tokens[i++];
+    if (token === undefined || IsCommand(token)) throw new Error(`path: expected a number near token ${i}`);
+    return Number(token);
+  };
+  const close = () => {
+    if (contour && contour.Segments.length) {
+      if (x !== startX || y !== startY) contour.Segments.push({ Kind: 'L', To: [startX, startY] });
+      contours.push(contour);
+    }
+    contour = null;
+    x = startX; y = startY;
+  };
+  const ensure = () => { if (!contour) contour = { Start: [x, y], Segments: [] }; };
+  while (i < tokens.length) {
+    if (IsCommand(tokens[i])) command = tokens[i++];
+    else if (!command) throw new Error('path: data before a command');
+    const relative = command === command.toLowerCase();
+    const ox = relative ? x : 0, oy = relative ? y : 0;
+    switch (command.toUpperCase()) {
+      case 'M': {
+        if (contour) close();
+        x = ox + number(); y = oy + number();
+        startX = x; startY = y;
+        contour = { Start: [x, y], Segments: [] };
+        command = relative ? 'l' : 'L';
+        lastCubic = lastQuad = null;
+        break;
+      }
+      case 'L': ensure(); x = ox + number(); y = oy + number(); contour.Segments.push({ Kind: 'L', To: [x, y] }); lastCubic = lastQuad = null; break;
+      case 'H': ensure(); x = ox + number(); contour.Segments.push({ Kind: 'L', To: [x, y] }); lastCubic = lastQuad = null; break;
+      case 'V': ensure(); y = oy + number(); contour.Segments.push({ Kind: 'L', To: [x, y] }); lastCubic = lastQuad = null; break;
+      case 'C': {
+        ensure();
+        const c1 = [ox + number(), oy + number()], c2 = [ox + number(), oy + number()], to = [ox + number(), oy + number()];
+        contour.Segments.push({ Kind: 'C', C1: c1, C2: c2, To: to });
+        lastCubic = c2; lastQuad = null; [x, y] = to;
+        break;
+      }
+      case 'S': {
+        ensure();
+        const c1 = lastCubic ? [2 * x - lastCubic[0], 2 * y - lastCubic[1]] : [x, y];
+        const c2 = [ox + number(), oy + number()], to = [ox + number(), oy + number()];
+        contour.Segments.push({ Kind: 'C', C1: c1, C2: c2, To: to });
+        lastCubic = c2; lastQuad = null; [x, y] = to;
+        break;
+      }
+      case 'Q': {
+        ensure();
+        const c = [ox + number(), oy + number()], to = [ox + number(), oy + number()];
+        contour.Segments.push({ Kind: 'Q', C: c, To: to });
+        lastQuad = c; lastCubic = null; [x, y] = to;
+        break;
+      }
+      case 'T': {
+        ensure();
+        const c = lastQuad ? [2 * x - lastQuad[0], 2 * y - lastQuad[1]] : [x, y];
+        const to = [ox + number(), oy + number()];
+        contour.Segments.push({ Kind: 'Q', C: c, To: to });
+        lastQuad = c; lastCubic = null; [x, y] = to;
+        break;
+      }
+      case 'Z': close(); lastCubic = lastQuad = null; break;
+      default: throw new Error(`path: unsupported command ${command}`);
+    }
+  }
+  if (contour) close();
+  return contours;
+}
+
+// ---------------------------------------------------------------------------
+// Geometry
+// ---------------------------------------------------------------------------
+
+function MapContours(contours, fn) {
+  const p = (point) => fn(point[0], point[1]);
+  return contours.map((c) => ({
+    Start: p(c.Start),
+    Segments: c.Segments.map((s) => s.Kind === 'L' ? { Kind: 'L', To: p(s.To) }
+      : s.Kind === 'Q' ? { Kind: 'Q', C: p(s.C), To: p(s.To) }
+        : { Kind: 'C', C1: p(s.C1), C2: p(s.C2), To: p(s.To) }),
+  }));
+}
+
+function Sample(contours, steps = 24) {
+  const points = [];
+  for (const c of contours) {
+    let from = c.Start;
+    points.push(from);
+    for (const s of c.Segments) {
+      if (s.Kind !== 'L') {
+        for (let k = 1; k < steps; k++) {
+          const t = k / steps, u = 1 - t;
+          points.push(s.Kind === 'Q'
+            ? [u * u * from[0] + 2 * u * t * s.C[0] + t * t * s.To[0], u * u * from[1] + 2 * u * t * s.C[1] + t * t * s.To[1]]
+            : [u * u * u * from[0] + 3 * u * u * t * s.C1[0] + 3 * u * t * t * s.C2[0] + t * t * t * s.To[0],
+              u * u * u * from[1] + 3 * u * u * t * s.C1[1] + 3 * u * t * t * s.C2[1] + t * t * t * s.To[1]]);
         }
       }
-      operands.push(parseFloat(s));
-    } else if (b0 >= 32 && b0 <= 246) { operands.push(b0 - 139); i += 1; }
-    else if (b0 >= 247 && b0 <= 250) { operands.push((b0 - 247) * 256 + buf[i + 1] + 108); i += 2; }
-    else if (b0 >= 251 && b0 <= 254) { operands.push(-(b0 - 251) * 256 - buf[i + 1] - 108); i += 2; }
-    else { i += 1; }
+      points.push(s.To);
+      from = s.To;
+    }
   }
-  return ops;
+  return points;
 }
 
-function EncodeDictInt(v) {
-  if (v >= -107 && v <= 107) return Buffer.from([v + 139]);
-  if (v >= 108 && v <= 1131) { const w = v - 108; return Buffer.from([247 + (w >> 8), w & 0xff]); }
-  if (v >= -1131 && v <= -108) { const w = -v - 108; return Buffer.from([251 + (w >> 8), w & 0xff]); }
-  if (v >= -32768 && v <= 32767) return Buffer.from([28, (v >> 8) & 0xff, v & 0xff]);
-  return Buffer.from([29, (v >>> 24) & 0xff, (v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff]);
+function Bounds(contours) {
+  let xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity;
+  for (const [x, y] of Sample(contours)) {
+    xMin = Math.min(xMin, x); yMin = Math.min(yMin, y); xMax = Math.max(xMax, x); yMax = Math.max(yMax, y);
+  }
+  return { xMin, yMin, xMax, yMax };
 }
 
-// Decode a CFF2 charstring into an ordered token list of {type, value/name, raw}.
-function DecodeCharString(buf) {
-  const tokens = [];
+// Loads one glyph as y-up contours in its own units, applying the entry's rotation.
+function LoadGlyph(name, part) {
+  const pack = PACKS[part.Pack];
+  const file = pack.Svg(pack.Root(), part.Glyph);
+  if (!fs.existsSync(file)) throw new Error(`${name}: ${part.Pack} has no glyph "${part.Glyph}" (${file})`);
+  const svg = ReadSvg(file);
+  let contours = MapContours(svg.Contours, (x, y) => [x, -y]);
+  if (part.Rotate) {
+    const b = Bounds(contours);
+    const cx = (b.xMin + b.xMax) / 2, cy = (b.yMin + b.yMax) / 2;
+    const a = (part.Rotate * Math.PI) / 180, cos = Math.cos(a), sin = Math.sin(a);
+    contours = MapContours(contours, (x, y) => [cx + (x - cx) * cos - (y - cy) * sin, cy + (x - cx) * sin + (y - cy) * cos]);
+  }
+  return { EvenOdd: svg.EvenOdd, Contours: contours };
+}
+
+// A glyph set inside its pack's ring, the way a ".circle" symbol reads.
+function Ringed(name, entry) {
+  const ring = LoadGlyph(name, entry.Ring);
+  const inner = LoadGlyph(name, entry);
+  const rb = Bounds(ring.Contours), ib = Bounds(inner.Contours);
+  const target = Math.max(rb.xMax - rb.xMin, rb.yMax - rb.yMin) * (entry.Ring.Scale ?? 0.5);
+  const s = target / Math.max(ib.xMax - ib.xMin, ib.yMax - ib.yMin);
+  const rcx = (rb.xMin + rb.xMax) / 2, rcy = (rb.yMin + rb.yMax) / 2, icx = (ib.xMin + ib.xMax) / 2, icy = (ib.yMin + ib.yMax) / 2;
+  const placed = MapContours(inner.Contours, (x, y) => [rcx + (x - icx) * s, rcy + (y - icy) * s]);
+  return {
+    Parts: [
+      { EvenOdd: ring.EvenOdd, Contours: ring.Contours },
+      { EvenOdd: inner.EvenOdd, Contours: placed },
+    ],
+  };
+}
+
+// Cubic -> quadratics within CURVE_TOLERANCE (blossom split, midpoint quadratic per piece).
+function CubicToQuads(p0, c1, c2, p3) {
+  const dx = p3[0] - 3 * c2[0] + 3 * c1[0] - p0[0], dy = p3[1] - 3 * c2[1] + 3 * c1[1] - p0[1];
+  const n = Math.min(32, Math.max(1, Math.ceil(Math.cbrt((Math.sqrt(3) / 36) * Math.hypot(dx, dy) / CURVE_TOLERANCE))));
+  const blossom = (a, b, c) => {
+    const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    const l1 = [lerp(p0, c1, a), lerp(c1, c2, a), lerp(c2, p3, a)];
+    const l2 = [lerp(l1[0], l1[1], b), lerp(l1[1], l1[2], b)];
+    return lerp(l2[0], l2[1], c);
+  };
+  const quads = [];
+  for (let k = 0; k < n; k++) {
+    const t0 = k / n, t1 = (k + 1) / n;
+    const a = blossom(t0, t0, t0), b = blossom(t0, t0, t1), c = blossom(t0, t1, t1), d = blossom(t1, t1, t1);
+    quads.push({ C: [(3 * (b[0] + c[0]) - a[0] - d[0]) / 4, (3 * (b[1] + c[1]) - a[1] - d[1]) / 4], To: d });
+  }
+  return quads;
+}
+
+// Contours -> TrueType point lists ({ X, Y, On }), explicit on-curve points between every off-curve.
+function ToPoints(contours) {
+  return contours.map((c) => {
+    const points = [{ X: c.Start[0], Y: c.Start[1], On: true }];
+    let from = c.Start;
+    for (const s of c.Segments) {
+      if (s.Kind === 'L') points.push({ X: s.To[0], Y: s.To[1], On: true });
+      else if (s.Kind === 'Q') points.push({ X: s.C[0], Y: s.C[1], On: false }, { X: s.To[0], Y: s.To[1], On: true });
+      else for (const q of CubicToQuads(from, s.C1, s.C2, s.To)) points.push({ X: q.C[0], Y: q.C[1], On: false }, { X: q.To[0], Y: q.To[1], On: true });
+      from = s.To;
+    }
+    const last = points[points.length - 1];
+    if (points.length > 1 && last.On && Math.abs(last.X - points[0].X) < 1e-6 && Math.abs(last.Y - points[0].Y) < 1e-6) points.pop();
+    return points;
+  }).filter((points) => points.length >= 3);
+}
+
+function SignedArea(points) {
+  let area = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i], b = points[(i + 1) % points.length];
+    area += a.X * b.Y - b.X * a.Y;
+  }
+  return area / 2;
+}
+
+function Contains(polygon, x, y) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i], b = polygon[j];
+    if ((a.Y > y) !== (b.Y > y) && x < ((b.X - a.X) * (y - a.Y)) / (b.Y - a.Y) + a.X) inside = !inside;
+  }
+  return inside;
+}
+
+function Reverse(points) {
+  const reversed = [...points].reverse();
+  const firstOn = reversed.findIndex((p) => p.On);
+  return [...reversed.slice(firstOn), ...reversed.slice(0, firstOn)];
+}
+
+// Fonts fill by nonzero winding. An even-odd source is rewound so nesting depth decides: even = ink
+// (counterclockwise), odd = hole (clockwise). Without this, a ring drawn even-odd fills as a disc.
+function RewindEvenOdd(contours) {
+  return contours.map((points, index) => {
+    const probe = points.find((p) => p.On) ?? points[0];
+    const depth = contours.reduce((n, other, j) => n + (j !== index && Contains(other, probe.X, probe.Y) ? 1 : 0), 0);
+    const wantPositive = depth % 2 === 0;
+    return (SignedArea(points) > 0) === wantPositive ? points : Reverse(points);
+  });
+}
+
+function Perimeter(points) {
+  return points.reduce((sum, p, i) => {
+    const q = points[(i + 1) % points.length];
+    return sum + Math.hypot(q.X - p.X, q.Y - p.Y);
+  }, 0);
+}
+
+// A hole narrower than this is a knocked-out stroke, like the plus in plus.circle.fill or the ring
+// around a camera lens, not a counter: it widens with weight the way ink strokes do. Width is the
+// white band's mean width, 2A/P, with any ink islands inside it taken out.
+const KNOCKOUT_WIDTH = 0.2 * UPM;
+function HoleWidth(contours, index) {
+  const hole = contours[index];
+  let area = -SignedArea(hole), perimeter = Perimeter(hole);
+  contours.forEach((other, j) => {
+    const probe = other.find((p) => p.On) ?? other[0];
+    if (j === index || SignedArea(other) <= 0 || !Contains(hole, probe.X, probe.Y)) return;
+    area -= SignedArea(other);
+    perimeter += Perimeter(other);
+  });
+  return (2 * area) / perimeter;
+}
+
+// Per contour offset: ink takes the full amount; a knocked-out stroke in a filled symbol widens by
+// it; a counter closes by at most a fifth of its width, so small counters stay open at heavy weights.
+function ContourOffset(contours, index, amount, knockouts) {
+  if (SignedArea(contours[index]) >= 0) return amount;
+  const width = HoleWidth(contours, index);
+  if (knockouts && width < KNOCKOUT_WIDTH) return -amount;
+  return Math.sign(amount) * Math.min(Math.abs(amount), 0.2 * width);
+}
+
+// Offsets every point along its corner bisector by `strength` font units per side (negative thins).
+// Ink winds counterclockwise, so counters shrink as ink grows; knocked-out strokes widen instead.
+// Tangential travel is capped at the shorter adjacent edge so tight corners do not cross over.
+function Embolden(contours, amount, knockouts) {
+  if (!amount) return contours.map((c) => c.map((p) => ({ ...p })));
+  const total = contours.reduce((sum, c) => sum + SignedArea(c), 0);
+  const sign = total >= 0 ? 1 : -1;
+  return contours.map((c, index) => {
+    const strength = ContourOffset(contours, index, amount, knockouts);
+    const n = c.length;
+    return c.map((p, i) => {
+      let prev = null, next = null, lIn = 0, lOut = 0;
+      for (let k = 1; k < n && !prev; k++) {
+        const q = c[(i - k + n) % n];
+        const l = Math.hypot(p.X - q.X, p.Y - q.Y);
+        if (l > 1e-9) { prev = q; lIn = l; }
+      }
+      for (let k = 1; k < n && !next; k++) {
+        const q = c[(i + k) % n];
+        const l = Math.hypot(q.X - p.X, q.Y - p.Y);
+        if (l > 1e-9) { next = q; lOut = l; }
+      }
+      if (!prev || !next) return { ...p };
+      const inX = (p.X - prev.X) / lIn, inY = (p.Y - prev.Y) / lIn;
+      const outX = (next.X - p.X) / lOut, outY = (next.Y - p.Y) / lOut;
+      const d = 1 + inX * outX + inY * outY;
+      if (d <= 0.0625) return { ...p };
+      const shiftX = sign * (inY + outY), shiftY = -sign * (inX + outX);
+      const q = Math.abs(outX * inY - outY * inX);
+      const l = Math.min(lIn, lOut);
+      const factor = Math.abs(strength) * q > l * d ? Math.sign(strength) * l / q : strength / d;
+      return { X: p.X + shiftX * factor, Y: p.Y + shiftY * factor, On: p.On };
+    });
+  });
+}
+
+function Rounded(contours) {
+  return contours.map((c) => c.map((p) => ({ X: Math.round(p.X), Y: Math.round(p.Y), On: p.On })));
+}
+
+// True ink bounds of TrueType point contours (quadratic segments sampled, not control points).
+function InkBounds(contours) {
+  let xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity;
+  const add = (x, y) => { xMin = Math.min(xMin, x); yMin = Math.min(yMin, y); xMax = Math.max(xMax, x); yMax = Math.max(yMax, y); };
+  for (const c of contours) {
+    c.forEach((p, i) => {
+      if (p.On) { add(p.X, p.Y); return; }
+      const a = c[(i - 1 + c.length) % c.length], b = c[(i + 1) % c.length];
+      for (let k = 1; k < 16; k++) {
+        const t = k / 16, u = 1 - t;
+        add(u * u * a.X + 2 * u * t * p.X + t * t * b.X, u * u * a.Y + 2 * u * t * p.Y + t * t * b.Y);
+      }
+    });
+  }
+  return { xMin, yMin, xMax, yMax };
+}
+
+// Offsets the outline for one weight, then scales it about (cx, cy) so its longer ink side is one em
+// again: heavier weights thicken strokes without growing the symbol, as a system symbol font does.
+function Master(contours, offset, cx, cy, knockouts) {
+  const bold = Embolden(contours, offset, knockouts);
+  const b = InkBounds(bold);
+  const f = UPM / Math.max(b.xMax - b.xMin, b.yMax - b.yMin);
+  return bold.map((c) => c.map((p) => ({ X: cx + (p.X - cx) * f, Y: cy + (p.Y - cy) * f, On: p.On })));
+}
+
+// Builds one glyph: longer ink side = UPM, ink centered on y=0, lsb 0, advance = ink width, with
+// the default outline and the two axis-end masters sharing one point structure.
+function BuildGlyph(name, entry) {
+  const parts = entry.Ring ? Ringed(name, entry).Parts : [LoadGlyph(name, entry)];
+  const b = Bounds(parts.flatMap((p) => p.Contours));
+  const s = UPM / Math.max(b.xMax - b.xMin, b.yMax - b.yMin);
+  const cy = (b.yMin + b.yMax) / 2;
+  let contours = [];
+  for (const part of parts) {
+    let placed = ToPoints(MapContours(part.Contours, (x, y) => [(x - b.xMin) * s, (y - cy) * s]));
+    if (part.EvenOdd) placed = RewindEvenOdd(placed);
+    // Ink winds counterclockwise in every part, so the weight offset grows ink and shrinks counters.
+    if (placed.reduce((sum, c) => sum + SignedArea(c), 0) < 0) placed = placed.map(Reverse);
+    contours.push(...placed);
+  }
+  // Drop repeated on-curve points (they would round onto each other and carry no direction).
+  contours = contours.map((c) => c.filter((p, i) => {
+    const q = c[(i - 1 + c.length) % c.length];
+    return !(p.On && q.On && Math.round(p.X) === Math.round(q.X) && Math.round(p.Y) === Math.round(q.Y));
+  })).filter((c) => c.length >= 3);
+  const ink = InkBounds(contours);
+  const cx = (ink.xMin + ink.xMax) / 2;
+  // Only a filled symbol has knocked-out strokes; an outline symbol's narrow holes are counters.
+  const knockouts = /\.fill(\.|$)/.test(name);
+  const base = Master(contours, OFFSET.Default, cx, 0, knockouts);
+  const fit = InkBounds(base);
+  const shift = (master) => Rounded(master.map((c) => c.map((p) => ({ ...p, X: p.X - fit.xMin }))));
+  return {
+    Name: name,
+    Codepoint: entry.Codepoint,
+    Advance: Math.round(fit.xMax - fit.xMin),
+    Contours: shift(base),
+    Min: shift(Master(contours, OFFSET.Min, cx, 0, knockouts)),
+    Max: shift(Master(contours, OFFSET.Max, cx, 0, knockouts)),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// TrueType writer (glyf + fvar/gvar variable font)
+// ---------------------------------------------------------------------------
+
+class Bytes {
+  constructor() { this.Parts = []; this.Length = 0; }
+  Push(buffer) { this.Parts.push(buffer); this.Length += buffer.length; return this; }
+  U8(v) { const b = Buffer.alloc(1); b.writeUInt8(v); return this.Push(b); }
+  I8(v) { const b = Buffer.alloc(1); b.writeInt8(v); return this.Push(b); }
+  U16(v) { const b = Buffer.alloc(2); b.writeUInt16BE(v); return this.Push(b); }
+  I16(v) { const b = Buffer.alloc(2); b.writeInt16BE(v); return this.Push(b); }
+  U32(v) { const b = Buffer.alloc(4); b.writeUInt32BE(v >>> 0); return this.Push(b); }
+  I32(v) { const b = Buffer.alloc(4); b.writeInt32BE(v); return this.Push(b); }
+  Fixed(v) { return this.I32(Math.round(v * 65536)); }
+  Tag(s) { return this.Push(Buffer.from(s, 'latin1')); }
+  Pad(n = 4) { while (this.Length % n) this.U8(0); return this; }
+  ToBuffer() { return Buffer.concat(this.Parts); }
+}
+
+function GlyphBounds(contours) {
+  let xMin = 0, yMin = 0, xMax = 0, yMax = 0, first = true;
+  for (const c of contours) for (const p of c) {
+    if (first) { xMin = xMax = p.X; yMin = yMax = p.Y; first = false; }
+    xMin = Math.min(xMin, p.X); yMin = Math.min(yMin, p.Y); xMax = Math.max(xMax, p.X); yMax = Math.max(yMax, p.Y);
+  }
+  return { xMin, yMin, xMax, yMax };
+}
+
+function EncodeGlyph(contours) {
+  if (!contours.length) return Buffer.alloc(0);
+  const b = GlyphBounds(contours);
+  const out = new Bytes();
+  out.I16(contours.length).I16(b.xMin).I16(b.yMin).I16(b.xMax).I16(b.yMax);
+  let end = -1;
+  for (const c of contours) { end += c.length; out.U16(end); }
+  out.U16(0);
+  const flags = new Bytes(), xs = new Bytes(), ys = new Bytes();
+  let px = 0, py = 0;
+  for (const c of contours) for (const p of c) {
+    let flag = p.On ? 1 : 0;
+    const dx = p.X - px, dy = p.Y - py;
+    if (dx === 0) flag |= 0x10;
+    else if (Math.abs(dx) < 256) { flag |= 0x02 | (dx > 0 ? 0x10 : 0); xs.U8(Math.abs(dx)); }
+    else xs.I16(dx);
+    if (dy === 0) flag |= 0x20;
+    else if (Math.abs(dy) < 256) { flag |= 0x04 | (dy > 0 ? 0x20 : 0); ys.U8(Math.abs(dy)); }
+    else ys.I16(dy);
+    flags.U8(flag);
+    px = p.X; py = p.Y;
+  }
+  out.Push(flags.ToBuffer()).Push(xs.ToBuffer()).Push(ys.ToBuffer()).Pad(4);
+  return out.ToBuffer();
+}
+
+function PackDeltas(deltas) {
+  const out = new Bytes();
   let i = 0;
-  while (i < buf.length) {
-    const b0 = buf[i];
-    if (b0 >= 32 || b0 === 28) {
-      let value;
-      let len;
-      if (b0 === 28) { value = (((buf[i + 1] << 8) | buf[i + 2]) << 16) >> 16; len = 3; }
-      else if (b0 < 247) { value = b0 - 139; len = 1; }
-      else if (b0 < 251) { value = (b0 - 247) * 256 + buf[i + 1] + 108; len = 2; }
-      else if (b0 < 255) { value = -(b0 - 251) * 256 - buf[i + 1] - 108; len = 2; }
-      else {
-        const hi = (((buf[i + 1] << 8) | buf[i + 2]) << 16) >> 16;
-        const lo = (buf[i + 3] << 8) | buf[i + 4];
-        value = hi + lo / 65536; len = 5;
-      }
-      tokens.push({ type: 'num', value, raw: buf.subarray(i, i + len) });
-      i += len;
+  while (i < deltas.length) {
+    if (deltas[i] === 0) {
+      let n = 0;
+      while (i + n < deltas.length && deltas[i + n] === 0 && n < 64) n++;
+      out.U8(0x80 | (n - 1));
+      i += n;
+    } else if (deltas[i] >= -128 && deltas[i] <= 127) {
+      let n = 0;
+      while (i + n < deltas.length && deltas[i + n] !== 0 && deltas[i + n] >= -128 && deltas[i + n] <= 127 && n < 64) n++;
+      out.U8(n - 1);
+      for (let k = 0; k < n; k++) out.I8(deltas[i + k]);
+      i += n;
     } else {
-      let op = b0;
-      let len = 1;
-      if (b0 === 12) { op = 1200 + buf[i + 1]; len = 2; }
-      const isMove = MOVERS[b0];
-      const isBlend = b0 === 16;
-      tokens.push({ type: 'op', op, name: isMove || (isBlend ? 'blend' : 'op' + op), raw: buf.subarray(i, i + len) });
-      i += len;
+      let n = 0;
+      while (i + n < deltas.length && (deltas[i + n] < -128 || deltas[i + n] > 127) && n < 64) n++;
+      out.U8(0x40 | (n - 1));
+      for (let k = 0; k < n; k++) out.I16(deltas[i + k]);
+      i += n;
     }
   }
-  return tokens;
+  return out.ToBuffer();
 }
 
-// Encode an integer charstring operand. Values here are existing-base + dy (integers).
-function EncodeCSInt(v) {
-  if (v >= -107 && v <= 107) return Buffer.from([v + 139]);
-  if (v >= 108 && v <= 1131) { const w = v - 108; return Buffer.from([247 + (w >> 8), w & 0xff]); }
-  if (v >= -1131 && v <= -108) { const w = -v - 108; return Buffer.from([251 + (w >> 8), w & 0xff]); }
-  if (v >= -32768 && v <= 32767) return Buffer.from([28, (v >> 8) & 0xff, v & 0xff]);
-  const fixed = Math.round(v * 65536);
-  return Buffer.from([255, (fixed >> 24) & 0xff, (fixed >> 16) & 0xff, (fixed >> 8) & 0xff, fixed & 0xff]);
+// Per glyph: two tuples against the shared peaks (-1 at wght 100, +1 at wght 900), all points.
+function EncodeGlyphVariations(glyph) {
+  if (!glyph.Contours.length) return Buffer.alloc(0);
+  const tuples = [glyph.Min, glyph.Max].map((master) => {
+    const dx = [], dy = [];
+    master.forEach((c, ci) => c.forEach((p, pi) => {
+      dx.push(p.X - glyph.Contours[ci][pi].X);
+      dy.push(p.Y - glyph.Contours[ci][pi].Y);
+    }));
+    for (let k = 0; k < 4; k++) { dx.push(0); dy.push(0); }
+    return Buffer.concat([PackDeltas(dx), PackDeltas(dy)]);
+  });
+  const out = new Bytes();
+  out.U16(0x8000 | tuples.length).U16(4 + 4 * tuples.length);
+  tuples.forEach((t, index) => out.U16(t.length).U16(index));
+  out.U8(0);
+  for (const t of tuples) out.Push(t);
+  return out.Pad(2).ToBuffer();
 }
 
-// Port of _shift_cff2_program_y at the token level. Mutates one token's value and
-// re-encodes its raw bytes. Returns true if a shift was applied.
-function ShiftFirstMoveY(tokens, dy) {
-  let mi = -1;
-  let moveName = null;
-  for (let i = 0; i < tokens.length; i++) {
-    if (tokens[i].type === 'op' && MOVERS[tokens[i].op]) { mi = i; moveName = tokens[i].name; break; }
-  }
-  if (mi < 0) return false;
-
-  const isNum = (t) => t && t.type === 'num';
-  const isStr = (t) => t && t.type === 'op';
-  const setVal = (t, nv) => { t.value = nv; t.raw = EncodeCSInt(nv); };
-
-  if (moveName === 'rmoveto') {
-    const prev = tokens[mi - 1];
-    if (mi >= 1 && isNum(prev)) {
-      // Pattern A or C: plain y right before rmoveto
-      setVal(prev, prev.value + dy);
-    } else if (mi >= 1 && isStr(prev) && prev.name === 'blend') {
-      // Pattern B: blend produces both dx and dy. Find start of this operand group.
-      let start = 0;
-      for (let j = mi - 1; j >= 0; j--) {
-        if (isStr(tokens[j]) && tokens[j].name !== 'blend') { start = j + 1; break; }
-      }
-      if (start + 1 < mi && isNum(tokens[start + 1])) {
-        setVal(tokens[start + 1], tokens[start + 1].value + dy);
-      }
-    }
-  } else if (moveName === 'vmoveto') {
-    let start = 0;
-    for (let j = mi - 1; j >= 0; j--) {
-      if (isStr(tokens[j]) && tokens[j].name !== 'blend') { start = j + 1; break; }
-    }
-    if (start < mi && isNum(tokens[start])) {
-      setVal(tokens[start], tokens[start].value + dy);
-    }
-  }
-  // hmoveto: no y component — nothing to do.
-  return true;
+function NameTable(records) {
+  const entries = Object.entries(records).map(([id, text]) => ({ Id: Number(id), Data: Buffer.from(text, 'utf16le').swap16() }))
+    .sort((a, b) => a.Id - b.Id);
+  const out = new Bytes();
+  out.U16(0).U16(entries.length).U16(6 + 12 * entries.length);
+  let offset = 0;
+  for (const e of entries) { out.U16(3).U16(1).U16(0x409).U16(e.Id).U16(e.Data.length).U16(offset); offset += e.Data.length; }
+  for (const e of entries) out.Push(e.Data);
+  return out.ToBuffer();
 }
 
-function EncodeTokens(tokens) {
-  return Buffer.concat(tokens.map((t) => Buffer.from(t.raw)));
+function CmapTable(glyphs) {
+  // Segments of consecutive codepoints mapped to consecutive glyph ids (glyph i+1 <-> glyphs[i]).
+  const segments = [];
+  glyphs.forEach((g, index) => {
+    const id = index + 1;
+    const last = segments[segments.length - 1];
+    if (last && g.Codepoint === last.End + 1 && id === last.Id + (last.End - last.Start) + 1) last.End = g.Codepoint;
+    else segments.push({ Start: g.Codepoint, End: g.Codepoint, Id: id });
+  });
+  segments.push({ Start: 0xFFFF, End: 0xFFFF, Id: 1, Terminal: true });
+  const count = segments.length;
+  const searchRange = 2 * 2 ** Math.floor(Math.log2(count));
+  const sub = new Bytes();
+  sub.U16(4).U16(16 + 8 * count).U16(0).U16(count * 2).U16(searchRange).U16(Math.log2(searchRange / 2)).U16(count * 2 - searchRange);
+  for (const s of segments) sub.U16(s.End);
+  sub.U16(0);
+  for (const s of segments) sub.U16(s.Start);
+  for (const s of segments) sub.U16(s.Terminal ? 1 : (s.Id - s.Start + 0x10000) & 0xFFFF);
+  for (let k = 0; k < count; k++) sub.U16(0);
+  const subtable = sub.ToBuffer();
+  const out = new Bytes();
+  out.U16(0).U16(2);
+  out.U16(0).U16(3).U32(4 + 8 * 2);
+  out.U16(3).U16(1).U32(4 + 8 * 2);
+  return Buffer.concat([out.ToBuffer(), subtable]);
 }
 
-// Apply centering to all glyphs in the SFNT's CFF2 table. dyByCp maps codepoint->dy.
-// Returns a NEW whole-font buffer (CFF2 length changes).
-function CenterCff2(sfnt, dyByGlyphIndex) {
-  const { tables } = ParseSfnt(sfnt);
-  const cff2t = tables.get('CFF2');
-  const cff2 = sfnt.subarray(cff2t.offset, cff2t.offset + cff2t.length);
+function Checksum(buffer) {
+  const padded = Buffer.concat([buffer, Buffer.alloc((4 - (buffer.length % 4)) % 4)]);
+  let sum = 0;
+  for (let i = 0; i < padded.length; i += 4) sum = (sum + padded.readUInt32BE(i)) >>> 0;
+  return sum;
+}
 
-  const hdrSize = cff2.readUInt8(2);
-  const topDictLength = cff2.readUInt16BE(3);
-  const topDictStart = hdrSize;
-  const topDict = cff2.subarray(topDictStart, topDictStart + topDictLength);
-  const dictOps = ParseTopDict(topDict);
-  const csEntry = dictOps.find((o) => o.op === 17); // CharStrings
-  const csOffset = csEntry.operands[0];
+function WriteFont(glyphs, notice) {
+  const all = [{ Name: '.notdef', Advance: HALF, Contours: [], Min: [], Max: [] }, ...glyphs];
+  const encoded = all.map((g) => EncodeGlyph(g.Contours));
+  const loca = new Bytes();
+  let offset = 0;
+  for (const e of encoded) { loca.U32(offset); offset += e.length; }
+  loca.U32(offset);
+  const glyf = Buffer.concat(encoded);
 
-  const csIndex = ReadIndex2(cff2, csOffset);
-  const newObjects = csIndex.objects.map((obj, gi) => {
-    const dy = dyByGlyphIndex.get(gi);
-    if (!dy) return Buffer.from(obj); // gi not centered (or dy 0)
-    const tokens = DecodeCharString(obj);
-    ShiftFirstMoveY(tokens, dy);
-    return EncodeTokens(tokens);
+  const bounds = all.filter((g) => g.Contours.length).map((g) => GlyphBounds(g.Contours));
+  const xMin = Math.min(...bounds.map((b) => b.xMin)), yMin = Math.min(...bounds.map((b) => b.yMin));
+  const xMax = Math.max(...bounds.map((b) => b.xMax)), yMax = Math.max(...bounds.map((b) => b.yMax));
+  const maxPoints = Math.max(...all.map((g) => g.Contours.reduce((n, c) => n + c.length, 0)));
+  const maxContours = Math.max(...all.map((g) => g.Contours.length));
+  const advanceMax = Math.max(...all.map((g) => g.Advance));
+  const lsbs = all.map((g) => (g.Contours.length ? GlyphBounds(g.Contours).xMin : 0));
+  const rsbs = all.map((g, i) => (g.Contours.length ? g.Advance - GlyphBounds(g.Contours).xMax : 0));
+  const extents = all.map((g, i) => (g.Contours.length ? lsbs[i] + (GlyphBounds(g.Contours).xMax - GlyphBounds(g.Contours).xMin) : 0));
+
+  const head = new Bytes();
+  head.Fixed(1).Fixed(1).U32(0).U32(0x5F0F3CF5).U16(0x000B).U16(UPM)
+    .U32(0).U32(0).U32(0).U32(0)
+    .I16(xMin).I16(yMin).I16(xMax).I16(yMax).U16(0).U16(8).I16(2).I16(1).I16(0);
+
+  const hhea = new Bytes();
+  hhea.Fixed(1).I16(HALF).I16(-HALF).I16(0).U16(advanceMax)
+    .I16(Math.min(...lsbs)).I16(Math.min(...rsbs)).I16(Math.max(...extents))
+    .I16(1).I16(0).I16(0).I16(0).I16(0).I16(0).I16(0).I16(0).U16(all.length);
+
+  const maxp = new Bytes();
+  maxp.Fixed(1).U16(all.length).U16(maxPoints).U16(maxContours).U16(0).U16(0).U16(2)
+    .U16(0).U16(0).U16(0).U16(0).U16(0).U16(0).U16(0).U16(0);
+
+  const hmtx = new Bytes();
+  all.forEach((g, i) => hmtx.U16(g.Advance).I16(lsbs[i]));
+
+  const codepoints = glyphs.map((g) => g.Codepoint);
+  const os2 = new Bytes();
+  os2.U16(4).I16(Math.round(all.reduce((n, g) => n + g.Advance, 0) / all.length)).U16(WEIGHT.Default).U16(5).U16(0)
+    .I16(1331).I16(1229).I16(0).I16(154).I16(1331).I16(1229).I16(0).I16(717).I16(102).I16(512).I16(0)
+    .Push(Buffer.alloc(10))
+    .U32(0).U32(1 << 28).U32(0).U32(0)
+    .Tag('JWFT').U16(0x00C0).U16(Math.min(...codepoints)).U16(Math.max(...codepoints))
+    .I16(HALF).I16(-HALF).I16(0).U16(UPM).U16(UPM)
+    .U32(1).U32(0).I16(0).I16(0).U16(0).U16(0x20).U16(0);
+
+  const post = new Bytes();
+  post.Fixed(3).Fixed(0).I16(-100).I16(50).U32(0).U32(0).U32(0).U32(0).U32(0);
+
+  const fvar = new Bytes();
+  fvar.U16(1).U16(0).U16(16).U16(2).U16(1).U16(20).U16(1).U16(8)
+    .Tag('wght').Fixed(WEIGHT.Min).Fixed(WEIGHT.Default).Fixed(WEIGHT.Max).U16(0).U16(256)
+    .U16(2).U16(0).Fixed(WEIGHT.Default);
+
+  const variations = all.map(EncodeGlyphVariations);
+  const gvar = new Bytes();
+  const sharedTuplesOffset = 20 + 4 * (all.length + 1);
+  const dataOffset = sharedTuplesOffset + 4;
+  gvar.U16(1).U16(0).U16(1).U16(2).U32(sharedTuplesOffset).U16(all.length).U16(1).U32(dataOffset);
+  let voffset = 0;
+  for (const v of variations) { gvar.U32(voffset); voffset += v.length; }
+  gvar.U32(voffset);
+  gvar.I16(-0x4000).I16(0x4000);
+  for (const v of variations) gvar.Push(v);
+
+  const name = NameTable({
+    0: notice.Copyright,
+    1: FAMILY,
+    2: 'Regular',
+    3: `${FAMILY}-Regular`,
+    4: `${FAMILY} Regular`,
+    5: 'Version 2.000',
+    6: `${FAMILY}-Regular`,
+    13: notice.License,
+    14: notice.LicenseUrl,
+    256: 'Weight',
   });
 
-  const newCsIndex = BuildIndex2(newObjects);
-
-  // Rebuild the CFF2 table: header + TopDict (with patched CharStrings offset) +
-  // everything between end of TopDict and start of CharStrings INDEX (GlobalSubrs
-  // INDEX, VarStore, FDArray, etc. — all unchanged) + new CharStrings INDEX +
-  // anything AFTER the old CharStrings INDEX (private dicts/local subrs live via
-  // FDArray offsets which are BEFORE charstrings here; nothing trails it in practice,
-  // but we copy any tail to be safe).
-  //
-  // The only offset in the TopDict that points past itself and could move is
-  // CharStrings (17). FDArray (1236) / VarStore (1207 is matrix, 1224 vstore) point
-  // to regions BEFORE CharStrings, which don't move. We assert CharStrings is the
-  // last-positioned of the offset operators so the prefix is stable.
-
-  const csStart = csOffset; // start of old CharStrings INDEX within cff2
-  const csEnd = csIndex.end;
-  const prefix = cff2.subarray(0, csStart); // header + topdict + gsubrs + vstore + fdarray
-  const suffix = cff2.subarray(csEnd); // usually empty
-
-  // Patch TopDict CharStrings offset. The offset value (csStart) does not change
-  // because the prefix length is unchanged (we only changed bytes AFTER csStart).
-  // So no TopDict rewrite is needed — but we re-encode defensively in case the
-  // offset operand width would differ. Here csStart is identical, so it's a no-op.
-  // (We keep the original TopDict bytes intact inside `prefix`.)
-
-  const newCff2 = Buffer.concat([prefix, newCsIndex, suffix]);
-
-  // Splice the new CFF2 table back into the SFNT, rebuilding the table directory
-  // with corrected offset/length and 4-byte alignment padding.
-  return SpliceTable(sfnt, 'CFF2', newCff2);
-}
-
-// Replace one table's bytes and rebuild the SFNT with proper alignment + directory.
-function SpliceTable(sfnt, tag, newData) {
-  const { tables } = ParseSfnt(sfnt);
-  // Gather all tables with current data, replace target.
-  const entries = [];
-  for (const t of tables.values()) {
-    const data = t.tag === tag ? newData : Buffer.from(sfnt.subarray(t.offset, t.offset + t.length));
-    entries.push({ tag: t.tag, data });
+  const tables = {
+    'OS/2': os2.ToBuffer(), cmap: CmapTable(glyphs), fvar: fvar.ToBuffer(), glyf, gvar: gvar.ToBuffer(),
+    head: head.ToBuffer(), hhea: hhea.ToBuffer(), hmtx: hmtx.ToBuffer(), loca: loca.ToBuffer(),
+    maxp: maxp.ToBuffer(), name, post: post.ToBuffer(),
+  };
+  const tags = Object.keys(tables).sort();
+  const numTables = tags.length;
+  const entrySelector = Math.floor(Math.log2(numTables));
+  const searchRange = 16 * 2 ** entrySelector;
+  const header = new Bytes();
+  header.U32(0x00010000).U16(numTables).U16(searchRange).U16(entrySelector).U16(numTables * 16 - searchRange);
+  let tableOffset = 12 + 16 * numTables;
+  const body = new Bytes();
+  let headOffset = 0;
+  for (const tag of tags) {
+    const data = tables[tag];
+    header.Tag(tag).U32(Checksum(data)).U32(tableOffset).U32(data.length);
+    if (tag === 'head') headOffset = tableOffset;
+    body.Push(data).Pad(4);
+    tableOffset += data.length + ((4 - (data.length % 4)) % 4);
   }
-  // Keep original table directory ORDER (by recOffset) for determinism.
-  entries.sort((a, b) => tables.get(a.tag).recOffset - tables.get(b.tag).recOffset);
-
-  const numTables = entries.length;
-  const headerLen = 12 + numTables * 16;
-  // Physical table order: SFNT spec allows any; preserve original physical order by offset.
-  const physical = [...entries].sort((a, b) => tables.get(a.tag).offset - tables.get(b.tag).offset);
-
-  let offset = headerLen;
-  const layout = new Map();
-  for (const e of physical) {
-    layout.set(e.tag, offset);
-    offset += e.data.length;
-    offset = (offset + 3) & ~3; // 4-byte align
-  }
-  const totalLen = offset;
-  const out = Buffer.alloc(totalLen);
-
-  // sfnt header
-  sfnt.copy(out, 0, 0, 4); // sfntVersion
-  out.writeUInt16BE(numTables, 4);
-  // searchRange/entrySelector/rangeShift
-  let maxPow2 = 1, exp = 0;
-  while (maxPow2 * 2 <= numTables) { maxPow2 *= 2; exp++; }
-  out.writeUInt16BE(maxPow2 * 16, 6);
-  out.writeUInt16BE(exp, 8);
-  out.writeUInt16BE(numTables * 16 - maxPow2 * 16, 10);
-
-  // directory (sorted by tag per spec; original dir was tag-sorted already)
-  const dirSorted = [...entries].sort((a, b) => (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0));
-  let rec = 12;
-  for (const e of dirSorted) {
-    out.write(e.tag, rec, 'latin1');
-    out.writeUInt32BE(0, rec + 4); // checksum placeholder, fixed later
-    out.writeUInt32BE(layout.get(e.tag), rec + 8);
-    out.writeUInt32BE(e.data.length, rec + 12);
-    rec += 16;
-  }
-  // table data
-  for (const e of physical) e.data.copy(out, layout.get(e.tag));
-
-  FixChecksums(out);
-  return out;
-}
-
-// Rewrite OS/2 + hhea symmetric metrics. Mutates the SFNT buffer in place
-// (lengths unchanged). Returns nothing; caller fixes checksums after.
-function RewriteMetrics(sfnt, upm) {
-  const { tables } = ParseSfnt(sfnt);
-  const half = Math.floor(upm / 2);
-  const os2 = tables.get('OS/2');
-  if (os2) {
-    const o = os2.offset;
-    sfnt.writeInt16BE(half, o + 68);   // sTypoAscender
-    sfnt.writeInt16BE(-half, o + 70);  // sTypoDescender
-    sfnt.writeInt16BE(0, o + 72);      // sTypoLineGap
-    sfnt.writeUInt16BE(upm, o + 74);   // usWinAscent
-    sfnt.writeUInt16BE(upm, o + 76);   // usWinDescent
-  }
-  const hhea = tables.get('hhea');
-  if (hhea) {
-    const o = hhea.offset;
-    sfnt.writeInt16BE(half, o + 4);    // ascender
-    sfnt.writeInt16BE(-half, o + 6);   // descender
-    sfnt.writeInt16BE(0, o + 8);       // lineGap
-  }
-}
-
-// Encode a string the way Python's Path.write_text() does on a cp1252 Windows
-// locale: translate '\n' -> '\r\n', then encode each char to its Windows-1252
-// byte. Only ASCII + the em-dash (U+2014 -> 0x97) occur here; cp1252 maps the
-// 0x80-0x9F range to specific glyphs (em-dash is 0x97).
-const CP1252_HIGH = {
-  0x20ac: 0x80, 0x201a: 0x82, 0x0192: 0x83, 0x201e: 0x84, 0x2026: 0x85,
-  0x2020: 0x86, 0x2021: 0x87, 0x02c6: 0x88, 0x2030: 0x89, 0x0160: 0x8a,
-  0x2039: 0x8b, 0x0152: 0x8c, 0x017d: 0x8e, 0x2018: 0x91, 0x2019: 0x92,
-  0x201c: 0x93, 0x201d: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97,
-  0x02dc: 0x98, 0x2122: 0x99, 0x0161: 0x9a, 0x203a: 0x9b, 0x0153: 0x9c,
-  0x017e: 0x9e, 0x0178: 0x9f,
-};
-function EncodeWindowsText(s) {
-  const crlf = s.replace(/\n/g, '\r\n');
-  const bytes = [];
-  for (const ch of crlf) {
-    const cp = ch.codePointAt(0);
-    if (cp <= 0xff) bytes.push(cp); // ASCII + Latin-1 share cp1252 for <=0x7F and 0xA0-0xFF
-    else if (CP1252_HIGH[cp] != null) bytes.push(CP1252_HIGH[cp]);
-    else throw new Error(`Char U+${cp.toString(16)} not representable in cp1252`);
-  }
-  return Buffer.from(bytes);
+  const font = Buffer.concat([header.ToBuffer(), body.ToBuffer()]);
+  font.writeUInt32BE((0xB1B0AFBA - Checksum(font)) >>> 0, headOffset + 8);
+  return font;
 }
 
 // ---------------------------------------------------------------------------
-// Subcommands
+// Notice and conformance
 // ---------------------------------------------------------------------------
-function CheckAxes() {
-  const font = fontkit.openSync(SOURCE_FONT);
-  if (!font.namedVariations && !font['fvar'] && !(font.variationAxes && Object.keys(font.variationAxes).length)) {
-    console.log('Static font — no variable axes.');
-  } else {
-    console.log('Variable axes:');
-    const pyFloat = (v) => (Number.isInteger(v) ? `${v}.0` : `${v}`); // match Python float repr
-    for (const [tag, a] of Object.entries(font.variationAxes || {})) {
-      console.log(`  ${tag}: ${pyFloat(a.min)} -> ${pyFloat(a.default)} -> ${pyFloat(a.max)}`);
-    }
-  }
-  const codepoints = LoadCodepoints(font);
-  console.log(`Total icons: ${Object.keys(codepoints).length}`);
+
+function Notice(usedPacks) {
+  const sections = usedPacks.map((key) => {
+    const pack = PACKS[key];
+    const text = fs.readFileSync(pack.LicenseFile(pack.Root()), 'utf8').trim();
+    return `${pack.Title}\n${pack.Url}\nLicense: ${pack.License}\n\n${text}`;
+  });
+  const packs = usedPacks.map((key) => `${PACKS[key].Title} (${PACKS[key].License})`).join(', ');
+  return {
+    Copyright: `Glyphs from ${packs}.`,
+    License: `Built from open source icon packs: ${packs}. See NOTICE.txt beside this font for each license.`,
+    LicenseUrl: usedPacks.map((key) => PACKS[key].Url).join(' '),
+    Text: `${FAMILY} is built by Jwift from these open source icon packs. Glyphs are normalized and offset\n`
+      + `for weight; their shapes are the packs' own.\n\n${sections.join(`\n\n${'-'.repeat(72)}\n\n`)}\n`,
+  };
 }
 
-function ListIcons(pattern) {
-  const font = fontkit.openSync(SOURCE_FONT);
-  const codepoints = LoadCodepoints(font);
-  let matches = Object.keys(codepoints).sort();
-  if (pattern) matches = matches.filter((n) => n.toLowerCase().includes(pattern.toLowerCase()));
-  for (const name of matches.slice(0, 200)) console.log(`  ${name}`);
-  const total = matches.length;
-  if (total > 200) console.log(`  ... (${total - 200} more)`);
-  console.log(`\n${total} icons` + (pattern ? ` matching '${pattern}'` : ' available'));
-}
-
-async function Build() {
-  if (!fs.existsSync(SOURCE_FONT)) {
-    console.error(`Source font not found: ${SOURCE_FONT}`);
-    console.error('Run: git lfs pull');
-    process.exit(1);
+// Fails unless the font maps only private use codepoints and carries the open source notice.
+function Verify(fontPath) {
+  const font = fontkit.openSync(fontPath);
+  const problems = [];
+  const mapped = font.characterSet.filter((cp) => font.glyphForCodePoint(cp).id !== 0);
+  const outside = mapped.filter((cp) => cp < FIRST_CODEPOINT || cp > LAST_CODEPOINT);
+  if (outside.length) problems.push(`maps codepoints outside U+E000-U+F8FF: ${outside.slice(0, 8).map((cp) => `U+${cp.toString(16).toUpperCase()}`).join(' ')}`);
+  const license = font.getName('license') ?? '';
+  if (!/open source icon packs/.test(license)) problems.push('has no open source license notice in its name table');
+  for (const key of Object.keys(PACKS)) {
+    if (license.includes(PACKS[key].Title) && !license.includes(PACKS[key].License)) problems.push(`names ${key} without its license`);
   }
-
-  const font = fontkit.openSync(SOURCE_FONT);
-  const codepoints = LoadCodepoints(font);
-
-  const wght = font.variationAxes && font.variationAxes.wght;
-  if (wght) console.log(`Variable font — wght: ${Math.round(wght.min)} ${Math.round(wght.max)}`);
-  else console.log('Static font');
-
-  const iconNames = ReadManifest();
-  const resolved = {};
-  for (const name of iconNames) {
-    const cp = codepoints[name];
-    if (cp == null) {
-      console.log(`  ${name}: NOT FOUND — try --list ${name.split('.')[0]}`);
-      continue;
-    }
-    resolved[name] = cp;
-    console.log(`  ${name}  U+${cp.toString(16).toUpperCase().padStart(4, '0')}`);
-  }
-  if (Object.keys(resolved).length === 0) {
-    console.log('No icons resolved.');
-    return;
-  }
-
-  // Compute dy per codepoint from the SOURCE font's default-master ink bbox.
-  const dyByCp = new Map();
-  for (const cp of Object.values(resolved)) {
-    const g = font.glyphForCodePoint(cp);
-    const bb = g.bbox;
-    const inkCenter = (bb.minY + bb.maxY) / 2;
-    const dy = PyRound(0 - inkCenter);
-    if (Math.abs(dy) >= 2) dyByCp.set(cp, dy); // skip |dy|<2 (matches Python)
-  }
-
-  // --- Subset with harfbuzz (CFF2-preserving, desubroutinized) to SFNT ---
-  const srcBuf = fs.readFileSync(SOURCE_FONT);
-  const text = Object.values(resolved).map((cp) => String.fromCodePoint(cp)).join('');
-  let sfnt = await subsetFont(srcBuf, text, { targetFormat: 'sfnt' });
-  sfnt = Buffer.from(sfnt);
-
-  // Map subset glyph index -> dy via the subset cmap (codepoint -> gid).
-  const subFont = fontkit.create(sfnt);
-  const dyByGid = new Map();
-  for (const [cp, dy] of dyByCp) {
-    const g = subFont.glyphForCodePoint(cp);
-    if (g) dyByGid.set(g.id, dy);
-  }
-
-  // --- Center glyph ink (CFF2 charstring shift) ---
-  sfnt = CenterCff2(sfnt, dyByGid);
-
-  // --- Symmetric metrics + checksum fix ---
-  const upm = subFont.unitsPerEm; // 2048
-  RewriteMetrics(sfnt, upm);
-  FixChecksums(sfnt);
-
-  // --- Wrap to woff2 ---
-  const woff2 = Buffer.from(await wawoff2.compress(sfnt));
-  fs.mkdirSync(path.dirname(FONT_OUT), { recursive: true });
-  fs.writeFileSync(FONT_OUT, woff2);
-
-  const sizeKb = (woff2.length / 1024).toFixed(1);
-  console.log(`\nWrote ${FONT_OUT} (${sizeKb} KB, ${Object.keys(resolved).length} glyphs)`);
-
-  // --- Icon.Data.ts ---
-  const half = Math.floor(upm / 2);
-  const entries = Object.entries(resolved).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  const lines = entries.map(([n, cp]) => `  '${n}': 0x${cp.toString(16).toUpperCase().padStart(4, '0')},`);
-  const dataTs =
-    '/**\n' +
-    ' * Jwift icon codepoint map. Generated — do not edit.\n' +
-    ' * Rebuild: python Jwift/Jwift.Angular/src/Icon/Generate.py\n' +
-    ' */\n' +
-    'export const IconData: Record<string, number> = {\n' +
-    lines.join('\n') + '\n' +
-    '};\n';
-  // Match Python's Path.write_text() on Windows byte-for-byte: locale (cp1252)
-  // encoding + universal-newline translation (\n -> \r\n). The only non-ASCII
-  // char is the em-dash (U+2014 -> cp1252 0x97).
-  fs.writeFileSync(DATA_FILE, EncodeWindowsText(dataTs));
-  console.log(`Wrote Icon.Data.ts (${Object.keys(resolved).length} icons)`);
-  void half;
-  console.log('\nDone.');
+  if (problems.length) throw new Error(`${fontPath}: ${problems.join('; ')}`);
+  return mapped.length;
 }
 
 // ---------------------------------------------------------------------------
-async function Main() {
-  const arg = process.argv[2];
-  if (arg === '--check') return CheckAxes();
-  if (arg === '--list') return ListIcons(process.argv[3]);
-  return Build();
+
+function Build() {
+  const appRoot = ResolveAppRoot();
+  const fontOut = path.join(appRoot, 'public', 'fonts', FAMILY, 'Icon.Font.woff2');
+  const noticeOut = path.join(appRoot, 'public', 'fonts', FAMILY, 'NOTICE.txt');
+  const names = ReadNames();
+  const manifest = ReadManifest(appRoot);
+  const unknown = manifest.filter((name) => !names.has(name));
+  if (unknown.length) throw new Error(`Icon.Manifest names with no open source glyph in Icon.Names.json: ${unknown.join(', ')}`);
+
+  const glyphs = manifest.map((name) => BuildGlyph(name, names.get(name))).sort((a, b) => a.Codepoint - b.Codepoint);
+  const usedPacks = Object.keys(PACKS).filter((key) => manifest.some((name) => {
+    const entry = names.get(name);
+    return entry.Pack === key || entry.Ring?.Pack === key;
+  }));
+  const notice = Notice(usedPacks);
+  const sfnt = WriteFont(glyphs, notice);
+
+  return wawoff2.compress(sfnt).then((woff2) => {
+    fs.mkdirSync(path.dirname(fontOut), { recursive: true });
+    fs.writeFileSync(fontOut, Buffer.from(woff2));
+    fs.writeFileSync(noticeOut, notice.Text);
+    const count = Verify(fontOut);
+    const lines = glyphs.map((g) => g.Name).sort().map((n) => `  '${n}': 0x${names.get(n).Codepoint.toString(16).toUpperCase()},`);
+    fs.writeFileSync(DATA_FILE, '/** Jwift icon codepoint map. Generated by Generate.Icons.node.mjs; do not edit. */\n'
+      + `export const IconData: Record<string, number> = {\n${lines.join('\n')}\n};\n`);
+    console.log(`[Generate.Icons] ${count} glyphs from ${usedPacks.join(' + ')} -> ${fontOut} (${(woff2.length / 1024).toFixed(1)} KB)`);
+  });
 }
 
-Main().catch((e) => { console.error(e); process.exit(1); });
+function List(filter) {
+  for (const [name, entry] of ReadNames()) {
+    if (filter && !name.includes(filter)) continue;
+    const ring = entry.Ring ? ` in ${entry.Ring.Pack}/${entry.Ring.Glyph}` : '';
+    console.log(`${name.padEnd(40)} U+${entry.Codepoint.toString(16).toUpperCase()}  ${entry.Pack}/${entry.Glyph}${ring}`);
+  }
+}
+
+function Check() {
+  const fontOut = path.join(ResolveAppRoot(), 'public', 'fonts', FAMILY, 'Icon.Font.woff2');
+  console.log(`[Generate.Icons] ${Verify(fontOut)} glyphs, private use only, open source notice present.`);
+}
+
+const mode = process.argv[2];
+Promise.resolve()
+  .then(() => (mode === '--list' ? List(process.argv[3]) : mode === '--check' ? Check() : Build()))
+  .catch((error) => { console.error(`[Generate.Icons] ${error.message}`); process.exit(1); });
