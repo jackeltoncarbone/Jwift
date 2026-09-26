@@ -13,8 +13,10 @@ Jwift_TabBarRow {
 // It floats in the dock's scroll edge (Navigation.jss DockEdge, JwiftScrollEdgeBottomScene), which dims and
 // blurs the content under it; the bar's own glass samples that content undimmed (Jaui's edge backdrop), so
 // it reads brighter than its surround, as Apple's does.
-Jwift_TabBar : JwiftGlass {
+Jwift_TabBar : JwiftGlass, JwiftFlex {
   UserSelect: None
+  // The bar takes the press itself, so its flex answers anywhere on it.
+  Interactive: true
   // Apple's bar draws its glass, highlight and all, under its items (the bar's UIVisualEffectView under its
   // content view, Jwift/Apple/LiquidGlass.md 7.1), so the lens's backdrop holds the bar's rim.
   BorderLayer: 0
@@ -50,25 +52,24 @@ Jwift_TabBar : JwiftGlass {
   // (5.0 to 5.3 px at 3x), where the Photos bar in the same pocket reads None's (Jwift/Apple/Evidence.md 1b).
   GlassFrost: Automatic
 
-  // The bar swells a touch while the selection indicator is engaged. VisualScale is render-time, so
-  // the swell never disturbs layout or the indicator's placement maths. Same spring as the
-  // indicator's own wobble, so bar and pill move as one body.
-  VisualScale: 1
-  @Spring VisualScale { Stiffness: 900, Damping: 18, Mass: 1 }
-  // The flex's big glow comes and goes with the swell (TabBar.ts, FlexLift.ts).
-  @Spring GlassGlow { Stiffness: 900, Damping: 60, Mass: 1 }
+  // The press is UIKit's flex (JwiftFlex, Jaui Core/Flex.ts), as Apple's bar wears it: it lifts by its size,
+  // stretches toward a finger dragged along it and squashes with the finger's acceleration, with both glows.
+  // The selection indicator is the bar's child, so the flex carries the lens as one body; the lens adds only
+  // its own loupe stretch (SelectionIndicator.ts), and nothing else scales the bar.
 }
 
-// The round accessory's pressed swell, worn while its lens is engaged. It sets ONLY VisualScale. The bar itself
-// swells by UIKit's flex lift for its size instead (TabBar.ts, FlexLift.ts).
+// The round accessory's pressed swell, worn while its lens is engaged. It sets ONLY VisualScale.
 Jwift_TabBar_Pressed {
   VisualScale: 1.02
 }
 
 // ─── Trailing accessory (the round button beside the bar) ───
-// The bar itself, squared to a circle: same material, shadow, inset and swell, its diameter the bar's
-// height so the two share a centreline. The circle wears Jwift_TabBar_Pressed too.
+// The bar itself, squared to a circle: same material, shadow and inset, its diameter the bar's height so the
+// two share a centreline. Its press is its lens and Jwift_TabBar_Pressed's swell, not the bar's flex.
 Jwift_TabAccessory : Jwift_TabBar {
+  Flex: None
+  VisualScale: 1
+  @Spring VisualScale { Stiffness: 900, Damping: 18, Mass: 1 }
   Justify: Center
   Width: 60pt
   @If (Width < 880) {

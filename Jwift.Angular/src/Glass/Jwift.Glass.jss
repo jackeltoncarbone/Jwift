@@ -327,8 +327,8 @@ JwiftPressMotion {
 // UIKit's press on a button, `_UIFlexInteraction` as interactive glass wears it (variant Auto, by size):
 // it grows by liftScalePoints on its longer side, stretches toward a finger that travels and past its
 // edge, squashes with the finger's acceleration, and on glass lays the big glow over itself and the little
-// glow under the finger. Every value is Apple's; FlexLift, FlexBigGlow, FlexLittleGlow and FlexMovement
-// tune it per control.
+// glow under the finger. Every value is Apple's; FlexLift, FlexBigGlow, FlexLittleGlow and FlexStretch
+// tune it per control, and each springs like any numeric property (`@Transition FlexStretch { ... }`).
 JwiftFlex {
   Flex: Auto
 }

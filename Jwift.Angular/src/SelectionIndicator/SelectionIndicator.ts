@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
 import { JivHandle as JivCore, ResolveLengthTuple4, Spring } from 'jaui';
-import { FlexMovementScale } from '../Internal/FlexLift';
+import { FlexMovementScale } from '../Internal/FlexMovement';
 import { JivHost } from '../Internal/JivHost';
 import { TabBar } from '../TabBar/TabBar';
 import SelectionIndicatorJss from './SelectionIndicator.jss';
@@ -349,7 +349,8 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     this._lastT = now;
     this._lastX = lensX;
 
-    // Dragged across the bar, the lens takes UIKit's flex movement scale along x, keeping its area (FlexLift.ts).
+    // Dragged across the bar, the lens takes UIKit's loupe movement scale along x, keeping its area (FlexMovement.ts).
+    // The bar's own flex (lift, stretch, squash) reaches it as the bar's child, so this adds the loupe's part alone.
     // Only an actual drag drives it: the press's growth and the release's settle move the box but are not motion.
     let scaleX = this._dragActive ? FlexMovementScale(vx) : 1;
     let scaleY = 1 / scaleX;
