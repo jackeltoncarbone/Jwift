@@ -109,8 +109,10 @@ top           = lerp(percentCapsular, 38, bottom)     // edge attached: 38 pt at
   (36, 36, 38) and (54, 54, 56). Both have a white pair behind `_UIUnifiedSystemBackgroundColorsEnabled()`, which
   is on only when the internal preference `UnifiedSystemBackgroundColorsEnabled` is set (UIKitCore_80), so it is
   off in a shipping build. So at the large (opaque) height the section cells are white on (242, 242, 247) in light
-  and (44, 44, 46) on (28, 28, 30) in dark; at a partial (glass) height the same cells sit on the glass. Jwift:
-  `@Sheet` and `@GroupedCell`, `Jwift_List_Translucent`.
+  and (44, 44, 46) on (28, 28, 30) in dark. At a partial (glass) height a cell is not an opaque gray: content on
+  glass takes the vibrant fills (HIG Materials; `UIVibrancyEffectStyle` secondaryFill, Jaui Core/Vibrancy.md),
+  a lift of the glass, and its separators the vibrant separator level. Jwift: `@Sheet` and `@GroupedCell`
+  (`Jwift_List_Elevated`), `Jwift_List_Vibrant`, switched live by the sheet's `JWIFT_MATERIAL`.
 - **Dimming:** by default "the system adds a noninteractive dimming view underneath the sheet at all detents." Set `largestUndimmedDetentIdentifier` for a nonmodal sheet over live content [D]. "When a task interrupts the main flow, pair Liquid Glass with a dimming layer... when a task happens in parallel, Liquid Glass creates a natural separation" [D] (356).
 - **Motion:** spring damping ratio 1.0, response 0.344144233 s; 0.8 damping on a high-speed flick (`transitionSpringParametersHighSpeed:`) [C].
 - **iPad form sheet default size** (`defaultFormSheetSizeForScreenSize:`) [C]: longest screen side ≤ 1024: 540 × 600; ≤ 1590: 580 × 640; larger: 620 × 680; wide-margin screens: 414 × 394.

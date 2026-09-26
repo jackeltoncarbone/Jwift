@@ -4,8 +4,10 @@ import {
   OnDestroy,
   OnInit,
   booleanAttribute,
+  computed,
   effect,
   forwardRef,
+  inject,
   input,
   numberAttribute,
 } from '@angular/core';
@@ -13,6 +15,7 @@ import { Jiv } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
 import ListJss from './List.jss';
 import { LIST_COMFORT } from './List.Comfort';
+import { JWIFT_MATERIAL, type JwiftMaterial } from '../Internal/Material';
 
 /**
  * Half the switch, which is a 31pt capsule: `radius = JWIFT_CONTROL_RADIUS + comfort` = 31.5pt.
@@ -50,9 +53,10 @@ export const JWIFT_LIST_COMFORT = 16;
  *
  * `radius` overrides the derived default when a surface nests the section inside something else and needs
  * to stay concentric with THAT: pass the parent's radius minus the gap you inset the list by. Add `glass`
- * when the section floats over content instead of sitting on a page ground. Add `translucent` when it
- * sits ON a glass surface such as a sheet: a translucent fill that carries the glass's colour, never a
- * second material.
+ * when the section floats over content instead of sitting on a page ground.
+ *
+ * The fill follows the material it sits on (JWIFT_MATERIAL), so a sheet's sections change with the sheet:
+ * a vibrant fill on glass, the elevated gray once the sheet is opaque, the grouped panel on a page.
  */
 @Component({
   selector: 'list',
@@ -63,12 +67,14 @@ export const JWIFT_LIST_COMFORT = 16;
   providers: [
     { provide: Jiv, useExisting: forwardRef(() => List) },
     { provide: LIST_COMFORT, useFactory: (l: List) => l.comfort, deps: [forwardRef(() => List)] },
+    { provide: JWIFT_MATERIAL, useFactory: (l: List) => l.Material, deps: [forwardRef(() => List)] },
   ],
 })
 export class List extends JivHost implements OnInit, OnDestroy {
   readonly glass = input(false, { transform: booleanAttribute });
-  /** A section resting on glass: a translucent fill instead of the opaque grouped ground. */
-  readonly translucent = input(false, { transform: booleanAttribute });
+  private readonly _surround = inject(JWIFT_MATERIAL, { optional: true, skipSelf: true });
+  /** What the rows sit on: the section's own glass, or the material around it. */
+  readonly Material = computed<JwiftMaterial | null>(() => (this.glass() ? 'Glass' : this._surround?.() ?? null));
   /** Uniform row padding, in points. It decides the corner: radius = control radius + comfort, so the
    *  section stays concentric with the roundest control its rows carry. */
   readonly comfort = input(JWIFT_LIST_COMFORT, { transform: numberAttribute });
@@ -76,8 +82,11 @@ export class List extends JivHost implements OnInit, OnDestroy {
   readonly radius = input<number | null>(null, { transform: (v: unknown) => (v == null || v === '' ? null : numberAttribute(v)) });
 
   constructor() {
-    super('List', ListJss, 'Jwift_List', () =>
-      this.glass() ? 'Jwift_List_Glass' : this.translucent() ? 'Jwift_List_Translucent' : 'Jwift_List');
+    super('List', ListJss, 'Jwift_List', () => {
+      if (this.glass()) return 'Jwift_List_Glass';
+      const surround = this._surround?.() ?? null;
+      return surround === 'Glass' ? 'Jwift_List_Vibrant' : surround === 'Elevated' ? 'Jwift_List_Elevated' : 'Jwift_List';
+    });
     effect(() => {
       const override = this.radius();
       const r = (override === null || Number.isNaN(override))

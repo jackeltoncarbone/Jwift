@@ -14,6 +14,7 @@ import { JivHost } from '../Internal/JivHost';
 import ListJss from './List.jss';
 import { JWIFT_LIST_ICON_WIDTH, JWIFT_LIST_ROW_GAP, LIST_COMFORT } from './List.Comfort';
 import { JWIFT_LIST_COMFORT } from './List';
+import { JWIFT_MATERIAL } from '../Internal/Material';
 
 /**
  * `<list-separator>` — the hairline between two rows.
@@ -21,6 +22,7 @@ import { JWIFT_LIST_COMFORT } from './List';
  * `inset` starts the line where the label starts, as the system does: after the row's comfort, the
  * leading element and the row gap. Bare `inset` clears a leading icon; `inset="48"` clears a leading
  * element that many points wide, such as a thumbnail. The trailing end stays flush with the section.
+ * On glass the line is Apple's vibrant separator, treating the glass under it rather than painting a gray.
  */
 @Component({
   selector: 'list-separator',
@@ -37,10 +39,13 @@ export class ListSeparator extends JivHost implements OnInit, OnDestroy {
   readonly inset = input<number | null, unknown>(null, { transform: _leadWidth });
 
   private readonly _comfort = inject(LIST_COMFORT, { optional: true });
+  private readonly _material = inject(JWIFT_MATERIAL, { optional: true });
 
   constructor() {
-    super('List', ListJss, 'Jwift_ListSeparator',
-      () => (this.inset() === null ? 'Jwift_ListSeparator' : 'Jwift_ListSeparator_Inset'));
+    super('List', ListJss, 'Jwift_ListSeparator', () => {
+      const shape = this.inset() === null ? 'Jwift_ListSeparator' : 'Jwift_ListSeparator_Inset';
+      return this._material?.() === 'Glass' ? `${shape} Jwift_ListSeparator_Vibrant` : shape;
+    });
     effect(() => {
       const lead = this.inset();
       const comfort = this._comfort ? this._comfort() : JWIFT_LIST_COMFORT;

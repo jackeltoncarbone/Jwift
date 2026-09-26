@@ -16,8 +16,8 @@
 // overrides it when a section nests inside another shape and must stay concentric with THAT instead.
 //
 // Row height is the 44pt hit floor the HIG states for every control. Ink is the theme's ladder: @Ink for
-// the label, @InkSoft for the value, @InkFaint for the chevron. The default fill is opaque, as Apple's grouped background is, so page
-// content can never read through the rows; a section on glass takes the translucent variant below.
+// the label, @InkSoft for the value, @InkFaint for the chevron. On a page the fill is opaque, as Apple's grouped
+// background is; inside a sheet it follows the sheet's material (the variants below).
 
 Jwift_List {
   Direction: Column
@@ -45,12 +45,23 @@ Jwift_List_Glass : JwiftGlass {
   Overflow: Hidden
 }
 
-// A section inside a sheet. UIKit's inset-grouped cell is secondarySystemGroupedBackground, and a sheet's
-// content is at the elevated level: white in light, (44, 44, 46) in dark (UIKitCore_13, Apple/Sheets.md). The
-// cell stays that opaque colour whether the sheet is glass (a partial height) or opaque (large), and the
-// ground around it is the sheet's: its glass, or systemGroupedBackground (@Sheet) once it is opaque.
-Jwift_List_Translucent : Jwift_List {
+// THE SECTION FOLLOWS ITS MATERIAL (JWIFT_MATERIAL), so a sheet's sections change as the sheet does.
+// On glass: Apple's vibrant secondary fill (UIVibrancyEffectStyle secondaryFill, Jaui Core/Vibrancy.md), a lift
+// of the glass itself, +18 dark and -12 light, never an opaque gray: "fills, transparency, and vibrancy" (HIG).
+Jwift_List_Vibrant : Jwift_List {
+  Background: rgba(255, 255, 255, 0)
+  BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
+  @Transition Background { Duration: 200ms }
+  @Transition BackdropFilter { Duration: 200ms }
+}
+
+// Opaque (a full-height sheet, an inspector): secondarySystemGroupedBackground at the elevated level, white in
+// light and (44, 44, 46) in dark, on the sheet's (242, 242, 247) / (28, 28, 30) (UIKitCore_13, Apple/Sheets.md).
+Jwift_List_Elevated : Jwift_List {
   Background: @GroupedCell
+  BackdropFilter: Vibrancy(0)
+  @Transition Background { Duration: 200ms }
+  @Transition BackdropFilter { Duration: 200ms }
 }
 
 Jwift_ListRow {
@@ -70,10 +81,8 @@ Jwift_ListRow {
   @Transition BackdropFilter { Duration: 140ms }
 }
 
-// A hover and a press are a LIFT, not a paint (Jwift.Glass.jss, THE WASH). Over the opaque grouped fill
-// of Jwift_List the two land within a level of each other; over Jwift_List_Glass and
-// Jwift_List_Translucent they do not, because a paint covers the color the glass brought through and a
-// lift brightens it. One rule for both, so a section on a page and a section on a sheet answer alike.
+// A hover and a press are a LIFT, not a paint (Jwift.Glass.jss, THE WASH): on a vibrant section a paint would
+// cover the color the glass brought through, where a lift brightens it. One rule for every material.
 Jwift_ListRow:Hover {
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
 }
@@ -189,6 +198,10 @@ Jwift_ListSeparator {
 Jwift_ListSeparator_Inset : Jwift_ListSeparator {
   Width: Auto
   Margin: 0pt 0pt 0pt 52pt
+}
+
+// On glass the hairline is Apple's vibrant separator level: it treats the glass under it, no gray of its own.
+Jwift_ListSeparator_Vibrant : JwiftSeparatorVibrancy {
 }
 
 // The small uppercase caption above a section, and the explanatory line below it.

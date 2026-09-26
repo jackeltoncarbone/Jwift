@@ -21,6 +21,7 @@ import type { JivHandle } from 'jaui';
 import { GlassButton } from '../GlassButton/GlassButton';
 import { Icon } from '../Icon/Icon';
 import { JivHost } from '../Internal/JivHost';
+import { JWIFT_MATERIAL, type JwiftMaterial } from '../Internal/Material';
 import SheetJss from './Sheet.jss';
 import {
   BottomRadius,
@@ -221,6 +222,7 @@ interface PanSample { readonly Y: number; readonly T: number }
   providers: [
     { provide: Jiv, useFactory: () => inject(Sheet).ContentParent },
     { provide: SheetEdits, useFactory: () => inject(Sheet).Edits },
+    { provide: JWIFT_MATERIAL, useFactory: () => inject(Sheet).Material },
   ],
 })
 export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
@@ -416,15 +418,22 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     return { Opacity: String(Math.round(dim * this._dimLevel() * shown * away * 1000) / 1000) };
   });
 
+  /** What the content sits on, for every section inside: glass below half height and in regular width, opaque
+   *  above it [C], and the inspector column is solid, as Pages' and Keynote's are. */
+  readonly Material = computed<JwiftMaterial>(() => {
+    if (this.Inspector()) return 'Elevated';
+    if (this.Regular()) return 'Glass';
+    return this._percentFull() > SHEET_METRICS.GlassBelow ? 'Elevated' : 'Glass';
+  });
+
   readonly CardClass = computed(() => {
     const stops = this._stops();
     const grows = !this.Regular() && stops.length > 1 && this._index() < stops.length - 1;
     const motion = this._motion() ? ' Jwift_SheetMotion' : '';
-    // The inspector column is solid, as Pages' and Keynote's are: it is read beside busy content, not over it.
     if (this.Inspector()) return `Jwift_SheetCard_Inspector Jwift_SheetOpaque${motion}`;
     // iPad's form sheet is regular glass without the sheet subvariant (`sub_18910A6A0`) [C].
     if (this.Regular()) return `Jwift_SheetCard Jwift_SheetGlass_Form${motion}`;
-    const material = this._percentFull() > SHEET_METRICS.GlassBelow ? 'Jwift_SheetOpaque' : 'Jwift_SheetGlass';
+    const material = this.Material() === 'Elevated' ? 'Jwift_SheetOpaque' : 'Jwift_SheetGlass';
     const shape = grows ? 'Jwift_SheetCard_Grows' : 'Jwift_SheetCard';
     return `${shape} ${material}${motion}`;
   });

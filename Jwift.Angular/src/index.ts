@@ -70,6 +70,7 @@ export { CardFooter } from './Card/CardFooter';
 export { SectionHeader } from './SectionHeader/SectionHeader';
 export { JwiftStyleLoader } from './Jss/Jwift.Style.Loader';
 export { JivHost, JWIFT_GLASS_TINT } from './Internal/JivHost';
+export { JWIFT_MATERIAL, JwiftMaterialScope, type JwiftMaterial } from './Internal/Material';
 export { ContextMenu } from './ContextMenu/ContextMenu';
 export { ContextMenuService, type ContextMenuItem } from './ContextMenu/ContextMenu.Service';
 export { TextInput, type TextInputSpan, type TextInputPeerCaret, type TextInputMaterial } from './TextInput/TextInput';
