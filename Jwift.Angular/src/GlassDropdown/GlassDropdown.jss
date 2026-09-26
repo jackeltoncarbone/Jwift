@@ -328,6 +328,21 @@ Jwift_GlassDropdownItemIcon {
 // claims the flag at all.
 //
 // Held by `ShowStudio.App/src/Design/MenuInk.Conformance.spec.ts`: menu rows uniform, confirm plate red.
+// A toggle's state, as UIMenu draws `.on`: a checkmark leading the row, in the label's ink, a step bolder.
+// A row that is off keeps the column empty so every row's glyph and label stay on one line.
+Jwift_GlassDropdownItemCheck {
+  FontFamily: JwiftIcons
+  FontSize: 15pt
+  FontWeight: 700
+  Color: @Ink
+  TextAlign: Center
+  Width: 16pt
+  FlexShrink: 0
+}
+Jwift_GlassDropdownItemCheck_Off : Jwift_GlassDropdownItemCheck {
+  Opacity: 0
+}
+
 Jwift_GlassDropdownItemIcon_Destructive : Jwift_GlassDropdownItemIcon {
   Color: @Ink
 }

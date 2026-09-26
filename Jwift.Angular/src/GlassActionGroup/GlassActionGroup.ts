@@ -33,8 +33,11 @@ export interface GlassAction {
   Image?: string;
   /** Optional label. Inline cells ignore it; menu items render it. */
   Label?: string;
-  /** Inline cell only — highlights the cell with the active background. */
+  /** Highlights the inline cell with the active background (a toggle that is on, a panel that is open). */
   Active?: boolean;
+  /** The action switches a setting on and off, and `Active` is that state: in the menu it draws UIMenu's
+   *  `.on` checkmark, leading the row. */
+  Toggle?: boolean;
   /** Inline cell only — tints the glyph (e.g. amber 'warn' for a warnings or
    *  save-failed indicator) so it reads as an alert against the monochrome set. */
   Tint?: 'warn';
@@ -172,6 +175,9 @@ export interface GlassAction {
               [disabled]="!!item.Disabled"
               [keepOpen]="!!item.KeepOpen || !!item.Page"
               (click)="_OnItemClick(item)">
+              @if (_HasState(pg)) {
+                <icon [class]="item.Toggle && item.Active ? 'Jwift_GlassDropdownItemCheck' : 'Jwift_GlassDropdownItemCheck_Off'" Name="checkmark" />
+              }
               @if (item.Image) {
                 <jiv class="Jwift_GlassDropdownItemImage" [image]="item.Image" />
               } @else if (item.Icon) {
@@ -344,6 +350,12 @@ export class GlassActionGroup implements OnDestroy {
   protected _OpenItems(page: string | null): readonly GlassAction[] {
     if (page === null) return [...this._OverflowActions(), ...this._Menu()];
     return this.Pages()[page] ?? this._Account?.Pages?.()[page] ?? [];
+  }
+
+  /** Whether any row on this page is a toggle. UIMenu then reserves the leading checkmark column on every row,
+   *  so the rows stay aligned whichever are on. */
+  protected _HasState(page: string | null): boolean {
+    return this._OpenItems(page).some((item) => !!item.Toggle);
   }
 
   /** The root row that pushes this page, or null on the root and on a page only the avatar opens. */
