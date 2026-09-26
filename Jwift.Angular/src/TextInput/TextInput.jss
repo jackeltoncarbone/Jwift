@@ -5,17 +5,19 @@
 //   rest              Vibrancy(@JwiftVibrancySecondaryFill)   +18 dark / -12 light, the secondary fill
 //   hover             Vibrancy(@JwiftVibrancyFill)            +30 / -20, the button's hover
 //   pressed           Vibrancy(@JwiftVibrancyFillPressed)     +50 / -29, the button's press
-//   editing           Vibrancy(@JwiftVibrancyFill)            +30 / -20, the fill, and the accent ring
+//   editing           Vibrancy(@JwiftVibrancyFillPressed)     +50 / -29, brighter while the caret is in it; no ring
 //   editing + hover   Vibrancy(@JwiftFieldEditingHover)       +42 / -28, the hover step taken from the editing step
-//   invalid           @DangerWash, no lift; @DangerWashStrong under a hover; the ring turns @Danger
+//   invalid           @DangerWash, no lift; @DangerWashStrong under a hover; a @Danger ring
 //   disabled          Vibrancy(@JwiftVibrancyTertiaryFill), no response to the pointer; the text dims
 //
 // A field neither swells nor squeezes: a button is a target and takes UIKit's flex, a field is a place.
 //
-// The ring is a stroke in @GoldInk, the accent as a line, which is the one use of gold a control makes.
-// BorderWidth is paint only (it never moves layout), so it springs from 0 to 2pt with no reflow.
+// Apple draws no focus ring on a field: the active one comes forward by brightening. Only an invalid value
+// draws a ring, and BorderWidth is paint only, so it springs from 0 to 2pt with no reflow.
 
-@JwiftFieldEditingHover: 2 * @JwiftVibrancyFill - @JwiftVibrancySecondaryFill
+@JwiftFieldEditingHover: 2 * @JwiftVibrancyFillPressed - @JwiftVibrancyFill
+// The glass field while editing wears the flex big glow held, the same brightening a pressed glass button shows.
+@JwiftFieldEditingGlow: 0.6
 @JwiftFieldRing: 2pt
 
 // The toolbar button's 48pt is the floor for anything a finger can press, and a line of text is exactly that
@@ -37,15 +39,14 @@ Jwift_Field : JwiftPress {
   Background: rgba(0, 0, 0, 0)
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
   BorderWidth: 0pt
-  BorderColor: @GoldInk
+  BorderColor: @Danger
   @Transition BorderWidth { Duration: 140ms }
   @Transition BorderColor { Duration: 140ms }
   @Transition Background { Duration: 140ms }
 }
 
 Jwift_Field:(Editing) {
-  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
-  BorderWidth: @JwiftFieldRing
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
 }
 
 Jwift_Field:(Editing && Hover) {
@@ -55,7 +56,7 @@ Jwift_Field:(Editing && Hover) {
 Jwift_Field:(Invalid) {
   Background: @DangerWash
   BackdropFilter: Vibrancy(0)
-  BorderColor: @Danger
+  BorderWidth: @JwiftFieldRing
 }
 
 Jwift_Field:(Invalid && Hover) {
@@ -80,7 +81,7 @@ Jwift_Field_Tall : Jwift_Field {
 }
 
 // A field on glass, over its ground: the glass button's material and hover, the field's geometry, and no
-// flex. Editing lifts it and draws the accent ring; an invalid value draws the danger color at the rim's width.
+// flex. Editing brightens it with the held big glow; an invalid value draws the danger color at the rim's width.
 Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   Direction: Row
   Justify: Start
@@ -96,8 +97,10 @@ Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   BorderRadius: 999pt
   Cursor: Text
   Flex: None
+  GlassGlow: 0
+  @Spring GlassGlow { Stiffness: 900, Damping: 60, Mass: 1 }
   BorderWidth: 0pt
-  BorderColor: @GoldInk
+  BorderColor: @Danger
   @Transition BorderWidth { Duration: 140ms }
 }
 
@@ -128,11 +131,11 @@ Jwift_Field_Bare {
   FlexGrow: 1
 }
 
-// Editing lights the glass: the hover's lift held for as long as the caret is in it, the hover step on top
-// of that, and the accent ring. Apple's active field comes forward; it never goes quiet under the caret.
+// Editing lights the glass: the press's lift and the flex big glow, held while the caret is in it.
+// Apple's active field comes forward by brightening; it draws no ring.
 Jwift_Field_Glass:(Editing) {
-  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
-  BorderWidth: @JwiftFieldRing
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
+  GlassGlow: @JwiftFieldEditingGlow
 }
 
 Jwift_Field_Glass:(Editing && Hover) {
@@ -141,7 +144,6 @@ Jwift_Field_Glass:(Editing && Hover) {
 
 Jwift_Field_Glass:(Invalid) {
   BorderWidth: @JwiftFieldRing
-  BorderColor: @Danger
 }
 
 Jwift_Field_Glass:Disabled {
