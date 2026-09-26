@@ -155,6 +155,17 @@ JwiftSolidGlass {
   BorderLayer: 10
 }
 
+// ── JwiftElevated ───────────────────────────────────────────────────
+// A LIFTED content tile (a row's artwork, a thumbnail): the solid rim over its edge and a soft key shadow
+// under it, so it reads as an object on the page rather than a hole cut in it. The consumer owns Background,
+// BorderRadius (concentric with whatever holds it) and size. In dark the shadow sinks into the ground and the
+// rim does the lifting, which is Apple's split between the two themes.
+JwiftElevated : JwiftSolidGlass {
+  ShadowColor: rgba(0, 0, 0, 0.22)
+  ShadowBlur: 14pt
+  ShadowOffsetY: 4pt
+}
+
 // ── JwiftNavGroup ───────────────────────────────────────────────────
 // Floating pill-shaped cluster of buttons (the canonical Drill
 // section-nav pattern). Wraps glass cells in a JwiftGlass surface so

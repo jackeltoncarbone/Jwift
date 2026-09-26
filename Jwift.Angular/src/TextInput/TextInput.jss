@@ -79,9 +79,8 @@ Jwift_Field_Tall : Jwift_Field {
   BorderRadius: 24pt
 }
 
-// The one field a page leads with, over its ground: the glass button's material and hover, the field's
-// geometry, and no flex. Editing and an invalid value draw a hairline in the accent or the danger color at the
-// rim's own width, over the rim.
+// A field on glass, over its ground: the glass button's material and hover, the field's geometry, and no
+// flex. Editing lifts it and draws the accent ring; an invalid value draws the danger color at the rim's width.
 Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   Direction: Row
   Justify: Start
@@ -97,6 +96,19 @@ Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   BorderRadius: 999pt
   Cursor: Text
   Flex: None
+  BorderWidth: 0pt
+  BorderColor: @GoldInk
+  @Transition BorderWidth { Duration: 140ms }
+}
+
+// A glass sentence: the same glass, the tall field's card corner, growing with what is written.
+Jwift_Field_Glass_Tall : Jwift_Field_Glass {
+  Align: Stretch
+  Height: Auto
+  MinHeight: 96pt
+  MaxHeight: none
+  Padding: 12pt 18pt
+  BorderRadius: 24pt
 }
 
 // A number or a short code, in a field of its own width so a run of them reads as a column.
@@ -116,13 +128,19 @@ Jwift_Field_Bare {
   FlexGrow: 1
 }
 
+// Editing lights the glass: the hover's lift held for as long as the caret is in it, the hover step on top
+// of that, and the accent ring. Apple's active field comes forward; it never goes quiet under the caret.
 Jwift_Field_Glass:(Editing) {
-  BorderWidth: @JwiftRimWidth
-  BorderColor: @GoldInk
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
+  BorderWidth: @JwiftFieldRing
+}
+
+Jwift_Field_Glass:(Editing && Hover) {
+  BackdropFilter: Vibrancy(@JwiftFieldEditingHover)
 }
 
 Jwift_Field_Glass:(Invalid) {
-  BorderWidth: @JwiftRimWidth
+  BorderWidth: @JwiftFieldRing
   BorderColor: @Danger
 }
 

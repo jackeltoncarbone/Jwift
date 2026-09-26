@@ -11,9 +11,9 @@ import TextInputJss from './TextInput.jss';
 export type { JinputSpan as TextInputSpan, JinputPeerCaret as TextInputPeerCaret };
 
 /**
- * What the field is drawn in. `Fill` is the house field, a lift of whatever it rests on. `Glass` is for
- * the one field a page leads with over its ground (a directory's search). `None` paints nothing: the
- * text sits in a surface its host already draws, like the drill sentence or a grouped card.
+ * What the field is drawn in. `Fill` is the house field, a lift of whatever it rests on. `Glass` is a field
+ * standing on its own over a page's ground (a directory's search, a composer on a content page). `None`
+ * paints nothing: the text sits in a surface its host already draws, like the drill sentence.
  */
 export type TextInputMaterial = 'Fill' | 'Glass' | 'None';
 
@@ -144,7 +144,7 @@ export class TextInput extends JivHost implements OnInit, OnDestroy {
     super('TextInput', TextInputJss, 'Jwift_Field', () => {
       const material = this.Material();
       const base = material === 'None' ? 'Jwift_Field_Bare'
-        : material === 'Glass' ? 'Jwift_Field_Glass'
+        : material === 'Glass' ? (this.MultiLine() ? 'Jwift_Field_Glass_Tall' : 'Jwift_Field_Glass')
         : this.MultiLine() ? 'Jwift_Field_Tall' : 'Jwift_Field';
       return `${base} ${this.Class()}`.trim();
     });
