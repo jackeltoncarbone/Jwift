@@ -5,19 +5,20 @@
 //   rest              Vibrancy(@JwiftVibrancySecondaryFill)   +18 dark / -12 light, the secondary fill
 //   hover             Vibrancy(@JwiftVibrancyFill)            +30 / -20, the button's hover
 //   pressed           Vibrancy(@JwiftVibrancyFillPressed)     +50 / -29, the button's press
-//   editing           Vibrancy(@JwiftVibrancyFillPressed)     +50 / -29, brighter while the caret is in it; no ring
+//   editing           Vibrancy(@JwiftVibrancyFillPressed)     +50 / -29, brighter while the caret is in it; no ring;
+//                     the glass field also holds its flex lift and glow (FlexHold), the same swell and
+//                     brightening a pressed glass button shows, with no stretch toward a finger
 //   editing + hover   Vibrancy(@JwiftFieldEditingHover)       +42 / -28, the hover step taken from the editing step
 //   invalid           @DangerWash, no lift; @DangerWashStrong under a hover; a @Danger ring
 //   disabled          Vibrancy(@JwiftVibrancyTertiaryFill), no response to the pointer; the text dims
 //
-// A field neither swells nor squeezes: a button is a target and takes UIKit's flex, a field is a place.
+// A field neither swells nor squeezes toward the pointer: a button is a target and takes UIKit's flex stretch
+// on press, a field is a place. The glass field is the one exception, and only for the held lift and glow.
 //
 // Apple draws no focus ring on a field: the active one comes forward by brightening. Only an invalid value
 // draws a ring, and BorderWidth is paint only, so it springs from 0 to 2pt with no reflow.
 
 @JwiftFieldEditingHover: 2 * @JwiftVibrancyFillPressed - @JwiftVibrancyFill
-// The glass field while editing wears the flex big glow held, the same brightening a pressed glass button shows.
-@JwiftFieldEditingGlow: 0.6
 @JwiftFieldRing: 2pt
 
 // The toolbar button's 48pt is the floor for anything a finger can press, and a line of text is exactly that
@@ -80,8 +81,9 @@ Jwift_Field_Tall : Jwift_Field {
   BorderRadius: 24pt
 }
 
-// A field on glass, over its ground: the glass button's material and hover, the field's geometry, and no
-// flex. Editing brightens it with the held big glow; an invalid value draws the danger color at the rim's width.
+// A field on glass, over its ground: the glass button's material and hover, the field's geometry, and the
+// flex held rather than pressed. Editing brightens it with the held lift and big glow; an invalid value
+// draws the danger color at the rim's width.
 Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   Direction: Row
   Justify: Start
@@ -96,9 +98,11 @@ Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   Padding: 0pt 18pt
   BorderRadius: 999pt
   Cursor: Text
-  Flex: None
-  GlassGlow: 0
-  @Spring GlassGlow { Stiffness: 900, Damping: 60, Mass: 1 }
+  Flex: Auto
+  // A field is a place, not a target: no stretch toward the finger, only the held lift and glow.
+  FlexStretch: 0
+  FlexHold: 0
+  @Spring FlexHold { Stiffness: 900, Damping: 60, Mass: 1 }
   BorderWidth: 0pt
   BorderColor: @Danger
   @Transition BorderWidth { Duration: 140ms }
@@ -131,11 +135,11 @@ Jwift_Field_Bare {
   FlexGrow: 1
 }
 
-// Editing lights the glass: the press's lift and the flex big glow, held while the caret is in it.
-// Apple's active field comes forward by brightening; it draws no ring.
+// Editing lights the glass: the flex's lift and big glow, held while the caret is in it. Apple's active
+// field comes forward by brightening; it draws no ring.
 Jwift_Field_Glass:(Editing) {
   BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
-  GlassGlow: @JwiftFieldEditingGlow
+  FlexHold: 1
 }
 
 Jwift_Field_Glass:(Editing && Hover) {
