@@ -3,10 +3,12 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  effect,
   forwardRef,
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
 import { JivHandle as JivCore, ResolveLengthTuple4, Spring } from 'jaui';
@@ -102,21 +104,48 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     // rendering, which has no frames at all — unguarded, this threw out of ngOnInit and cost the
     // page every semantic node that would have been built after it.
     if (typeof requestAnimationFrame === 'undefined') return;
-    const tick = (): void => {
-      this._sync();
-      this._rafId = requestAnimationFrame(tick);
-    };
-    this._rafId = requestAnimationFrame(tick);
+    this._running = true;
+    this._unbindOwnRect = this.Node.OnRect(this._kick);
+    window.addEventListener('resize', this._kick);
+    this._kick();
     this._wirePointerTracking();
   }
 
   ngOnDestroy(): void {
+    this._running = false;
     if (this._rafId) cancelAnimationFrame(this._rafId);
+    this._rafId = 0;
     this._unbindPointer?.();
+    this._unbindOwnRect?.();
+    if (typeof window !== 'undefined') window.removeEventListener('resize', this._kick);
     this._unwatchTargets();
     this.Node.WatchRect(false);
     this._detachOnDestroy();
   }
+
+  private _unbindOwnRect: (() => void) | null = null;
+  private _unbindTargetRects: Array<() => void> = [];
+
+  // The loop runs while anything can still move the pill and parks after a frame that changed nothing.
+  // A rect snapshot, an input, a pointer or a resize wakes it.
+  private _running = false;
+  private readonly _kick = (): void => {
+    if (!this._running || this._rafId !== 0) return;
+    this._rafId = requestAnimationFrame(this._tick);
+  };
+
+  private readonly _tick = (): void => {
+    this._rafId = 0;
+    if (this._sync()) { this._kick(); return; }
+    this._lastT = 0;
+  };
+
+  private readonly _wake = effect(() => {
+    this.target(); this.pressed(); this.reach(); this.Class();
+    const bar = this._tabBar;
+    if (bar) { bar.IsPressed(); bar.AccentSelected(); bar.Accent(); for (const item of bar.Items()) item.icon(); }
+    untracked(() => { if (this._running) this._kick(); });
+  });
 
   /** Replace the target/parent rect-snapshot subscriptions when the
    *  SelectionIndicator's `target` swaps to a different TabItem (selection
@@ -124,16 +153,14 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
    *  stops emitting snapshots for them, and the new pair get `(true)`. */
   private _ensureWatched(target: JivCore | null, parent: JivCore | null): void {
     if (target === this._watchedTarget && parent === this._watchedParent) return;
-    if (this._watchedTarget && this._watchedTarget !== target) {
-      this._watchedTarget.WatchRect(false);
-    }
-    if (this._watchedParent && this._watchedParent !== parent) {
-      this._watchedParent.WatchRect(false);
-    }
+    if (this._watchedTarget && this._watchedTarget !== target) this._unwatch(this._watchedTarget);
+    if (this._watchedParent && this._watchedParent !== parent) this._unwatch(this._watchedParent);
     this._watchedTarget = target;
     this._watchedParent = parent;
-    if (target) target.WatchRect(true);
-    if (parent && parent !== target) parent.WatchRect(true);
+    for (const unbind of this._unbindTargetRects) unbind();
+    this._unbindTargetRects = [];
+    if (target) { target.WatchRect(true); this._unbindTargetRects.push(target.OnRect(this._kick)); }
+    if (parent && parent !== target) { parent.WatchRect(true); this._unbindTargetRects.push(parent.OnRect(this._kick)); }
   }
 
   /** No target, no lens: it fades where it was, then snaps onto the next target as it fades back in. */
@@ -149,10 +176,18 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
   }
 
   private _unwatchTargets(): void {
-    this._watchedTarget?.WatchRect(false);
-    this._watchedParent?.WatchRect(false);
+    for (const unbind of this._unbindTargetRects) unbind();
+    this._unbindTargetRects = [];
+    if (this._watchedTarget) this._unwatch(this._watchedTarget);
+    if (this._watchedParent) this._unwatch(this._watchedParent);
     this._watchedTarget = null;
     this._watchedParent = null;
+  }
+
+  /** Drops a lease, except on a tab the bar leases for its own hit test. */
+  private _unwatch(node: JivCore): void {
+    if (this._tabBar?.Items().some((item) => item.Node === node)) return;
+    node.WatchRect(false);
   }
 
   private _wirePointerTracking(): void {
@@ -189,6 +224,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       this._pointerX = x;
       this._pointerDownX = x;
       this._dragActive = false;
+      this._kick();
     };
     const onMove = (e: PointerEvent) => {
       if (e.buttons === 0) return;
@@ -202,11 +238,13 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
           && Math.abs(x - this._pointerDownX) > SelectionIndicator._DragThresholdPx) {
         this._dragActive = true;
       }
+      this._kick();
     };
     const onClear = () => {
       this._pointerX = null;
       this._pointerDownX = null;
       this._dragActive = false;
+      this._kick();
     };
     el.addEventListener('pointerdown', onDown);
     el.addEventListener('pointermove', onMove);
@@ -220,12 +258,14 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
     };
   }
 
-  private _sync(): void {
+  /** One frame of the pill. True while it can still move without being woken: a spring settling, a drag, or a
+   *  layout write whose rect has not come back yet. */
+  private _sync(): boolean {
     const t = this.target();
     this._setHidden(!t);
     if (!t) {
       this._unwatchTargets();
-      return;
+      return false;
     }
 
     const parent = t.Parent as (JivCore | null);
@@ -249,7 +289,7 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
       const outset = ResolveLengthTuple4(segmented ? SelectionIndicator._SegmentOutset : SelectionIndicator._TabOutset, ctxNode.ResolveCtx, ['W', 'W', 'H', 'H']);
       this._outsetPx = [outset[0], outset[2]];
     }
-    if (t.Width <= 0 || t.Height <= 0) return;
+    if (t.Width <= 0 || t.Height <= 0) return false;
 
     const isPressed = this._resolvePressed();
 
@@ -325,8 +365,9 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
     this._shapeX.Target = scaleX;
     this._shapeY.Target = scaleY;
-    this._shapeX.Step(dt);
-    this._shapeY.Step(dt);
+    const springingX = this._shapeX.Step(dt);
+    const springingY = this._shapeY.Step(dt);
+    const springing = springingX || springingY;
 
     const width = baseWidth * this._shapeX.Value;
     const height = baseHeight * this._shapeY.Value;
@@ -356,5 +397,6 @@ export class SelectionIndicator extends JivHost implements OnInit, OnDestroy {
 
     const pressedNow = (parent?.Active ?? false) || t.Active;
     if (pressedNow !== this._autoPressed()) this._autoPressed.set(pressedNow);
+    return dirty || springing || this._dragActive;
   }
 }

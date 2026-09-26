@@ -114,7 +114,6 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
   private static readonly _ExpandThreshold = 880;
 
   private _canvasRef = inject(Jaui, { optional: true });
-  private _rafId = 0;
   private readonly _gesture = new CanvasPress();
   // The accessory holds its glass this long after a tap so a quick tap still reads as a press. The bar does
   // not: Apple's lens lets go the moment the finger lifts (back to the pill in about 90 ms).
@@ -137,23 +136,10 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this._attachOnInit();
-    // Width-based expand flip.
-    const tick = (): void => {
-      // Expanded beside a wide viewport (the concept's top dock); stacked on a phone.
-      const next = (typeof window !== 'undefined' ? window.innerWidth : this.Node.Width) >= TabBar._ExpandThreshold;
-      if (next !== this.Expanded()) this.Expanded.set(next);
-      // Every item's rect is leased, so the first press after load hits whichever tab it lands on. A handle's
-      // lease is one flag the <selection-indicator> also sets and clears on its target, so it is held here
-      // each frame (a no-op while held).
-      for (const item of this.Items()) (item.Node as { WatchRect?: (w: boolean) => void }).WatchRect?.(true);
-      // A per-frame width poll has no meaning where there are no frames. Under server rendering
-      // the width is evaluated ONCE — so the bar still serializes in its correct stacked/expanded
-      // form — and the loop simply never starts. Left unguarded, this threw out of ngOnInit on
-      // every route and took the whole navigation's semantics down with it.
-      if (typeof requestAnimationFrame === 'undefined') return;
-      this._rafId = requestAnimationFrame(tick);
-    };
-    tick();
+    // Expanded beside a wide viewport (the concept's top dock); stacked on a phone. Under server rendering
+    // it is evaluated once, so the bar still serializes in its stacked or expanded form.
+    this._flipExpanded();
+    if (typeof window !== 'undefined') window.addEventListener('resize', this._flipExpanded);
     const el = this._canvasRef?.Canvas?.Element;
     if (el) {
       this._gesture.Wire(el, {
@@ -165,8 +151,19 @@ export class TabBar extends JivHost implements OnInit, OnDestroy {
     }
   }
 
+  private readonly _flipExpanded = (): void => {
+    const next = (typeof window !== 'undefined' ? window.innerWidth : this.Node.Width) >= TabBar._ExpandThreshold;
+    if (next !== this.Expanded()) this.Expanded.set(next);
+  };
+
+  // Every item's rect is leased, so the first press after load hits whichever tab it lands on. The
+  // <selection-indicator> leaves these leases in place when its target moves on.
+  private readonly _leaseItems = effect(() => {
+    for (const item of this.Items()) (item.Node as { WatchRect?: (w: boolean) => void }).WatchRect?.(true);
+  });
+
   ngOnDestroy(): void {
-    if (this._rafId) cancelAnimationFrame(this._rafId);
+    if (typeof window !== 'undefined') window.removeEventListener('resize', this._flipExpanded);
     this._gesture.Unwire();
     this._detachOnDestroy();
   }
