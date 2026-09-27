@@ -316,6 +316,49 @@ JwiftScrollEdgeBottomScene : JwiftScrollEdgeBottom {
   BackdropFilter: Brightness(@JwiftScrollEdgeDim) Contrast(@JwiftScrollEdgeContrast) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
 }
 
+// ── JwiftPageScroll ─────────────────────────────────────────────────
+// THE ONE SHARED DEFAULT for an app page's own top-level scroller. Before scrolling gained real
+// momentum (Jaui commit 922a762, "Scrolling gains... real momentum and bounce"), every Overflow:
+// Scroll container hard-clamped at its bounds; that commit made rubber-band bounce unconditional
+// engine-wide, so pulling past a page's top now reveals the bare canvas behind it — Jack: "Right
+// now it goes over; it used to not." `Pin` restores that exact look (content never visibly moves
+// past the edge) while still tracking the overshoot, so a page CAN grow a stretchy header
+// (JwiftStretchyHeader below) just by adding it, with no further scroller change.
+//
+// The engine's own default (Scroll.Types.OverscrollMode) stays `Bounce` — Jaui is a general
+// library, not an opinion about this app's pages — so this is authored here, once, for
+// show-studio's pages to extend (`Scroll : JwiftPageScroll { ... }`), rather than each page
+// re-declaring the same four lines.
+JwiftPageScroll {
+  Overscroll: Pin
+}
+
+// ── JwiftStretchyHeader ─────────────────────────────────────────────
+// Apple's stretchy header. The SCROLLER above this element sets `OverscrollTop: Pin` (Jaui
+// Scroll.Types) so its content never visibly moves past the top — instead the pull is tracked
+// through Apple's resistance curve and published as `@OverscrollTop`, still growing, still
+// springing back on release, exactly as `Bounce` would move the content. This mixin is the OTHER
+// half: it turns that published overshoot into a zoom on THIS element (the hero art), grown from
+// its own bottom edge so it always covers exactly the gap the pin left.
+//
+// `@OverscrollZoom` (default 1) is the exact-cover amount; > 1 zooms further for a more dramatic
+// pull. `@ParallaxRate` (default 0) additionally translates the header at a fraction of the
+// scroller's `@ScrollY` DURING normal (non-overscrolled) scroll, for a parallax header. Both are
+// plain JSS vars — a consuming element overrides either with a per-node `[vars]` entry of the same
+// name (the ordinary var cascade: a node's own var beats the sheet default).
+@OverscrollZoom: 1
+@ParallaxRate: 0
+JwiftStretchyHeader {
+  VisualOrigin: Bottom
+  // Grows from the bottom edge by exactly the overscroll amount (in the element's own points, via
+  // `@Height` — Core/Length.ts), so the art's top edge tracks the finger 1:1 and never uncovers the
+  // ground behind it, whether the pull came from `Pin`'s tracked overshoot or (if the scroller is
+  // `Bounce` instead) the content's own real movement past the top.
+  VisualScale: 1 + (@OverscrollTop / @Height) * @OverscrollZoom
+  // Two axis values (X then Y) — each stays ONE token (no internal spaces) so it reads as a
+  // per-axis pair rather than one arithmetic expression (Core/Style.Resolver `_parseVisualPair`).
+  VisualTranslate: 0 (@ParallaxRate*@ScrollY)
+}
 
 // ── JwiftPress ──────────────────────────────────────────────────────
 // The ONE press treatment. Every control that answers a finger extends this, so a press
