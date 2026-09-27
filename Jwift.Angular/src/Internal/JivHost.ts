@@ -289,6 +289,13 @@ export abstract class JivHost {
     // render engine must never see it.
     delete styleBag['Semantics'];
 
+    // `Overscroll` sets all four edges; an edge authored alongside it wins (parity with the <jiv> directive).
+    if ('Overscroll' in styleBag) {
+      const v = styleBag['Overscroll'];
+      for (const edge of _OVERSCROLL_EDGES) if (!(edge in styleBag)) styleBag[edge] = v;
+      delete styleBag['Overscroll'];
+    }
+
     const elementProps: JivApplyOpts['ElementProps'] = {};
     for (const key of _ELEMENT_KEYS) {
       if (key in styleBag) {
@@ -332,7 +339,10 @@ const _ELEMENT_KEYS = [
   // so a rounded glass host (e.g. the drill library panel) silently never clips its content.
   'Overflow', 'Clip', 'Visible', 'Interactive', 'PointerEvents',
   'Cursor', 'UserSelect', 'PointScale', 'PanClaim',
+  'Overscroll', 'OverscrollTop', 'OverscrollBottom', 'OverscrollLeft', 'OverscrollRight',
+  'OverscrollResistance', 'OverscrollInput',
 ];
+const _OVERSCROLL_EDGES = ['OverscrollTop', 'OverscrollBottom', 'OverscrollLeft', 'OverscrollRight'];
 
 function _clonePointerEvent(type: string, src: PointerPayload): PointerEvent {
   const evt = new PointerEvent(type, {

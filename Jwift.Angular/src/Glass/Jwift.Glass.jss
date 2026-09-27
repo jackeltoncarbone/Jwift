@@ -349,11 +349,9 @@ JwiftPageScroll {
 @OverscrollZoom: 1
 @ParallaxRate: 0
 JwiftStretchyHeader {
-  VisualOrigin: Bottom
-  // Grows from the bottom edge by exactly the overscroll amount (in the element's own points, via
-  // `@Height` — Core/Length.ts), so the art's top edge tracks the finger 1:1 and never uncovers the
-  // ground behind it, whether the pull came from `Pin`'s tracked overshoot or (if the scroller is
-  // `Bounce` instead) the content's own real movement past the top.
+  // Anchored to the top, as Apple's header is: the art grows down from the screen's top edge by the
+  // overscroll (via `@Height`). Override VisualOrigin on the consumer to anchor it elsewhere.
+  VisualOrigin: Top
   VisualScale: 1 + (@OverscrollTop / @Height) * @OverscrollZoom
   // Two axis values (X then Y) — each stays ONE token (no internal spaces) so it reads as a
   // per-axis pair rather than one arithmetic expression (Core/Style.Resolver `_parseVisualPair`).
