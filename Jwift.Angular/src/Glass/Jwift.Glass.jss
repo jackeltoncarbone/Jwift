@@ -334,12 +334,25 @@ JwiftPageScroll {
 }
 
 // ── JwiftStretchyHeader ─────────────────────────────────────────────
-// Apple's stretchy header. The SCROLLER above this element sets `OverscrollTop: Pin` (Jaui
-// Scroll.Types) so its content never visibly moves past the top — instead the pull is tracked
-// through Apple's resistance curve and published as `@OverscrollTop`, still growing, still
-// springing back on release, exactly as `Bounce` would move the content. This mixin is the OTHER
-// half: it turns that published overshoot into a zoom on THIS element (the hero art), grown from
-// its own bottom edge so it always covers exactly the gap the pin left.
+// Apple's stretchy header, as the App Store and Music draw it: pull past the top and the PAGE slides
+// down with your finger, while the header ART stays pinned to the screen's top edge and stretches
+// down to meet the moved content, filling the gap exactly. The copy, buttons and nav move with the
+// page and do not scale; nothing behind the page ever shows.
+//
+// Two halves, and this mixin is the second:
+//   1. The SCROLLER above this element keeps `OverscrollTop: Bounce` (Jaui Scroll.Types), so its
+//      content really moves down by the pull, and publishes the overshoot as `@OverscrollTop`.
+//      Under `Pin` the content holds still, and a top-anchored stretch then runs down over the
+//      content below it -- the hard edge the first version cut through Home's next section.
+//   2. This element scales by `1 + @OverscrollTop / @Height` about its BOTTOM edge. Its box has
+//      moved down by the overshoot, so its bottom stays on the moved content and its top lands on
+//      the screen's top: (H + OT) tall, starting at y = 0, which is the gap exactly.
+//
+// A container that clips (Overflow: Hidden) cuts the stretch at its own top edge -- which, mid-pull,
+// is the overshoot below the screen's top -- and leaves that band empty. The consumer lets THIS
+// element escape the one clip it must reach past (`ParentOverflow: Visible`), rather than this
+// mixin doing it for everyone: a header art that sits in a rounded card is shaped BY that clip at
+// rest and has to keep it.
 //
 // `@OverscrollZoom` (default 1) is the exact-cover amount; > 1 zooms further for a more dramatic
 // pull. `@ParallaxRate` (default 0) additionally translates the header at a fraction of the
@@ -349,10 +362,14 @@ JwiftPageScroll {
 @OverscrollZoom: 1
 @ParallaxRate: 0
 JwiftStretchyHeader {
-  // Anchored to the top, as Apple's header is: the art grows down from the screen's top edge by the
-  // overscroll (via `@Height`). Override VisualOrigin on the consumer to anchor it elsewhere.
-  VisualOrigin: Top
+  // About the bottom: under Bounce that is the edge riding the content, so the top reaches y = 0.
+  VisualOrigin: Bottom
   VisualScale: 1 + (@OverscrollTop / @Height) * @OverscrollZoom
+  // TRACKS THE PULL, NO SPRING. Every visual channel eases by default, and an eased scale trails a
+  // growing pull: measured mid-pull it read 1.04 at an overshoot of 53 on a 736-tall header (1.072
+  // wanted), leaving a band empty at the top of the screen. `@OverscrollTop` is already the scroller's
+  // own spring (the rubber band and its release), so the scale follows it exactly, frame for frame.
+  @Transition VisualScale { Duration: 0 }
   // Two axis values (X then Y) — each stays ONE token (no internal spaces) so it reads as a
   // per-axis pair rather than one arithmetic expression (Core/Style.Resolver `_parseVisualPair`).
   VisualTranslate: 0 (@ParallaxRate*@ScrollY)
