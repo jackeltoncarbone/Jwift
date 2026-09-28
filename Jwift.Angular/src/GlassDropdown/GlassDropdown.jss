@@ -315,7 +315,7 @@ Jwift_GlassDropdownItem_Disabled : Jwift_GlassDropdownItem {
 Jwift_GlassDropdownItemIcon {
   FontFamily: JwiftIcons
   FontSize: 17pt
-  FontWeight: 500
+  FontWeight: 400
   Color: @Ink
   TextAlign: Center
   Width: 40pt
