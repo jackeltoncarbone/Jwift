@@ -115,3 +115,7 @@ export {
   SearchPicker, heldPills, pickerGroups,
   type HeldPill, type PickGroup, type PickOption,
 } from './SearchPicker/SearchPicker';
+export { FilterChip } from './FilterChip/FilterChip';
+export { TokenChip } from './TokenChip/TokenChip';
+export { ReferenceChip } from './ReferenceChip/ReferenceChip';
+export { Callout } from './Callout/Callout';
