@@ -71,6 +71,9 @@ export type JwiftStateTone = 'empty' | 'recovery';
             }
           </jiv>
         }
+        @if (foot()) {
+          <jext class="JwiftState_Foot" [text]="foot()" />
+        }
       </jiv>
     </jiv>
   `,
@@ -94,6 +97,9 @@ export class JwiftState {
 
   /** The way out that is not the fix. */
   readonly secondaryLabel = input<string>('');
+
+  /** A quieter line under the actions, for the stop that owes one more sentence. */
+  readonly foot = input<string>('');
 
   readonly primary = output<void>();
   readonly secondary = output<void>();

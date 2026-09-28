@@ -22,6 +22,8 @@ Jwift_SectionViewAll {
   BorderWidth: 1pt
   BorderColor: @Line
   BackdropFilter: Blur(14pt) Brightness(1.05)
+  Interactive: true
+  Cursor: Pointer
 }
 
 Jwift_SectionViewAllLabel {

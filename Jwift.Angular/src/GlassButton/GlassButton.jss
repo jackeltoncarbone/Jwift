@@ -141,6 +141,53 @@ Jwift_GlassBtn_DangerProminent_Square : Jwift_GlassBtn_DangerProminent {
   BorderRadius: 14pt
 }
 
+// ── The plain variant ───────────────────────────────────────────────
+// `variant="plain"`: a text button. No plate, no glass, no border: the label alone, in the app's accent
+// (Apple's plain UIButton wears the tint colour and nothing else). Apple gives a plain button no
+// dedicated geometry of its own (Sizing.md section 3 only measures the glass/bordered styles), so this
+// keeps the same three hit-area shapes as `glass` and `prominent` — a plain button never falls under the
+// 44pt/48pt floor, it only drops the plate under the label.
+Jwift_GlassBtn_Plain {
+  Background: transparent
+  Interactive: true
+  Cursor: Pointer
+  @Transition PointScale { Duration: 140ms }
+}
+
+Jwift_GlassBtn_Plain_Round : Jwift_GlassBtn_Plain {
+  Direction: Row
+  Justify: Center
+  Align: Center
+  Width: 48pt
+  Height: 48pt
+}
+
+Jwift_GlassBtn_Plain_Pill : Jwift_GlassBtn_Plain {
+  Direction: Row
+  Justify: Center
+  Align: Center
+  MinHeight: 48pt
+  Padding: 0pt 14pt
+}
+
+Jwift_GlassBtn_Plain_Square : Jwift_GlassBtn_Plain {
+  Direction: Row
+  Justify: Center
+  Align: Center
+  Width: 48pt
+  Height: 48pt
+}
+
+// The plain button's own label ink, for a call site to apply to its projected `<jext>` — the button
+// paints no ink of its own since its label is consumer content (same contract as `glass` and `prominent`).
+Jwift_GlassBtnPlainLabel {
+  FontFamily: Inter
+  FontSize: 16pt
+  FontWeight: 600
+  Color: @Prominent
+  UserSelect: None
+}
+
 // ── The bar size ────────────────────────────────────────────────────
 // `size="bar"`: iOS 26's bar button, the 44 pt glass circle a sheet's X and checkmark are drawn in (Jwift/Apple/
 // Sheets.md 3) [I], at the HIG's 44 pt hit floor. Geometry only, laid over any variant's shape class, so a bar
@@ -162,4 +209,27 @@ Jwift_GlassBtnBar_Square {
   Width: 44pt
   Height: 44pt
   BorderRadius: 12pt
+}
+
+// ── The small, in-row size ─────────────────────────────────────────
+// `size="small"`: Apple's small/mini UIButton height, 28pt, with the matching dynamic corner radius, 14
+// (Sizing.md section 3: "height per size | large 50, medium 34, small and mini 28" and "corner radius,
+// dynamic corner style | large 25, medium 17, small and mini 14"). For a button living inside a list row
+// or a dense toolbar, where the 48pt/44pt floor is taller than the row itself.
+Jwift_GlassBtnSmall_Round {
+  Width: 28pt
+  Height: 28pt
+  FlexShrink: 0
+  BorderRadius: 14pt
+}
+
+Jwift_GlassBtnSmall_Pill {
+  MinHeight: 28pt
+  Padding: 0pt 12pt
+}
+
+Jwift_GlassBtnSmall_Square {
+  Width: 28pt
+  Height: 28pt
+  BorderRadius: 10pt
 }
