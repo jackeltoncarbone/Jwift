@@ -1,6 +1,6 @@
 // The open panel's corner. A capped panel keeps the concentric gap from the screen's foot: the app's outer
 // corner less this (Jwift.Glass.jss).
-@JwiftDropdownRadius: 28pt
+@JwiftDropdownRadius: 32pt
 
 // Inherits the canonical Liquid-Glass look from JwiftGlass. Overrides
 // only the heavier floating shadow (the dropdown lifts above content)
@@ -190,7 +190,7 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   // of the line that "Marching Arts Collective" truncated to "Marching Arts" - a persona switcher that
   // cannot say which persona. Apple's menus are content-width up to a max rather than a fixed narrow box;
   // this is the same idea at one number, and it is the width the longest real row needs.
-  Width: 260pt
+  Width: 250pt
   Height: MinContent
   // A LONG MENU SCROLLS; IT DOES NOT RUN OFF THE SCREEN AND IT DOES NOT SQUASH ITS ROWS.
   //
@@ -214,10 +214,10 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   Direction: Column
   Justify: Start
   Align: Stretch
-  Padding: 6pt
+  Padding: 10pt 0pt
   // Rows sit 6pt apart, the same 6pt the glass keeps around them, so the
   // shared hover pill never touches a neighbour or a divider hairline.
-  Gap: 6pt
+  Gap: 0pt
   BorderRadius: @JwiftDropdownRadius
 
   // THE OPEN PANEL EASES ITS OWN HOVER, and this is the fix for a defect Jack found by using it:
@@ -292,11 +292,11 @@ Jwift_GlassDropdownItem {
   Direction: Row
   Justify: Start
   Align: Center
-  Gap: 12pt
-  Padding: 0pt 14pt
+  Gap: 0pt
+  Padding: 0pt 28pt 0pt 16pt
   Width: 100%
   Height: 44pt
-  BorderRadius: 44pt
+  BorderRadius: 24pt
   Background: rgba(255, 255, 255, 0)
   Interactive: true
   Cursor: Pointer
@@ -314,11 +314,11 @@ Jwift_GlassDropdownItem_Disabled : Jwift_GlassDropdownItem {
 // visual icon center aligned with the label baseline.
 Jwift_GlassDropdownItemIcon {
   FontFamily: JwiftIcons
-  FontSize: 15pt
+  FontSize: 17pt
   FontWeight: 500
   Color: @Ink
   TextAlign: Center
-  Width: 22pt
+  Width: 40pt
 }
 
 // A consequential row reads as consequential BEFORE it is pressed, so the glyph
@@ -366,15 +366,16 @@ Jwift_GlassDropdownItemIcon_Destructive : Jwift_GlassDropdownItemIcon {
 // on `[image]` in Jaui, which does not exist yet.
 Jwift_GlassDropdownItemImage {
   Width: 22pt
+  Margin: 0pt 9pt
   Height: 22pt
 }
 
 Jwift_GlassDropdownItemLabel {
   FontFamily: Inter
-  FontSize: 15pt
-  FontWeight: 500
+  FontSize: 17pt
+  FontWeight: 400
   Color: @Ink
-  LetterSpacing: 0.1pt
+  LetterSpacing: 0pt
   TextAlign: Left
   MaxLines: 1
 }
@@ -400,7 +401,7 @@ Jwift_GlassDropdownSectionHeader : JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 500
-  Padding: 6pt 14pt 7pt 14pt
+  Padding: 12pt 28pt 16pt 56pt
   MaxLines: 1
 }
 
@@ -410,13 +411,13 @@ Jwift_GlassDropdownSectionHeader : JwiftSecondaryLabelVibrancy {
 // 14pt while its own rows' icons sat 28pt further right — the header no longer "lined up with the rows'
 // content" the way this class's own comment promises. This variant carries the same 28pt so it still does.
 Jwift_GlassDropdownSectionHeader_Indented : Jwift_GlassDropdownSectionHeader {
-  Padding: 6pt 14pt 7pt 42pt
+  Padding: 12pt 28pt 16pt 72pt
 }
 
 // Hairline between large sections of a menu. It lives inside the 6pt row
 // gap (6pt clear above and below), so no row pill can ever touch it.
 Jwift_GlassDropdownDivider : JwiftSeparatorVibrancy {
-  Width: 100%
+  Margin: 10pt 24pt
   Height: 1pt
 }
 
