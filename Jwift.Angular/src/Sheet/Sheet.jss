@@ -187,6 +187,18 @@ Jwift_SheetTitle {
   TextOverflow: Ellipsis
 }
 
+// A word for the trailing bar button (Mail's "Send"): the prominent pill's own ink, the same weight the
+// icon glyph would carry, so a labelled commit reads at the same authority as a checkmark one.
+Jwift_SheetBarActionLabel {
+  UserSelect: None
+  FontFamily: Inter
+  FontSize: 15pt
+  FontWeight: 700
+  Color: @OnProminent
+  MaxLines: 1
+  TextOverflow: Ellipsis
+}
+
 // THE GRABBER: 36 x 5 pt, a capsule 5 pt below the top edge, tertiary label through the glass [C]; a 44 pt square
 // takes its taps [C]. Drawn over the bar, so it never moves the bar or the content.
 Jwift_SheetGrabberHit {

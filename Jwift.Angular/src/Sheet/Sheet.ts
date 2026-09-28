@@ -192,6 +192,10 @@ interface PanSample { readonly Y: number; readonly T: number }
           <glass-button size="bar" variant="prominent" [disabled]="confirmDisabled()" (click)="confirm.emit()">
             <icon class="Jwift_SheetBarGlyph JwiftProminentInk" Name="checkmark" />
           </glass-button>
+        } @else if (barActionLabel(); as label) {
+          <glass-button size="bar" shape="pill" variant="prominent" [disabled]="barActionDisabled()" (click)="barActionPress.emit()">
+            <jext class="Jwift_SheetBarActionLabel" [text]="label" />
+          </glass-button>
         } @else if (barAction(); as glyph) {
           <glass-button size="bar" (click)="barActionPress.emit()">
             <icon class="Jwift_SheetBarGlyph" [Name]="glyph" />
@@ -257,8 +261,13 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   /** The length of the owner's navigation path. Above 0 the bar leads with the back chevron. */
   readonly navigationDepth = input<number>(0);
   readonly back = output<void>();
-  /** A glyph for a trailing bar button (Notes' compose, Mail's new message). Ignored while `confirmable`. */
+  /** A glyph for a trailing bar button (Notes' compose, Mail's new message). Ignored while `confirmable`
+   *  or `barActionLabel` is set. */
   readonly barAction = input<string | null>(null);
+  /** A WORD for a trailing bar button (Mail's "Send", Photos' "Export ..." — a commit whose name matters
+   *  more than a glyph could say). Wins over `barAction`; ignored while `confirmable`. */
+  readonly barActionLabel = input<string | null>(null);
+  readonly barActionDisabled = input<boolean>(false);
   readonly close = output<void>();
   readonly barActionPress = output<void>();
   readonly confirm = output<void>();
