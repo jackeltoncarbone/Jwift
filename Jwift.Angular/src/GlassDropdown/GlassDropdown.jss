@@ -214,7 +214,7 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   Direction: Column
   Justify: Start
   Align: Stretch
-  Padding: 10pt 8pt
+  Padding: 10pt
   // Rows sit 6pt apart, the same 6pt the glass keeps around them, so the
   // shared hover pill never touches a neighbour or a divider hairline.
   Gap: 0pt
@@ -293,10 +293,10 @@ Jwift_GlassDropdownItem {
   Justify: Start
   Align: Center
   Gap: 0pt
-  Padding: 0pt 20pt 0pt 8pt
+  Padding: 0pt 18pt 0pt 6pt
   Width: 100%
   Height: 44pt
-  BorderRadius: 24pt
+  BorderRadius: 22pt
   Background: rgba(255, 255, 255, 0)
   Interactive: true
   Cursor: Pointer
@@ -401,7 +401,7 @@ Jwift_GlassDropdownSectionHeader : JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 500
-  Padding: 12pt 20pt 16pt 48pt
+  Padding: 12pt 18pt 16pt 46pt
   MaxLines: 1
 }
 
@@ -411,13 +411,13 @@ Jwift_GlassDropdownSectionHeader : JwiftSecondaryLabelVibrancy {
 // 14pt while its own rows' icons sat 28pt further right — the header no longer "lined up with the rows'
 // content" the way this class's own comment promises. This variant carries the same 28pt so it still does.
 Jwift_GlassDropdownSectionHeader_Indented : Jwift_GlassDropdownSectionHeader {
-  Padding: 12pt 20pt 16pt 64pt
+  Padding: 12pt 18pt 16pt 62pt
 }
 
 // Hairline between large sections of a menu. It lives inside the 6pt row
 // gap (6pt clear above and below), so no row pill can ever touch it.
 Jwift_GlassDropdownDivider : JwiftSeparatorVibrancy {
-  Margin: 10pt 16pt
+  Margin: 10pt 14pt
   Height: 1pt
 }
 
@@ -457,7 +457,7 @@ Jwift_GlassDropdownDivider : JwiftSeparatorVibrancy {
 Jwift_GlassDropdownIndicator {
   Position: Placed
   Layer: 0
-  BorderRadius: 24pt
+  BorderRadius: 22pt
   BackdropFilter: Vibrancy(@JwiftVibrancyFill) Saturate(@JwiftSelectionSaturate) Brightness(1.06 * @Dark + 0.97 * @Light)
   Opacity: 0
 

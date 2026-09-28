@@ -235,14 +235,14 @@ JwiftScrollEdgeBottom : JwiftScrollEdge {
 // 20, 24pt) for the SAME treatment, and none of them said where its numbers came from. These do.
 //
 // THE BAR BAND is not a taste: it is the floating header's own geometry, added up. Jwift_PageHeader pads
-// 18pt (Toolbar.jss), Jwift_Toolbar pads 4pt inside that, and Jwift_ToolbarLeading / Trailing both pin to
-// a 48pt row. So a bar occupies 18 + 4 + 48 + 4 + 18 = 92pt. Three pages corroborate it independently:
-// Admin.jss, Classroom.jss and Commerce.jss each inset their scroller 92 to 96pt "to clear the placed
-// header". ScrollEdge.Conformance.spec.ts pins these three numbers to Toolbar.jss, so moving the bar's
+// 24pt (Toolbar.jss), Jwift_Toolbar pads 4pt inside that, and Jwift_ToolbarLeading / Trailing both pin to
+// a 48pt row. So a bar occupies 24 + 4 + 48 + 4 + 24 = 104pt; 24 + 4 + 24 = 52 puts a button's centre on the
+// screen corner's own centre (@JwiftScreenRadius), which is what concentric means. Admin.jss and
+// Classroom.jss inset their scrollers to clear it. ScrollEdge.Conformance.spec.ts pins these three numbers to Toolbar.jss, so moving the bar's
 // geometry fails the spec instead of silently leaving the strip the wrong length.
 @JwiftScrollEdgeRow: 48pt
 @JwiftScrollEdgeBarPad: 4pt
-@JwiftScrollEdgeHeadPad: 18pt
+@JwiftScrollEdgeHeadPad: 24pt
 @JwiftScrollEdgeBar: @JwiftScrollEdgeRow + 2 * @JwiftScrollEdgeBarPad + 2 * @JwiftScrollEdgeHeadPad
 
 // THE STRIP IS TWO BANDS. Apple's soft form is a DISSOLVE, so the ramp spans the whole strip and nothing
@@ -255,9 +255,11 @@ JwiftScrollEdgeBottom : JwiftScrollEdge {
 // reaching for.
 // 2.15 bars rather than 2: a touch taller so the fade starts further from the bar and the content has
 // longer to dissolve. Jack, by eye: "make the top one a little bit taller just the tiniest bit". The
-// BAR is the derived number (18 + 4 + 48 + 4 + 18 = 92pt, pinned to Toolbar.jss by the conformance
-// spec); the multiplier is a judgement and Apple publishes no strip height.
-@JwiftScrollEdgeHeight: 2.15 * @JwiftScrollEdgeBar
+// BAR is the derived number (24 + 4 + 48 + 4 + 24 = 104pt, pinned to Toolbar.jss by the conformance
+// spec); the multiplier is a judgement and Apple publishes no strip height. 2026-09-28 the header moved
+// from 18 to 24pt to make its buttons concentric with the screen corner, and the bar from 92 to 104pt;
+// the multiplier went from 2.15 to 1.9 so the strip Jack tuned (197.8pt) stays where he put it (197.6pt).
+@JwiftScrollEdgeHeight: 1.9 * @JwiftScrollEdgeBar
 
 // THE BLUR is about 8% of the strip's short side, its height: 14.72pt, the middle of the five radii that were
 // picked by hand.

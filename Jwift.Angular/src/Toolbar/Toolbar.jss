@@ -23,8 +23,9 @@ Jwift_Toolbar {
 //     </toolbar>
 //   </jiv>
 //
-// Padding: 18pt. Combined with Toolbar's own 4pt inset, glass-button
-// pills land 22pt from the screen edge.
+// Padding: 24pt. With the toolbar's own 4pt inside it, a 48pt button sits 28pt in, so its centre is 52pt
+// from the corner: the screen's own radius (@JwiftScreenRadius), and the button is concentric with it. It
+// was 18pt, and pages patched it one by one (20, 28), which the toolbar's hidden 4pt then threw off again.
 Jwift_PageHeader {
   Position: Placed
   Top: 0pt
@@ -33,7 +34,7 @@ Jwift_PageHeader {
   Direction: Column
   Justify: Start
   Align: Stretch
-  Padding: 18pt
+  Padding: 24pt
   Layer: 22
   PointerEvents: None
   // The header is UIKit's navigation bar pocket container, and its pocket blurs what scrolls under it, so the
