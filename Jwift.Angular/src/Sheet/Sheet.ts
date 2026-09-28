@@ -26,6 +26,7 @@ import SheetJss from './Sheet.jss';
 import {
   BottomRadius,
   Clamp01,
+  DocumentSheetSizeFor,
   FooterInset,
   FormSheetSizeFor,
   GrabberTarget,
@@ -40,6 +41,7 @@ import {
   RubberBand,
   SettleIndex,
   SHEET_METRICS,
+  type DocumentSheetConfig,
   type SheetDetent,
   type SheetPresentation,
 } from './Sheet.Geometry';
@@ -248,6 +250,10 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   readonly Class = input<string>('');
   /** How the sheet presents in regular width: a centered form sheet, or a trailing inspector column. */
   readonly presentation = input<SheetPresentation>('sheet');
+  /** Regular width's size, for a sheet whose content is a DOCUMENT rather than a short form — Quick Look's
+   *  reading, most of the window, in place of Apple's small centered form sheet (620×680 at most). Null
+   *  (the default) keeps the ordinary form sheet every other sheet in the app already uses. */
+  readonly documentSize = input<DocumentSheetConfig | null>(null);
   /** The length of the owner's navigation path. Above 0 the bar leads with the back chevron. */
   readonly navigationDepth = input<number>(0);
   readonly back = output<void>();
@@ -346,7 +352,11 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   readonly Regular = computed(() => IsRegularWidth(this._container().Width, this._container().Height));
   /** Regular width asked for an inspector: the trailing column. */
   readonly Inspector = computed(() => this.presentation() === 'inspector' && this.Regular());
-  private readonly _form = computed(() => FormSheetSizeFor(this._container().Width, this._container().Height));
+  private readonly _form = computed(() => {
+    const doc = this.documentSize();
+    const { Width, Height } = this._container();
+    return doc ? DocumentSheetSizeFor(Width, Height, doc) : FormSheetSizeFor(Width, Height);
+  });
   private readonly _large = computed(() => {
     const { Height } = this._container();
     if (this.Inspector()) return Height - this._headerBand() - this._partialInset();

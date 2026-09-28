@@ -44,6 +44,24 @@ export function FormSheetSizeFor(width: number, height: number): FormSheetSize {
   return { Width: 620, Height: 680 };
 }
 
+/** A DOCUMENT sheet's regular-width size: most of the window rather than Apple's small centered form —
+ *  Quick Look and Preview's own reading, for a sheet whose content is a document to be read at size rather
+ *  than a short form to be filled in. Width is a fraction of the container capped at a max; height is a
+ *  fraction of the container outright (a document wants the room, not a content-fitted height). Both still
+ *  clamp against the container elsewhere the same way the ordinary form sheet's do. */
+export interface DocumentSheetConfig {
+  readonly WidthFraction: number;
+  readonly MaxWidth: number;
+  readonly HeightFraction: number;
+}
+
+export function DocumentSheetSizeFor(width: number, height: number, config: DocumentSheetConfig): FormSheetSize {
+  return {
+    Width: Math.min(config.MaxWidth, width * config.WidthFraction),
+    Height: height * config.HeightFraction,
+  };
+}
+
 /** The inspector column's width: the ideal, narrowed to leave the content at least 60 percent of the window. */
 export function InspectorWidthFor(containerWidth: number): number {
   return Math.max(SHEET_METRICS.InspectorMinWidth, Math.min(SHEET_METRICS.InspectorWidth, containerWidth * 0.4));
