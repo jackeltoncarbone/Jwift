@@ -111,6 +111,9 @@ export interface ActionGroup {
                     [disabled]="!!item.Disabled"
                     [keepOpen]="!!item.KeepOpen || !!item.Page"
                     (click)="_OnItemClick(item, gd)">
+                    @if (_HasStateIn(gp, gd.Page())) {
+                      <icon [class]="item.Toggle && item.Active ? 'Jwift_GlassDropdownItemCheck' : 'Jwift_GlassDropdownItemCheck_Off'" Name="checkmark" />
+                    }
                     @if (item.Image) {
                       <jiv class="Jwift_GlassDropdownItemImage" [image]="item.Image" />
                     } @else if (item.Icon) {
@@ -303,6 +306,11 @@ export class GlassActionBar implements OnDestroy {
     const gap = GlassActionBar._GapPt;
     const w = n > 0 ? 2 * pad + n * cell + (n - 1) * gap : 0;
     return { Width: w + 'pt', Height: '48pt' };
+  }
+
+  /** A menu that holds any toggle keeps a check column, so its rows line up (as GlassActionGroup does). */
+  protected _HasStateIn(gp: { Group: ActionGroup }, page: string | null): boolean {
+    return this._OpenItemsFor(gp, page).some((item) => !!item.Toggle);
   }
 
   protected _CellClass(a: GlassAction): string {
