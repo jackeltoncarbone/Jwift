@@ -404,6 +404,15 @@ Jwift_GlassDropdownSectionHeader : JwiftSecondaryLabelVibrancy {
   MaxLines: 1
 }
 
+// A section's header, when that section has a toggle row: the rows below it reserve the leading
+// checkmark gutter (16pt + 12pt gap) so every row in the section stays aligned regardless of which one
+// is on (Jwift_GlassDropdownItemCheck's own comment). Left where it was, the header stayed at the plain
+// 14pt while its own rows' icons sat 28pt further right — the header no longer "lined up with the rows'
+// content" the way this class's own comment promises. This variant carries the same 28pt so it still does.
+Jwift_GlassDropdownSectionHeader_Indented : Jwift_GlassDropdownSectionHeader {
+  Padding: 6pt 14pt 7pt 42pt
+}
+
 // Hairline between large sections of a menu. It lives inside the 6pt row
 // gap (6pt clear above and below), so no row pill can ever touch it.
 Jwift_GlassDropdownDivider : JwiftSeparatorVibrancy {

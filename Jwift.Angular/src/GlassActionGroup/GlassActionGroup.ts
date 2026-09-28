@@ -172,7 +172,7 @@ export interface GlassAction {
           @if (item.Divider) {
             <jiv class="Jwift_GlassDropdownDivider" />
           } @else if (item.Header) {
-            <jext class="Jwift_GlassDropdownSectionHeader" [text]="item.Label ?? ''" />
+            <jext [class]="_HasState(pg) ? 'Jwift_GlassDropdownSectionHeader_Indented' : 'Jwift_GlassDropdownSectionHeader'" [text]="item.Label ?? ''" />
           } @else {
             <glass-dropdown-item
               [disabled]="!!item.Disabled"
