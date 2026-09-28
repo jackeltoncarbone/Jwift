@@ -485,13 +485,13 @@ JwiftPressTint:Active {
 }
 
 // ── JwiftProminent ──────────────────────────────────────────────────
-// THE ONE PROMINENT ACTION ON A SCREEN: a white glass button in dark, a black one in light, with the
-// label inverted (`@Prominent` / `@OnProminent`, theme tokens, so nothing here is a literal or a hue).
+// THE ONE PROMINENT ACTION ON A SCREEN: the app's accent on its face, as Apple draws a prominent button
+// (`@Prominent` / `@OnProminent`, theme tokens, so nothing here is a literal).
 //
 // A SOLID FACE UNDER THE GLASS RIM, not see-through glass. Glass tints toward a third of its seed over a
-// dark ground (Jaui Core/Glass.md, Tint), so a white seed reads mid gray on a black page; the face
-// has to hold its own light. The rim is lit harder than ordinary glass, which is the brighter white
-// fresnel that makes it read as glass rather than a flat plate, and the press is the glass press.
+// dark ground (Jaui Core/Glass.md, Tint), which would turn the accent brown on a black page, while Apple
+// brightens a foreground color in Dark Mode; the face holds its own light. The rim is lit harder than
+// ordinary glass, and the press is the glass press.
 JwiftProminent : JwiftSolidGlass, JwiftPressGlass {
   Background: @Prominent
   RimStrength: 3

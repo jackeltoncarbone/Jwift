@@ -19,10 +19,9 @@ export type GlassButtonShape = 'round' | 'pill' | 'square';
  * `glass` — the default, and what almost every button is. Liquid glass with no fill of its own, so
  * it takes its colour from whatever it floats over and is therefore always right.
  *
- * `prominent` — the ONE action that is the point of the screen, drawn as inverted white (or black)
- * glass: the label colour as the glass's tint seed and the label inverted (white glass with black
- * ink in dark, black glass with white ink in light). A screen gets one. Two prominent buttons on one
- * screen is neither of them being prominent.
+ * `prominent` — the ONE action that is the point of the screen, drawn with the app's accent on its
+ * face under the glass rim, as Apple draws a prominent button. A screen gets one. Two prominent
+ * buttons on one screen is neither of them being prominent.
  *
  * `danger` — a DESTRUCTIVE action, which Apple draws as a red LABEL on the ordinary control: HIG
  * Buttons lists the roles as "normal, primary (accent), cancel, destructive (system red; never
