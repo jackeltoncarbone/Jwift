@@ -485,48 +485,26 @@ JwiftPressTint:Active {
 }
 
 // ── JwiftProminent ──────────────────────────────────────────────────
-// THE ONE PROMINENT ACTION ON A SCREEN, and the only white-glass button the design system draws.
+// THE ONE PROMINENT ACTION ON A SCREEN: a white glass button in dark, a black one in light, with the
+// label inverted (`@Prominent` / `@OnProminent`, theme tokens, so nothing here is a literal or a hue).
 //
-// Glass is the default for a button, because glass takes its colour from what is behind it and is
-// therefore always right. Prominence is the exception a screen authors ONCE, for the single action
-// that is the point of the screen: the label colour becomes the glass's tint seed and the label
-// inverts. White glass under black ink in dark, black glass under white ink in light. Both halves are
-// theme tokens (`@Prominent` / `@OnProminent`), so nothing here is a literal and nothing here is a
-// hue: a hue would have to argue with the per-item accents the app derives from artwork, and an
-// inverted glass never does.
-//
-// IT IS GLASS, NOT A PAINTED PLATE (2026-09-28). Jack's report: "things tinted white like seed all
-// need some transparency because then it makes even white buttons have a brighter white rim around
-// them" — a flat fill cannot answer that, and a flat fill is what the previous plate was, translucency
-// notwithstanding. So this extends `JwiftGlass` for the lens, the blur, the BT.709 remap and the rim,
-// and `JwiftPressGlass` for the app's one glass press (the hover fill folded into the face, UIKit's
-// flex on press). `Background: @Prominent` is the glass's tint seed exactly as any coloured glass
-// control sets it (JwiftGlass above); `Tint: 0` stops the material's own neutral pull from additionally
-// dragging that seed toward black or white, the same zeroing `JivHost.ts` does when a caller hands in
-// an accent, so the seed reads as given rather than fighting the pull.
-//
-// THE RIM IS BRIGHTER THAN ORDINARY GLASS. `RimStrength` is raised past `@JwiftRimStrength` — the
-// "brighter white fresnel" Jack asked for is this rim, lit harder over a near-white seed, not a
-// second highlight layered on top: Apple's rim has no colour of its own, it recolors the backdrop it
-// sits over (Core/Glass.md), so a whiter backdrop plus a stronger lobe is what a whiter fresnel is.
-//
-// THE STATES ARE GLASS'S OWN. `JwiftPressGlass` already supplies the hover fill (folded into the
-// face) and the press flex (the lift and the two glows): a prominent button answers a finger exactly
-// as every other glass button does, so there is no Background swap on `:Hover` / `:Active` here —
-// that would be painting a second material over the first.
-//
-// MEASURED CONTRAST is unchanged by the move to glass: the tint seed is the same `@Prominent` RGBA
-// the plate used, so the resting face still reads `@OnProminent` at 16.1:1 in dark and 13.4:1 in
-// light (`ShowStudio.App/src/Ui/Theme.Tokens.ts`), both past WCAG AAA.
-//
-// DISABLED is the consumer's (`<glass-button [disabled]>` fades the whole node, label included, so
-// the contrast INSIDE the pill survives the fade). `JwiftProminentOff` is here for the app classes
-// that are not glass buttons and need the same read.
-JwiftProminent : JwiftGlass, JwiftPressGlass {
+// A SOLID FACE UNDER THE GLASS RIM, not see-through glass. Glass tints toward a third of its seed over a
+// dark ground (Jaui Core/Glass.md, Tint), so a white seed reads mid gray on a black page; the face
+// has to hold its own light. The rim is lit harder than ordinary glass, which is the brighter white
+// fresnel that makes it read as glass rather than a flat plate, and the press is the glass press.
+JwiftProminent : JwiftSolidGlass, JwiftPressGlass {
   Background: @Prominent
-  Tint: 0
   RimStrength: 3
+  RimWidth: 1.5pt
   @Transition Background { Duration: 140ms }
+}
+
+JwiftProminent:Hover {
+  Background: @ProminentHover
+}
+
+JwiftProminent:Active {
+  Background: @ProminentPress
 }
 
 // Present but not available: it keeps its footprint and stops taking taps, rather than vanishing and
