@@ -113,5 +113,9 @@
   "wallet.pass.fill": { "Pack": "Framework7", "Glyph": "ticket_fill" },
   "wifi.slash": { "Pack": "Framework7", "Glyph": "wifi_slash" },
   "xmark": { "Pack": "Framework7", "Glyph": "xmark" },
-  "xmark.circle": { "Pack": "Framework7", "Glyph": "xmark_circle" }
+  "xmark.circle": { "Pack": "Framework7", "Glyph": "xmark_circle" },
+  "eye": { "Pack": "Framework7", "Glyph": "eye" },
+  "mappin": { "Pack": "Framework7", "Glyph": "map_pin" },
+  "text.bubble": { "Pack": "Framework7", "Glyph": "text_bubble" },
+  "text.bubble.fill": { "Pack": "Framework7", "Glyph": "text_bubble_fill" }
 }

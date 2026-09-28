@@ -66,6 +66,9 @@ export interface GlassAction {
    *  Useful for disabled items or items that toggle inline state. Page
    *  items get this implicitly. */
   KeepOpen?: boolean;
+  /** Inline cell only — draws a small trailing chevron.down beside the glyph, marking a single-cell
+   *  pill as a MENU BUTTON (it always opens a menu, never acts directly) before it is even tapped. */
+  Disclosure?: boolean;
 }
 
 /**

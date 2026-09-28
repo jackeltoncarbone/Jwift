@@ -32,3 +32,15 @@ Jwift_GlassActionGlyph_Warn {
   Color: @Warning
   TextAlign: Center
 }
+
+// The disclosure chevron beside a single-cell expandable pill's glyph (the "menu button" tell — View and
+// any future group that always opens a menu). Sits beside the glyph inside the same 40pt cell; small and
+// soft so it reads as an accessory to the glyph, not a second action.
+Jwift_GlassDropdownCellChevron {
+  FontFamily: JwiftIcons
+  FontSize: 10pt
+  FontWeight: 700
+  Color: @Ink
+  Opacity: 0.6
+  TextAlign: Center
+}

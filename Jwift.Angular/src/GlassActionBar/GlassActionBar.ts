@@ -94,6 +94,9 @@ export interface ActionGroup {
                 } @else {
                   <jiv [class]="_CellClass(a)" (click)="_OnExpandableCell(a, $event, gd)">
                     <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
+                    @if (a.Disclosure) {
+                      <icon class="Jwift_GlassDropdownCellChevron" Name="chevron.down" />
+                    }
                   </jiv>
                 }
               }
@@ -141,7 +144,7 @@ export interface ActionGroup {
       <glass-action-group
         [Actions]="_NoActions"
         [Menu]="_SinkMenu()"
-        [Pages]="Pages()"
+        [Pages]="_EffectivePages()"
         [AvatarUrl]="AvatarUrl()"
         [AvatarInitials]="AvatarInitials()"
         [AvatarFallbackIcon]="AvatarFallbackIcon()"
@@ -264,6 +267,16 @@ export class GlassActionBar implements OnDestroy {
       out.push(...appended);
     }
     return out;
+  });
+
+  /** Every group's OWN `Pages`, merged, plus whatever the caller states at the bar level (which wins on a
+   *  colliding key). A Page-bearing cell can fold from its own pill into the sink's flat overflow list as
+   *  the bar narrows; without its page riding along here, that shed cell would open onto nothing — the
+   *  sink only ever reads its own `[Pages]` input, not each group's. */
+  protected readonly _EffectivePages = computed<Record<string, readonly GlassAction[]>>(() => {
+    const merged: Record<string, readonly GlassAction[]> = {};
+    for (const g of this.Groups()) if (g.Pages) Object.assign(merged, g.Pages);
+    return { ...merged, ...this.Pages() };
   });
 
   constructor() {
