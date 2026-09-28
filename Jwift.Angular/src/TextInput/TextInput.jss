@@ -108,6 +108,28 @@ Jwift_Field_Glass : JwiftGlass, JwiftPressGlass {
   @Transition BorderWidth { Duration: 140ms }
 }
 
+// A class that extends this one is flattened when it is declared, so these state rules sit above the tall
+// field: declared after it, the tall field never lit, never showed invalid and never dimmed when disabled.
+// Editing lights the glass: the flex's lift and big glow, held while the caret is in it. Apple's active
+// field comes forward by brightening; it draws no ring.
+Jwift_Field_Glass:(Editing) {
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
+  FlexHold: 1
+}
+
+Jwift_Field_Glass:(Editing && Hover) {
+  BackdropFilter: Vibrancy(@JwiftFieldEditingHover)
+}
+
+Jwift_Field_Glass:(Invalid) {
+  BorderWidth: @JwiftFieldRing
+}
+
+Jwift_Field_Glass:Disabled {
+  Cursor: Default
+  Opacity: 0.4
+}
+
 // A glass sentence: the same glass, the tall field's card corner, growing with what is written.
 Jwift_Field_Glass_Tall : Jwift_Field_Glass {
   Align: Stretch
@@ -133,26 +155,6 @@ Jwift_Field_Bare {
   Width: 100%
   Height: 100%
   FlexGrow: 1
-}
-
-// Editing lights the glass: the flex's lift and big glow, held while the caret is in it. Apple's active
-// field comes forward by brightening; it draws no ring.
-Jwift_Field_Glass:(Editing) {
-  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
-  FlexHold: 1
-}
-
-Jwift_Field_Glass:(Editing && Hover) {
-  BackdropFilter: Vibrancy(@JwiftFieldEditingHover)
-}
-
-Jwift_Field_Glass:(Invalid) {
-  BorderWidth: @JwiftFieldRing
-}
-
-Jwift_Field_Glass:Disabled {
-  Cursor: Default
-  Opacity: 0.4
 }
 
 // The text's own cell takes what the glyph and the clear button leave.
