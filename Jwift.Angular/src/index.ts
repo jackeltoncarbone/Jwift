@@ -103,3 +103,7 @@ export { List } from './List/List';
 export { ListRow } from './List/ListRow';
 export { ListSeparator } from './List/ListSeparator';
 export { Toggle } from './Toggle/Toggle';
+export { Stepper } from './Stepper/Stepper';
+export { TagBadge, type TagBadgeTone } from './TagBadge/TagBadge';
+export { DisclosureRow } from './DisclosureRow/DisclosureRow';
+export { SidebarRow } from './SidebarRow/SidebarRow';
