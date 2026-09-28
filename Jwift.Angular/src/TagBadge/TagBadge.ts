@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { Jiv, Jext } from 'jaui-angular';
+import { Jiv, Jext, Jyle } from 'jaui-angular';
 import TagBadgeJss from './TagBadge.jss';
 
 /** The badge's tone: `neutral` says nothing extra; the other three carry the model's own read on a
@@ -15,9 +15,10 @@ export type TagBadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'dange
 @Component({
   selector: 'tag-badge',
   standalone: true,
-  imports: [Jiv, Jext],
+  imports: [Jiv, Jext, Jyle],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <jyle [source]="Jss" />
     <jiv [class]="_BadgeClass()">
       <jext [class]="_LabelClass()" [text]="text()" />
     </jiv>
@@ -25,6 +26,8 @@ export type TagBadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'dange
   styles: [':host { display: contents; }'],
 })
 export class TagBadge {
+  protected readonly Jss = TagBadgeJss;
+
   readonly tone = input<TagBadgeTone>('neutral');
   readonly text = input.required<string>();
 

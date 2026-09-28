@@ -4,7 +4,9 @@ Jwift_DisclosureRow {
   Width: 100%
 }
 
-Jwift_DisclosureHead : JwiftPress {
+// Self-contained press (not `: JwiftPress`): this sheet registers via a plain `<jyle>`, not JivHost, so
+// the library's global glass base is not guaranteed registered first.
+Jwift_DisclosureHead {
   Direction: Row
   Align: Center
   Width: 100%
@@ -12,6 +14,14 @@ Jwift_DisclosureHead : JwiftPress {
   Gap: 8pt
   Interactive: true
   Cursor: Pointer
+  UserSelect: None
+  @Transition BackdropFilter { Duration: 140ms }
+}
+Jwift_DisclosureHead:Hover {
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
+}
+Jwift_DisclosureHead:Active {
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
 }
 
 Jwift_DisclosureChevron {

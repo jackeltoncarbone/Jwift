@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input, output } from '@angular/core';
-import { Jiv } from 'jaui-angular';
+import { Jiv, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
 import DisclosureRowJss from './DisclosureRow.jss';
 
@@ -16,9 +16,10 @@ import DisclosureRowJss from './DisclosureRow.jss';
 @Component({
   selector: 'disclosure-row',
   standalone: true,
-  imports: [Jiv, Icon],
+  imports: [Jiv, Jyle, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <jyle [source]="Jss" />
     <jiv class="Jwift_DisclosureRow">
       <jiv class="Jwift_DisclosureHead" (click)="openChange.emit(!open())">
         <ng-content select="[disclosureHeader]"></ng-content>
@@ -34,6 +35,8 @@ import DisclosureRowJss from './DisclosureRow.jss';
   styles: [':host { display: contents; }'],
 })
 export class DisclosureRow {
+  protected readonly Jss = DisclosureRowJss;
+
   readonly open = input(false, { transform: booleanAttribute });
   readonly openChange = output<boolean>();
 

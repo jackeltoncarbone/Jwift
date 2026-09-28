@@ -107,3 +107,7 @@ export { Stepper } from './Stepper/Stepper';
 export { TagBadge, type TagBadgeTone } from './TagBadge/TagBadge';
 export { DisclosureRow } from './DisclosureRow/DisclosureRow';
 export { SidebarRow } from './SidebarRow/SidebarRow';
+export { ComposerBar } from './ComposerBar/ComposerBar';
+export { MediaTransport } from './MediaTransport/MediaTransport';
+export { TitleButton } from './TitleButton/TitleButton';
+export { SwatchChip } from './SwatchChip/SwatchChip';

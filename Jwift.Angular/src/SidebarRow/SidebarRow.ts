@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, booleanAttribute, input, output } from '@angular/core';
-import { Jiv, Jext } from 'jaui-angular';
+import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
 import SidebarRowJss from './SidebarRow.jss';
 
@@ -14,9 +14,10 @@ import SidebarRowJss from './SidebarRow.jss';
 @Component({
   selector: 'sidebar-row',
   standalone: true,
-  imports: [Jiv, Jext, Icon],
+  imports: [Jiv, Jext, Jyle, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <jyle [source]="Jss" />
     <jiv [class]="on() ? 'Jwift_SidebarRow_On' : 'Jwift_SidebarRow'" (click)="rowClick.emit()">
       <icon [class]="on() ? 'Jwift_SidebarRowGlyph_On' : 'Jwift_SidebarRowGlyph'" [Name]="glyph()" />
       <jext [class]="on() ? 'Jwift_SidebarRowLabel_On' : 'Jwift_SidebarRowLabel'" [text]="label()" />
@@ -28,6 +29,8 @@ import SidebarRowJss from './SidebarRow.jss';
   styles: [':host { display: contents; }'],
 })
 export class SidebarRow {
+  protected readonly Jss = SidebarRowJss;
+
   readonly glyph = input.required<string>();
   readonly label = input.required<string>();
   readonly on = input(false, { transform: booleanAttribute });

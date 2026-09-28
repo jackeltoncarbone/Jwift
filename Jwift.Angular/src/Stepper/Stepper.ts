@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { Jiv, Jext } from 'jaui-angular';
+import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
 import StepperJss from './Stepper.jss';
 
@@ -13,9 +13,10 @@ import StepperJss from './Stepper.jss';
 @Component({
   selector: 'stepper',
   standalone: true,
-  imports: [Jiv, Jext, Icon],
+  imports: [Jiv, Jext, Jyle, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <jyle [source]="Jss" />
     <jiv class="Jwift_Stepper">
       <jiv [class]="_MinusClass()" (click)="_bump(-step())">
         <icon class="Jwift_StepperGlyph" Name="minus" />
@@ -29,6 +30,8 @@ import StepperJss from './Stepper.jss';
   styles: [':host { display: contents; }'],
 })
 export class Stepper {
+  protected readonly Jss = StepperJss;
+
   readonly value = input.required<number>();
   readonly min = input<number | null>(null);
   readonly max = input<number | null>(null);

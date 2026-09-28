@@ -1,6 +1,11 @@
 // HOUSE. Promoted from Admin.jss's `Adm_NavRow` ladder (the same row Surface's rail and the settings
-// rail had each converged on separately).
-Jwift_SidebarRow : JwiftPress {
+// rail had each converged on separately). Self-contained press (not `: JwiftPress`): this sheet
+// registers via a plain `<jyle>`, not JivHost, so the library's global glass base is not guaranteed
+// registered first.
+Jwift_SidebarRow {
+  Interactive: true
+  Cursor: Pointer
+  UserSelect: None
   Direction: Row
   Justify: Start
   Align: Center
@@ -10,6 +15,12 @@ Jwift_SidebarRow : JwiftPress {
   Padding: 0pt 14pt
   BorderRadius: 999pt
   Background: rgba(255, 255, 255, 0)
+}
+Jwift_SidebarRow:Hover {
+  Background: @Wash
+}
+Jwift_SidebarRow:Active {
+  Background: @WashStrong
 }
 
 Jwift_SidebarRow_On : Jwift_SidebarRow {

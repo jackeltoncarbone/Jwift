@@ -10,7 +10,12 @@ Jwift_Stepper {
   Gap: 16pt
 }
 
-Jwift_StepperBtn : JwiftPress {
+// Self-contained press (not `: JwiftPress`): this sheet registers via a plain `<jyle>`, not JivHost, so
+// the library's global glass base is not guaranteed registered first.
+Jwift_StepperBtn {
+  Interactive: true
+  Cursor: Pointer
+  UserSelect: None
   Width: 30pt
   Height: 30pt
   BorderRadius: 999pt
@@ -18,9 +23,18 @@ Jwift_StepperBtn : JwiftPress {
   Justify: Center
   Align: Center
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
+  @Transition BackdropFilter { Duration: 140ms }
+}
+Jwift_StepperBtn:Hover {
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
+}
+Jwift_StepperBtn:Active {
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
 }
 Jwift_StepperBtn_Disabled : Jwift_StepperBtn {
   Opacity: 0.35
+  Interactive: false
+  Cursor: Default
 }
 
 Jwift_StepperGlyph {
