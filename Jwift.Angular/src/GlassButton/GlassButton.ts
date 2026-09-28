@@ -44,10 +44,11 @@ export type GlassButtonShape = 'round' | 'pill' | 'square';
  * `Jwift/Shared/Research/Apple.LiquidGlass.md`, section 3, "Destructive actions, and the one place red
  * is a fill".
  */
-export type GlassButtonVariant = 'glass' | 'prominent' | 'danger' | 'danger-prominent';
+export type GlassButtonVariant = 'glass' | 'prominent' | 'danger' | 'danger-prominent' | 'plain';
 
-/** The button's size: `regular` (48 pt) or `bar`, iOS 26's 44 pt bar button (a sheet's X and checkmark). */
-export type GlassButtonSize = 'regular' | 'bar';
+/** The button's size: `regular` (48 pt), `small` (28 pt, Apple's small/mini height — for a control living
+ *  inside a list row or a dense toolbar), or `bar`, iOS 26's 44 pt bar button (a sheet's X and checkmark). */
+export type GlassButtonSize = 'regular' | 'small' | 'bar';
 
 /** The class stem each variant resolves to. The shape suffix (`_Round` / `_Pill` / `_Square`) is
  *  appended, and every stem declares all three, so a variant change never moves the button. */
@@ -56,6 +57,7 @@ const VARIANT_STEM: Record<GlassButtonVariant, string> = {
   prominent: 'Jwift_GlassBtn_Prominent',
   danger: 'Jwift_GlassBtn_Danger',
   'danger-prominent': 'Jwift_GlassBtn_DangerProminent',
+  plain: 'Jwift_GlassBtn_Plain',
 };
 
 /**
@@ -71,9 +73,11 @@ const VARIANT_STEM: Record<GlassButtonVariant, string> = {
  *     <jext class="ToolbarAvatarGlyph" [text]="AvatarIcon" />
  *   </glass-button>
  *
- * Shapes: `round` (default, 48×48 circle), `pill` (auto + pad), `square`. Sizes: `regular`, `bar` (44 pt).
+ * Shapes: `round` (default, 48×48 circle), `pill` (auto + pad), `square`. Sizes: `regular`, `small`
+ * (28 pt, for a control living inside a list row), `bar` (44 pt).
  * Variants: `glass` (default — today's liquid glass), `prominent` (the inverted solid), `danger` (the
- * same glass under a red label) and `danger-prominent` (the filled red confirm).
+ * same glass under a red label), `danger-prominent` (the filled red confirm) and `plain` (a text button:
+ * label only, no plate — apply `Jwift_GlassBtnPlainLabel` to the projected `<jext>` for the accent ink).
  */
 @Component({
   selector: 'glass-button',
@@ -127,8 +131,10 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
       // moves it a point: every stem carries the same three geometries.
       const stem = VARIANT_STEM[this.variant()] ?? 'Jwift_GlassBtn';
       const suffix = this.shape() === 'pill' ? '_Pill' : this.shape() === 'square' ? '_Square' : '_Round';
-      const bar = this.size() === 'bar' ? ` Jwift_GlassBtnBar${suffix}` : '';
-      return `${stem}${suffix}${bar} ${this.Class()}`.trim();
+      const sizeClass = this.size() === 'bar' ? ` Jwift_GlassBtnBar${suffix}`
+        : this.size() === 'small' ? ` Jwift_GlassBtnSmall${suffix}`
+        : '';
+      return `${stem}${suffix}${sizeClass} ${this.Class()}`.trim();
     });
     // The colour override, on the same style-override channel as `disabled` so it layers over
     // whichever shape and variant class is active rather than racing it.

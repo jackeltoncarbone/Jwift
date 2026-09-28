@@ -5,6 +5,7 @@ import {
   OnInit,
   forwardRef,
   input,
+  output,
 } from '@angular/core';
 import { Jiv, Jext } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
@@ -14,7 +15,7 @@ import SectionHeaderJss from './SectionHeader.jss';
  * `<section-header>` — row with a section title (leading) and an
  * optional "View All" glass pill (trailing).
  *
- *   <section-header [title]="s.Title" [showViewAll]="s.ShowViewAll" />
+ *   <section-header [title]="s.Title" [showViewAll]="s.ShowViewAll" (viewAll)="openAll()" />
  *
  * Uses an internal template (not ng-content) — projected children aren't
  * needed for the standard case and keeping the structure private lets
@@ -28,7 +29,7 @@ import SectionHeaderJss from './SectionHeader.jss';
   template: `
     <jext class="Jwift_SectionTitle" [text]="title()" />
     @if (showViewAll()) {
-      <jiv class="Jwift_SectionViewAll">
+      <jiv class="Jwift_SectionViewAll" label="View All" (click)="viewAll.emit()">
         <jext class="Jwift_SectionViewAllLabel" text="View All" />
       </jiv>
     }
@@ -42,6 +43,9 @@ import SectionHeaderJss from './SectionHeader.jss';
 export class SectionHeader extends JivHost implements OnInit, OnDestroy {
   readonly title = input<string>('');
   readonly showViewAll = input<boolean>(false);
+
+  /** Pressed the trailing "View All" pill. Only fires when `showViewAll` is true. */
+  readonly viewAll = output<void>();
 
   constructor() {
     super('SectionHeader', SectionHeaderJss, 'Jwift_SectionHeader', () => 'Jwift_SectionHeader');

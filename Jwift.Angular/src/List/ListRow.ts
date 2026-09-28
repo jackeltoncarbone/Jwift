@@ -9,6 +9,7 @@ import {
   inject,
   input,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { Jiv } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
 import ListJss from './List.jss';
@@ -19,6 +20,11 @@ import { LIST_COMFORT } from './List.Comfort';
  *
  * Minimum height is the 44pt hit floor. A row that only reports rather than navigating takes `static`,
  * which drops the pointer states so it cannot look tappable when it is not.
+ *
+ * `href` makes the row a navigation row: a press routes there, with the SAME press behavior as any other
+ * row (the row does not become `static`). Router-relative paths and full URLs both work.
+ *
+ *   <list-row href="/legal/terms"> ... </list-row>
  */
 @Component({
   selector: 'list-row',
@@ -26,6 +32,7 @@ import { LIST_COMFORT } from './List.Comfort';
   template: '<ng-content></ng-content>',
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(click)': '_onClick()' },
   providers: [
     { provide: Jiv, useExisting: forwardRef(() => ListRow) },
   ],
@@ -33,7 +40,11 @@ import { LIST_COMFORT } from './List.Comfort';
 export class ListRow extends JivHost implements OnInit, OnDestroy {
   readonly static = input(false, { transform: booleanAttribute });
 
+  /** Where a press on this row navigates. Router-relative or absolute. Omit for a row that only reports. */
+  readonly href = input<string | null>(null);
+
   private readonly _comfort = inject(LIST_COMFORT, { optional: true });
+  private readonly _router = inject(Router);
 
   constructor() {
     super('List', ListJss, 'Jwift_ListRow', () => (this.static() ? 'Jwift_ListRow_Static' : 'Jwift_ListRow'));
@@ -46,4 +57,9 @@ export class ListRow extends JivHost implements OnInit, OnDestroy {
 
   ngOnInit(): void { this._attachOnInit(); }
   ngOnDestroy(): void { this._detachOnDestroy(); }
+
+  protected _onClick(): void {
+    const href = this.href();
+    if (href) void this._router.navigateByUrl(href);
+  }
 }

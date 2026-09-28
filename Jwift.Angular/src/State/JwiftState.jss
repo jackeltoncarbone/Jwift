@@ -104,3 +104,15 @@ JwiftState_ActionLabel {
 JwiftState_ActionLabelProminent : JwiftState_ActionLabel {
   Color: @OnProminent
 }
+
+// The one extra line some states owe: what this particular stop means for you. Quieter than the detail
+// sentence and set off from the actions by its own step.
+JwiftState_Foot {
+  FontFamily: Inter
+  FontSize: 12pt
+  FontWeight: 400
+  Color: @InkSoft
+  TextAlign: Center
+  UserSelect: None
+  Margin: 14pt 0pt 0pt 0pt
+}
