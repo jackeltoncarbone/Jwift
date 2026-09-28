@@ -111,3 +111,7 @@ export { ComposerBar } from './ComposerBar/ComposerBar';
 export { MediaTransport } from './MediaTransport/MediaTransport';
 export { TitleButton } from './TitleButton/TitleButton';
 export { SwatchChip } from './SwatchChip/SwatchChip';
+export {
+  SearchPicker, heldPills, pickerGroups,
+  type HeldPill, type PickGroup, type PickOption,
+} from './SearchPicker/SearchPicker';
