@@ -19,9 +19,10 @@ export type GlassButtonShape = 'round' | 'pill' | 'square';
  * `glass` — the default, and what almost every button is. Liquid glass with no fill of its own, so
  * it takes its colour from whatever it floats over and is therefore always right.
  *
- * `prominent` — the ONE action that is the point of the screen, drawn as the inverted solid: the
- * label colour as the plate and the label inverted (white-on-black in dark, black-on-white in
- * light). A screen gets one. Two prominent buttons on one screen is neither of them being prominent.
+ * `prominent` — the ONE action that is the point of the screen, drawn as inverted white (or black)
+ * glass: the label colour as the glass's tint seed and the label inverted (white glass with black
+ * ink in dark, black glass with white ink in light). A screen gets one. Two prominent buttons on one
+ * screen is neither of them being prominent.
  *
  * `danger` — a DESTRUCTIVE action, which Apple draws as a red LABEL on the ordinary control: HIG
  * Buttons lists the roles as "normal, primary (accent), cancel, destructive (system red; never
@@ -88,8 +89,8 @@ const VARIANT_STEM: Record<GlassButtonVariant, string> = {
 export class GlassButton extends JivHost implements OnInit, OnDestroy {
   readonly shape = input<GlassButtonShape>('round');
   /** Prominence AND role. `glass` is the default, so nothing that exists moves; `prominent` is the
-   *  inverted solid, for the one action a screen leads with; `danger` is the same glass under a red
-   *  label; `danger-prominent` is the filled red confirm. See {@link GlassButtonVariant}. */
+   *  inverted white (or black) glass, for the one action a screen leads with; `danger` is the same
+   *  glass under a red label; `danger-prominent` is the filled red confirm. See {@link GlassButtonVariant}. */
   readonly variant = input<GlassButtonVariant>('glass');
   /** `bar` draws Apple's 44 pt bar button in place of the 48 pt control; every variant and shape takes it. */
   readonly size = input<GlassButtonSize>('regular');

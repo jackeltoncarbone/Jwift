@@ -485,57 +485,48 @@ JwiftPressTint:Active {
 }
 
 // ── JwiftProminent ──────────────────────────────────────────────────
-// THE ONE PROMINENT ACTION ON A SCREEN, and the only filled button the design system draws.
+// THE ONE PROMINENT ACTION ON A SCREEN, and the only white-glass button the design system draws.
 //
 // Glass is the default for a button, because glass takes its colour from what is behind it and is
 // therefore always right. Prominence is the exception a screen authors ONCE, for the single action
-// that is the point of the screen: the label colour becomes the fill and the label inverts. White
-// plate under black ink in dark, black plate under white ink in light. Both halves are theme tokens
-// (`@Prominent` / `@OnProminent`), so nothing here is a literal and nothing here is a hue: a hue
-// would have to argue with the per-item accents the app derives from artwork, and an inverted solid
-// never does.
+// that is the point of the screen: the label colour becomes the glass's tint seed and the label
+// inverts. White glass under black ink in dark, black glass under white ink in light. Both halves are
+// theme tokens (`@Prominent` / `@OnProminent`), so nothing here is a literal and nothing here is a
+// hue: a hue would have to argue with the per-item accents the app derives from artwork, and an
+// inverted glass never does.
 //
-// THE STATES. It extends `JwiftPressMotion`, the app's one press gesture, and `JwiftFlex`, UIKit's
-// press on a button, so a prominent button answers a finger exactly as every glass button does. What it
-// cannot inherit is the PAINT half of either shared press:
+// IT IS GLASS, NOT A PAINTED PLATE (2026-09-28). Jack's report: "things tinted white like seed all
+// need some transparency because then it makes even white buttons have a brighter white rim around
+// them" — a flat fill cannot answer that, and a flat fill is what the previous plate was, translucency
+// notwithstanding. So this extends `JwiftGlass` for the lens, the blur, the BT.709 remap and the rim,
+// and `JwiftPressGlass` for the app's one glass press (the hover fill folded into the face, UIKit's
+// flex on press). `Background: @Prominent` is the glass's tint seed exactly as any coloured glass
+// control sets it (JwiftGlass above); `Tint: 0` stops the material's own neutral pull from additionally
+// dragging that seed toward black or white, the same zeroing `JivHost.ts` does when a caller hands in
+// an accent, so the seed reads as given rather than fighting the pull.
 //
-//   * `JwiftPress` lifts what is BEHIND the control, by @JwiftVibrancyFill / @JwiftVibrancyFillPressed. A
-//     prominent button's plate is opaque, so there is nothing behind it to lift: the backdrop the lift
-//     would move is covered by the button's own fill, and the press would not read at all.
-//   * `JwiftPressTint` grades the finished pixels with Brightness/Saturate. On an achromatic extreme
-//     that is a no-op in one theme and the wrong direction in the other: brightening a near-black
-//     plate in light theme spends the contrast that makes it prominent.
+// THE RIM IS BRIGHTER THAN ORDINARY GLASS. `RimStrength` is raised past `@JwiftRimStrength` — the
+// "brighter white fresnel" Jack asked for is this rim, lit harder over a near-white seed, not a
+// second highlight layered on top: Apple's rim has no colour of its own, it recolors the backdrop it
+// sits over (Core/Glass.md), so a whiter backdrop plus a stronger lobe is what a whiter fresnel is.
 //
-// So the fill steps instead, along the one ladder the tokens declare, and it only ever moves AWAY
-// from the page's ground — brighter in dark, denser in light. That is the same "comes toward you"
-// direction as every other press in this sheet; it is simply the only axis an inverted solid has.
-// The Background transition is the shared 140ms, so the plate and the squeeze land together rather
-// than the colour flashing ahead of the shrink.
+// THE STATES ARE GLASS'S OWN. `JwiftPressGlass` already supplies the hover fill (folded into the
+// face) and the press flex (the lift and the two glows): a prominent button answers a finger exactly
+// as every other glass button does, so there is no Background swap on `:Hover` / `:Active` here —
+// that would be painting a second material over the first.
 //
-// THE PLATE IS SLIGHTLY TRANSLUCENT (2026-09-17), and that is not glass creeping back in: there is
-// still no bezel, no refraction, no frost and no fresnel. An opaque near-white plate on a near-black
-// ground steps about 225 levels across one antialiased edge, and simultaneous contrast reads that
-// edge as a bright rim the fill does not contain. Letting 8% of the surround through drops the
-// boundary contrast (19.6:1 -> 16.1:1 in dark) and lets the plate take some of its colour from
-// whatever it sits on, so one button is not a flat cut-out over three different surfaces. The alpha
-// steps with the fill, which also doubles the press travel this comment used to apologise for: over
-// black the rungs resolve to 225 -> 237 -> 245 rather than 245 -> 252 -> 255. The measurement, and
-// the label contrast on each resting plate, are in `ShowStudio.App/src/Ui/Theme.Tokens.ts`.
+// MEASURED CONTRAST is unchanged by the move to glass: the tint seed is the same `@Prominent` RGBA
+// the plate used, so the resting face still reads `@OnProminent` at 16.1:1 in dark and 13.4:1 in
+// light (`ShowStudio.App/src/Ui/Theme.Tokens.ts`), both past WCAG AAA.
 //
 // DISABLED is the consumer's (`<glass-button [disabled]>` fades the whole node, label included, so
 // the contrast INSIDE the pill survives the fade). `JwiftProminentOff` is here for the app classes
 // that are not glass buttons and need the same read.
-JwiftProminent : JwiftPressMotion, JwiftFlex {
+JwiftProminent : JwiftGlass, JwiftPressGlass {
   Background: @Prominent
+  Tint: 0
+  RimStrength: 3
   @Transition Background { Duration: 140ms }
-}
-
-JwiftProminent:Hover {
-  Background: @ProminentHover
-}
-
-JwiftProminent:Active {
-  Background: @ProminentPress
 }
 
 // Present but not available: it keeps its footprint and stops taking taps, rather than vanishing and
