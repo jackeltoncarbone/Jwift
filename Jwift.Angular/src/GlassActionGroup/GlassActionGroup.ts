@@ -355,10 +355,10 @@ export class GlassActionGroup implements OnDestroy {
     return this.Pages()[page] ?? this._Account?.Pages?.()[page] ?? [];
   }
 
-  /** Whether any row on this page is a toggle. UIMenu then reserves the leading checkmark column on every row,
-   *  so the rows stay aligned whichever are on. */
+  /** Whether any row on this page is checked. UIMenu then reserves the leading checkmark column on every row so the
+   *  rows stay aligned; with nothing checked there is no column, and icons sit at the menu's own inset. */
   protected _HasState(page: string | null): boolean {
-    return this._OpenItems(page).some((item) => !!item.Toggle);
+    return this._OpenItems(page).some((item) => !!item.Toggle && !!item.Active);
   }
 
   /** The root row that pushes this page, or null on the root and on a page only the avatar opens. */

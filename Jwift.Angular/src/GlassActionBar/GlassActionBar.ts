@@ -308,9 +308,9 @@ export class GlassActionBar implements OnDestroy {
     return { Width: w + 'pt', Height: '48pt' };
   }
 
-  /** A menu that holds any toggle keeps a check column, so its rows line up (as GlassActionGroup does). */
+  /** A menu with any row checked keeps a check column, so its rows line up (as GlassActionGroup does). */
   protected _HasStateIn(gp: { Group: ActionGroup }, page: string | null): boolean {
-    return this._OpenItemsFor(gp, page).some((item) => !!item.Toggle);
+    return this._OpenItemsFor(gp, page).some((item) => !!item.Toggle && !!item.Active);
   }
 
   protected _CellClass(a: GlassAction): string {
