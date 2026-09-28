@@ -41,6 +41,7 @@ import {
   RubberBand,
   SettleIndex,
   SHEET_METRICS,
+  SheetFaceAlpha,
   type DocumentSheetConfig,
   type SheetDetent,
   type SheetPresentation,
@@ -168,6 +169,7 @@ interface PanSample { readonly Y: number; readonly T: number }
     <ng-container sheetLayer>
     <jiv [class]="DimClass()" [jivStyle]="DimStyle()" (click)="AttemptDismiss()" />
     <jiv #card [class]="CardClass()" [jivStyle]="CardStyle()" [childLayout]="CardLayout()" (panclaim)="OnPanClaim($event)">
+      <jiv [class]="FaceClass()" [jivStyle]="FaceStyle()" />
       <jiv sheetBody [class]="BodyClass()" [layout]="BodyLayout()" [childLayout]="PageLayout()">
         <ng-content></ng-content>
       </jiv>
@@ -437,13 +439,10 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     return { Opacity: String(Math.round(dim * this._dimLevel() * shown * away * 1000) / 1000) };
   });
 
-  /** What the content sits on, for every section inside: glass below half height and in regular width, opaque
-   *  above it [C], and the inspector column is solid, as Pages' and Keynote's are. */
-  readonly Material = computed<JwiftMaterial>(() => {
-    if (this.Inspector()) return 'Elevated';
-    if (this.Regular()) return 'Glass';
-    return this._percentFull() > SHEET_METRICS.GlassBelow ? 'Elevated' : 'Glass';
-  });
+  /** What the content sits on, for every section inside: glass at every height (Jack's departure from Apple's
+   *  actual opaque `@Sheet` above half height [C], Sheets.md section 2 — glass never turns into a flat gray
+   *  plate), and the inspector column is solid, as Pages' and Keynote's are. */
+  readonly Material = computed<JwiftMaterial>(() => (this.Inspector() ? 'Elevated' : 'Glass'));
 
   readonly CardClass = computed(() => {
     const stops = this._stops();
@@ -452,10 +451,22 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
     if (this.Inspector()) return `Jwift_SheetCard_Inspector Jwift_SheetOpaque${motion}`;
     // iPad's form sheet is regular glass without the sheet subvariant (`sub_18910A6A0`) [C].
     if (this.Regular()) return `Jwift_SheetCard Jwift_SheetGlass_Form${motion}`;
-    const material = this.Material() === 'Elevated' ? 'Jwift_SheetOpaque' : 'Jwift_SheetGlass';
+    // Glass at every height (Material is never 'Elevated' here): the shape alone changes at the large detent.
     const shape = grows ? 'Jwift_SheetCard_Grows' : 'Jwift_SheetCard';
-    return `${shape} ${material}${motion}`;
+    return `${shape} Jwift_SheetGlass${motion}`;
   });
+
+  /** The white (light) / black (dark) face that fades in above half height, so the card reads Apple's own
+   *  "gradually becoming opaque... anchoring to the edge of the screen" without ever actually turning into a
+   *  flat `@Sheet` plate (Jack's departure, Sheets.md section 2). Continuous with the drag: the alpha tracks
+   *  the live percent full height, the same signal that drives the inset and the corners. */
+  readonly FaceStyle = computed(() => {
+    const dark = this._var('Dark') > 0.5;
+    const a = SheetFaceAlpha(this._percentFull());
+    return { Background: dark ? `rgba(0, 0, 0, ${a})` : `rgba(255, 255, 255, ${a})` };
+  });
+
+  readonly FaceClass = computed(() => (this._motion() ? 'Jwift_SheetFace Jwift_SheetFaceMotion' : 'Jwift_SheetFace'));
 
   /** The bottom corners' radius before the half-height cap: the form sheet's one radius, or the edge sheet's. */
   private readonly _bottomRadius = computed(() =>

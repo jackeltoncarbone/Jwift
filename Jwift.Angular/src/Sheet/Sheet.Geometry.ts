@@ -18,8 +18,12 @@ export const SHEET_METRICS = {
   /** Bottom corners never under 20 pt [C]. The corners themselves are the app's outer corner less the gap
    *  (`@JwiftSheetRadius`, `@JwiftScreenRadius`), and the 8 pt partial gap [C] is `@JwiftSheetInset`. */
   MinBottomRadius: 20,
-  /** Glass while the sheet is at most half way to full height, opaque above [C]. */
+  /** Glass at every height (Jack's departure from Apple's opaque above half height [C]): `GlassBelow` still
+   *  marks where the white/black face begins fading in over the glass, so the large detent reads as a big
+   *  panel rather than a flat plate. */
   GlassBelow: 0.5,
+  /** The face's alpha at the large detent: never fully opaque, so the glass under it still reads. */
+  FaceMax: 0.85,
   /** The dimming view's black: 0.2 in light, 0.48 in dark (`_alertControllerDimmingViewColor`) [C]. */
   DimLight: 0.2,
   DimDark: 0.48,
@@ -91,6 +95,14 @@ export const Clamp01 = (v: number): number => (v <= 0 ? 0 : v >= 1 ? 1 : v);
 export function PercentFullHeight(height: number, medium: number, large: number): number {
   if (large <= medium) return height >= large ? 1 : 0;
   return Clamp01((height - medium) / (large - medium));
+}
+
+/** The white (light) / black (dark) face's alpha (Jack's departure from Apple's opaque `@Sheet` above half
+ *  height, Sheets.md section 2): 0 at `GlassBelow` and below, rising to `FaceMax` at a full height, continuous
+ *  with the drag since it is only ever a function of the live percent full height. */
+export function SheetFaceAlpha(percentFull: number): number {
+  const t = Clamp01((percentFull - SHEET_METRICS.GlassBelow) / (1 - SHEET_METRICS.GlassBelow));
+  return Math.round(t * SHEET_METRICS.FaceMax * 1000) / 1000;
 }
 
 /** The side and bottom gap for a percent full height: the partial gap, closing to 0 at the large detent [C]. */

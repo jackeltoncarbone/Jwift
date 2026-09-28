@@ -83,15 +83,31 @@ Jwift_SheetCard_Grows : Jwift_SheetCard {
 Jwift_SheetCard_Inspector : Jwift_SheetCard {
   PanClaim: None
 }
-// Below half way to full height the sheet is Liquid Glass; above it, the opaque sheet background [C]. The sheet's
-// subvariant drops the outer refraction and the edge bleed's reach and keeps the drop shadow (Apple/Sheets.md) [C].
+// Jack's experiment (2026-09-28), a large panel's own frost: a big sheet is not a small pill, and Apple's own
+// large materials read with a heavier frost than the Automatic ceiling a control or a card keeps (regular
+// glass ramps 1.33 to 4 pt by span, Core/Glass.Pipeline.ts `GlassBlurRadius`; measured 11.6 px at 3x = ~3.9 pt
+// on large glass, Jaui Core/Glass.Jss.md). Doubled, through the existing custom blur lane (`GlassBlur`) rather
+// than a new mechanism, and never touching `GlassFrost` itself or any control, card or the tab bar: those keep
+// Automatic. A switch, sheets only, default on; `0 * <pt>` resolves to `0pt`, which `GlassBlurRadius` reads the
+// same as an unauthored `GlassBlur` (falls back to Automatic) -- one line reverts the experiment.
+@JwiftSheetHeavyFrost: 1
+@JwiftSheetHeavyFrostBlur: 8pt
+
+// Glass at every height (Jack's departure, 2026-09-28, from Apple's opaque background above half way to full
+// height [C]): the card's own material never turns into a flat gray plate; `Sheet.ts`'s `Jwift_SheetFace`
+// carries the "gradually becoming opaque" read instead, over glass that stays glass. The sheet's subvariant
+// drops the outer refraction and the edge bleed's reach and keeps the drop shadow (Apple/Sheets.md) [C].
 Jwift_SheetGlass : JwiftGlass {
   GlassOuterRefraction: None
   GlassBleed: None
+  GlassBlur: @JwiftSheetHeavyFrost * @JwiftSheetHeavyFrostBlur
 }
 // The form sheet in regular width floats as glass at every size: regular glass, no subvariant [C].
 Jwift_SheetGlass_Form : JwiftGlass {
+  GlassBlur: @JwiftSheetHeavyFrost * @JwiftSheetHeavyFrostBlur
 }
+// Solid, for the one surface that is deliberately not glass: the inspector column (Pages' and Keynote's own
+// solid trailing pane), never the edge-attached or form sheet card.
 Jwift_SheetOpaque {
   Glass: None
   Background: @Sheet
@@ -103,6 +119,25 @@ Jwift_SheetMotion {
   @Spring Height { Stiffness: 333.3, Damping: 36.5, Mass: 1 }
   @Spring BorderRadius { Stiffness: 333.3, Damping: 36.5, Mass: 1 }
   @Transition Background { Duration: 200ms }
+}
+
+// THE FACE: the white (light) / black (dark) veil `Sheet.ts`'s `FaceStyle` fades in over the card above half
+// height, so the large detent reads as Apple's own big panel without the card's own material ever leaving
+// glass. `Position: Placed` at the card's own size layers it over the glass, under the bar and the body (Layer
+// 0, so DOM order alone puts it first): a plain child, not a second material, per "always avoid glass on
+// glass" (Apple/Sheets.md). The color and its alpha are the component's, read off the live percent full
+// height, so it stays continuous with the drag; only the spring while settling is authored here.
+Jwift_SheetFace {
+  Position: Placed
+  Top: 0pt
+  Left: 0pt
+  Width: 100%
+  Height: 100%
+  Background: rgba(255, 255, 255, 0)
+  PointerEvents: None
+}
+Jwift_SheetFaceMotion {
+  @Spring Background { Stiffness: 333.3, Damping: 36.5, Mass: 1 }
 }
 
 // The body: everything the sheet presents, under the bar. It scrolls by default, so a sheet never runs past the
