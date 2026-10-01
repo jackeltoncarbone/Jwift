@@ -126,3 +126,6 @@ export {
 } from './EntryListEditor/EntryListEditor';
 export { Paper, JWIFT_PAPER_GEOMETRY } from './Paper/Paper';
 export { PaperRadius, RowRadius } from './Paper/Paper.Geometry';
+export { Popover, JWIFT_POPOVER_ROOM, type PopoverClosed } from './Popover/Popover';
+export { PlacePopover, type PopoverRect } from './Popover/Popover.Placement';
+export { PopoverMenu, type PopoverMenuItem } from './Popover/PopoverMenu';

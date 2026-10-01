@@ -55,7 +55,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   // lighting rows one by one.
   private readonly _indicator = viewChild<Jiv>('indicator');
   private readonly _canvasRef = inject(Jaui, { optional: true });
-  private readonly _rowIndicator = new RowIndicator(this.Node, () => this._canvasRef, () => this._indicator()?.Node);
+  private readonly _rowIndicator = new RowIndicator(() => this.Node, () => this._canvasRef, () => this._indicator()?.Node);
   protected readonly _IndicatorLayout = this._rowIndicator.IndicatorLayout;
   protected readonly _IndicatorClass = this._rowIndicator.IndicatorClass;
 

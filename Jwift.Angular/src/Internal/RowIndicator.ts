@@ -39,12 +39,16 @@ export class RowIndicator {
 
   /**
    * @param owner the menu's own Jiv handle — a row's box is placed RELATIVE to it (`Placed: Left/Top`).
+   *   Read lazily (a thunk, not the handle itself): a `JivHost` has its `Node` the moment it is
+   *   constructed, but a plain component's owner is often a VIEW CHILD (e.g. PopoverMenu's scroll
+   *   body), which resolves only after the first view pass — after rows have already registered, so
+   *   the indicator itself must tolerate being built before its owner is ready.
    * @param canvas the owner's injected `Jaui` (jaui-angular), read lazily.
    * @param indicatorNode the `<jiv #indicator>` the owner's template renders, read lazily so a
    *   "land, don't slide" SnapLayout can be set on first arrival.
    */
   constructor(
-    private readonly _owner: JivHandle,
+    private readonly _owner: () => JivHandle | null | undefined,
     private readonly _canvas: () => Jaui | null | undefined,
     private readonly _indicatorNode: () => JivHandle | undefined,
   ) {}
@@ -68,11 +72,14 @@ export class RowIndicator {
     return null;
   }
 
-  /** The indicator's box, relative to the owner, from the CURRENT geometry of both. */
-  private _indicatorBoxFor(row: RowIndicatorRow): RowIndicatorBox {
+  /** The indicator's box, relative to the owner, from the CURRENT geometry of both. `null` while the
+   *  owner has not resolved yet (nothing to be relative to). */
+  private _indicatorBoxFor(row: RowIndicatorRow): RowIndicatorBox | null {
+    const owner = this._owner();
+    if (!owner) return null;
     return {
-      Left: `${row.Node.X - this._owner.X}px`,
-      Top: `${row.Node.Y - this._owner.Y}px`,
+      Left: `${row.Node.X - owner.X}px`,
+      Top: `${row.Node.Y - owner.Y}px`,
       Width: `${row.Node.Width}px`,
       Height: `${row.Node.Height}px`,
     };
@@ -91,6 +98,7 @@ export class RowIndicator {
     const row = this._hovered();
     if (!row) return;
     const next = this._indicatorBoxFor(row);
+    if (!next) return;
     const now = this.IndicatorLayout();
     if (now && now.Left === next.Left && now.Top === next.Top
         && now.Width === next.Width && now.Height === next.Height) return;
@@ -103,7 +111,8 @@ export class RowIndicator {
     this._hovered.set(row);
     if (!row) { this._pressed.set(false); return; }
     // Placed: Left/Top are relative to the owner's own box.
-    this.IndicatorLayout.set(this._indicatorBoxFor(row));
+    const box = this._indicatorBoxFor(row);
+    if (box) this.IndicatorLayout.set(box);
     // Arriving from nowhere: land on the row and fade in. Between rows: slide.
     const ind = this._indicatorNode();
     if (ind && !was) {
