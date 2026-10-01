@@ -4,6 +4,7 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   forwardRef,
   inject,
   input,
@@ -278,6 +279,13 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('TokenSentence', TokenSentenceJss, 'Jwift_TokenSentence', () => 'Jwift_TokenSentence');
+    // Every piece paints Position: Placed (the pills, underlines, text runs, the "+" — `_rect()`'s own
+    // shape), which takes NO part in a parent's intrinsic/auto height the way a Flow child would (Placed
+    // children are out of flow for sizing, same as CSS absolute positioning). Nothing else reports this
+    // host's own height, so a consumer that lets it size by content (Height: Auto/MinContent, never a
+    // fixed px/pt) collapsed to zero — this is that report, straight off the same LayoutSentence the
+    // pieces themselves are placed from, so wrapping to two or three lines grows the row for real.
+    effect(() => this.SetStyleOverride({ Height: `${this._layout().Height}pt` }));
   }
 
   ngOnInit(): void {
