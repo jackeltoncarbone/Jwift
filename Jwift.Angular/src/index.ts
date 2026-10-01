@@ -134,3 +134,5 @@ export {
   LayoutSentence, type SentenceToken, type SentenceTokenKind,
 } from './TokenSentence/TokenSentence.Layout';
 export { NumberField, type NumberFieldUnit, type NumberFieldRow } from './NumberField/NumberField';
+export { AngleDial } from './AngleDial/AngleDial';
+export { Snap as AngleSnap } from './AngleDial/AngleDial.Logic';
