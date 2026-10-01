@@ -18,6 +18,7 @@ import { Jaui, Jiv, JSS_REGISTRY } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 import PaperJss from '../Paper/Paper.jss';
+import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverJss from './Popover.jss';
 import { PlacePopover, type PopoverPlacement, type PopoverRect } from './Popover.Placement';
 
@@ -124,6 +125,10 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     // registry too, the same way a sheet reaches across to borrow another component's classes
     // (`JwiftStyleLoader.Ensure(registry, 'GlassDropdown', GlassDropdownJss)` is the house pattern).
     this._styleLoader.Ensure(this._jss, 'Paper', PaperJss);
+    // Jwift_PopoverSurface's own radius is @JwiftDropdownRadius, declared in GlassDropdown.jss (the
+    // house menu/popover chain's one shared number) — ensured here rather than left to whatever
+    // content happens to be projected, since not every Popover holds a PopoverMenu.
+    this._styleLoader.Ensure(this._jss, 'GlassDropdown', GlassDropdownJss);
     effect(() => {
       const p = this._placement();
       const patch: Record<string, unknown> = { Width: `${this.Width()}pt` };
