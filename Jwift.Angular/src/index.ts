@@ -124,3 +124,5 @@ export { SelectMark } from './SelectMark/SelectMark';
 export {
   EntryListEditor, type EntryListEditorRowContext,
 } from './EntryListEditor/EntryListEditor';
+export { Paper, JWIFT_PAPER_GEOMETRY } from './Paper/Paper';
+export { PaperRadius, RowRadius } from './Paper/Paper.Geometry';
