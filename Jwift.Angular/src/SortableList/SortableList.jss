@@ -71,7 +71,7 @@ Jwift_SortableRow_Selected {
   Background: @GoldWash
 }
 Jwift_SortableRow_InSection {
-  MarginLeft: 18pt
+  Margin: 0pt 0pt 0pt 18pt
 }
 
 // r = 0.25 -> Stiffness 632, Damping 50 (FlexMovement.TuneSpring): the lift grows into place.
