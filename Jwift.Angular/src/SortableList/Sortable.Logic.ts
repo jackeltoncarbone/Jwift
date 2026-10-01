@@ -40,17 +40,16 @@ export function Target(entries: readonly SortableEntry[], liftedId: string, fing
     }
   }
 
+  // The plain midpoint rule already lands a finger past an open section's last row at that section's
+  // tail with no special case: once the finger passes the last row's own midpoint, THAT row stops
+  // matching and whatever comes next (a following top-level entry, or nothing — the absolute tail)
+  // is what the insertion point lands before, which IS "after the section's last row".
   const liftedIsSection = entries.find((e) => e.Id === liftedId)?.Kind === 'SectionHeader';
-  for (let i = 0; i < entries.length; i++) {
-    const e = entries[i];
+  for (const e of entries) {
     if (e.Id === liftedId) continue;
     if (liftedIsSection && e.Kind === 'Row' && e.SectionId !== null) continue; // inside someone else's section
     const mid = e.Y + e.Height / 2;
-    // A little grace past a row's own midpoint for the LAST entry of an open section, so a finger
-    // resting just past its bottom edge still targets the section's tail rather than falling through
-    // to whatever comes after it.
-    const grace = (i === entries.length - 1 || entries[i + 1]?.SectionId !== e.SectionId) ? 8 : 0;
-    if (fingerY < mid + grace) return { Index: entries.indexOf(e), IntoSection: null };
+    if (fingerY < mid) return { Index: entries.indexOf(e), IntoSection: null };
   }
   return { Index: entries.length, IntoSection: null };
 }
