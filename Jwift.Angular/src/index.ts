@@ -138,3 +138,6 @@ export { AngleDial } from './AngleDial/AngleDial';
 export { Snap as AngleSnap } from './AngleDial/AngleDial.Logic';
 export { SwipeRow } from './Swipe/SwipeRow';
 export { type SwipeAction } from './Swipe/Swipe.Logic';
+export { SortableList, type SortableReorder } from './SortableList/SortableList';
+export { SortableSection } from './SortableList/SortableSection';
+export { SortableRow } from './SortableList/SortableRow';
