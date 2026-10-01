@@ -3,7 +3,6 @@ import {
   Component,
   OnDestroy,
   OnInit,
-  computed,
   effect,
   forwardRef,
   inject,
@@ -14,8 +13,8 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Jaui, Jiv, JSS_REGISTRY } from 'jaui-angular';
-import type { JivHandle } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
+import { RowIndicator, type RowIndicatorRow } from '../Internal/RowIndicator';
 import GlassDropdownJss from './GlassDropdown.jss';
 
 /** The shortest a capped menu is allowed to be: the glass's 6pt padding, three 44pt rows and the two
@@ -23,12 +22,9 @@ import GlassDropdownJss from './GlassDropdown.jss';
  *  than this overhangs rather than shrinking into a stub. */
 const PANEL_FLOOR = 6 + 3 * 44 + 2 * 6 + 6;
 
-/** A row of an open menu, as the dropdown sees it: a hit rect plus the two
- *  facts that change how the shared indicator draws over it. */
-export interface GlassDropdownRow {
-  readonly Node: JivHandle;
-  IsDisabled(): boolean;
-}
+/** A row of an open menu, as the dropdown sees it. Kept as its own name for the components (and specs)
+ *  already written against it; the shape now lives in `Internal/RowIndicator` so PopoverMenu shares it. */
+export type GlassDropdownRow = RowIndicatorRow;
 
 @Component({
   selector: 'glass-dropdown',
@@ -53,87 +49,18 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   readonly IsOpen = this._open.asReadonly();
   readonly Page   = this._page.asReadonly();
 
-  // The open menu has ONE highlight, shared by every row. Rows register
-  // here; the dropdown hit-tests the pointer against their rects and
-  // springs the indicator onto the row under it, so moving down a menu
-  // slides one pill instead of lighting rows one by one.
+  // The open menu has ONE highlight, shared by every row — RowIndicator (Jack: PopoverMenu reuses the
+  // exact same sliding pill). Rows register there; it hit-tests the pointer against their rects and
+  // springs the indicator onto the row under it, so moving down a menu slides one pill instead of
+  // lighting rows one by one.
   private readonly _indicator = viewChild<Jiv>('indicator');
-  private readonly _rows = new Set<GlassDropdownRow>();
-  private readonly _hovered = signal<GlassDropdownRow | null>(null);
-  private readonly _pressed = signal(false);
-  protected readonly _IndicatorLayout = signal<{ Left: string; Top: string; Width: string; Height: string } | undefined>(undefined);
-  protected readonly _IndicatorClass = computed(() => {
-    const row = this._hovered();
-    if (!row) return 'Jwift_GlassDropdownIndicator';
-    return this._pressed() ? 'Jwift_GlassDropdownIndicator_Pressed' : 'Jwift_GlassDropdownIndicator_On';
-  });
+  private readonly _canvasRef = inject(Jaui, { optional: true });
+  private readonly _rowIndicator = new RowIndicator(this.Node, () => this._canvasRef, () => this._indicator()?.Node);
+  protected readonly _IndicatorLayout = this._rowIndicator.IndicatorLayout;
+  protected readonly _IndicatorClass = this._rowIndicator.IndicatorClass;
 
-  RegisterRow(row: GlassDropdownRow): void { this._rows.add(row); }
-  UnregisterRow(row: GlassDropdownRow): void {
-    this._rows.delete(row);
-    if (this._hovered() === row) this._hovered.set(null);
-  }
-
-  private _rowAt(clientX: number, clientY: number): GlassDropdownRow | null {
-    const canvas = this._canvasRef?.Canvas;
-    if (!canvas) return null;
-    const [x, y] = canvas.ClientToNodePoint(clientX, clientY);
-    for (const row of this._rows) {
-      if (row.IsDisabled()) continue;
-      const n = row.Node;
-      if (n.Width <= 0 || n.Height <= 0) continue;
-      if (x >= n.X && x < n.X + n.Width && y >= n.Y && y < n.Y + n.Height) return row;
-    }
-    return null;
-  }
-
-  /** The indicator's box, relative to the dropdown, from the CURRENT geometry of both. */
-  private _indicatorBoxFor(row: GlassDropdownRow): { Left: string; Top: string; Width: string; Height: string } {
-    return {
-      Left: `${row.Node.X - this.Node.X}px`,
-      Top: `${row.Node.Y - this.Node.Y}px`,
-      Width: `${row.Node.Width}px`,
-      Height: `${row.Node.Height}px`,
-    };
-  }
-
-  /**
-   * Re-place the indicator on the row it is already on.
-   *
-   * WHY THIS EXISTS. `Left` is `row.X - dropdown.X`, read ONCE when the pointer enters a row. The open
-   * menu animates Width and Height over 280ms and is anchored `Right: 0`, so while it grows the
-   * dropdown's own X is still travelling LEFT while the rows are already laid out at their final
-   * places. Hover a row inside that window and a stale offset is baked in, and the highlight sits off
-   * to one side for as long as it stays on that row - horizontally only, because only the width is
-   * animating. Jack: "sometimes the indicator is like offset the wrong way to the left ... I'm guessing
-   * it's because the menu's mid-growing. But it decides a position or something."
-   *
-   * So the box is recomputed while the menu is still moving rather than trusted from one frame.
-   */
-  private _replaceIndicator(): void {
-    const row = this._hovered();
-    if (!row) return;
-    const next = this._indicatorBoxFor(row);
-    const now = this._IndicatorLayout();
-    if (now && now.Left === next.Left && now.Top === next.Top
-        && now.Width === next.Width && now.Height === next.Height) return;
-    this._IndicatorLayout.set(next);
-  }
-
-  private _hover(row: GlassDropdownRow | null): void {
-    const was = this._hovered();
-    if (row === was) return;
-    this._hovered.set(row);
-    if (!row) { this._pressed.set(false); return; }
-    // Placed: Left/Top are relative to the dropdown's own box.
-    this._IndicatorLayout.set(this._indicatorBoxFor(row));
-    // Arriving from nowhere: land on the row and fade in. Between rows: slide.
-    const ind = this._indicator()?.Node;
-    if (ind && !was) {
-      ind.SnapLayout = true;
-      requestAnimationFrame(() => { ind.SnapLayout = false; });
-    }
-  }
+  RegisterRow(row: GlassDropdownRow): void { this._rowIndicator.RegisterRow(row); }
+  UnregisterRow(row: GlassDropdownRow): void { this._rowIndicator.UnregisterRow(row); }
 
   /** Guards opening via a host (glass-background) click. A glass dropdown that
    *  would open to NO content renders as a flat empty sliver, which is the bug
@@ -148,7 +75,6 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
    *  of opening to the empty root. null (default) opens the root page. */
   readonly defaultPage = input<string | null>(null);
 
-  private readonly _canvasRef = inject(Jaui, { optional: true });
   /** INJECTED, never the global: this dropdown mounts inside surfaces that server-render, and the
    *  document-level listeners below reached for a global that a server render does not define. On
    *  the server they bind to the render's own document and simply never fire. */
@@ -238,38 +164,21 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
         else this.Close();
       }
     };
-    const onDocMove = (e: PointerEvent) => {
-      if (!this._open()) return;
-      this._hover(this._rowAt(e.clientX, e.clientY));
-    };
-    const onDocPress = (e: PointerEvent) => {
-      if (!this._open()) return;
-      const row = this._rowAt(e.clientX, e.clientY);
-      this._hover(row);
-      this._pressed.set(row !== null);
-    };
-    const onDocRelease = () => { if (this._pressed()) this._pressed.set(false); };
-    const onDocLeave = () => this._hover(null);
     // A window that gets shorter while a menu is open takes room away from it, and the cap is only as
     // current as its last measurement. Re-measure rather than leave a menu sized for a window that is
     // gone. Same reason the safe inset is re-read on resize one layer down, in Jaui's own host.
     const onResize = () => { if (this._open()) this._fitToRoom(); };
+    // onDocDown is bound FIRST: an outside tap must close the menu before the indicator's own
+    // pointerdown listener (inside Bind, registered next) gets a chance to hover/press a row that is
+    // about to disappear — the exact order the un-extracted listeners ran in.
     this._doc.addEventListener('pointerdown', onDocDown, true);
-    this._doc.addEventListener('pointerdown', onDocPress, true);
-    this._doc.addEventListener('pointermove', onDocMove, true);
-    this._doc.addEventListener('pointerup', onDocRelease, true);
-    this._doc.addEventListener('pointercancel', onDocRelease, true);
-    this._doc.addEventListener('pointerleave', onDocLeave, true);
+    const unbindIndicator = this._rowIndicator.Bind(this._doc, () => this._open());
     this._doc.addEventListener('keydown', onKey);
     this._doc.defaultView?.addEventListener('resize', onResize, { passive: true });
     this._unbindDoc = () => {
       this._doc.defaultView?.removeEventListener('resize', onResize);
       this._doc.removeEventListener('pointerdown', onDocDown, true);
-      this._doc.removeEventListener('pointerdown', onDocPress, true);
-      this._doc.removeEventListener('pointermove', onDocMove, true);
-      this._doc.removeEventListener('pointerup', onDocRelease, true);
-      this._doc.removeEventListener('pointercancel', onDocRelease, true);
-      this._doc.removeEventListener('pointerleave', onDocLeave, true);
+      unbindIndicator();
       this._doc.removeEventListener('keydown', onKey);
     };
     // The node is attached and its rect is watched, so `Open()`'s measure will read a real rect
@@ -363,7 +272,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
       const n = this.Node;
       agreeing = (n.X === lastX && n.Width === lastW) ? agreeing + 1 : 0;
       lastX = n.X; lastW = n.Width;
-      this._replaceIndicator();
+      this._rowIndicator.Replace();
       // Re-measure alongside the indicator. `Open()` measures from the CLOSED pill's rect, which is the
       // right top edge (the slot holds the closed footprint and the panel is `Top: 0` on it) but is one
       // frame old; this settles it against the open placement. Idempotent by construction — the cap
@@ -397,7 +306,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     this._cap = null;
     this.SetStyleOverride({ MaxHeight: 'none' });
     this._holdTopLayerWhileClosing();
-    this._open.set(false); this._page.set(null); this._hovered.set(null); this._pressed.set(false);
+    this._open.set(false); this._page.set(null); this._rowIndicator.Reset();
     // The output half of [(open)]. Emitted from Close() and Open() rather than from the click handler,
     // so every route into the state - a tap, the escape key, an outside click, the controlled input -
     // reports it. Same reason the open paths were unified.
