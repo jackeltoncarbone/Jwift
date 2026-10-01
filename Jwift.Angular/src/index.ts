@@ -136,3 +136,5 @@ export {
 export { NumberField, type NumberFieldUnit, type NumberFieldRow } from './NumberField/NumberField';
 export { AngleDial } from './AngleDial/AngleDial';
 export { Snap as AngleSnap } from './AngleDial/AngleDial.Logic';
+export { SwipeRow } from './Swipe/SwipeRow';
+export { type SwipeAction } from './Swipe/Swipe.Logic';

@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { Jiv, JSS_REGISTRY } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
+import { SWIPE_GROUP, SwipeGroup } from '../Swipe/SwipeController';
 import PaperJss from './Paper.jss';
 import { PaperRadius } from './Paper.Geometry';
 
@@ -46,6 +47,8 @@ export const JWIFT_PAPER_GEOMETRY = new InjectionToken<Signal<{ Radius: number; 
   providers: [
     { provide: Jiv, useExisting: forwardRef(() => Paper) },
     { provide: JWIFT_PAPER_GEOMETRY, useFactory: () => inject(Paper).Geometry },
+    // One open swiped row at a time per sheet of paper — see List's own provider for the same token.
+    { provide: SWIPE_GROUP, useFactory: () => new SwipeGroup() },
   ],
 })
 export class Paper extends JivHost implements OnInit, OnDestroy {

@@ -16,6 +16,7 @@ import { JivHost } from '../Internal/JivHost';
 import ListJss from './List.jss';
 import { LIST_COMFORT } from './List.Comfort';
 import { JWIFT_MATERIAL, type JwiftMaterial } from '../Internal/Material';
+import { SWIPE_GROUP, SwipeGroup } from '../Swipe/SwipeController';
 
 /**
  * Half the switch, which is a 31pt capsule: `radius = JWIFT_CONTROL_RADIUS + comfort` = 31.5pt.
@@ -68,6 +69,9 @@ export const JWIFT_LIST_COMFORT = 16;
     { provide: Jiv, useExisting: forwardRef(() => List) },
     { provide: LIST_COMFORT, useFactory: (l: List) => l.comfort, deps: [forwardRef(() => List)] },
     { provide: JWIFT_MATERIAL, useFactory: (l: List) => l.Material, deps: [forwardRef(() => List)] },
+    // One open swiped row at a time per section — a fresh group per <list>, so opening one closes
+    // whatever else was open in the SAME section only.
+    { provide: SWIPE_GROUP, useFactory: () => new SwipeGroup() },
   ],
 })
 export class List extends JivHost implements OnInit, OnDestroy {
