@@ -129,3 +129,7 @@ export { PaperRadius, RowRadius } from './Paper/Paper.Geometry';
 export { Popover, JWIFT_POPOVER_ROOM, type PopoverClosed } from './Popover/Popover';
 export { PlacePopover, type PopoverRect } from './Popover/Popover.Placement';
 export { PopoverMenu, type PopoverMenuItem } from './Popover/PopoverMenu';
+export { TokenSentence } from './TokenSentence/TokenSentence';
+export {
+  LayoutSentence, type SentenceToken, type SentenceTokenKind,
+} from './TokenSentence/TokenSentence.Layout';

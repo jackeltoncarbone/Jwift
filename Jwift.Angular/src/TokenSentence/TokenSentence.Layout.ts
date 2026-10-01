@@ -1,0 +1,305 @@
+/**
+ * Pure layout math for `<token-sentence>`. Modeled on Jaui's `Jinput/Jinput.Layout.ts` — no Angular, no
+ * jaui imports, so it is cheap to unit test with a stub measurer and reusable anywhere a sentence needs
+ * to lay itself out (a thumbnail, a print render).
+ *
+ * UNITS. A tappable token (Word/Value/Who/Placeholder/Mirror/Problem) and a Badge are ATOMS: one piece,
+ * never split. `Text`/`Quiet` tokens split into smaller units first — a whitespace run, one unit per
+ * CJK character, or a run of anything else — because word order is free per language and ja/zh/ko break
+ * between characters rather than at spaces.
+ *
+ * BREAKS. A break is allowed after a whitespace unit, or between two units where either is CJK (unless
+ * kinsoku forbids starting a line with a closing punctuation mark or ending one with an opening mark).
+ * Units with no break between them are one WORD — the atomic thing the greedy wrapper places or wraps
+ * as a whole. The add button is glued to the last token: no break is ever allowed before it.
+ */
+
+export type SentenceTokenKind =
+  | 'Text' | 'Quiet' | 'Word' | 'Value' | 'Who' | 'Placeholder' | 'Mirror' | 'Problem' | 'Badge';
+
+export interface SentenceToken {
+  readonly Key: string;
+  readonly Text: string;
+  readonly Kind: SentenceTokenKind;
+  readonly Group?: number;
+  readonly Label?: string;
+}
+
+const TAPPABLE_KINDS: ReadonlySet<SentenceTokenKind> =
+  new Set(['Word', 'Value', 'Who', 'Placeholder', 'Mirror', 'Problem']);
+
+/** Whether a kind gets a hit rect and responds to a tap — every kind except Text, Quiet and Badge. */
+export const IsTappable = (kind: SentenceTokenKind): boolean => TAPPABLE_KINDS.has(kind);
+
+/** Han, Hiragana, Katakana, plus the CJK Symbols/Punctuation and Halfwidth/Fullwidth Forms blocks —
+ *  scripts that read without spaces between words, so they break per character instead of per word. */
+const CJK_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}　-〿＀-￯]/u;
+export const IsCjkChar = (ch: string): boolean => CJK_RE.test(ch);
+
+/** Kinsoku shori: characters that may never START a line (closing brackets, small kana, dashes,
+ *  terminal punctuation) and characters that may never END one (opening brackets). */
+const NEVER_BREAK_BEFORE = '、。，．・：；？！ー」』）】〕〉》ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ々';
+const NEVER_BREAK_AFTER = '「『（【〔〈《';
+
+export interface SentenceLayoutOptions {
+  readonly WrapWidth: number;
+  readonly LineHeight: number;
+  readonly FontSize: number;
+  readonly Measure: (text: string, weight: number) => number;
+  readonly ShowAdd: boolean;
+}
+
+export interface SentencePiece {
+  readonly TokenIndex: number;
+  readonly Text: string;
+  readonly X: number;
+  readonly Y: number;
+  readonly Width: number;
+  readonly Row: number;
+}
+
+/** One hit rect per tappable token — already expanded past the visible pill (see `LayoutSentence`'s doc). */
+export interface SentenceHit {
+  readonly TokenIndex: number;
+  readonly X: number;
+  readonly Y: number;
+  readonly Width: number;
+  readonly Height: number;
+}
+
+export interface SentenceAddBox {
+  readonly X: number;
+  readonly Y: number;
+  readonly Width: number;
+  readonly Height: number;
+  readonly Row: number;
+  readonly Hit: { readonly X: number; readonly Y: number; readonly Width: number; readonly Height: number };
+}
+
+export interface SentenceLayoutResult {
+  readonly Pieces: readonly SentencePiece[];
+  readonly Hits: readonly SentenceHit[];
+  readonly Add: SentenceAddBox | null;
+  readonly Height: number;
+}
+
+const WEIGHT_OF: Record<SentenceTokenKind, number> = {
+  Text: 400, Quiet: 400, Word: 400, Value: 600, Who: 700,
+  Placeholder: 600, Mirror: 600, Problem: 700, Badge: 600,
+};
+
+const ADD_GAP = 4;
+const ADD_WIDTH = 28;
+const ADD_HEIGHT = 26;
+/** Sentinel token index for the synthetic add-button unit — never a real token position. */
+const ADD_TOKEN_INDEX = -1;
+
+interface Unit {
+  readonly TokenIndex: number;
+  readonly Text: string;
+  readonly Width: number;
+  readonly IsWhitespace: boolean;
+  readonly IsCjk: boolean;
+  readonly IsAtom: boolean;
+  readonly IsAdd: boolean;
+  readonly GapBefore: number;
+}
+
+/** Split a Text/Quiet token's string into whitespace runs, lone CJK characters, and runs of anything
+ *  else — the three unit kinds `LayoutSentence`'s break rules read. */
+const _splitTextQuiet = (text: string): { Text: string; IsWhitespace: boolean; IsCjk: boolean }[] => {
+  const out: { Text: string; IsWhitespace: boolean; IsCjk: boolean }[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    if (/\s/.test(ch)) {
+      let j = i + 1;
+      while (j < text.length && /\s/.test(text[j])) j++;
+      out.push({ Text: text.slice(i, j), IsWhitespace: true, IsCjk: false });
+      i = j;
+    } else if (IsCjkChar(ch)) {
+      out.push({ Text: ch, IsWhitespace: false, IsCjk: true });
+      i++;
+    } else {
+      let j = i + 1;
+      while (j < text.length && !/\s/.test(text[j]) && !IsCjkChar(text[j])) j++;
+      out.push({ Text: text.slice(i, j), IsWhitespace: false, IsCjk: false });
+      i = j;
+    }
+  }
+  return out;
+};
+
+const _buildUnits = (
+  tokens: readonly SentenceToken[],
+  measure: (t: string, w: number) => number,
+  showAdd: boolean,
+): Unit[] => {
+  const units: Unit[] = [];
+  tokens.forEach((token, tokenIndex) => {
+    const weight = WEIGHT_OF[token.Kind];
+    if (token.Kind === 'Text' || token.Kind === 'Quiet') {
+      for (const part of _splitTextQuiet(token.Text)) {
+        units.push({
+          TokenIndex: tokenIndex, Text: part.Text, Width: measure(part.Text, weight),
+          IsWhitespace: part.IsWhitespace, IsCjk: part.IsCjk, IsAtom: false, IsAdd: false, GapBefore: 0,
+        });
+      }
+    } else {
+      // Tappable kinds and Badge: one atom, carrying the token's FULL text, never split.
+      units.push({
+        TokenIndex: tokenIndex, Text: token.Text, Width: measure(token.Text, weight),
+        IsWhitespace: false, IsCjk: false, IsAtom: true, IsAdd: false, GapBefore: 0,
+      });
+    }
+  });
+  if (showAdd) {
+    units.push({
+      TokenIndex: ADD_TOKEN_INDEX, Text: '', Width: ADD_WIDTH,
+      IsWhitespace: false, IsCjk: false, IsAtom: true, IsAdd: true, GapBefore: ADD_GAP,
+    });
+  }
+  return units;
+};
+
+/** True when a break is allowed BETWEEN `a` and `b`, `b` immediately following `a`. */
+const _breakAllowed = (a: Unit, b: Unit): boolean => {
+  if (b.IsAdd) return false; // glued to the last token — never its own word.
+  if (a.IsWhitespace) return true;
+  if (a.IsCjk || b.IsCjk) {
+    const lastCh = a.Text[a.Text.length - 1];
+    const firstCh = b.Text[0];
+    if (firstCh && NEVER_BREAK_BEFORE.includes(firstCh)) return false;
+    if (lastCh && NEVER_BREAK_AFTER.includes(lastCh)) return false;
+    return true;
+  }
+  return false;
+};
+
+interface Word { readonly Units: readonly Unit[]; readonly Ink: number; }
+
+/** A word's ink width excludes ONE trailing whitespace unit, as Jinput's does — a space hanging past
+ *  the wrap edge never forces a line break on its own. */
+const _finishWord = (units: readonly Unit[]): Word => {
+  let ink = 0;
+  for (const u of units) ink += u.GapBefore + u.Width;
+  const last = units[units.length - 1];
+  if (last.IsWhitespace) ink -= last.Width;
+  return { Units: units, Ink: ink };
+};
+
+const _groupWords = (units: readonly Unit[]): Word[] => {
+  const words: Word[] = [];
+  let cur: Unit[] = [];
+  for (let i = 0; i < units.length; i++) {
+    cur.push(units[i]);
+    const next = units[i + 1];
+    if (!next || _breakAllowed(units[i], next)) {
+      words.push(_finishWord(cur));
+      cur = [];
+    }
+  }
+  return words;
+};
+
+interface Placed { readonly Unit: Unit; readonly X: number; readonly Y: number; readonly Row: number; }
+
+/**
+ * Lay a token sentence out, atoms unsplit, words wrapped greedily, ja/zh/ko breaking per character.
+ *
+ * `Measure(text, weight)` returns the text's ink width in px at the sentence's own `FontSize` — one
+ * size for the whole sentence (a Badge's own smaller rendered size is the component's paint concern,
+ * not this layout's; its WIDTH here is measured the same as everything else, so its hit area is never
+ * smaller than its neighbours expect).
+ */
+export function LayoutSentence(
+  tokens: readonly SentenceToken[],
+  opts: SentenceLayoutOptions,
+): SentenceLayoutResult {
+  const { LineHeight, FontSize, Measure, ShowAdd } = opts;
+  const wrapWidth = opts.WrapWidth > 0 ? opts.WrapWidth : Infinity;
+
+  if (tokens.length === 0 && !ShowAdd) {
+    return { Pieces: [], Hits: [], Add: null, Height: 0 };
+  }
+
+  const units = _buildUnits(tokens, Measure, ShowAdd);
+  const words = _groupWords(units);
+
+  const placed: Placed[] = [];
+  let x = 0, y = 0, row = 0;
+
+  for (const word of words) {
+    if (x > 0 && x + word.Ink > wrapWidth) { x = 0; y += LineHeight; row++; }
+
+    const hasSplittable = word.Units.some((u) => !u.IsAtom);
+    if (x === 0 && word.Ink > wrapWidth && hasSplittable) {
+      // Emergency per-grapheme split: an over-wide word that isn't purely atoms. Atoms inside it
+      // (rare — a tappable token glued to overflowing text with no break) still never split.
+      for (const u of word.Units) {
+        if (u.IsAtom) {
+          if (x > 0 && x + u.GapBefore + u.Width > wrapWidth) { x = 0; y += LineHeight; row++; }
+          placed.push({ Unit: u, X: x + u.GapBefore, Y: y, Row: row });
+          x += u.GapBefore + u.Width;
+          continue;
+        }
+        const weight = WEIGHT_OF[tokens[u.TokenIndex]?.Kind ?? 'Text'];
+        for (const g of Array.from(u.Text)) {
+          const w = Measure(g, weight);
+          if (x > 0 && x + w > wrapWidth) { x = 0; y += LineHeight; row++; }
+          placed.push({ Unit: { ...u, Text: g, Width: w, GapBefore: 0 }, X: x, Y: y, Row: row });
+          x += w;
+        }
+      }
+      continue;
+    }
+
+    // Whole word on this row — may overflow if it is a single oversize atom; it then sits alone
+    // (the next word's own over-wrap check fires immediately, since x is already past wrapWidth).
+    for (const u of word.Units) {
+      placed.push({ Unit: u, X: x + u.GapBefore, Y: y, Row: row });
+      x += u.GapBefore + u.Width;
+    }
+  }
+
+  // One piece per (TokenIndex x Row): merge units from the same token placed contiguously.
+  const pieces: SentencePiece[] = [];
+  let add: SentenceAddBox | null = null;
+  for (const p of placed) {
+    if (p.Unit.IsAdd) {
+      add = {
+        X: p.X, Y: p.Y, Width: ADD_WIDTH, Height: ADD_HEIGHT, Row: p.Row,
+        Hit: { X: p.X - 8, Y: p.Y - 9, Width: ADD_WIDTH + 16, Height: ADD_HEIGHT + 18 },
+      };
+      continue;
+    }
+    const last = pieces[pieces.length - 1];
+    if (last && last.TokenIndex === p.Unit.TokenIndex && last.Row === p.Row
+        && Math.abs((last.X + last.Width) - p.X) < 0.01) {
+      pieces[pieces.length - 1] = { ...last, Text: last.Text + p.Unit.Text, Width: last.Width + p.Unit.Width };
+    } else {
+      pieces.push({ TokenIndex: p.Unit.TokenIndex, Text: p.Unit.Text, X: p.X, Y: p.Y, Width: p.Unit.Width, Row: p.Row });
+    }
+  }
+
+  // Hits: one per tappable token's piece — the visible pill (X-3, Y+(LH-(1.2FS+2))/2, W+6, 1.2FS+2),
+  // expanded again by 3 horizontally and 9 vertically for the actual hit target (the concept's `.tk::after`).
+  const hits: SentenceHit[] = [];
+  for (const piece of pieces) {
+    const kind = tokens[piece.TokenIndex]?.Kind;
+    if (!kind || !IsTappable(kind)) continue;
+    const pillHeight = 1.2 * FontSize + 2;
+    const pillY = piece.Y + (LineHeight - pillHeight) / 2;
+    const pillX = piece.X - 3;
+    const pillWidth = piece.Width + 6;
+    hits.push({
+      TokenIndex: piece.TokenIndex,
+      X: pillX - 3, Y: pillY - 9, Width: pillWidth + 6, Height: pillHeight + 18,
+    });
+  }
+
+  const maxRow = placed.reduce((m, p) => Math.max(m, p.Row), 0);
+  const height = placed.length === 0 ? 0 : (maxRow + 1) * LineHeight;
+
+  return { Pieces: pieces, Hits: hits, Add: add, Height: height };
+}
