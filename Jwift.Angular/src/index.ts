@@ -133,3 +133,4 @@ export { TokenSentence } from './TokenSentence/TokenSentence';
 export {
   LayoutSentence, type SentenceToken, type SentenceTokenKind,
 } from './TokenSentence/TokenSentence.Layout';
+export { NumberField, type NumberFieldUnit, type NumberFieldRow } from './NumberField/NumberField';
