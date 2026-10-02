@@ -20,7 +20,7 @@ import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 import PaperJss from '../Paper/Paper.jss';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverJss from './Popover.jss';
-import { PlacePopover, type PopoverPlacement, type PopoverRect } from './Popover.Placement';
+import { PlacePopover, PointInRect, type PopoverPlacement, type PopoverRect } from './Popover.Placement';
 
 export type { PopoverRect };
 
@@ -153,7 +153,15 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         const rect = el.getBoundingClientRect();
         const px = e.clientX - rect.left, py = e.clientY - rect.top;
         const n = this.Node;
-        if (px >= n.X && px < n.X + n.Width && py >= n.Y && py < n.Y + n.Height) return;
+        if (PointInRect(px, py, { X: n.X, Y: n.Y, Width: n.Width, Height: n.Height })) return;
+        // The toggle bug (LaneM.md): a press on the ANCHOR — the button that opened this popover —
+        // used to read as "outside" (the anchor lives outside the panel's own Node), so this fired
+        // close() on pointerdown, and the anchor's own click handler reopened it right after on the
+        // same gesture: close-then-reopen read as "nothing happened" on a second press, or a visible
+        // flicker. The anchor is where a press is MEANT to toggle, not dismiss — treat it as inside,
+        // same as the panel itself, and leave the toggle decision to the anchor's own click handler.
+        const anchor = this._resolveAnchor();
+        if (anchor && PointInRect(px, py, anchor)) return;
       }
       // Never swallowed: lane E's own field taps swallow what they need to.
       this.OpenChange.emit(false);

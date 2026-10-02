@@ -25,6 +25,14 @@ export interface PopoverPlacementInput {
   readonly PrevDown: boolean | null;
 }
 
+/** Whether a canvas-px point falls inside a rect, inclusive of its top/left edge, exclusive of its
+ *  bottom/right — the same half-open convention a hit-test uses everywhere else in the kit. Shared by
+ *  Popover's own outside-dismiss (LaneM.md's toggle fix: a press on the PANEL or the ANCHOR both read
+ *  as "inside", never a dismiss) so the geometry has one definition instead of two inline copies. */
+export function PointInRect(x: number, y: number, rect: PopoverRect): boolean {
+  return x >= rect.X && x < rect.X + rect.Width && y >= rect.Y && y < rect.Y + rect.Height;
+}
+
 export interface PopoverPlacement {
   readonly X: number;
   readonly Y: number;

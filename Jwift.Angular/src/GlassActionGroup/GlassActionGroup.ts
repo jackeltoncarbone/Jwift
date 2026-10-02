@@ -130,7 +130,12 @@ export interface GlassAction {
           }
         }
         @if (ShowEllipsis()) {
-          <jiv class="Jwift_GlassDropdownCell_Ellipsis" (click)="$event.stopPropagation(); dd.Open()">
+          <!-- Toggle(), not Open(): this click stops propagation (so the host's own toggle-safe
+               click handler below never sees it), so an un-toggled Open() here left a second press
+               on the ellipsis with nothing to do -- the cell unmounts the instant IsOpen() flips,
+               so a toggle-closed must happen on THIS press, not a re-press of a cell that is no
+               longer there. -->
+          <jiv class="Jwift_GlassDropdownCell_Ellipsis" (click)="$event.stopPropagation(); dd.Toggle()">
             <icon class="Jwift_GlassActionGlyph" Name="ellipsis" />
           </jiv>
         }
@@ -517,6 +522,9 @@ export class GlassActionGroup implements OnDestroy {
   private _Dispatch(action: GlassAction): void {
     if (action.Disabled) return;
     if (action.Page) {
+      // A press that is already showing this exact page closes rather than re-opening to the
+      // same place — the toggle every anchored trigger owes a second press (LaneM.md).
+      if (this._Dd?.IsOpen() && this._Dd?.Page() === action.Page) { this._Dd?.Close(); return; }
       this._Dd?.Open();
       this._Dd?.PushPage(action.Page);
       return;
@@ -533,6 +541,9 @@ export class GlassActionGroup implements OnDestroy {
     const page = this.AvatarPage();
     if (page) {
       event.stopPropagation();
+      // Same toggle as _Dispatch's own Page branch: a second press on an avatar that already opens
+      // straight to `page` closes it, rather than reopening to the page it is already showing.
+      if (this._Dd?.IsOpen() && this._Dd?.Page() === page) { this._Dd?.Close(); return; }
       this._Dd?.Open();
       this._Dd?.PushPage(page);
       return;
