@@ -20,7 +20,31 @@ Jwift_MediaTransportRow {
 Jwift_MediaTransportRow:Disabled {
   Opacity: 0.4
 }
+// Round 16: Drill's own redesigned player composes `<media-transport size="compact">` inside a centered
+// 3-slot row (where-pill / transport / mute) rather than floating alone — it must size to its own content,
+// not claim a fixed 260pt, or the "centered" slot stops being centered. A STANDALONE class, not a merge
+// onto `Jwift_MediaTransportRow` (MediaTransport.ts's own `RowClass` returns this ALONE in compact mode):
+// JSS's Length parser has no "auto" keyword to text-author (Jss.Conformance.spec.ts's own fault #2 --
+// "auto" throws in the worker on every tick), and an unset property falls through a multi-class merge to
+// whatever the OTHER class in the list already declared, so the only way to actually CLEAR the base's own
+// fixed 260pt is to never put both class names on the element together. Omitting Width here is what
+// leaves it truly unset (the engine's own schema default, content-sized). Gap 4pt: Apple sits the three
+// now-playing glyphs close together, not spread the way the original (bigger, standalone) row is.
+Jwift_MediaTransportRow_Compact {
+  Direction: Row
+  Justify: Center
+  Align: Center
+  Gap: 4pt
+}
+Jwift_MediaTransportRow_Compact:Disabled {
+  Opacity: 0.4
+}
 
+// Self-contained press, same reasoning as the row's own disabled dim above: the hover/press lift is
+// authored directly off the shared @JwiftVibrancyFill(Pressed) tokens (DisclosureRow.jss, FilterChip.jss,
+// Stepper.jss all do the same for the same reason) rather than extending JwiftPress, since this sheet
+// can't rely on load order. BorderRadius makes the lift read as a circle at the button's own box, matching
+// a bar button's 44pt hit floor everywhere else in the kit once the row is sized `compact`.
 Jwift_MediaTransportBtn {
   UserSelect: None
   Interactive: true
@@ -31,12 +55,33 @@ Jwift_MediaTransportBtn {
   Justify: Center
   Align: Center
   Opacity: 0.85
+  BorderRadius: 28pt
+  @Transition BackdropFilter { Duration: 140ms }
+}
+Jwift_MediaTransportBtn:Hover {
+  BackdropFilter: Vibrancy(@JwiftVibrancyFill)
+}
+Jwift_MediaTransportBtn:Active {
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
+}
+// Round 16: Apple's own now-playing size -- every button (not only the sides) shares one 44pt hit; only
+// the glyph itself grows for play/pause (Jwift_MediaTransportGlyphPrimary_Compact below).
+Jwift_MediaTransportBtn_Compact {
+  Width: 44pt
+  Height: 44pt
+  BorderRadius: 22pt
 }
 
 Jwift_MediaTransportBtnPrimary : Jwift_MediaTransportBtn {
   Width: 76pt
   Height: 76pt
   Opacity: 1
+  BorderRadius: 38pt
+}
+Jwift_MediaTransportBtnPrimary_Compact {
+  Width: 44pt
+  Height: 44pt
+  BorderRadius: 22pt
 }
 
 Jwift_MediaTransportGlyph {
@@ -45,9 +90,15 @@ Jwift_MediaTransportGlyph {
   FontWeight: 500
   Color: @Ink
 }
+Jwift_MediaTransportGlyph_Compact {
+  FontSize: 20pt
+}
 Jwift_MediaTransportGlyphPrimary {
   FontFamily: JwiftIcons
   FontSize: 32pt
   FontWeight: 900
   Color: @Ink
+}
+Jwift_MediaTransportGlyphPrimary_Compact {
+  FontSize: 28pt
 }

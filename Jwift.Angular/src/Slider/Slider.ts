@@ -66,6 +66,11 @@ export class Slider extends JivHost implements OnInit, OnDestroy {
   readonly snapToClick = input<boolean>(true);
   /** UISlider's thumb, for a value that is a position (a start point) rather than a level (a volume). */
   readonly thumb = input<boolean>(false);
+  /** App classes merged after this control's own (same pattern as GlassButton's own `Class`) — a
+   *  consumer that wants a bespoke track/fill look (a scrubber whose track grows on press, say) composes
+   *  a class on TOP of `Jwift_Slider`/`Jwift_Slider_Active` rather than this shared, widely-used control
+   *  growing a one-off variant of its own for a single caller. */
+  readonly Class = input('');
 
   readonly valueChange = output<number>();
   readonly scrubStart  = output<{ value: number; event: PointerEvent }>();
@@ -85,7 +90,7 @@ export class Slider extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('Slider', SliderJss, 'Jwift_Slider', () =>
-      this._active() ? 'Jwift_Slider Jwift_Slider_Active' : 'Jwift_Slider');
+      `Jwift_Slider ${this._active() ? 'Jwift_Slider_Active' : ''} ${this.Class()}`.trim());
   }
 
   // The pointer math below reads this node's on-screen rect, which only arrives while the rect is watched.

@@ -1,7 +1,14 @@
-import { ChangeDetectionStrategy, Component, booleanAttribute, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input, output } from '@angular/core';
 import { Jiv, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
 import MediaTransportJss from './MediaTransport.jss';
+
+/** `regular` (56pt side / 76pt primary, Gap 36pt in a fixed 260pt row) — the original geometry, every
+ *  existing call site's default, untouched. `compact` (round 16, Drill's own redesigned player): Apple's
+ *  own now-playing size, all three buttons sharing one 44pt hit (28pt play/pause glyph, 20pt side glyphs),
+ *  row sized to its own content rather than a fixed 260pt so it composes inside a centered 3-slot row
+ *  (where-pill / transport / mute) without pushing the sides off-balance. */
+export type MediaTransportSize = 'regular' | 'compact';
 
 /**
  * `<media-transport>` — skip back / play-pause / skip forward. HOUSE geometry, promoted from Drill.jss's
@@ -19,15 +26,15 @@ import MediaTransportJss from './MediaTransport.jss';
     <jyle [source]="Jss" />
     <jiv class="Jwift_MediaTransport">
       <ng-content></ng-content>
-      <jiv class="Jwift_MediaTransportRow" [disabled]="disabled()">
-        <jiv class="Jwift_MediaTransportBtn" (click)="skipBack.emit()">
-          <icon class="Jwift_MediaTransportGlyph" Name="backward.fill" />
+      <jiv [class]="RowClass()" [disabled]="disabled()">
+        <jiv [class]="BtnClass()" [attr.aria-label]="skipBackLabel()" (click)="skipBack.emit()">
+          <icon [class]="GlyphClass()" Name="backward.fill" />
         </jiv>
-        <jiv class="Jwift_MediaTransportBtnPrimary" (click)="playPause.emit()">
-          <icon class="Jwift_MediaTransportGlyphPrimary" [Name]="playing() ? 'pause.fill' : 'play.fill'" />
+        <jiv [class]="BtnPrimaryClass()" [attr.aria-label]="playing() ? pauseLabel() : playLabel()" (click)="playPause.emit()">
+          <icon [class]="GlyphPrimaryClass()" [Name]="playing() ? 'pause.fill' : 'play.fill'" />
         </jiv>
-        <jiv class="Jwift_MediaTransportBtn" (click)="skipForward.emit()">
-          <icon class="Jwift_MediaTransportGlyph" Name="forward.fill" />
+        <jiv [class]="BtnClass()" [attr.aria-label]="skipForwardLabel()" (click)="skipForward.emit()">
+          <icon [class]="GlyphClass()" Name="forward.fill" />
         </jiv>
       </jiv>
     </jiv>
@@ -39,8 +46,27 @@ export class MediaTransport {
 
   readonly playing = input(false, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
+  readonly size = input<MediaTransportSize>('regular');
+
+  /** Plain English defaults so every call site has SOME accessible name out of the box; a localized app
+   *  passes its own strings through `T(...)` (EditorPlayer.ts does). Jwift has no i18n of its own to draw
+   *  on (Shared/ ships no `T`), so a default here is the only way this house control doesn't ship silent. */
+  readonly skipBackLabel = input('Previous');
+  readonly skipForwardLabel = input('Next');
+  readonly playLabel = input('Play');
+  readonly pauseLabel = input('Pause');
 
   readonly playPause = output<void>();
   readonly skipBack = output<void>();
   readonly skipForward = output<void>();
+
+  private readonly _compact = computed(() => this.size() === 'compact');
+  /** REPLACES, not merges onto the base `Jwift_MediaTransportRow` -- that class pins a fixed 260pt Width,
+   *  and JSS has no "auto" to text-author back over it (MediaTransport.jss's own comment on the compact
+   *  class). `Jwift_MediaTransportRow_Compact` states every property the row needs on its own instead. */
+  protected readonly RowClass = computed(() => this._compact() ? 'Jwift_MediaTransportRow_Compact' : 'Jwift_MediaTransportRow');
+  protected readonly BtnClass = computed(() => this._compact() ? 'Jwift_MediaTransportBtn Jwift_MediaTransportBtn_Compact' : 'Jwift_MediaTransportBtn');
+  protected readonly BtnPrimaryClass = computed(() => this._compact() ? 'Jwift_MediaTransportBtnPrimary Jwift_MediaTransportBtnPrimary_Compact' : 'Jwift_MediaTransportBtnPrimary');
+  protected readonly GlyphClass = computed(() => this._compact() ? 'Jwift_MediaTransportGlyph Jwift_MediaTransportGlyph_Compact' : 'Jwift_MediaTransportGlyph');
+  protected readonly GlyphPrimaryClass = computed(() => this._compact() ? 'Jwift_MediaTransportGlyphPrimary Jwift_MediaTransportGlyphPrimary_Compact' : 'Jwift_MediaTransportGlyphPrimary');
 }
