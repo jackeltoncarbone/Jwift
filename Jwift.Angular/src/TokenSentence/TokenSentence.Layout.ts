@@ -303,3 +303,26 @@ export function LayoutSentence(
 
   return { Pieces: pieces, Hits: hits, Add: add, Height: height };
 }
+
+/**
+ * The box a piece actually paints into -- `piece.Width`, plus half the font size ONLY when nothing
+ * else follows it on the same row.
+ *
+ * Jack, live: "1a" (a Who atom starting a wrapped row) touched the word right after it -- rendered
+ * "1ain", no visible space. `TokenSentence.ts`'s own piece rendering used to pad EVERY piece's own box
+ * by `0.5 * fontSize` unconditionally -- a safety margin against a glyph's own ink overflowing a tight
+ * advance-width box -- but never shifted the NEXT piece's own X to compensate, so a piece's own padding
+ * always overlapped whatever came right after it by that same amount. Invisible for a regular word's own
+ * blank tail (every other word boundary in a sentence this size), but round 9's own lead/word/trail
+ * split (Render.ts's `pushLiteral`) put a bold, tappable Who atom directly before a now-separate, narrow
+ * space piece for the first time: "1a"'s own bold ink reaches further into its own padded tail than a
+ * regular-weight word's does, and a 4-5px space has nowhere near enough room to absorb an 8px intrusion.
+ * The padding's own real job is protecting the LAST piece of a row from clipping at the row's own right
+ * edge, where nothing follows to overlap it — never meant to apply mid-row.
+ */
+export function PieceBoxWidth(pieces: readonly SentencePiece[], index: number, fontSize: number): number {
+  const piece = pieces[index];
+  const next = pieces[index + 1];
+  const isRowEnd = !next || next.Row !== piece.Row;
+  return piece.Width + (isRowEnd ? 0.5 * fontSize : 0);
+}
