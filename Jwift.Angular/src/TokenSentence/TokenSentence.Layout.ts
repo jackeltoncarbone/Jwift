@@ -131,36 +131,37 @@ const _splitTextQuiet = (text: string): { Text: string; IsWhitespace: boolean; I
 };
 
 /**
- * `padAfterAtom` is TokenSentence.ts's own `0.5 * fontSize` right margin, kept on every atom unconditionally
- * exactly as before (a glyph's own ink can run past its measured advance width, worst right at a row's own
- * edge) — round 11, live: "1a" (a Who atom starting a wrapped row) touched the word right after it.
- * Narrowing the ATOM's own box to fix that broke rendering everywhere once folded (Jaui's own flow solver
- * reads a Placed child's declared Width for more than this file assumed, confirmed live on an isolated
- * second dev server, M21-28 and beyond -- the exact regression this fix now avoids entirely).
+ * Round 11, live: "1a" (a Who atom starting a wrapped row) touched the word right after it. Round 12's
+ * first two cuts both guessed at the wrong mechanism:
  *
- * Widening the GAP instead of shrinking the box never shrinks anything -- but the coordinator caught, live
- * at 200% zoom, that adding the FULL pad unconditionally widened "1a in"'s own space past every other
- * inter-word space in the sentence ("with 1a", "follow the"), and, worse, pushed punctuation that belongs
- * flush against its own token away from it ("8 counts, then" reading "8 counts , then"). Two fixes to
- * that: (1) the extra gap is folded in ONLY when the unit right after the atom is whitespace -- a comma or
- * "·" glued on with no space of its own gets none, same as before; (2) it is sized to the ACTUAL overlap,
- * not the full pad: the atom's own padded box already ends `padAfterAtom` past its own ink, and if a real
- * space unit already sits there, that space's own width already covers part of that distance -- only the
- * REMAINDER (`padAfterAtom` minus the space's own width, floored at 0) needs adding. A space already as
- * wide as the pad needs nothing at all.
+ * - Narrowing the ATOM's own declared box broke rendering everywhere once folded (Jaui's own flow solver
+ *   reads a Placed child's declared Width for more than this file assumed, confirmed live on an isolated
+ *   second dev server) -- reverted.
+ * - Widening the GAP after an atom (an extra `GapBefore` on whatever whitespace unit followed it) fixed
+ *   "1ain" but, caught live at 200% zoom, visibly widened the space after EVERY atom past ordinary
+ *   inter-word spacing ("march  forward" vs "then march") -- because the touching was never actually
+ *   about the gap between pieces at all. `TokenSentence.ts`'s own `_rect(piece.X, piece.Y, piece.Width +
+ *   0.5 * fontSize, lh)` pads every piece's own box by half a font size specifically so a glyph's own ink
+ *   (which can run past its measured advance width, worst for a bold weight right at a row's own edge)
+ *   has somewhere to overflow into WITHOUT needing to be counted in anyone's position math -- the next
+ *   piece's own X was never computed off the padded width, only the measured one, so that overflow room
+ *   was already free, harmless dead space between two boxes that were always allowed to "overlap" by
+ *   design (every piece's box already extends 0.5em past its own content). Confirmed live (round 12):
+ *   `jext`'s own engine default is `TextAlign: 'Left'` (`Jaui.ts`'s default style table, `Text.Types.ts`),
+ *   so every piece's own text already draws flush at the box's own left edge, never shifted into that
+ *   overflow room by centering -- `TokenSentence.ts` now states this explicitly rather than relying on an
+ *   unstated default, so the invariant this whole file's own lack of a gap depends on can't silently
+ *   drift. No piece here ever needs an extra GapBefore of its own; the add button alone keeps one
+ *   (`ADD_GAP`, below), since it is a separate glyph glued on, not a text run whose own ink could bleed.
  */
 const _buildUnits = (
   tokens: readonly SentenceToken[],
   measure: (t: string, w: number) => number,
   showAdd: boolean,
-  padAfterAtom: number,
 ): Unit[] => {
   const units: Unit[] = [];
-  let afterAtom = false;
   const push = (u: { TokenIndex: number; Text: string; Width: number; IsWhitespace: boolean; IsCjk: boolean; IsAtom: boolean; IsAdd: boolean; GapBefore?: number }): void => {
-    const extra = afterAtom && u.IsWhitespace ? Math.max(0, padAfterAtom - u.Width) : 0;
-    units.push({ ...u, GapBefore: (u.GapBefore ?? 0) + extra });
-    afterAtom = u.IsAtom;
+    units.push({ ...u, GapBefore: u.GapBefore ?? 0 });
   };
   tokens.forEach((token, tokenIndex) => {
     const weight = WEIGHT_OF[token.Kind];
@@ -208,10 +209,10 @@ const _breakAllowed = (a: Unit, b: Unit): boolean => {
 interface Word { readonly Units: readonly Unit[]; readonly Ink: number; }
 
 /** A word's ink width excludes ONE trailing whitespace unit, as Jinput's does — a space hanging past
- *  the wrap edge never forces a line break on its own. Its own `GapBefore` goes with it: an atom's
- *  trailing space can carry `padAfterAtom` now (`_buildUnits`'s own doc comment), and a wrap decision
- *  must never notice that margin any more than it notices the space's own width — both are "past the
- *  wrap edge," the exact case this exclusion exists for. */
+ *  the wrap edge never forces a line break on its own. Its own `GapBefore` (always 0 for an ordinary
+ *  unit now — `_buildUnits`'s own doc comment — but kept in the formula since a Word can still end on
+ *  the synthetic add-button unit, which carries `ADD_GAP`) goes with it, the same "past the wrap edge"
+ *  reasoning as excluding the unit's own Width. */
 const _finishWord = (units: readonly Unit[]): Word => {
   let ink = 0;
   for (const u of units) ink += u.GapBefore + u.Width;
@@ -255,7 +256,7 @@ export function LayoutSentence(
     return { Pieces: [], Hits: [], Add: null, Height: 0 };
   }
 
-  const units = _buildUnits(tokens, Measure, ShowAdd, 0.5 * FontSize);
+  const units = _buildUnits(tokens, Measure, ShowAdd);
   const words = _groupWords(units);
 
   const placed: Placed[] = [];

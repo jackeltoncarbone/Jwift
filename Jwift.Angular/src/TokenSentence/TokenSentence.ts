@@ -135,6 +135,39 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   private _rectUnwatch: (() => void) | null = null;
 
   private _measureCtx: CanvasRenderingContext2D | null = null;
+  /** The real cause of round 12's own "1ain" ("1a" touching "in" with no space at all, even though the
+   *  layout math and the TextStyle both check out correct -- live CDP read of the real rendered pieces,
+   *  round 13): `Tabular` (bound `true` on every `<token-sentence>`, `EditorLine.ts`) makes the RENDERER
+   *  swap digit text to a "tnum" twin font face (`Text.Tabular.ts`'s own `TabularFamilyStack` --
+   *  monospaced figures, each digit the SAME, usually WIDER width than its own proportional glyph), but
+   *  that twin is only ever installed in the WORKER's own font registry (`Bridge.Worker.ts`'s own
+   *  `_onFontFace`) -- this component's own measurement canvas lives on the MAIN thread, which has no
+   *  access to it, so `_measure` was always measuring "1" at its narrower PROPORTIONAL width while the
+   *  worker painted it at the wider TABULAR one. The gap between the two is exactly what "1a"'s own ink
+   *  ran into the space after it, silent for every atom with no digit in it (every other word in the
+   *  sentence) and invisible to this file's own pure-math regression tests (their stub has no concept of
+   *  a font's real digit metrics at all). A per-digit cache keyed on `weight:size`, below, stands in for
+   *  the true tabular width with the WIDEST of the ten proportional digits at that weight/size -- not
+   *  exact (the true "tnum" width can differ slightly from any proportional digit), but guaranteed to
+   *  never UNDER-measure a digit the way plain `measureText` on the whole string did, which is what this
+   *  bug actually needs: erring toward a hair more space, never less. */
+  private readonly _tabularDigitWidthCache = new Map<string, number>();
+  private _tabularDigitWidth(ctx: CanvasRenderingContext2D, weight: number, size: number): number {
+    const key = `${weight}:${size}`;
+    const cached = this._tabularDigitWidthCache.get(key);
+    if (cached !== undefined) return cached;
+    let max = 0;
+    for (let d = 0; d <= 9; d++) max = Math.max(max, ctx.measureText(String(d)).width);
+    // The true "tnum" width (Text.Tabular.ts) is the font's OWN chosen tabular figure advance, not
+    // necessarily equal to any single PROPORTIONAL digit's own width -- widest-of-ten is a floor, not
+    // the real number, since this main-thread canvas has no access to the real twin face to ask
+    // directly (its own doc comment above). 12% headroom on top of that floor, empirically against a
+    // live render (round 13: "16 counts" still touched what followed it at the floor alone, "1a" did
+    // not -- more digits, more cumulative shortfall).
+    max *= 1.12;
+    this._tabularDigitWidthCache.set(key, max);
+    return max;
+  }
   private readonly _measure = (text: string, weight: number): number => {
     if (!text) return 0;
     if (typeof document === 'undefined') return 0;
@@ -145,7 +178,15 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     }
     const size = this.FontSizePt() + _pageFontEpoch() * 1e-4;
     this._measureCtx.font = `${weight} ${size}px Inter, system-ui, sans-serif`;
-    return this._measureCtx.measureText(text).width;
+    if (!this.Tabular() || !/[0-9]/.test(text)) return this._measureCtx.measureText(text).width;
+    // Tabular, and this run has at least one digit: sum per-character, substituting the tabular-width
+    // stand-in for every digit so the TOTAL matches what the worker will actually paint, not what the
+    // proportional face alone would advance.
+    let width = 0;
+    for (const ch of text) {
+      width += /[0-9]/.test(ch) ? this._tabularDigitWidth(this._measureCtx, weight, size) : this._measureCtx.measureText(ch).width;
+    }
+    return width;
   };
 
   /** `Node.Width`, watched live. `Infinity` before the first rect arrives, so the first layout pass
@@ -256,6 +297,14 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
           LineHeight: `${lh}pt`,
           Color: ink,
           FontVariantNumeric: this.Tabular() ? 'TabularNums' : 'Normal',
+          // Jack, live (round 12): a bold atom's own ink can run past its measured advance width right
+          // at a wrapped row's own edge -- the whole reason this piece's own box (below) is wider than
+          // its content. That overflow room only ever stays invisible, harmless dead space (every
+          // neighbouring piece's own X is computed off the UNPADDED width, never this one) if the text
+          // itself draws flush at the box's own left edge. `Jext`'s own engine default already is 'Left'
+          // (Jaui.ts's default style table) -- stated here explicitly so this invariant can't silently
+          // drift out from under a fix with no gap of its own to fall back on.
+          TextAlign: 'Left',
         },
         Layout: _rect(piece.X, piece.Y, piece.Width + 0.5 * fs, lh),
         Tappable: tappable,
