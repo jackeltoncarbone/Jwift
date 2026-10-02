@@ -130,30 +130,59 @@ const _splitTextQuiet = (text: string): { Text: string; IsWhitespace: boolean; I
   return out;
 };
 
+/**
+ * `padAfterAtom` is TokenSentence.ts's own `0.5 * fontSize` right margin, kept on every atom unconditionally
+ * exactly as before (a glyph's own ink can run past its measured advance width, worst right at a row's own
+ * edge) — round 11, live: "1a" (a Who atom starting a wrapped row) touched the word right after it.
+ * Narrowing the ATOM's own box to fix that broke rendering everywhere once folded (Jaui's own flow solver
+ * reads a Placed child's declared Width for more than this file assumed, confirmed live on an isolated
+ * second dev server, M21-28 and beyond -- the exact regression this fix now avoids entirely).
+ *
+ * Widening the GAP instead of shrinking the box never shrinks anything -- but the coordinator caught, live
+ * at 200% zoom, that adding the FULL pad unconditionally widened "1a in"'s own space past every other
+ * inter-word space in the sentence ("with 1a", "follow the"), and, worse, pushed punctuation that belongs
+ * flush against its own token away from it ("8 counts, then" reading "8 counts , then"). Two fixes to
+ * that: (1) the extra gap is folded in ONLY when the unit right after the atom is whitespace -- a comma or
+ * "·" glued on with no space of its own gets none, same as before; (2) it is sized to the ACTUAL overlap,
+ * not the full pad: the atom's own padded box already ends `padAfterAtom` past its own ink, and if a real
+ * space unit already sits there, that space's own width already covers part of that distance -- only the
+ * REMAINDER (`padAfterAtom` minus the space's own width, floored at 0) needs adding. A space already as
+ * wide as the pad needs nothing at all.
+ */
 const _buildUnits = (
   tokens: readonly SentenceToken[],
   measure: (t: string, w: number) => number,
   showAdd: boolean,
+  padAfterAtom: number,
 ): Unit[] => {
   const units: Unit[] = [];
+  let afterAtom = false;
+  const push = (u: { TokenIndex: number; Text: string; Width: number; IsWhitespace: boolean; IsCjk: boolean; IsAtom: boolean; IsAdd: boolean; GapBefore?: number }): void => {
+    const extra = afterAtom && u.IsWhitespace ? Math.max(0, padAfterAtom - u.Width) : 0;
+    units.push({ ...u, GapBefore: (u.GapBefore ?? 0) + extra });
+    afterAtom = u.IsAtom;
+  };
   tokens.forEach((token, tokenIndex) => {
     const weight = WEIGHT_OF[token.Kind];
     if (token.Kind === 'Text' || token.Kind === 'Quiet') {
       for (const part of _splitTextQuiet(token.Text)) {
-        units.push({
+        push({
           TokenIndex: tokenIndex, Text: part.Text, Width: measure(part.Text, weight),
-          IsWhitespace: part.IsWhitespace, IsCjk: part.IsCjk, IsAtom: false, IsAdd: false, GapBefore: 0,
+          IsWhitespace: part.IsWhitespace, IsCjk: part.IsCjk, IsAtom: false, IsAdd: false,
         });
       }
     } else {
       // Tappable kinds and Badge: one atom, carrying the token's FULL text, never split.
-      units.push({
+      push({
         TokenIndex: tokenIndex, Text: token.Text, Width: measure(token.Text, weight),
-        IsWhitespace: false, IsCjk: false, IsAtom: true, IsAdd: false, GapBefore: 0,
+        IsWhitespace: false, IsCjk: false, IsAtom: true, IsAdd: false,
       });
     }
   });
   if (showAdd) {
+    // The add button is its own dedicated glyph, already spaced by its own ADD_GAP -- not a text run that
+    // could visually bleed into whatever came before it the way a glyph's own ink can, so it does not also
+    // need padAfterAtom folded in on top.
     units.push({
       TokenIndex: ADD_TOKEN_INDEX, Text: '', Width: ADD_WIDTH,
       IsWhitespace: false, IsCjk: false, IsAtom: true, IsAdd: true, GapBefore: ADD_GAP,
@@ -179,12 +208,15 @@ const _breakAllowed = (a: Unit, b: Unit): boolean => {
 interface Word { readonly Units: readonly Unit[]; readonly Ink: number; }
 
 /** A word's ink width excludes ONE trailing whitespace unit, as Jinput's does — a space hanging past
- *  the wrap edge never forces a line break on its own. */
+ *  the wrap edge never forces a line break on its own. Its own `GapBefore` goes with it: an atom's
+ *  trailing space can carry `padAfterAtom` now (`_buildUnits`'s own doc comment), and a wrap decision
+ *  must never notice that margin any more than it notices the space's own width — both are "past the
+ *  wrap edge," the exact case this exclusion exists for. */
 const _finishWord = (units: readonly Unit[]): Word => {
   let ink = 0;
   for (const u of units) ink += u.GapBefore + u.Width;
   const last = units[units.length - 1];
-  if (last.IsWhitespace) ink -= last.Width;
+  if (last.IsWhitespace) ink -= last.Width + last.GapBefore;
   return { Units: units, Ink: ink };
 };
 
@@ -223,7 +255,7 @@ export function LayoutSentence(
     return { Pieces: [], Hits: [], Add: null, Height: 0 };
   }
 
-  const units = _buildUnits(tokens, Measure, ShowAdd);
+  const units = _buildUnits(tokens, Measure, ShowAdd, 0.5 * FontSize);
   const words = _groupWords(units);
 
   const placed: Placed[] = [];
@@ -302,27 +334,4 @@ export function LayoutSentence(
   const height = placed.length === 0 ? 0 : (maxRow + 1) * LineHeight;
 
   return { Pieces: pieces, Hits: hits, Add: add, Height: height };
-}
-
-/**
- * The box a piece actually paints into -- `piece.Width`, plus half the font size ONLY when nothing
- * else follows it on the same row.
- *
- * Jack, live: "1a" (a Who atom starting a wrapped row) touched the word right after it -- rendered
- * "1ain", no visible space. `TokenSentence.ts`'s own piece rendering used to pad EVERY piece's own box
- * by `0.5 * fontSize` unconditionally -- a safety margin against a glyph's own ink overflowing a tight
- * advance-width box -- but never shifted the NEXT piece's own X to compensate, so a piece's own padding
- * always overlapped whatever came right after it by that same amount. Invisible for a regular word's own
- * blank tail (every other word boundary in a sentence this size), but round 9's own lead/word/trail
- * split (Render.ts's `pushLiteral`) put a bold, tappable Who atom directly before a now-separate, narrow
- * space piece for the first time: "1a"'s own bold ink reaches further into its own padded tail than a
- * regular-weight word's does, and a 4-5px space has nowhere near enough room to absorb an 8px intrusion.
- * The padding's own real job is protecting the LAST piece of a row from clipping at the row's own right
- * edge, where nothing follows to overlap it — never meant to apply mid-row.
- */
-export function PieceBoxWidth(pieces: readonly SentencePiece[], index: number, fontSize: number): number {
-  const piece = pieces[index];
-  const next = pieces[index + 1];
-  const isRowEnd = !next || next.Row !== piece.Row;
-  return piece.Width + (isRowEnd ? 0.5 * fontSize : 0);
 }

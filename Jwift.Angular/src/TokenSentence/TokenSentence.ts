@@ -21,7 +21,6 @@ import TokenSentenceJss from './TokenSentence.jss';
 import {
   IsTappable,
   LayoutSentence,
-  PieceBoxWidth,
   type SentenceHit,
   type SentenceLayoutResult,
   type SentenceToken,
@@ -238,9 +237,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       Key: string; Text: string; TextStyle: Record<string, unknown>; Layout: Record<string, unknown>;
       Tappable: boolean; TokenKey: string; Label: string;
     }[] = [];
-    const pieces = layout.Pieces;
-    for (let i = 0; i < pieces.length; i++) {
-      const piece = pieces[i];
+    for (const piece of layout.Pieces) {
       const token = tokens[piece.TokenIndex];
       if (!token) continue;
       const style = KIND_STYLE[token.Kind];
@@ -260,7 +257,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
           Color: ink,
           FontVariantNumeric: this.Tabular() ? 'TabularNums' : 'Normal',
         },
-        Layout: _rect(piece.X, piece.Y, PieceBoxWidth(pieces, i, fs), lh),
+        Layout: _rect(piece.X, piece.Y, piece.Width + 0.5 * fs, lh),
         Tappable: tappable,
         TokenKey: token.Key,
         Label: token.Label ?? token.Text,
