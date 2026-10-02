@@ -52,6 +52,13 @@ export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableE
   readonly Leading = input<readonly SwipeAction[]>([]);
   readonly FullSwipe = input(true);
   readonly Label = input('');
+  /** Overrides `Jwift_SortableRow`'s own class `Padding` (11pt 12pt) for this one row — Jack, live
+   *  (round 12): the drill list's own phrase-grouping row wraps a whole phrase (its header AND its own
+   *  nested line list), not one row's worth of content, so the class's own content inset would apply
+   *  TWICE once nested (compounding into the 44px/58px indents Jack measured) -- EditorList.ts's own
+   *  phrase-grouping `<sortable-row>` passes `'0pt'` here, leaving the real content inset to whichever
+   *  row actually carries visible text. Unset (the default), every row keeps the class's own padding. */
+  readonly Padding = input<string | null>(null);
 
   readonly Action = output<string>();
 
@@ -115,6 +122,11 @@ export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableE
     // whatever a plain rounded rect defaults to. Live feedback: a selected row's own GoldWash had square
     // corners; EffectiveRadius alone was not the whole gap.
     if (list) effect(() => this.SetStyleOverride({ BorderRadius: `${list.EffectiveRadius()}pt`, CornerShape: 'Squircle' }));
+    effect(() => {
+      const padding = this.Padding();
+      if (padding !== null) this.SetStyleOverride({ Padding: padding });
+      else this.ClearStyleOverride('Padding');
+    });
   }
 
   ngOnInit(): void {

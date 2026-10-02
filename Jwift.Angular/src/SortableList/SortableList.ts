@@ -5,6 +5,7 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   forwardRef,
   inject,
   input,
@@ -80,6 +81,12 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
   /** Row/section corner; defaults to `JWIFT_PAPER_GEOMETRY`'s radius minus padding when this list
    *  sits inside a `<paper>`, else 0. */
   readonly Radius = input<number | null>(null);
+  /** Overrides `Jwift_SortableList`'s own class `Gap` (8pt) for this one list — Jack, live (round 12):
+   *  the drill editor nests two different roles under the same component (the top-level list of phrases,
+   *  and each phrase's own list of lines), which need two different rhythms (20pt between phrase groups
+   *  reads as a group break; 8pt between lines within one phrase reads as the same row). Unset (the
+   *  default), a list keeps the class's own Gap. */
+  readonly Gap = input<number | null>(null);
 
   readonly Reorder = output<SortableReorder>();
   readonly SectionReorder = output<{ Key: string; Index: number }>();
@@ -111,6 +118,11 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('SortableList', SortableListJss, 'Jwift_SortableList', () => 'Jwift_SortableList');
+    effect(() => {
+      const gap = this.Gap();
+      if (gap !== null) this.SetStyleOverride({ Gap: `${gap}pt` });
+      else this.ClearStyleOverride('Gap');
+    });
   }
 
   ngOnInit(): void {

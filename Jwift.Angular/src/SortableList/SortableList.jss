@@ -4,7 +4,7 @@
 
 Jwift_SortableList {
   Direction: Column
-  Gap: 2pt
+  Gap: 8pt
   PanClaim: Hold
 }
 
@@ -61,8 +61,22 @@ Jwift_SortableSectionRule {
   Background: @Line
 }
 
+// Jack, live (round 12): "the padding on the left panel... is so much", measured against the island's
+// own 16pt outer inset -- the row's own content read indented 44-58px, not the Apple sidebar proportion
+// he wanted (text ~20pt from the island's edge: 8pt from the wash to the island's own inner edge, 12pt
+// more from the wash to the text, the drill list's own version of GlassDropdownItem's own row comfort).
+// 11pt vertical (unchanged) already matched the dropdown's own row padding; only the horizontal 14pt
+// (picked, not derived) was the gap. Direction/Justify/Align/Gap are now explicit rather than left to
+// whatever this engine defaults an unset Jiv to -- EditorPhrase.ts's own phrase-grouping row (one
+// `<sortable-row>` wrapping a whole phrase: its header AND its own nested line list, not one row's worth
+// of content) relies on this Gap for the space between them, having zeroed its own Padding (see
+// SortableRow.ts's own doc comment) so the 12pt content inset below is never applied twice.
 Jwift_SortableRow {
-  Padding: 11pt 14pt
+  Direction: Column
+  Justify: Start
+  Align: Stretch
+  Gap: 8pt
+  Padding: 11pt 12pt
   Interactive: true
   Cursor: Pointer
   @Transition Background { Duration: 140ms }
