@@ -110,15 +110,28 @@ export class RowIndicator {
     if (row === was) return;
     this._hovered.set(row);
     if (!row) { this._pressed.set(false); return; }
+    // Arriving from nowhere: land on the row instantly, no transition. Between rows: slide.
+    //
+    // SnapLayout is set HERE, synchronously, in the same call that moves the box — never on a
+    // timer. The old shape set `SnapLayout = true` then cleared it a `requestAnimationFrame` later
+    // on the MAIN thread; Jaui's actual layout solve runs on the WORKER, on the worker's own frame
+    // cadence, reached by `postMessage`. Nothing ties a main-thread rAF to when the worker gets
+    // around to solving THIS node's new target — the reset message can arrive and be applied before
+    // the worker ever solves the frame that carries the moved target, so the flag reads false by the
+    // time it matters and the "landing" frame springs in from wherever the indicator last was (the
+    // menu's own open morph, most visibly, since the indicator mounts at the same time the panel
+    // does). `postMessage` preserves ORDER, not wall-clock timing — so the fix is to make the order
+    // itself carry the intent: set the flag before the box that must obey it, in the same synchronous
+    // block, and never schedule its reset on a clock the worker does not share. Same pattern
+    // `SelectionIndicator.ts` uses (`Node.SnapLayout = true` once in `ngOnInit`, never reset) for a
+    // pill that owns its OWN spring; here the engine's own spring must still run for an actual
+    // between-rows slide, so the flag instead toggles on `was`: unset (nowhere -> a row) snaps,
+    // set (a row -> a different row) springs.
+    const ind = this._indicatorNode();
+    if (ind) ind.SnapLayout = !was;
     // Placed: Left/Top are relative to the owner's own box.
     const box = this._indicatorBoxFor(row);
     if (box) this.IndicatorLayout.set(box);
-    // Arriving from nowhere: land on the row and fade in. Between rows: slide.
-    const ind = this._indicatorNode();
-    if (ind && !was) {
-      ind.SnapLayout = true;
-      requestAnimationFrame(() => { ind.SnapLayout = false; });
-    }
   }
 
   /**
