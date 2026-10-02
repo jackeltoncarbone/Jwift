@@ -293,12 +293,20 @@ Jwift_GlassDropdown_Open:Active {
 // `Height` -- the ordinary one-line row (the overwhelming majority: "Share", "Export", a camera toggle)
 // still settles at exactly 44pt from its own content, same as before; a row whose label wraps (below)
 // now grows to fit it instead of clipping it.
+//
+// Jack, live again: that fix left a wrapped row's own two lines sitting at the OLD 44pt pitch with no
+// breathing room -- the single-line row's own apparent 11pt top/bottom margin was never real padding,
+// just `Align: Center` spreading its own short content out inside a taller MinHeight box, which a
+// now-taller wrapped row's own content fills entirely, leaving none. Real padding (Apple's own ~11pt)
+// instead: a one-line row still settles at 11 + ~22 (one line) + 11 = 44pt, unchanged; a wrapped row
+// gets the SAME 11pt top and bottom the single-line row always visually had, not squeezed toward its
+// own neighbours.
 Jwift_GlassDropdownItem {
   Direction: Row
   Justify: Start
   Align: Center
   Gap: 0pt
-  Padding: 0pt 18pt 0pt 6pt
+  Padding: 11pt 18pt 11pt 6pt
   Width: 100%
   MinHeight: 44pt
   BorderRadius: 22pt
