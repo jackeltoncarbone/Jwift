@@ -47,12 +47,11 @@ Jwift_PopoverArrow : JwiftGlass {
 // Jwift_GlassDropdown_Open composes JwiftGlass directly for exactly that reason). JwiftGlass as this
 // class's own base overrides Paper's Background/Glass properties with that same translucent, refractive,
 // fresnel-rimmed material — Position/Size/CornerShape/PointerEvents still come from Jwift_PaperSurface,
-// unaffected, since those aren't properties JwiftGlass states an opinion on. Own BorderRadius (the house
-// dropdown/menu chain: 22pt rows + 10pt panel padding = 32pt, @JwiftDropdownRadius) and a heavier floating
-// shadow than Paper's own stay — a popover stands OFF the page, further than an island sitting on it.
+// unaffected, since those aren't properties JwiftGlass states an opinion on. Own BorderRadius stays (the
+// house dropdown/menu chain: 22pt rows + 10pt panel padding = 32pt, @JwiftDropdownRadius); the heavier
+// floating shadow Paper's own surface wore does NOT come along — GlassLaw.Conformance.spec.ts's own house
+// rule is that a glass-composed class states no Shadow of its own ("the face and the shadow are Apple's"):
+// the glass shader's own optics carry it now, consistent with every other JwiftGlass surface in the app.
 Jwift_PopoverSurface : JwiftGlass {
   BorderRadius: @JwiftDropdownRadius
-  ShadowColor: rgba(0, 0, 0, 0.26)
-  ShadowBlur: 50pt
-  ShadowOffsetY: 18pt
 }
