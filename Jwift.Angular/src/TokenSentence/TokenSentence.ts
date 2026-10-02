@@ -132,6 +132,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   private readonly _pressedKey = signal<string | null>(null);
   private _lastPointer: { X: number; Y: number } | null = null;
   private _docUnbind: (() => void) | null = null;
+  private _rectUnwatch: (() => void) | null = null;
 
   private _measureCtx: CanvasRenderingContext2D | null = null;
   private readonly _measure = (text: string, weight: number): number => {
@@ -293,10 +294,21 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     _watchPageFonts();
     this.Node.WatchRect(true);
     this.Node.SetHit({ OnRectSnapshot: (box) => { if (box.Width > 0) this._wrapWidth.set(box.Width); } });
+    // Jack, live: a row whose own flex sibling has a fixed size decided AFTER this one's first layout
+    // pass (`DrillLineRow`'s own `#rmore` button, a sibling of the sentence, not a child it could measure
+    // itself) kept wrapping at that FIRST pass's own too-wide guess forever -- `SetHit`'s own
+    // `OnRectSnapshot`, above, answers once, at whatever moment this node first got hit-tested, not every
+    // time its real rect changes. `WatchRect(true)` already keeps `Node.Width` itself correct and live
+    // (confirmed live: reading it directly off the running page matched the flex-resolved width exactly);
+    // this just keeps `_wrapWidth` tracking THAT, the same `Node.OnRect` pattern the rail's own track
+    // width already uses (EditorPlayer.ts) for the identical reason.
+    this._rectUnwatch = this.Node.OnRect(() => { if (this.Node.Width > 0) this._wrapWidth.set(this.Node.Width); });
   }
 
   ngOnDestroy(): void {
     this._docUnbind?.();
+    this._rectUnwatch?.();
+    this.Node.WatchRect(false);
     this._detachOnDestroy();
   }
 

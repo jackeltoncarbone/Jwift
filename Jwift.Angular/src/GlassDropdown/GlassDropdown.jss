@@ -288,6 +288,11 @@ Jwift_GlassDropdown_Open:Active {
 // Rows draw nothing of their own: the hover / press highlight is ONE
 // shared Jwift_GlassDropdownIndicator owned by the dropdown that springs
 // between rows, so a row is only a hit target and a layout slot.
+// Jack, live: a long label (the Problems page's own rows, routinely a full sentence) ran past the
+// row's own fixed Height and clipped mid-word, with nothing to say it had been cut. `MinHeight`, not
+// `Height` -- the ordinary one-line row (the overwhelming majority: "Share", "Export", a camera toggle)
+// still settles at exactly 44pt from its own content, same as before; a row whose label wraps (below)
+// now grows to fit it instead of clipping it.
 Jwift_GlassDropdownItem {
   Direction: Row
   Justify: Start
@@ -295,7 +300,7 @@ Jwift_GlassDropdownItem {
   Gap: 0pt
   Padding: 0pt 18pt 0pt 6pt
   Width: 100%
-  Height: 44pt
+  MinHeight: 44pt
   BorderRadius: 22pt
   Background: rgba(255, 255, 255, 0)
   Interactive: true
@@ -312,6 +317,12 @@ Jwift_GlassDropdownItem_Disabled : Jwift_GlassDropdownItem {
 // height box and center identically along the row's cross axis. JwiftIcons
 // glyphs sit low in their font box; matching the label size keeps the
 // visual icon center aligned with the label baseline.
+//
+// Jack, live: the Problems page's own warning glyph sat at a DIFFERENT x per row (1122-1136), tracking
+// how long that row's own label was. `Width: 40pt` alone fixes this column's own BASE size, but without
+// `FlexShrink: 0` a row short on space (every problem row routinely is, before the label-wrap fix above)
+// shrinks EVERY flexible child to make room, icon included -- `Jwift_GlassDropdownItemCheck`, this
+// column's own sibling, already carries the same `FlexShrink: 0` this one was missing.
 Jwift_GlassDropdownItemIcon {
   FontFamily: JwiftIcons
   FontSize: 17pt
@@ -319,6 +330,7 @@ Jwift_GlassDropdownItemIcon {
   Color: @Ink
   TextAlign: Center
   Width: 40pt
+  FlexShrink: 0
 }
 
 // A consequential row reads as consequential BEFORE it is pressed, so the glyph
@@ -370,6 +382,11 @@ Jwift_GlassDropdownItemImage {
   Height: 22pt
 }
 
+// Apple menus wrap an over-long label to a second line, then truncate THAT with an ellipsis -- never
+// mid-word with nothing to show it was cut (List.jss's own `Jwift_ListFootnote` holds the same two-line
+// convention). `FlexGrow: 1` claims the row's own remaining width after the fixed icon/check columns
+// (their own `FlexShrink: 0`, above) instead of asking for its full intrinsic (one-line) width and
+// forcing every sibling to shrink around it.
 Jwift_GlassDropdownItemLabel {
   FontFamily: Inter
   FontSize: 17pt
@@ -377,7 +394,9 @@ Jwift_GlassDropdownItemLabel {
   Color: @Ink
   LetterSpacing: 0pt
   TextAlign: Left
-  MaxLines: 1
+  MaxLines: 2
+  TextOverflow: Ellipsis
+  FlexGrow: 1
 }
 
 // Sign out, Delete, Remove. Colour only: the row still wears the one shared
