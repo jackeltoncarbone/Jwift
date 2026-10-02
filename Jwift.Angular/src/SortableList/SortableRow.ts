@@ -110,7 +110,11 @@ export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableE
     this._styleLoader.Ensure(this._jss, 'Paper', PaperJss);
     effect(() => this.SetStyleOverride({ VisualTranslate: this._translate() }));
     const list = this._list;
-    if (list) effect(() => this.SetStyleOverride({ BorderRadius: `${list.EffectiveRadius()}pt` }));
+    // Squircle, never a circular round — Jiv's own corner shape, the same convention Paper (this row's
+    // own loaded material) and every other thick house surface states explicitly rather than leaves to
+    // whatever a plain rounded rect defaults to. Live feedback: a selected row's own GoldWash had square
+    // corners; EffectiveRadius alone was not the whole gap.
+    if (list) effect(() => this.SetStyleOverride({ BorderRadius: `${list.EffectiveRadius()}pt`, CornerShape: 'Squircle' }));
   }
 
   ngOnInit(): void {
