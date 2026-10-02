@@ -295,7 +295,23 @@ export function LayoutSentence(
     }
   }
 
-  // One piece per (TokenIndex x Row): merge units from the same token placed contiguously.
+  // One piece per UNIT, never merged back across a whitespace/word boundary -- round 13's own second
+  // bug, found the same way "1ain" was: a real-token dump (CDP, live) of "2 steps outside" showed
+  // " outside" landing as ONE piece, its own leading space baked into the same string as "outside", and
+  // the rendered pixels showing the space's own width reserved in the BOX but not painted -- zero visual
+  // gap, "2 stepsoutside", even though the box position math was exactly right (confirmed: Jaui's own
+  // text renderer, Text.Measure.ts's own word-based remeasure of a line, treats a leading run of
+  // whitespace as an empty "word" and drops it, the same reason a leading space in any jext content
+  // reads collapsed). This USED to merge every unit from the same original token placed contiguously
+  // back into one piece ("one piece per TokenIndex x Row", the original design) -- which is exactly how
+  // `_splitTextQuiet` built that one " outside" string out of a whitespace unit and a word unit in the
+  // first place. Dropping the merge costs nothing real: a TAPPABLE token is never split into more than
+  // one unit to begin with (`_buildUnits`'s own doc comment), so every pill/underline/hit this file
+  // builds off ONE piece per tappable token (`IsTappable` gates them, below) is unaffected; only
+  // Text/Quiet content (never tappable, never underlined) ever had more than one unit to merge. Every
+  // piece now starts and ends exactly where `_splitTextQuiet` drew the line, the same shape the
+  // "1a"/" "/"in" follow-sentence case (three separate tokens, never merged, never broken) already
+  // proved safe live.
   const pieces: SentencePiece[] = [];
   let add: SentenceAddBox | null = null;
   for (const p of placed) {
@@ -306,13 +322,7 @@ export function LayoutSentence(
       };
       continue;
     }
-    const last = pieces[pieces.length - 1];
-    if (last && last.TokenIndex === p.Unit.TokenIndex && last.Row === p.Row
-        && Math.abs((last.X + last.Width) - p.X) < 0.01) {
-      pieces[pieces.length - 1] = { ...last, Text: last.Text + p.Unit.Text, Width: last.Width + p.Unit.Width };
-    } else {
-      pieces.push({ TokenIndex: p.Unit.TokenIndex, Text: p.Unit.Text, X: p.X, Y: p.Y, Width: p.Unit.Width, Row: p.Row });
-    }
+    pieces.push({ TokenIndex: p.Unit.TokenIndex, Text: p.Unit.Text, X: p.X, Y: p.Y, Width: p.Unit.Width, Row: p.Row });
   }
 
   // Hits: one per tappable token's piece — the visible pill (X-3, Y+(LH-(1.2FS+2))/2, W+6, 1.2FS+2),

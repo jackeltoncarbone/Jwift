@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Jaui, Jext, Jiv } from 'jaui-angular';
+import { TabularFamilyStack } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { Icon } from '../Icon/Icon';
 import { CanvasPress } from '../Internal/CanvasPress';
@@ -54,6 +55,12 @@ const _watchPageFonts = (): void => {
   const bump = (): void => _pageFontEpoch.update((v) => v + 1);
   document.fonts?.addEventListener?.('loadingdone', bump);
   if (document.readyState !== 'complete') window.addEventListener('load', bump, { once: true });
+  // Round 13's own tabular-twin install (Bridge.Main.ts) adds an already-`.load()`-resolved FontFace
+  // straight to `document.fonts` rather than going through a CSS/`fonts.load()`-triggered load, which
+  // does not reliably fire 'loadingdone' on its own -- `fonts.ready` is the browser's own backstop
+  // signal that every outstanding font job (including a plain `.add()`) has settled, so a sentence
+  // measured in the brief window before the twin lands still gets re-measured once it does.
+  document.fonts?.ready?.then(bump).catch(() => {});
   const watchLink = (node: Node): void => {
     if (node instanceof HTMLLinkElement && node.relList.contains('stylesheet')) node.addEventListener('load', bump, { once: true });
   };
@@ -138,36 +145,21 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   /** The real cause of round 12's own "1ain" ("1a" touching "in" with no space at all, even though the
    *  layout math and the TextStyle both check out correct -- live CDP read of the real rendered pieces,
    *  round 13): `Tabular` (bound `true` on every `<token-sentence>`, `EditorLine.ts`) makes the RENDERER
-   *  swap digit text to a "tnum" twin font face (`Text.Tabular.ts`'s own `TabularFamilyStack` --
-   *  monospaced figures, each digit the SAME, usually WIDER width than its own proportional glyph), but
-   *  that twin is only ever installed in the WORKER's own font registry (`Bridge.Worker.ts`'s own
-   *  `_onFontFace`) -- this component's own measurement canvas lives on the MAIN thread, which has no
-   *  access to it, so `_measure` was always measuring "1" at its narrower PROPORTIONAL width while the
-   *  worker painted it at the wider TABULAR one. The gap between the two is exactly what "1a"'s own ink
-   *  ran into the space after it, silent for every atom with no digit in it (every other word in the
-   *  sentence) and invisible to this file's own pure-math regression tests (their stub has no concept of
-   *  a font's real digit metrics at all). A per-digit cache keyed on `weight:size`, below, stands in for
-   *  the true tabular width with the WIDEST of the ten proportional digits at that weight/size -- not
-   *  exact (the true "tnum" width can differ slightly from any proportional digit), but guaranteed to
-   *  never UNDER-measure a digit the way plain `measureText` on the whole string did, which is what this
-   *  bug actually needs: erring toward a hair more space, never less. */
-  private readonly _tabularDigitWidthCache = new Map<string, number>();
-  private _tabularDigitWidth(ctx: CanvasRenderingContext2D, weight: number, size: number): number {
-    const key = `${weight}:${size}`;
-    const cached = this._tabularDigitWidthCache.get(key);
-    if (cached !== undefined) return cached;
-    let max = 0;
-    for (let d = 0; d <= 9; d++) max = Math.max(max, ctx.measureText(String(d)).width);
-    // The true "tnum" width (Text.Tabular.ts) is the font's OWN chosen tabular figure advance, not
-    // necessarily equal to any single PROPORTIONAL digit's own width -- widest-of-ten is a floor, not
-    // the real number, since this main-thread canvas has no access to the real twin face to ask
-    // directly (its own doc comment above). 12% headroom on top of that floor, empirically against a
-    // live render (round 13: "16 counts" still touched what followed it at the floor alone, "1a" did
-    // not -- more digits, more cumulative shortfall).
-    max *= 1.12;
-    this._tabularDigitWidthCache.set(key, max);
-    return max;
-  }
+   *  swap EVERY piece's own font family to a "tnum" twin face (`Text.Types.ts`'s own resolution of
+   *  `FontVariantNumeric: TabularNums`, regardless of whether that piece's own text has a digit in it --
+   *  a plain word under a tappable atom's own tabular styling gets it too) -- monospaced figures, each
+   *  digit the SAME, usually WIDER width than its own proportional glyph. Round 13's first cut
+   *  approximated that width from the main thread (the twin was only ever installed in the WORKER's own
+   *  font registry, `Bridge.Worker.ts`'s own `_onFontFace`) with a padded guess, which Jack caught
+   *  misfiring both ways live: too narrow for a two-digit run ("16 countsoutside" still touched), too
+   *  wide once the pad covered it ("16 counts , then" read with a visible gap before its own comma).
+   *
+   *  Fixed for real now: `Bridge.Main.ts` installs the IDENTICAL twin face (same bytes, same
+   *  `TABULAR_FEATURE_SETTINGS`) on THIS thread's own `document.fonts` too, under the SAME family name
+   *  `Text.Types.ts` resolves to (`TabularFamilyStack`, re-exported off the `jaui` package for exactly
+   *  this). `_measure` now simply asks THAT font family for a tabular piece's own string, whole, no
+   *  per-character substitution or padding -- the real tnum advance, not an estimate of it, because the
+   *  canvas doing the measuring finally has the same font the worker paints with. */
   private readonly _measure = (text: string, weight: number): number => {
     if (!text) return 0;
     if (typeof document === 'undefined') return 0;
@@ -177,16 +169,9 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       this._measureCtx = c;
     }
     const size = this.FontSizePt() + _pageFontEpoch() * 1e-4;
-    this._measureCtx.font = `${weight} ${size}px Inter, system-ui, sans-serif`;
-    if (!this.Tabular() || !/[0-9]/.test(text)) return this._measureCtx.measureText(text).width;
-    // Tabular, and this run has at least one digit: sum per-character, substituting the tabular-width
-    // stand-in for every digit so the TOTAL matches what the worker will actually paint, not what the
-    // proportional face alone would advance.
-    let width = 0;
-    for (const ch of text) {
-      width += /[0-9]/.test(ch) ? this._tabularDigitWidth(this._measureCtx, weight, size) : this._measureCtx.measureText(ch).width;
-    }
-    return width;
+    const family = this.Tabular() ? TabularFamilyStack('Inter, system-ui, sans-serif') : 'Inter, system-ui, sans-serif';
+    this._measureCtx.font = `${weight} ${size}px ${family}`;
+    return this._measureCtx.measureText(text).width;
   };
 
   /** `Node.Width`, watched live. `Infinity` before the first rect arrives, so the first layout pass
@@ -288,7 +273,15 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       let ink = style.Ink;
       if (tappable && (s?.Open || inNowGroup) && token.Kind !== 'Problem') ink = '@GoldInk';
       out.push({
-        Key: `${token.Key}:${piece.Row}`,
+        // Round 13: `${token.Key}:${piece.Row}` alone stopped being unique the moment one token could
+        // land more than one piece on the SAME row (this file's own `LayoutSentence` no longer re-merges
+        // a leading-whitespace unit back onto the word after it, its own doc comment explains why) --
+        // live, this read as an Angular NG0955 "duplicated track keys" warning the instant a literal
+        // token split into "," / " " / "then" on one row, each with the identical old key. `piece.X` is
+        // unique among pieces sharing a row by construction (`LayoutSentence` never places two pieces at
+        // the same X on the same row), so appending it restores a genuinely unique key with no new state
+        // to track.
+        Key: `${token.Key}:${piece.Row}:${piece.X}`,
         Text: piece.Text,
         TextStyle: {
           FontFamily: 'Inter, system-ui, sans-serif',
