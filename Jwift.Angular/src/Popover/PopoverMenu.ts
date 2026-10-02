@@ -5,6 +5,7 @@ import {
   OnDestroy,
   OnInit,
   computed,
+  effect,
   forwardRef,
   inject,
   input,
@@ -151,6 +152,12 @@ export class PopoverMenu implements OnInit, OnDestroy {
   );
   protected readonly _IndicatorLayout = this._rowIndicator.IndicatorLayout;
   protected readonly _IndicatorClass = this._rowIndicator.IndicatorClass;
+
+  // The RowIndicator places each row's box RELATIVE to this owner (`row.X - owner.X`), which only
+  // reports real coordinates once its rect is watched — same reason GlassDropdown's own `ngOnInit`
+  // watches its own `Node`. The owner here is a view child, not the component's own Jiv, so it
+  // resolves after the first view pass; an effect (not ngOnInit) is what can wait for that.
+  private readonly _watchScrollBody = effect(() => { this._scrollBody()?.Node.WatchRect(true); });
 
   protected readonly _ScrollLayout = computed(() => {
     const room = this._room ? this._room() : Infinity;
