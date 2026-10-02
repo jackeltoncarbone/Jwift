@@ -35,6 +35,10 @@ Jwift_PopoverArrow : JwiftGlass {
   Height: 17pt
   BorderRadius: 8.5pt
   CornerShape: Bevel
+  // Same GlassFrost escape as the panel surface below, for the same reason: the arrow reads as one
+  // continuous surface with the panel, so it must wear the same frost strength, not the Toolbar
+  // ancestor's inherited None.
+  GlassFrost: Automatic
 }
 
 // The panel surface. Jack, live, repeatedly: every menu (token popovers, the move menu, a row's own "…",
@@ -52,6 +56,21 @@ Jwift_PopoverArrow : JwiftGlass {
 // floating shadow Paper's own surface wore does NOT come along — GlassLaw.Conformance.spec.ts's own house
 // rule is that a glass-composed class states no Shadow of its own ("the face and the shadow are Apple's"):
 // the glass shader's own optics carry it now, consistent with every other JwiftGlass surface in the app.
+//
+// Jack, live, again, after the material swap: "the menu glass isn't legible... the expanded toolbar group
+// blurs what is behind it heavily, but the menu barely blurs at all." Root cause: GlassFrost (Glass.Jss.md
+// section 1) cascades down the COMPONENT tree a popover mounts under, not by where `Position: Placed`
+// visually draws it — and every popover opens from a button inside Jwift_Toolbar / Jwift_PageHeader, both
+// of which state `GlassFrost: None` on purpose (their own scroll-edge pocket already blurs, so the chrome
+// riding in it must not double it). A popover inherits that None the same way GlassDropdown's own open
+// state would if it did not escape it — which is exactly why Jwift_GlassDropdown_Open states its own
+// `GlassFrost: Automatic`, matching ContextMenu/Sheet/TabBar (every one of those a "platter" reading glass
+// is pulled OUT of a frosted pocket, grep for GlassFrost across the kit). Popover never did the same.
+// `Automatic` here is not a blur-radius bump: Glass.Jss.md's own parity row measures None at 2.38px and
+// Automatic's blur/backdrop-scale/LOD trio together much heavier (the toolbar group's own expanded state) —
+// stating it is the one lever that actually changes, matching the toolbar group's own strength exactly
+// since both now state the identical value.
 Jwift_PopoverSurface : JwiftGlass {
   BorderRadius: @JwiftDropdownRadius
+  GlassFrost: Automatic
 }
