@@ -28,17 +28,29 @@ Jwift_Popover {
 // and at radius = width/2 the four chamfers meet exactly at each edge's midpoint, which is a diamond
 // drawn with no Transform at all (`Transform: rotate()` is an unverified legacy path elsewhere in Jaui
 // — DisclosureRow's own glyph swap avoids it for the same reason).
-Jwift_PopoverArrow {
+// Same material swap as the panel surface below (JwiftGlass over Jwift_PaperSurface's own opaque paper) —
+// an opaque arrow pointing at a now-translucent panel would read as two different surfaces glued together.
+Jwift_PopoverArrow : JwiftGlass {
   Width: 17pt
   Height: 17pt
   BorderRadius: 8.5pt
   CornerShape: Bevel
 }
 
-// The panel surface. Same material as Paper, its own BorderRadius (the house dropdown/menu chain:
-// 22pt rows + 10pt panel padding = 32pt, @JwiftDropdownRadius) and a heavier floating shadow than
-// Paper's own — a popover stands OFF the page, further than an island sitting on it.
-Jwift_PopoverSurface {
+// The panel surface. Jack, live, repeatedly: every menu (token popovers, the move menu, a row's own "…",
+// the avatar menu — anything built on <popover>/<popover-menu>) read as solid grey instead of the same
+// glass an expanded toolbar group wears. Root cause: this surface composed Jwift_PaperSurface in the
+// template below (`Jwift_PaperSurface Jwift_PopoverSurface`) for its geometry, and Paper's own material is
+// deliberately opaque (Paper.jss's own doc comment: "a thick, mostly-opaque glass surface... Background:
+// @Paper") — the house's OTHER thick surface family, for islands and sheets, not for a menu that should
+// read as the SAME material an expanded GlassActionGroup/GlassDropdown wears (GlassDropdown.jss's own
+// Jwift_GlassDropdown_Open composes JwiftGlass directly for exactly that reason). JwiftGlass as this
+// class's own base overrides Paper's Background/Glass properties with that same translucent, refractive,
+// fresnel-rimmed material — Position/Size/CornerShape/PointerEvents still come from Jwift_PaperSurface,
+// unaffected, since those aren't properties JwiftGlass states an opinion on. Own BorderRadius (the house
+// dropdown/menu chain: 22pt rows + 10pt panel padding = 32pt, @JwiftDropdownRadius) and a heavier floating
+// shadow than Paper's own stay — a popover stands OFF the page, further than an island sitting on it.
+Jwift_PopoverSurface : JwiftGlass {
   BorderRadius: @JwiftDropdownRadius
   ShadowColor: rgba(0, 0, 0, 0.26)
   ShadowBlur: 50pt
