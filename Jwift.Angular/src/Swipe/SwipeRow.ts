@@ -39,10 +39,10 @@ import SwipeJss from './Swipe.jss';
   standalone: true,
   imports: [SwipeStrip],
   template: `
-    @if (Trailing().length > 0) {
+    @if (Trailing().length > 0 && _trailingOpenWidth() > 0) {
       <swipe-strip Side="Trailing" [Actions]="Trailing()" [OpenWidth]="_trailingOpenWidth()" [Armed]="_armed()" (Pick)="_fire($event)" />
     }
-    @if (Leading().length > 0) {
+    @if (Leading().length > 0 && _leadingOpenWidth() > 0) {
       <swipe-strip Side="Leading" [Actions]="Leading()" [OpenWidth]="_leadingOpenWidth()" [Armed]="false" (Pick)="_fire($event)" />
     }
     <ng-content />
