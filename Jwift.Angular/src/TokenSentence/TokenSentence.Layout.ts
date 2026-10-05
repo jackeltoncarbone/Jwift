@@ -346,3 +346,26 @@ export function LayoutSentence(
 
   return { Pieces: pieces, Hits: hits, Add: add, Height: height };
 }
+
+/**
+ * One Angular `@for` track key per piece, ALIGNED to `pieces` by index — stable across a reflow that
+ * only nudges a piece's own X (a sub-pixel rewrap, a `_pageFontEpoch` bump), never its WHICH-PIECE
+ * identity. `TokenSentence.ts`'s own round-14 fix: a piece's X used to be baked into its key (round 13's
+ * own fix for two pieces sharing a row), so ANY X move read to Angular as a brand-new piece — the old
+ * `<jext>` torn down, a fresh one mounted, whose own `TextAnimator` starts at Opacity 0 and springs in
+ * (the engine's own new-content fade), live as words blanking out then fading back during a phone sheet
+ * drag. An ORDINAL position among the SAME token's own pieces is exactly as unique as X ever was
+ * (`LayoutSentence` never emits two pieces for one token at the same ordinal on the same row) but never
+ * changes just because the piece moved a few px — the key this returns names WHICH piece it is, not
+ * WHERE it currently sits, so the same jext updates in place instead of being reborn.
+ */
+export function TextPieceKeys(
+  pieces: readonly SentencePiece[], tokenKeyOf: (tokenIndex: number) => string,
+): readonly string[] {
+  const ordinal = new Map<number, number>();
+  return pieces.map((piece) => {
+    const n = ordinal.get(piece.TokenIndex) ?? 0;
+    ordinal.set(piece.TokenIndex, n + 1);
+    return `${tokenKeyOf(piece.TokenIndex)}:${piece.Row}#${n}`;
+  });
+}

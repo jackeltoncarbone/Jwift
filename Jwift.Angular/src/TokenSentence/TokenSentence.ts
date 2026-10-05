@@ -22,6 +22,7 @@ import TokenSentenceJss from './TokenSentence.jss';
 import {
   IsTappable,
   LayoutSentence,
+  TextPieceKeys,
   type SentenceHit,
   type SentenceLayoutResult,
   type SentenceToken,
@@ -263,9 +264,22 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       Key: string; Text: string; TextStyle: Record<string, unknown>; Layout: Record<string, unknown>;
       Tappable: boolean; TokenKey: string; Label: string;
     }[] = [];
-    for (const piece of layout.Pieces) {
+    // Round 14, live (phone): words blanked out for a frame or more while dragging the sheet between
+    // detents, the underline staying put while the text above it vanished then faded back in. Keying a
+    // piece by `${token.Key}:${piece.Row}:${piece.X}` (round 13's own fix) meant ANY move in X -- even
+    // the sub-pixel kind a mid-drag rewrap or a `_pageFontEpoch` bump produces, neither of which changes
+    // WHICH piece this is -- read to Angular's `@for` as a brand new item: it destroyed the old `<jext>`
+    // and mounted a fresh one, and a fresh text node's own `TextAnimator` starts every word at Opacity 0
+    // and springs it to 1 (the engine's own new-content fade-in) -- blank, then back over ~300ms. The
+    // underline and pill, tracked by `${token.Key}:${piece.Row}` with no X of their own, were simply
+    // REUSED across that same move, never faded, which is exactly the asymmetry that was live.
+    // `TextPieceKeys` (TokenSentence.Layout.ts, pure and spec'd there) keys a piece by an ORDINAL position
+    // among that token's own pieces instead -- just as unique as `piece.X` ever was, but names WHICH
+    // piece it is rather than WHERE it currently sits, so the existing jext updates in place.
+    const keys = TextPieceKeys(layout.Pieces, (i) => tokens[i]?.Key ?? '');
+    layout.Pieces.forEach((piece, pieceIndex) => {
       const token = tokens[piece.TokenIndex];
-      if (!token) continue;
+      if (!token) return;
       const style = KIND_STYLE[token.Kind];
       const s = state.get(token.Key);
       const tappable = IsTappable(token.Kind);
@@ -273,15 +287,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       let ink = style.Ink;
       if (tappable && (s?.Open || inNowGroup) && token.Kind !== 'Problem') ink = '@GoldInk';
       out.push({
-        // Round 13: `${token.Key}:${piece.Row}` alone stopped being unique the moment one token could
-        // land more than one piece on the SAME row (this file's own `LayoutSentence` no longer re-merges
-        // a leading-whitespace unit back onto the word after it, its own doc comment explains why) --
-        // live, this read as an Angular NG0955 "duplicated track keys" warning the instant a literal
-        // token split into "," / " " / "then" on one row, each with the identical old key. `piece.X` is
-        // unique among pieces sharing a row by construction (`LayoutSentence` never places two pieces at
-        // the same X on the same row), so appending it restores a genuinely unique key with no new state
-        // to track.
-        Key: `${token.Key}:${piece.Row}:${piece.X}`,
+        Key: keys[pieceIndex],
         Text: piece.Text,
         TextStyle: {
           FontFamily: 'Inter, system-ui, sans-serif',
@@ -304,7 +310,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
         TokenKey: token.Key,
         Label: token.Label ?? token.Text,
       });
-    }
+    });
     return out;
   });
 
