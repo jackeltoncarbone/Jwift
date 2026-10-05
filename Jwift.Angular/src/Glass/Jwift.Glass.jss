@@ -120,6 +120,15 @@ JwiftSeparatorVibrancy {
 @JwiftTabBarHeight: 62pt
 @JwiftTabBarInset: 21pt
 @JwiftScreenRadius: @JwiftTabBarHeight / 2 + @JwiftTabBarInset
+// THE DOCK'S OWN FOOTPRINT (bar height + its gap off the screen's bottom edge), WITHOUT the safe area,
+// which a page adds itself via `@SafeBottom` (the one piece that is per-device, not per-bar). A page's own
+// top-level scroller composes this into its bottom padding — `PaddingBottom: @SafeBottom +
+// @JwiftDockClearance` — so its last row clears the floating bar the same way UITabBarController's
+// `contentInset.bottom` clears a real tab bar, on every device, instead of a hand-picked constant that
+// happens to be enough room on a desktop browser (no safe area) and not quite enough on a phone with a
+// home indicator. 21 + 62 = 83, the phone figure (Navigation.jss's `DockEdge`); the regular-width bar
+// shaves 1pt off that (22 + 60 = 82), which 83 already covers, so one constant serves both widths.
+@JwiftDockClearance: @JwiftTabBarInset + @JwiftTabBarHeight
 @JwiftSheetInset: 8pt
 // The width an open inspector column takes from the content beside it; the sheet sets it live, 0 when none is open.
 @JwiftInspectorInset: 0pt
