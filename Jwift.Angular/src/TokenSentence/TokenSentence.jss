@@ -46,6 +46,23 @@ Jwift_TokenSentenceUnderline {
   PointerEvents: None
 }
 
+// A tappable token's own TEXT glyph. Round 14, live: a direct hit on the glyph itself (not its
+// surrounding margin) fired TWICE per tap — once from this jext's own `(click)` (needed only for the
+// SEO/accessibility mirror's synthetic activation, TokenSentence.ts's own doc comment on
+// `_onMirrorActivate`) winning the engine's hit-test over the host (nothing else here declared
+// PointerEvents:None, unlike every other overlay piece), and a second time from the REAL click bubbling
+// up through the DOM to the host's own `(click)="_onHostClick"`. Two `TokenTap`s for one tap reads as
+// open-then-close to `ControlToggle.ts`'s own `NextControlAction` (the second call's key matches the
+// first's, so it answers `Close`) — the control never visibly opens. Worse for a bold, wide Value atom
+// ("16 counts") than a short Word ("march"): more of its own box is covered by glyph ink rather than
+// hit-margin, so a center tap is far more likely to land ON the glyph and double-fire. `PointerEvents:
+// None` here, matching every other piece in this file, makes a real pointer tap pass straight through to
+// the host (the only path meant to ever see one) while leaving the mirror's own synthetic `.click()` (an
+// assistive-tech activation, never hit-tested) unaffected.
+Jwift_TokenSentenceTextHit {
+  PointerEvents: None
+}
+
 // The trailing "+" add button: a small round glyph glued to the sentence's last token.
 Jwift_TokenSentenceAdd {
   Position: Placed
@@ -66,4 +83,11 @@ Jwift_TokenSentenceAddGlyph {
   FontWeight: 400
   Color: @GoldInk
   TextAlign: Center
+  // Same double-fire this file's own Jwift_TokenSentenceTextHit guards against: the "+" jiv it sits
+  // inside already carries PointerEvents:None through `Jwift_TokenSentenceAdd` (above), but a CHILD node
+  // is hit-tested before its parent (`_hitTopmost` descends first) — this glyph, with no override of its
+  // own, was the deepest node under a tap dead-center on "+", real on touch (round 14, live: "'+' only
+  // selects the row" — the SAME tap also bubbled to the host's own `_onHostClick`, so AddTap fired twice,
+  // opening the family menu and closing it again in the same gesture — never visibly opening at all).
+  PointerEvents: None
 }

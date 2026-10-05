@@ -20,17 +20,19 @@ function row(h: FakeHandle, disabled = false): RowIndicatorRow {
  *  `PointerEvent` (this suite runs under vitest's `node` environment — no DOM, by design: the pure
  *  decision this fix lives in needs none). */
 function fakeDoc() {
-  const listeners = new Map<string, Set<(e: { clientX: number; clientY: number }) => void>>();
+  const listeners = new Map<string, Set<(e: { clientX: number; clientY: number; pointerType: string }) => void>>();
   return {
     addEventListener: (type: string, fn: unknown) => {
       if (!listeners.has(type)) listeners.set(type, new Set());
-      listeners.get(type)!.add(fn as (e: { clientX: number; clientY: number }) => void);
+      listeners.get(type)!.add(fn as (e: { clientX: number; clientY: number; pointerType: string }) => void);
     },
     removeEventListener: (type: string, fn: unknown) => {
-      listeners.get(type)?.delete(fn as (e: { clientX: number; clientY: number }) => void);
+      listeners.get(type)?.delete(fn as (e: { clientX: number; clientY: number; pointerType: string }) => void);
     },
-    fire: (type: string, x: number, y: number) => {
-      for (const fn of listeners.get(type) ?? []) fn({ clientX: x, clientY: y });
+    /** `pointerType` defaults to 'mouse' — every pre-existing test in this file fires bare move/leave
+     *  events that never cared, and the touch-specific behavior below opts in explicitly. */
+    fire: (type: string, x: number, y: number, pointerType = 'mouse') => {
+      for (const fn of listeners.get(type) ?? []) fn({ clientX: x, clientY: y, pointerType });
     },
   };
 }
@@ -122,6 +124,40 @@ describe('RowIndicator first-placement snap (LaneM.md)', () => {
     doc.fire('pointermove', 20, 55);
     expect(indicatorNode.SnapLayout).toBe(false);
     expect(ri.IndicatorLayout()).toBeUndefined();
+    unbind();
+  });
+});
+
+// Round 14, live: "a menu reopened fresh sometimes sticks on its first item" — a touch tap has no
+// pointerleave of its own (a mouse moving off a row fires one; a lifted finger never does), so without
+// this the pill stayed lit on whatever row the LAST tap landed on, indistinguishable from a real current
+// hover the next time the same row happened to be first.
+describe('RowIndicator release clears touch hover, not mouse hover (round 14)', () => {
+  it('a touch release clears the hover — no stuck highlight for the next open', () => {
+    const h = handle(10, 50, 100, 24);
+    const r = row(h);
+    const { ri, doc } = makeIndicator(new Map([[r, h]]));
+    const unbind = ri.Bind(doc as never, () => true);
+
+    doc.fire('pointerdown', 20, 55, 'touch');
+    expect(ri.IndicatorClass()).not.toBe('Jwift_GlassDropdownIndicator');
+    doc.fire('pointerup', 20, 55, 'touch');
+    // Back to the base (Opacity: 0) class — nothing reads as hovered/pressed any more.
+    expect(ri.IndicatorClass()).toBe('Jwift_GlassDropdownIndicator');
+    unbind();
+  });
+
+  it('a mouse release leaves the hover alone — the cursor is still sitting right there', () => {
+    const h = handle(10, 50, 100, 24);
+    const r = row(h);
+    const { ri, doc } = makeIndicator(new Map([[r, h]]));
+    const unbind = ri.Bind(doc as never, () => true);
+
+    doc.fire('pointerdown', 20, 55, 'mouse');
+    expect(ri.IndicatorClass()).toBe('Jwift_GlassDropdownIndicator_Pressed');
+    doc.fire('pointerup', 20, 55, 'mouse');
+    // Press lifts, but the row is still hovered (the mouse never left it) — the "on" class, not the base one.
+    expect(ri.IndicatorClass()).toBe('Jwift_GlassDropdownIndicator_On');
     unbind();
   });
 });

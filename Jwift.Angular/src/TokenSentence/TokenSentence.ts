@@ -95,7 +95,7 @@ interface _PieceState { Hover: boolean; Press: boolean; Open: boolean; }
     }
     @for (t of _textPieces(); track t.Key) {
       @if (t.Tappable) {
-        <jext [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout"
+        <jext class="Jwift_TokenSentenceTextHit" [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout"
               semantics="Button" [label]="t.Label" (click)="_onMirrorActivate(t.TokenKey)" />
       } @else {
         <jext [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout" />

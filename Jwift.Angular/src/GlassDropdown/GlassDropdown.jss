@@ -487,6 +487,18 @@ Jwift_GlassDropdownIndicator {
   BorderRadius: 22pt
   BackdropFilter: Vibrancy(@JwiftVibrancyFill) Saturate(@JwiftSelectionSaturate) Brightness(1.06 * @Dark + 0.97 * @Light)
   Opacity: 0
+  // Round 14, live: a menu reopened fresh sometimes stuck on its first item, "March" never expanded its
+  // own submenu though "Face"/"Flank" sometimes did, and "Change who..." hung with no popover ever
+  // appearing -- all one cause. This pill is decorative (the row underneath is the real hit target,
+  // RowIndicator.ts's own doc comment), but `Opacity: 0` is a PAINT concern only -- Jaui's own hit-test
+  // (`Scroll.Manager.ts`'s own `_hitTopmost`) skips a node only for `PointerEvents: None` or `!Visible`,
+  // never for zero opacity, and this had neither. In PopoverMenu (unlike GlassDropdown, whose own
+  // `<jiv #indicator>` is its FIRST child) the indicator paints LAST, so it was the TOPMOST node at
+  // whatever row it last sat on (`IndicatorLayout` is set on first hover/press and never cleared) --
+  // stealing the click a mouse's pointerdown+pointerup both land on, or desyncing touch's own
+  // down-vs-up node identity once the pill slides there mid-gesture. A row buried under the pill's own
+  // last position (very often row 0 or row 1, wherever the pointer first settled) silently ate every tap.
+  PointerEvents: None
 
   @Transition Y { Duration: 220ms }
   @Transition X { Duration: 220ms }

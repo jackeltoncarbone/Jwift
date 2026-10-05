@@ -151,9 +151,15 @@ export class RowIndicator {
       this._hover(row);
       this._pressed.set(row !== null);
     };
-    const onRelease = (): void => {
+    const onRelease = (e: PointerEvent): void => {
       if (!isActive()) return;
       if (this._pressed()) this._pressed.set(false);
+      // A finger has no hover once it lifts (Jaui.ts's own `liftTouch` does the identical thing for the
+      // engine's own Hover/Active states) -- touch raises no pointerleave the way a mouse moving off the
+      // row does, so without this the pill stayed lit on whatever row a tap last landed on, reading as
+      // "stuck" the next time this same menu (or a fresh page pushed into it) opened with nothing
+      // actually hovered. Mouse is untouched: its own pointerleave/pointermove already keep hover honest.
+      if (e.pointerType !== 'mouse') this._hover(null);
     };
     const onLeave = (): void => {
       if (!isActive()) return;

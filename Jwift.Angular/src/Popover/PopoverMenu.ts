@@ -86,6 +86,17 @@ export class PopoverMenuRow implements OnInit, OnDestroy, RowIndicatorRow {
   template: `
     <jyle [source]="Jss" />
     <jiv #scrollBody class="Jwift_PopoverMenuScroll" [childLayout]="_ScrollLayout()">
+      <!-- FIRST child, matching GlassDropdown.ts's own order (its own doc comment on RowIndicator: "one
+           sliding indicator", the shared pill both share). Round 14, live: with this painted LAST (as it
+           used to be here), a real pointer hit-test (Scroll.Manager.ts's own _hitTopmost, which skips
+           a node only for PointerEvents: None or !Visible -- never zero opacity) found the pill
+           itself, not the row under it, since the pill is Position: Placed over whatever row it last
+           sat on and nothing here ever gave it PointerEvents: None of its own. First in paint order
+           means every real row's own (click) is topmost again, the pill purely decorative underneath
+           it (GlassDropdown.jss's own fix for the indicator class itself backs this up further, not
+           instead of it -- belt and suspenders, since a future row added above it here would reopen the
+           same bug otherwise). -->
+      <jiv #indicator [class]="_IndicatorClass()" [childLayout]="_IndicatorLayout()" />
       @if (!_atRoot()) {
         <jiv class="Jwift_PopoverMenuBack" semantics="Button" [label]="_parentTitle() ?? ''" (click)="Back()">
           <icon class="Jwift_PopoverMenuBackGlyph" Name="chevron.left" />
@@ -121,7 +132,6 @@ export class PopoverMenuRow implements OnInit, OnDestroy, RowIndicatorRow {
           }
         }
       }
-      <jiv #indicator [class]="_IndicatorClass()" [childLayout]="_IndicatorLayout()" />
     </jiv>
   `,
   styles: [':host { display: contents; }'],
@@ -194,10 +204,18 @@ export class PopoverMenu implements OnInit, OnDestroy {
 
   PushPage(items: readonly PopoverMenuItem[], title: string | null): void {
     this._pushed.update((s) => [...s, { Items: items, Title: title }]);
+    // Round 14, live ("a menu reopened fresh sometimes sticks on its first item"): the OLD page's rows
+    // unregister as they're torn down, but `RowIndicator`'s own `_hovered`/`IndicatorLayout` never clear
+    // on their own (`UnregisterRow` only clears `_hovered` for the SPECIFIC row being removed, and a
+    // page swap can land the very first NEW row at the exact canvas position the pill was already
+    // sitting at) -- the pill could keep reading as "on" over whatever NEW row happens to start where the
+    // OLD one left off, with no real hover/press to back it. A fresh page starts with nothing highlighted.
+    this._rowIndicator.Reset();
   }
 
   Back(): void {
     this._pushed.update((s) => s.slice(0, -1));
+    this._rowIndicator.Reset(); // same reasoning as PushPage's own Reset, above.
   }
 
   protected _RowClass(item: PopoverMenuItem): string {
