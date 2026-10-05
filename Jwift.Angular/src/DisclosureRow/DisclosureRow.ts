@@ -59,11 +59,13 @@ export class DisclosureRow {
   readonly open = input(false, { transform: booleanAttribute });
   readonly openChange = output<boolean>();
 
-  // Chevron rotates in place rather than swapping glyphs — iOS-style, trailing the title. `Rotate(deg)` is
-  // JSS's verified in-plane (Z-axis) transform, the same mechanism AngleDial's needle already uses; it is
-  // RotateX/RotateY (pitch/yaw, 3D, needing an ancestor Perspective) that is the unverified path elsewhere
-  // in Jaui (Popover.jss), not this one.
-  protected readonly _ChevronStyle = computed(() => ({ Transform: `Rotate(${this.open() ? 180 : 0}deg)` }));
+  // Chevron rotates in place rather than swapping glyphs — iOS-style, trailing the title. `rotate(N)` is
+  // JSS's in-plane (Z-axis) transform (Transform.Parse.ts), authored UNITLESS — Length has no `deg` unit,
+  // so `rotate(180deg)` throws inside the worker's style resolve (SS-Support-FAQ-2: that throw is why the
+  // chevron box never got a StyleAnimator and rendered at the Presence-seeded Opacity of 0 — invisible on
+  // every row, open or closed). It is RotateX/RotateY (pitch/yaw, 3D, needing an ancestor Perspective) that
+  // remains the unverified transform path elsewhere in Jaui (Popover.jss), not this in-plane one.
+  protected readonly _ChevronStyle = computed(() => ({ Transform: `rotate(${this.open() ? 180 : 0})` }));
 
   // The row's own internal boxes. `#bodyBox` reads `undefined` reactively whenever `@if (open())` is
   // false — no registration directive needed to know when the body has (or lacks) a box to parent into.

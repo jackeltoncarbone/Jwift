@@ -41,6 +41,12 @@ export interface SlotNode {
  * in whichever order they arrive in, and safe to call again with the same values (a no-op once settled).
  * `box === null` is how a closed body ends up with NO parent at all — unreachable from the canvas Root,
  * so it is not laid out or painted, rather than merely hidden.
+ *
+ * This relies on `RemoveChild` actually telling the WORKER a node lost its parent, not just the
+ * main-thread `JivHandle` mirror — which it did not, until Jaui's `detach` JivOp (`Jiv.Handle.ts`,
+ * `Jiv.Registry.ts`): every answer stayed attached on the worker's own tree forever, regardless of
+ * `open()`, which is what actually produced SS-Support-FAQ-2's "every answer visible, in front of its
+ * own question" symptom — not a parenting mistake in this file.
  */
 export function SyncSlotParent(content: SlotNode, box: SlotNode | null): void {
   if (box) {
