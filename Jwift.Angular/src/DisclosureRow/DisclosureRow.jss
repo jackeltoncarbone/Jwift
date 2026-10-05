@@ -12,6 +12,10 @@ Jwift_DisclosureHead {
   Width: 100%
   MinHeight: 44pt
   Gap: 8pt
+  // HOUSE inset (Jwift_ListRow's own horizontal padding) — without it the projected question sat flush
+  // against the LIST's own edge, not the row's: SS-Support-FAQ-2, the wrong-parenting bug this file's
+  // header box fixes also cost the row its padding, since the question rendered outside this box entirely.
+  Padding: 0pt 16pt
   Interactive: true
   Cursor: Pointer
   UserSelect: None
@@ -24,15 +28,20 @@ Jwift_DisclosureHead:Active {
   BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
 }
 
+// The chevron's own rotation lives on its wrapping box (Transform, via `[jivStyle]` in DisclosureRow.ts) —
+// Icon has no `style` input of its own to carry it directly.
+Jwift_DisclosureChevronBox {
+  FlexShrink: 0
+}
+
 Jwift_DisclosureChevron {
   FontFamily: JwiftIcons
   FontSize: 13pt
   Color: @InkFaint
   TextAlign: Center
-  FlexShrink: 0
 }
 
 Jwift_DisclosureBody {
   Width: 100%
-  Padding: 0pt 0pt 12pt 0pt
+  Padding: 0pt 16pt 12pt 16pt
 }

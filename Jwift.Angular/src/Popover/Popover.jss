@@ -26,8 +26,9 @@ Jwift_Popover {
 // outer tip shows, the classic popover notch.
 // The diamond is Bevel at HALF the side, not a rotated square: a Bevel corner is a straight chamfer,
 // and at radius = width/2 the four chamfers meet exactly at each edge's midpoint, which is a diamond
-// drawn with no Transform at all (`Transform: rotate()` is an unverified legacy path elsewhere in Jaui
-// — DisclosureRow's own glyph swap avoids it for the same reason).
+// drawn with no Transform at all — simpler than a rotate, not a workaround for one: `Rotate(deg)` (2D,
+// in-plane) is verified (AngleDial's needle, DisclosureRow's own chevron); it is RotateX/RotateY (3D,
+// needing an ancestor Perspective) that remains the unverified path elsewhere in Jaui.
 // Same material swap as the panel surface below (JwiftGlass over Jwift_PaperSurface's own opaque paper) —
 // an opaque arrow pointing at a now-translucent panel would read as two different surfaces glued together.
 Jwift_PopoverArrow : JwiftGlass {
