@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Jaui, Jext, Jiv } from 'jaui-angular';
-import { TabularFamilyStack } from 'jaui';
+import { ComposeFontFamily, TabularFamilyStack } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { Icon } from '../Icon/Icon';
 import { CanvasPress } from '../Internal/CanvasPress';
@@ -160,7 +160,15 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
    *  `Text.Types.ts` resolves to (`TabularFamilyStack`, re-exported off the `jaui` package for exactly
    *  this). `_measure` now simply asks THAT font family for a tabular piece's own string, whole, no
    *  per-character substitution or padding -- the real tnum advance, not an estimate of it, because the
-   *  canvas doing the measuring finally has the same font the worker paints with. */
+   *  canvas doing the measuring finally has the same font the worker paints with.
+   *
+   *  Same reasoning covers the CJK sans fallback (SS drill-sentences, live: a Japanese/Chinese/Korean
+   *  sentence rendered in a serif fallback because `Inter, system-ui, sans-serif` names no CJK face).
+   *  `ComposeFontFamily` -- re-exported off `jaui` right next to `TabularFamilyStack`, same package, same
+   *  reason -- is the ONE place that stack gets extended, and `Text.Measure.ts`'s own `ApplyTextStyle`
+   *  calls it for the worker's real measure/paint. Composing it here too, over the identical base string,
+   *  keeps this thread's own pre-layout wrap decision shaped against the exact font the worker ends up
+   *  painting -- the same mismatch class as the tabular twin above, just for a different face. */
   private readonly _measure = (text: string, weight: number): number => {
     if (!text) return 0;
     if (typeof document === 'undefined') return 0;
@@ -170,8 +178,8 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       this._measureCtx = c;
     }
     const size = this.FontSizePt() + _pageFontEpoch() * 1e-4;
-    const family = this.Tabular() ? TabularFamilyStack('Inter, system-ui, sans-serif') : 'Inter, system-ui, sans-serif';
-    this._measureCtx.font = `${weight} ${size}px ${family}`;
+    const base = this.Tabular() ? TabularFamilyStack('Inter, system-ui, sans-serif') : 'Inter, system-ui, sans-serif';
+    this._measureCtx.font = `${weight} ${size}px ${ComposeFontFamily(base)}`;
     return this._measureCtx.measureText(text).width;
   };
 
@@ -290,6 +298,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
         Key: keys[pieceIndex],
         Text: piece.Text,
         TextStyle: {
+          // Base stack only -- Jaui's own ApplyTextStyle (Text.Measure.ts) extends this with the CJK
+          // sans fallback at paint/measure time (ComposeFontFamily), the same composition `_measure`
+          // above applies by hand for this thread's own pre-layout wrap pass. Keep this literal in sync
+          // with `_measure`'s own base string -- they must resolve the identical stack.
           FontFamily: 'Inter, system-ui, sans-serif',
           FontSize: `${fs}pt`,
           FontWeight: style.Weight,
