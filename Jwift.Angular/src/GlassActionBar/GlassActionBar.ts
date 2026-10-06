@@ -19,6 +19,7 @@ import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
 import { GlassDropdownItem } from '../GlassDropdown/GlassDropdownItem';
 import { JwiftSpinner } from '../Spinner/JwiftSpinner';
 import GlassActionBarJss from './GlassActionBar.jss';
+import { HoverTip } from './HoverTip';
 
 /**
  * One collapsing button group in the toolbar trailing cluster. Renders as its
@@ -92,10 +93,16 @@ export interface ActionGroup {
                     <jwift-spinner [size]="20" />
                   </jiv>
                 } @else {
-                  <jiv [class]="_CellClass(a)" (click)="_OnExpandableCell(a, $event, gd)">
+                  <jiv [class]="_CellClass(a)" semantics="Button" [label]="a.Label ?? null"
+                       (click)="_OnExpandableCell(a, $event, gd)" (pointermove)="_Tip.Over(a.Id, $event)">
                     <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
                     @if (a.Disclosure) {
                       <icon class="Jwift_GlassDropdownCellChevron" Name="chevron.down" />
+                    }
+                    @if (a.Badge) {
+                      <jiv class="Jwift_GlassActionBadge">
+                        <jext class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
+                      </jiv>
                     }
                   </jiv>
                 }
@@ -136,8 +143,14 @@ export interface ActionGroup {
                   <jwift-spinner [size]="20" />
                 </jiv>
               } @else {
-                <jiv [class]="_CellClass(a)" (click)="_OnCell(a, $event)">
+                <jiv [class]="_CellClass(a)" semantics="Button" [label]="a.Label ?? null"
+                     (click)="_OnCell(a, $event)" (pointermove)="_Tip.Over(a.Id, $event)">
                   <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
+                  @if (a.Badge) {
+                    <jiv class="Jwift_GlassActionBadge">
+                      <jext class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
+                    </jiv>
+                  }
                 </jiv>
               }
             }
@@ -154,6 +167,13 @@ export interface ActionGroup {
         [CollaboratorAvatarUrls]="CollaboratorAvatarUrls()"
         [ShowEllipsis]="false"
         (ActionClick)="ActionClick.emit($event)" />
+      @if (_TipLayout(); as tip) {
+        <jiv class="Jwift_GlassActionTip" [childLayout]="tip.Layout">
+          <jiv class="Jwift_GlassActionTipPill">
+            <jext class="Jwift_GlassActionTipText" [text]="tip.Label" />
+          </jiv>
+        </jiv>
+      }
     </jiv>
   `,
   styles: [':host { display: contents; }'],
@@ -193,6 +213,38 @@ export class GlassActionBar implements OnDestroy {
   protected readonly _NoActions: readonly GlassAction[] = [];
 
   @ViewChild('bar', { read: Jiv }) private _Bar?: Jiv;
+
+  /** Which cell's name a resting desktop pointer reads (Drill Sentences lane X2, item 7: a row of bare
+   *  glyphs read as unlabeled to blind first-time testers). `HoverTip.ts` carries the timing. */
+  protected readonly _Tip = new HoverTip();
+  /** The tip's own box: wide enough for any one cell's name, centred under its cell (the bar lays its
+   *  pills out with the same geometry the collapse solver below already models, so a cell's centre is a
+   *  sum, never a measurement), just below the bar. The pill inside sizes to its text. */
+  private static readonly _TipWidthPt = 220;
+  private static readonly _TipGapPt = 6;
+  protected readonly _TipLayout = computed<{ Label: string; Layout: Partial<ChildLayout> } | null>(() => {
+    const id = this._Tip.Shown();
+    if (id === null) return null;
+    const cell = GlassActionBar._CellPt, gap = GlassActionBar._GapPt, pad = GlassActionBar._PadPt;
+    let left = 0;
+    for (const gp of this._GroupPills()) {
+      const index = gp.Cells.findIndex((a) => a.Id === id);
+      if (index >= 0) {
+        const label = gp.Cells[index].Label;
+        if (!label) return null;
+        const centre = left + pad + index * (cell + gap) + cell / 2;
+        return {
+          Label: label,
+          Layout: {
+            Position: 'Placed', Left: `${centre - GlassActionBar._TipWidthPt / 2}pt`,
+            Top: `${48 + GlassActionBar._TipGapPt}pt`, Width: `${GlassActionBar._TipWidthPt}pt`,
+          },
+        };
+      }
+      left += this._pillWidth(gp.Cells.length, cell, gap, pad) + GlassActionBar._PillGapPt;
+    }
+    return null;
+  });
 
   // Geometry — in sync with Jwift_GlassDropdown_Closed (40pt cells, 4pt gap,
   // 4pt pad) and Jwift_GlassActionBar (10pt inter-pill gap).
@@ -294,6 +346,7 @@ export class GlassActionBar implements OnDestroy {
 
   ngOnDestroy(): void {
     if (this._rafId) cancelAnimationFrame(this._rafId);
+    this._Tip.Dispose();
   }
 
   /** Closed-pill footprint (pt) for an expandable group's reserving slot —
