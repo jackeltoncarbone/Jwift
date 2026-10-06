@@ -34,11 +34,12 @@ Jwift_TokenSentencePill_OpenProblem {
 // target key and null on a timer (TokenSentence.ts's own doc comment) — this pill only ever MOUNTS while
 // Glow is true, so each on/off leg rides the SAME Presence mount/unmount fade every other state-driven
 // pill here already gets (this file's own top comment: "rendered only while its state is not at rest"),
-// no separate keyframe animation needed. The SAME gold the Open pill above uses, at a THIRD the fill
-// strength, so a reader reads it as "look here" rather than mistaking it for an already-open control.
+// no separate keyframe animation needed. Live fix: an EXTRA Opacity on top of @GoldWash (already the
+// house's own "quiet accent tint" — Design/BrandFill.Conformance.spec.ts's own doc comment, distinct
+// from the stronger @GoldWashStrong) diluted it to the point of being invisible. Plain @GoldWash, same
+// as the Open pill above, is already the soft strength this item asks for.
 Jwift_TokenSentencePill_Glow {
   Background: @GoldWash
-  Opacity: 0.35
 }
 
 // The badge pill — Kind: Badge's permanent small chip (not state-driven; it is always drawn).

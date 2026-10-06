@@ -500,10 +500,26 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     this._storePoint(e);
     this._updateHover();
   }
-  protected _onHostClick(_e: MouseEvent): void {
+  /**
+   * Drill Sentences U1 live fix (item 2, two first-time testers): a tap that lands on an actual token or
+   * the "+" used to go on bubbling past this host after `TokenTap`/`AddTap` fired — a REAL DOM click
+   * (this host is `display: contents`, not canvas-hit-tested the way the pieces inside it are, so
+   * nothing here stopped it) — and `EditorLine.ts`'s own `DrillLineRow` wrapper listens for `(click)`
+   * too, to select an otherwise-untappable patch of EMPTY row space (its own doc comment: "tapping a
+   * row's own empty space... did nothing"). Before item 2 that was harmless — a token tap called the
+   * SAME `SelectLine` the row's own handler calls, so the duplicate fired for nothing. Item 2 split that
+   * into `MarkCurrent` (most tokens) vs `SelectLine` (the row body, the who token, a field tap) — once
+   * those two calls stopped being interchangeable, the bubbled click kept forcing the FIELD-selecting
+   * one regardless, undoing item 2 for every token it did not want to field-select. `stopPropagation`
+   * once a real key resolves (token or "+") is the general fix: a tap that landed ON something specific
+   * was never "a tap on the row's own empty space" to begin with, whatever that something turns out to
+   * mean one level up.
+   */
+  protected _onHostClick(e: MouseEvent): void {
     const key = this._hitAt(this._lastPointer);
     this._pressedKey.set(null);
     if (key === null) return;
+    e.stopPropagation();
     if (key === '+') {
       const anchor = this.AnchorOf('+');
       if (anchor) this.AddTap.emit({ Anchor: anchor });

@@ -30,6 +30,15 @@ Jwift_DismissibleHintLabel {
   Overflow: Hidden
   MaxLines: 1
 }
+// Drill Sentences U1, item 9 live fix: the DismissibleHint's own `[Wrap]` input swaps this class in for
+// a caller whose own text is a full sentence rather than a short label. 3 lines is generous for one
+// sentence in a 280pt-wide popover (this house's own convention for "more than one line" is always a
+// stated number — Design/Prompt/Prompt.jss's own MaxLines:10 for free text, Sheet.jss's MaxLines:8 — never
+// an "unlimited" sentinel, which this engine's own JSS grammar has no literal syntax for).
+Jwift_DismissibleHintLabel_Wrap {
+  Overflow: Visible
+  MaxLines: 3
+}
 Jwift_DismissibleHintDrop {
   Interactive: true
   Cursor: Pointer

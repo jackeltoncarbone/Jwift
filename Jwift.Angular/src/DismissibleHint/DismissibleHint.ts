@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
 import DismissibleHintJss from './DismissibleHint.jss';
@@ -22,7 +22,7 @@ import DismissibleHintJss from './DismissibleHint.jss';
       @if (glyph()) {
         <icon class="Jwift_DismissibleHintGlyph" [Name]="glyph()" />
       }
-      <jext class="Jwift_DismissibleHintLabel" [text]="text()" />
+      <jext [class]="LabelClass()" [text]="text()" />
       <jiv class="Jwift_DismissibleHintDrop" [label]="dismissLabel()" (click)="dismiss.emit()">
         <icon class="Jwift_DismissibleHintDropGlyph" Name="xmark" />
       </jiv>
@@ -36,6 +36,17 @@ export class DismissibleHint {
   readonly glyph = input('');
   readonly text = input.required<string>();
   readonly dismissLabel = input('Dismiss');
+  /** Drill Sentences U1, item 9 live fix: every OTHER caller's own text is short BY DESIGN ("Stop
+   *  pinning", "Tap the spot this note is about" — the latter already brushes one line's own width in
+   *  its own dock) — `Jwift_DismissibleHintLabel`'s own `MaxLines: 1`/`Overflow: Hidden` was never wrong
+   *  for THAT text, only for a caller with a genuinely longer sentence (item 9's own first-run hint, in
+   *  a narrow Popover rather than a full-width dock) that needs the SAME capsule to actually wrap
+   *  instead of clipping mid-word. Default `false` — every existing caller keeps today's one-line
+   *  clip-if-it-must-be behaviour untouched. */
+  readonly Wrap = input(false);
 
   readonly dismiss = output<void>();
+
+  protected readonly LabelClass = computed(() =>
+    this.Wrap() ? 'Jwift_DismissibleHintLabel Jwift_DismissibleHintLabel_Wrap' : 'Jwift_DismissibleHintLabel');
 }
