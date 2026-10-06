@@ -29,6 +29,17 @@ Jwift_TokenSentencePill_Open {
 Jwift_TokenSentencePill_OpenProblem {
   Background: @DangerWash
 }
+// Drill Sentences U1, item 9 (a gentle first-run hint): "one editable word... glows softly (a subtle
+// accent wash, pulsing gently twice)". A caller drives the pulse itself by toggling `GlowKey` between the
+// target key and null on a timer (TokenSentence.ts's own doc comment) — this pill only ever MOUNTS while
+// Glow is true, so each on/off leg rides the SAME Presence mount/unmount fade every other state-driven
+// pill here already gets (this file's own top comment: "rendered only while its state is not at rest"),
+// no separate keyframe animation needed. The SAME gold the Open pill above uses, at a THIRD the fill
+// strength, so a reader reads it as "look here" rather than mistaking it for an already-open control.
+Jwift_TokenSentencePill_Glow {
+  Background: @GoldWash
+  Opacity: 0.35
+}
 
 // The badge pill — Kind: Badge's permanent small chip (not state-driven; it is always drawn).
 Jwift_TokenSentenceBadgePill {
@@ -76,6 +87,18 @@ Jwift_TokenSentenceAdd_Hover {
 }
 Jwift_TokenSentenceAdd_Open {
   Background: @GoldWash
+}
+// Drill Sentences U1, item 8 (two first-time testers): a caller's own `AddVisible` input fades the "+"
+// on a row that is neither current nor hovered — the box stays exactly where `ShowAdd`'s own layout
+// reservation already puts it (TokenSentence.ts's own doc comment on `AddVisible`: toggling THAT would
+// reflow the sentence, so only the paint fades here), it just has nothing to look at. Revealed again by
+// `Ancestor(Jwift_HoverGroup):Hover` — the generic half of item 8: a caller wraps its own row in THIS
+// class (Jaui's own ancestor-chain Hover already bubbles up from any descendant, and is pointer-type
+// gated at the engine, never latching on a touch tap) and every `<token-sentence>` inside it gets the
+// reveal for free, no app-specific class name baked into this kit file.
+Jwift_TokenSentenceAdd_Faded {
+  Opacity: 0
+  @If (Ancestor(Jwift_HoverGroup):Hover) { Opacity: 1 }
 }
 Jwift_TokenSentenceAddGlyph {
   FontFamily: JwiftIcons

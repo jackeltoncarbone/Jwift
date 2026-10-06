@@ -131,7 +131,7 @@ export { PlacePopover, type PopoverRect } from './Popover/Popover.Placement';
 export { PopoverMenu, type PopoverMenuItem } from './Popover/PopoverMenu';
 export { TokenSentence } from './TokenSentence/TokenSentence';
 export {
-  LayoutSentence, type SentenceToken, type SentenceTokenKind,
+  IsTappable, LayoutSentence, type SentenceToken, type SentenceTokenKind,
 } from './TokenSentence/TokenSentence.Layout';
 export { NumberField, type NumberFieldUnit, type NumberFieldRow } from './NumberField/NumberField';
 export { AngleDial } from './AngleDial/AngleDial';

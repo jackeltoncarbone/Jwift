@@ -38,7 +38,16 @@ const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
   Text:        { Ink: '@Ink',     Weight: 400, Underline: null },
   Quiet:       { Ink: '@InkSoft', Weight: 400, Underline: null },
   Word:        { Ink: '@Ink',     Weight: 400, Underline: '@Line' },
-  Value:       { Ink: '@Ink',     Weight: 600, Underline: null },
+  // Drill Sentences U1, item 5 (two first-time testers): "16 counts" is already ONE atom end to end — the
+  // app's own `CountsText`/`lengthToken` (Render.ts) bake the number and its unit word into a single
+  // token, and `TokenSentence.Layout.ts`'s own `_buildUnits` never splits a tappable kind, so the hit rect
+  // already spans the full "16 counts" width. What it carried nothing of was this UNDERLINE -- Value drew
+  // bold with no underline at all, so the unit half of the phrase read as plain prose next to the bold
+  // digits, and a first-time tester reasonably read only the bold part as "the control." A move's own
+  // Value half ("forward" in "march forward") had the identical gap. Underlined now, matching Word --
+  // the whole visible run (number AND unit, or verb AND value) reads as one continuous tappable phrase,
+  // never half of it looking like inert text.
+  Value:       { Ink: '@Ink',     Weight: 600, Underline: '@Line' },
   Who:         { Ink: '@Ink',     Weight: 700, Underline: null },
   Placeholder: { Ink: '@GoldInk', Weight: 600, Underline: null },
   // The mirror pair's own icon (Render.ts's `Icon: 'arrow.left.and.right'`) tints the SAME as the "who"
@@ -97,7 +106,7 @@ const _watchPageFonts = (): void => {
   }
 };
 
-interface _PieceState { Hover: boolean; Press: boolean; Open: boolean; }
+interface _PieceState { Hover: boolean; Press: boolean; Open: boolean; Glow: boolean; }
 
 /**
  * `<token-sentence>`: a cue rendered as tappable prose — every word a token you can tap, karaoke
@@ -145,10 +154,29 @@ interface _PieceState { Hover: boolean; Press: boolean; Open: boolean; }
 export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   readonly Tokens = input<readonly SentenceToken[]>([]);
   readonly OpenKey = input<string | null>(null);
+  /** Drill Sentences U1, item 9 (a gentle first-run hint): the one token this sentence highlights as a
+   *  soft accent-wash pill — `_visiblePills`' own `Jwift_TokenSentencePill_Glow` class below, distinct
+   *  from `OpenKey`'s solid gold (that one means "its control is actually open"; this one means "look
+   *  here"). The PULSE itself (on, off, on, off) is the CALLER's own job, not this component's — it just
+   *  renders whatever `GlowKey` says RIGHT NOW; a caller wanting "pulse twice" toggles this input between
+   *  the target key and `null` on a timer (`EditorLine.ts`'s own `_glowPulseKey`), the same way any other
+   *  input here drives an animated style through nothing more than a changing value. */
+  readonly GlowKey = input<string | null>(null);
   readonly NowGroup = input<number | null>(null);
   readonly ShowAdd = input(false);
   readonly AddLabel = input('');
   readonly AddOpen = input(false);
+  /** Drill Sentences U1, item 8 (two first-time testers): separate from `ShowAdd` on purpose. `ShowAdd`
+   *  reserves the "+" glyph's own space in the LAYOUT (`LayoutSentence`'s own `opts.ShowAdd` — it changes
+   *  where the sentence wraps, "glued to the last token"), so toggling IT on a selection change would
+   *  reflow the sentence exactly the way `EditorLine.ts`'s own "…" button already had to be fixed not to.
+   *  `AddVisible` (default `true`, so every existing caller is unaffected) only fades the glyph's own
+   *  PAINT — `_add`'s own `Jwift_TokenSentenceAdd_Faded` class below — while its reserved box stays put
+   *  either way. A caller wanting "+" visible only on its own selected/current row passes
+   *  `[AddVisible]="IsSelected()"`; the KIT's own `TokenSentence.jss` separately reveals it on an
+   *  ANCESTOR hover too (`Ancestor(Jwift_HoverGroup):Hover`), the generic half of item 8 every caller
+   *  gets for free by wrapping its own row in a `Jwift_HoverGroup` class. */
+  readonly AddVisible = input(true);
   /** BCP-47; reserved for a future per-language measurement/shaping hook. */
   readonly Language = input<string | null>(null);
   readonly FontSizePt = input(16);
@@ -236,9 +264,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     const hovered = this._hoveredKey();
     const pressed = this._pressedKey();
     const openKey = this.OpenKey();
+    const glowKey = this.GlowKey();
     const out = new Map<string, _PieceState>();
     for (const t of this.Tokens()) {
-      out.set(t.Key, { Hover: t.Key === hovered, Press: t.Key === pressed, Open: t.Key === openKey });
+      out.set(t.Key, { Hover: t.Key === hovered, Press: t.Key === pressed, Open: t.Key === openKey, Glow: t.Key === glowKey });
     }
     return out;
   });
@@ -261,12 +290,16 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       }
       if (!IsTappable(token.Kind)) continue;
       const s = state.get(token.Key);
-      if (!s || !(s.Hover || s.Press || s.Open)) continue;
+      if (!s || !(s.Hover || s.Press || s.Open || s.Glow)) continue;
       const pill = _pillRect(piece, this.FontSizePt(), this.LineHeightPt());
+      // Item 9: Glow is the lowest-priority, passive "look here" cue — any REAL interaction state (the
+      // control is open, mid-press, or merely hovered) always wins over it, same as it would mid-gesture
+      // on the very token the hint is pointing at.
       const cls = s.Open
         ? (token.Kind === 'Problem' ? 'Jwift_TokenSentencePill Jwift_TokenSentencePill_OpenProblem' : 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Open')
         : s.Press ? 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Press'
-          : 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Hover';
+          : s.Hover ? 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Hover'
+            : 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Glow';
       out.push({ Key: `${token.Key}:${piece.Row}`, Class: cls, Layout: _rect(pill.X, pill.Y, pill.Width, pill.Height) });
     }
     return out;
@@ -384,9 +417,13 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     if (!add) return null;
     const open = this.AddOpen();
     const hover = this._hoveredKey() === '+';
+    // Item 8: an open popover's own anchor stays visible regardless of AddVisible — it cannot be faded
+    // out from under a control the director is actively using.
+    const visible = this.AddVisible() || open;
     const cls = open ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Open'
-      : hover ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Hover'
-        : 'Jwift_TokenSentenceAdd';
+      : !visible ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Faded'
+        : hover ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Hover'
+          : 'Jwift_TokenSentenceAdd';
     return { Class: cls, Layout: _rect(add.X, add.Y, add.Width, add.Height) };
   });
 
