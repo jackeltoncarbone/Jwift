@@ -4,6 +4,9 @@
 // that never varies lives here. Uses Paper's own surface material (Jwift_PaperSurface), so the two
 // read as one house "thick glass" family.
 
+// The panel glass's own frost (lane Y3, item 5; Jwift_PopoverSurface's own comment below).
+@JwiftPopoverFrostBlur: 10pt
+
 Jwift_Popover {
   Position: Placed
   // Layer 50: "Ask" (Design/Layers.ts — Jwift cannot import it, so the rung is named here instead).
@@ -42,6 +45,8 @@ Jwift_PopoverArrow : JwiftGlass {
   // continuous surface with the panel, so it must wear the same frost strength, not the Toolbar
   // ancestor's inherited None.
   GlassFrost: Automatic
+  GlassBlur: @JwiftPopoverFrostBlur
+  Background: @PopoverGlass
 }
 
 // The panel surface. Jack, live, repeatedly: every menu (token popovers, the move menu, a row's own "…",
@@ -73,7 +78,16 @@ Jwift_PopoverArrow : JwiftGlass {
 // Automatic's blur/backdrop-scale/LOD trio together much heavier (the toolbar group's own expanded state) —
 // stating it is the one lever that actually changes, matching the toolbar group's own strength exactly
 // since both now state the identical value.
+//
+// Drill Sentences lane Y3, item 5 (blind testers): even at Automatic frost, a popover over the sentence
+// list (the problems list, the who word's chooser) let the rows behind it read through, fighting every
+// word on the panel. Glass still, but Apple's regular-material legibility: a heavier frost through the
+// custom blur lane (`GlassBlur`, the same lane Sheet.jss's large panels use) and a tint seed that covers
+// most of what is behind (`@PopoverGlass`, theme-resolved: thicker in light than in dark). The arrow above
+// wears the same pair, so the two still read as one surface.
 Jwift_PopoverSurface : JwiftGlass {
   BorderRadius: @JwiftDropdownRadius
   GlassFrost: Automatic
+  GlassBlur: @JwiftPopoverFrostBlur
+  Background: @PopoverGlass
 }

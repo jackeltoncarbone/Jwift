@@ -23,6 +23,22 @@ export interface PopoverPlacementInput {
   /** `null` on the first placement (pick whichever side fits); the previous `Down` on every re-place
    *  after that, so an open popover doesn't flip sides on every frame of a scroll. */
   readonly PrevDown: boolean | null;
+  /** A frame held where it already stands (`PopoverHold`), or absent to place afresh. */
+  readonly Hold?: PopoverHold | null;
+}
+
+/**
+ * Where a popover's frame stood when its content started changing in place: a menu pushing a submenu
+ * page, or going back. Drill Sentences lane Y3, item 6 (phone): going into "Hold" from the "+" menu moved
+ * the whole popover, since a page of another height re-placed the frame from scratch (an upward panel's
+ * top follows its height; a side can flip). Like iOS menus, a held frame keeps its side, its leading edge
+ * and its top (relative to the anchor, so it still rides a scroll); only its height follows the page.
+ */
+export interface PopoverHold {
+  readonly Down: boolean;
+  readonly X: number;
+  /** The panel's top, less the anchor's own top. */
+  readonly TopFromAnchor: number;
 }
 
 /** Whether a canvas-px point falls inside a rect, inclusive of its top/left edge, exclusive of its
@@ -58,6 +74,7 @@ const ARROW_MARGIN = 32;
 const Clamp = (v: number, min: number, max: number): number => Math.max(min, Math.min(max, v));
 
 export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
+  if (input.Hold) return holdPopover(input, input.Hold);
   const { Anchor: a, Region: r, W, H, PrevDown } = input;
   const aTop = a.Y;
   const aBottom = a.Y + a.Height;
@@ -97,6 +114,46 @@ export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
     Down: down,
     ArrowX: arrowX,
     ArrowVisible: arrowVisible,
+    OriginX: W > 0 ? (arrowX - x) / W : 0.5,
+    OriginY: down ? 0 : 1,
+  };
+}
+
+/** A held frame (`PopoverHold`): same side, same leading edge (clamped back inside the region if the page
+ *  got wider), same top relative to the anchor. A downward panel's room is everything below its top, so a
+ *  taller page grows down into it; an upward panel's room ends at the arrow, so a taller page scrolls
+ *  within it, and a shorter one leaves the panel where it stood with its arrow hidden (it no longer
+ *  reaches the anchor), the way an iOS menu's submenu stays put. Never overlaps the anchor either way. */
+function holdPopover(input: PopoverPlacementInput, hold: PopoverHold): PopoverPlacement {
+  const { Anchor: a, Region: r, W, H } = input;
+  const aTop = a.Y;
+  const aBottom = a.Y + a.Height;
+  const aCenterX = a.X + a.Width / 2;
+  const regionBottom = r.Y + r.Height;
+  const x = Clamp(hold.X, r.X, r.X + r.Width - W);
+  const down = hold.Down;
+  let y: number;
+  let room: number;
+  if (down) {
+    y = Math.max(aBottom + ARROW_HEIGHT, r.Y);
+    room = Math.max(MIN_HEIGHT, regionBottom - y);
+  } else {
+    const floor = aTop - ARROW_HEIGHT;
+    y = Math.min(Math.max(aTop + hold.TopFromAnchor, r.Y), floor - MIN_HEIGHT);
+    room = floor - y;
+  }
+  const arrowX = Clamp(aCenterX, x + ARROW_MARGIN, x + W - ARROW_MARGIN);
+  const anchorShown = down
+    ? (aBottom >= r.Y - 2 && aBottom <= regionBottom)
+    : (aTop <= regionBottom + 2 && aTop >= r.Y);
+  const reachesArrow = down || H >= room - 0.5;
+  return {
+    X: x,
+    Y: y,
+    MaxHeight: room,
+    Down: down,
+    ArrowX: arrowX,
+    ArrowVisible: anchorShown && reachesArrow,
     OriginX: W > 0 ? (arrowX - x) / W : 0.5,
     OriginY: down ? 0 : 1,
   };

@@ -16,6 +16,7 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Jaui, Jext, Jiv, Jyle, JSS_REGISTRY } from 'jaui-angular';
+import { ComposeFontFamily } from 'jaui';
 import { Icon } from '../Icon/Icon';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 import { RowIndicator, type RowIndicatorRow } from '../Internal/RowIndicator';
@@ -45,6 +46,27 @@ interface _Page {
   readonly Items: readonly PopoverMenuItem[];
   readonly Title: string | null;
 }
+
+/** A row's fixed parts, pt, as PopoverMenu.jss draws them: the side padding, the check column, the gap
+ *  between a row's parts, the chevron's own width, and Popover.jss's panel padding around the rows. */
+const MENU_ROW_PAD = 14;
+const MENU_CHECK = 18;
+const MENU_ROW_GAP = 10;
+const MENU_CHEVRON = 12;
+const MENU_PANEL_PAD = 10;
+/** A measure taken on this thread can come in a hair short of the worker's own layout. */
+const MENU_MEASURE_SLACK = 4;
+
+let _measureCtx: CanvasRenderingContext2D | null = null;
+/** One run of menu text's width, px (PointScale 1), in the face the menu draws it in (`ComposeFontFamily`,
+ *  the same stack `TokenSentence` measures with, CJK fallbacks included). */
+const _measure = (text: string, sizePt: number, weight: number): number => {
+  if (!text || typeof document === 'undefined') return 0;
+  _measureCtx ??= document.createElement('canvas').getContext('2d');
+  if (!_measureCtx) return 0;
+  _measureCtx.font = `${weight} ${sizePt}px ${ComposeFontFamily('Inter, system-ui, sans-serif')}`;
+  return _measureCtx.measureText(text).width;
+};
 
 /**
  * One menu row's rect, registered with the menu's shared `RowIndicator` — the lightweight
@@ -217,6 +239,32 @@ export class PopoverMenu implements OnInit, OnDestroy {
     return parent.Title;
   });
 
+  // ── Sized to its widest row (Drill Sentences lane Y3, item 5) ─────────────────────────────────────
+  // A fixed 250pt panel cut "Move with other squads…" down to "Move with other". The page's own rows are
+  // measured with the font they draw in (PopoverMenu.jss: 17pt labels, 15pt details, 13pt headers and
+  // captions, the 17pt semibold back row), plus each row's fixed parts, and handed to the owning Popover
+  // (`ContentWidth`), which grows to fit up to its `MaxWidth`; past that, the labels wrap
+  // (`Jwift_PopoverMenuLabel` has no line cap). Measured per page, so a pushed submenu fits its own rows.
+  private readonly _contentWidth = computed(() => {
+    const page = this._page();
+    let widest = 0;
+    for (const item of page.Items) {
+      if (item.Kind === 'Header') widest = Math.max(widest, MENU_ROW_PAD * 2 + _measure(item.Label ?? '', 13, 500));
+      if (item.Kind !== 'Item') continue;
+      const label = Math.max(_measure(item.Label ?? '', 17, 400), _measure(item.Caption ?? '', 13, 400));
+      const detail = item.Detail ? MENU_ROW_GAP + _measure(item.Detail, 15, 400) : 0;
+      const chevron = item.Submenu ? MENU_ROW_GAP + MENU_CHEVRON : 0;
+      widest = Math.max(widest, MENU_ROW_PAD * 2 + MENU_CHECK + MENU_ROW_GAP + label + detail + chevron);
+    }
+    const back = this._parentTitle();
+    if (!this._atRoot()) widest = Math.max(widest, MENU_ROW_PAD * 2 + MENU_CHEVRON + MENU_ROW_GAP + _measure(back ?? '', 17, 600));
+    return widest > 0 ? Math.ceil(widest + MENU_PANEL_PAD * 2 + MENU_MEASURE_SLACK) : null;
+  });
+  private readonly _publishWidth = effect(() => {
+    const width = this._contentWidth();
+    this._popover?.ContentWidth.set(width);
+  });
+
   private _unbindIndicator: (() => void) | null = null;
 
   RegisterRow(row: RowIndicatorRow): void { this._rowIndicator.RegisterRow(row); }
@@ -229,9 +277,12 @@ export class PopoverMenu implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._unbindIndicator?.();
+    // A popover that swaps this menu for other content (a phrase's Measures page) keeps its own Width.
+    this._popover?.ContentWidth.set(null);
   }
 
   PushPage(items: readonly PopoverMenuItem[], title: string | null): void {
+    this._popover?.HoldPlacement(); // lane Y3, item 6: the panel stays put while the page changes.
     this._pushed.update((s) => [...s, { Items: items, Title: title }]);
     // Round 14, live ("a menu reopened fresh sometimes sticks on its first item"): the OLD page's rows
     // unregister as they're torn down, but `RowIndicator`'s own `_hovered`/`IndicatorLayout` never clear
@@ -244,6 +295,7 @@ export class PopoverMenu implements OnInit, OnDestroy {
   }
 
   Back(): void {
+    this._popover?.HoldPlacement();
     this._pushed.update((s) => s.slice(0, -1));
     this._rowIndicator.Reset(); // same reasoning as PushPage's own Reset, above.
     this._scrollToCheckedPending.set(true); // the page returned to gets scrolled to its own checked row again.

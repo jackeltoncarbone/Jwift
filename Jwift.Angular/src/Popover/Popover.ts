@@ -20,7 +20,7 @@ import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 import PaperJss from '../Paper/Paper.jss';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverJss from './Popover.jss';
-import { PlacePopover, PointInRect, type PopoverPlacement, type PopoverRect } from './Popover.Placement';
+import { PlacePopover, PointInRect, type PopoverHold, type PopoverPlacement, type PopoverRect } from './Popover.Placement';
 
 export type { PopoverRect };
 
@@ -86,6 +86,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   /** Extra clearance from the region's own top — e.g. a floating header the popover must clear. */
   readonly TopInset = input(0);
   readonly Width = input(250);
+  /** How wide content that sizes itself (`ContentWidth`) may grow the panel past `Width`. */
+  readonly MaxWidth = input(360);
   readonly Arrow = input(true);
   /** The accessibility name for the panel. */
   readonly Label = input<string | null>(null);
@@ -98,6 +100,36 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private readonly _placement = signal<PopoverPlacement | null>(null);
   /** Published through `JWIFT_POPOVER_ROOM`. */
   readonly _room = computed(() => this._placement()?.MaxHeight ?? Infinity);
+
+  /** The width its content asks for, px, or null to keep `Width`. Drill Sentences lane Y3, item 5: a
+   *  `<popover-menu>` measures its widest row and sets this, so the panel fits "Move with other squads…"
+   *  instead of cutting it off at a fixed 250; past `MaxWidth` its rows wrap. */
+  readonly ContentWidth = signal<number | null>(null);
+  protected readonly _width = computed(() => {
+    const content = this.ContentWidth();
+    const min = this.Width();
+    return content === null ? min : Math.min(Math.max(min, content), Math.max(min, this.MaxWidth()));
+  });
+
+  /** Set once the content starts changing in place (`HoldPlacement`), and kept for the rest of the open. */
+  private _hold: PopoverHold | null = null;
+
+  /** Drill Sentences lane Y3, item 6: a `<popover-menu>` pushing or popping a page calls this first, so
+   *  the panel stays where it stands (`PopoverHold`) while its rows change, rather than jumping to wherever
+   *  a fresh placement for the new page's height would put it. */
+  HoldPlacement(): void {
+    if (this._hold) return;
+    const p = this._placement();
+    const anchor = this._resolveAnchor();
+    if (!p || !anchor) return;
+    this._hold = { Down: p.Down, X: p.X, TopFromAnchor: p.Y - anchor.Y };
+    this._placeKey = '';
+  }
+  /** A new anchor (the same panel handed to another word) places afresh. */
+  private readonly _releaseHold = effect(() => {
+    this.Anchor();
+    this._hold = null;
+  });
 
   protected readonly _ArrowLayout = computed(() => {
     const p = this._placement();
@@ -131,7 +163,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     this._styleLoader.Ensure(this._jss, 'GlassDropdown', GlassDropdownJss);
     effect(() => {
       const p = this._placement();
-      const patch: Record<string, unknown> = { Width: `${this.Width()}pt` };
+      const patch: Record<string, unknown> = { Width: `${this._width()}pt` };
       if (p) {
         patch['Top'] = `${p.Y}px`;
         patch['Left'] = `${p.X}px`;
@@ -251,10 +283,11 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const rect = el.getBoundingClientRect();
     const region = this._resolveRegion(rect.width, rect.height);
     const h = this.Node.Height;
-    const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}`;
+    const w = this._width();
+    const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}`;
     if (key === this._placeKey) return;
     this._placeKey = key;
-    const placement = PlacePopover({ Anchor: anchor, Region: region, W: this.Width(), H: h, PrevDown: this._prevDown });
+    const placement = PlacePopover({ Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold });
     this._prevDown = placement.Down;
     this._placement.set(placement);
   }

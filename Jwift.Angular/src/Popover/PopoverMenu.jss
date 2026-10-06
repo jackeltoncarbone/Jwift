@@ -17,7 +17,6 @@ Jwift_PopoverMenuHeader {
   FontWeight: 500
   Color: @InkSoft
   Padding: 10pt 14pt 4pt 14pt
-  MaxLines: 1
 }
 
 // The back row of a pushed page: a step heavier than an ordinary row, in the accent, so "you are
@@ -48,13 +47,17 @@ Jwift_PopoverMenuBackLabel {
   MaxLines: 1
 }
 
+// A row is 44pt for one line of label and grows for a label that wraps (Drill Sentences lane Y3, item 5:
+// the panel sizes itself to its widest row, PopoverMenu.ts's own ContentWidth, up to the Popover's
+// MaxWidth; a label past that wraps rather than being cut off). The vertical padding only shows once a
+// row is taller than its 44pt floor.
 Jwift_PopoverMenuItem {
   Direction: Row
   Justify: Start
   Align: Center
   Gap: 10pt
-  Padding: 0pt 14pt
-  Height: 44pt
+  Padding: 8pt 14pt
+  MinHeight: 44pt
   BorderRadius: 22pt
   Interactive: true
   Cursor: Pointer
@@ -96,14 +99,12 @@ Jwift_PopoverMenuLabel {
   FontSize: 17pt
   FontWeight: 400
   Color: @Ink
-  MaxLines: 1
 }
 Jwift_PopoverMenuCaption {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 400
   Color: @InkSoft
-  MaxLines: 1
 }
 Jwift_PopoverMenuDetail {
   FontFamily: Inter
