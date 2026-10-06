@@ -70,6 +70,10 @@ const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
   // unit, "1a ⇄ 1b", not an accent between two names.
   Mirror:      { Ink: '@Ink',     Weight: 600, Underline: null },
   Problem:     { Ink: '@Danger',  Weight: 700, Underline: '@Danger' },
+  // Drill Sentences lane X3, item 6: a quiet tappable word inside otherwise quiet text (a caption's own
+  // "5 problems"). It keeps the caption's soft ink and regular weight, so the caption still reads as a
+  // caption, and wears the same accent underline every other tappable word does, so it reads as one.
+  Link:        { Ink: '@InkSoft', Weight: 400, Underline: '@AccentInkLine' },
   Badge:       { Ink: '@InkSoft', Weight: 600, Underline: null },
 };
 
@@ -207,6 +211,9 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   private readonly _hoveredKey = signal<string | null>(null);
   private readonly _pressedKey = signal<string | null>(null);
   private _lastPointer: { X: number; Y: number } | null = null;
+  /** What the current gesture's own press resolved to (`_onHostPointerDown`), consumed by its click. */
+  private _downKey: string | null = null;
+  private _downSeen = false;
   private _docUnbind: (() => void) | null = null;
   private _rectUnwatch: (() => void) | null = null;
 
@@ -410,14 +417,14 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       // place that knows how a sentence token becomes pixels.
       let pieceText = piece.Text;
       let fontFamily = 'Inter, system-ui, sans-serif';
-      let fontSize = `${fs}pt`;
+      let pieceSize = fs;
       let fontVariantNumeric: 'Normal' | 'TabularNums' = this.Tabular() ? 'TabularNums' : 'Normal';
       if (token.Icon) {
         const cp = IconData[token.Icon.toLowerCase()];
         if (cp == null) console.error(`[TokenSentence] no glyph named "${token.Icon}" in Icon.Data — the token renders blank`);
         pieceText = cp != null ? String.fromCodePoint(cp) : '';
         fontFamily = 'JwiftIcons';
-        fontSize = `${fs * ICON_TOKEN_SCALE}pt`;
+        pieceSize = fs * ICON_TOKEN_SCALE;
         fontVariantNumeric = 'Normal'; // no digits in an icon glyph; never let the tabular twin swap it out.
       }
       out.push({
@@ -431,9 +438,17 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
           // overrides this to the bare `JwiftIcons` family, first and alone -- see above -- so it never
           // rides this fallback chain at all.)
           FontFamily: fontFamily,
-          FontSize: fontSize,
+          FontSize: `${pieceSize}pt`,
           FontWeight: style.Weight,
-          LineHeight: `${lh}pt`,
+          // Drill Sentences lane X3, item 3 (phone: the mirror mark vanished after a scroll, "to" dropped
+          // out of "then to the rear"): Jaui's LineHeight is a MULTIPLIER of the font size (`Text.Types.ts`
+          // resolves the number alone; `Text.Measure.ts`/`Text.Cache.ts` take FontSize x LineHeight), so
+          // the `${lh}pt` this used to pass rasterized every word 23 font sizes tall, 368px, about 1100
+          // device px at dpr 3. The 2048px glyph atlas holds one shelf that tall, so a phone scroll ran it
+          // out mid frame and rebuilt it, blanking whichever glyphs were already queued in the batch. The
+          // ratio below draws the identical line box (`lh` pt, the glyph still centered in it) at a raster
+          // one line tall.
+          LineHeight: `${lh / pieceSize}`,
           Color: ink,
           FontVariantNumeric: fontVariantNumeric,
           // Jack, live (round 12): a bold atom's own ink can run past its measured advance width right
@@ -537,7 +552,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
 
   protected _onHostPointerDown(e: PointerEvent): void {
     this._storePoint(e);
-    this._pressedKey.set(this._hitAt(this._lastPointer));
+    const key = this._hitAt(this._lastPointer);
+    this._pressedKey.set(key);
+    this._downKey = key;
+    this._downSeen = true;
   }
   protected _onHostPointerMove(e: PointerEvent): void {
     this._storePoint(e);
@@ -559,7 +577,14 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
    * mean one level up.
    */
   protected _onHostClick(e: MouseEvent): void {
-    const key = this._hitAt(this._lastPointer);
+    // Drill Sentences lane X3, item 4: the key is the one the PRESS resolved, on this host, for this
+    // gesture. Re-resolving `_lastPointer` here let a finger that rolled a few px after landing on "then"
+    // (every pointermove rewrites it) read as the word beside it, and a click with no press of its own
+    // on this host (nothing pressed here since the last click) reused whatever point an earlier gesture
+    // left behind. A press that landed on a filler resolved to null, and stays null.
+    const key = this._downSeen ? this._downKey : null;
+    this._downSeen = false;
+    this._downKey = null;
     this._pressedKey.set(null);
     if (key === null) return;
     e.stopPropagation();
@@ -605,7 +630,9 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   }
 
   /** Nearest-center wins when the point falls inside more than one hit rect. `null` point or no hit
-   *  both answer `null`. */
+   *  both answer `null`, and so does a point that lands in a FILLER's own rect (`Layout.Fillers`): a
+   *  plain word such as "then" owns its own share of the row and opens nothing, so the press falls
+   *  through to the row instead of reaching the word beside it. */
   private _hitAt(point: { X: number; Y: number } | null): string | null {
     if (!point) return null;
     const n = this.Node;
@@ -624,10 +651,15 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       const token = tokens[hit.TokenIndex];
       if (token) consider(hit, token.Key);
     }
+    for (const filler of layout.Fillers) consider(filler, _FILLER);
     if (layout.Add) consider(layout.Add.Hit, '+');
-    return bestKey;
+    return bestKey === _FILLER ? null : bestKey;
   }
 }
+
+/** `_hitAt`'s own marker for "a filler owns this point" — never a real token key (keys are the caller's
+ *  own strings; this one is a symbol-like sentinel no caller would pick). */
+const _FILLER = '\u0000filler';
 
 function _rect(x: number, y: number, w: number, h: number): Record<string, unknown> {
   return { Position: 'Placed', Left: `${x}px`, Top: `${y}px`, Width: `${w}px`, Height: `${h}px` };

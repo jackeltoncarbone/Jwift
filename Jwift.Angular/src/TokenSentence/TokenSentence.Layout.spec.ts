@@ -283,3 +283,46 @@ describe('TextPieceKeys', () => {
     expect(keys[0]).not.toBe(keys[1]);
   });
 });
+
+// Drill Sentences lane X3, item 4 (phone, first-time tester): tapping "then" opened the "left flank" menu
+// beside it. A filler owns its own share of the row, by the same midpoint rule a tappable word gets, so a
+// press on it resolves to the filler (nothing) and never to the word next door.
+describe('LayoutSentence — a filler word owns its own hit area', () => {
+  const thenLeftFlank: readonly SentenceToken[] = [
+    { Key: 'count', Text: '8 counts', Kind: 'Value' },
+    { Key: 'then', Text: ', then ', Kind: 'Quiet' },
+    { Key: 'move', Text: 'left flank', Kind: 'Word' },
+  ];
+
+  it('"then" gets a filler rect that abuts the tappable word after it, never overlapping it', () => {
+    const r = LayoutSentence(thenLeftFlank, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: measure, ShowAdd: false });
+    const thenPiece = r.Pieces.find((p) => p.Text === 'then')!;
+    const thenRect = r.Fillers.find((f) => f.X <= thenPiece.X && f.X + f.Width >= thenPiece.X + thenPiece.Width)!;
+    const moveHit = r.Hits.find((h) => h.TokenIndex === 2)!;
+    expect(thenRect).toBeTruthy();
+    expect(thenRect.X + thenRect.Width).toBeCloseTo(moveHit.X, 5);
+    // The filler's rect covers the whole word, so no point over "then" belongs to "left flank".
+    expect(moveHit.X).toBeGreaterThan(thenPiece.X + thenPiece.Width);
+  });
+
+  it('whitespace is never an owner, and every visible filler piece ("," and "then") gets one rect each', () => {
+    const r = LayoutSentence(thenLeftFlank, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: measure, ShowAdd: false });
+    expect(r.Fillers).toHaveLength(2);
+    expect(r.Fillers.every((f) => f.TokenIndex === 1)).toBe(true);
+  });
+
+  it('the mirror icon (empty text, real width) is a neighbour, so "1a" never reaches over it', () => {
+    const tokens: readonly SentenceToken[] = [
+      { Key: 'who', Text: '1a', Kind: 'Who' },
+      { Key: 'sp', Text: ' ', Kind: 'Text' },
+      { Key: 'mirror', Text: '', Kind: 'Mirror', Icon: 'arrow.left.and.right' },
+      { Key: 'sp2', Text: ' ', Kind: 'Text' },
+      { Key: 'partner', Text: '1b', Kind: 'Who' },
+    ];
+    const iconMeasure = (text: string, _weight: number, icon?: string): number => (icon ? 16 : measure(text));
+    const r = LayoutSentence(tokens, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: iconMeasure, ShowAdd: false });
+    const whoHit = r.Hits.find((h) => h.TokenIndex === 0)!;
+    const mirrorHit = r.Hits.find((h) => h.TokenIndex === 2)!;
+    expect(whoHit.X + whoHit.Width).toBeCloseTo(mirrorHit.X, 5);
+  });
+});

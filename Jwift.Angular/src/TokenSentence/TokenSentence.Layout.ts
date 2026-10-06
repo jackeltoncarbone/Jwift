@@ -3,7 +3,7 @@
  * jaui imports, so it is cheap to unit test with a stub measurer and reusable anywhere a sentence needs
  * to lay itself out (a thumbnail, a print render).
  *
- * UNITS. A tappable token (Word/Value/Who/Placeholder/Mirror/Problem) and a Badge are ATOMS: one piece,
+ * UNITS. A tappable token (Word/Value/Who/Placeholder/Mirror/Problem/Link) and a Badge are ATOMS: one piece,
  * never split. `Text`/`Quiet` tokens split into smaller units first — a whitespace run, one unit per
  * CJK character, or a run of anything else — because word order is free per language and ja/zh/ko break
  * between characters rather than at spaces.
@@ -15,7 +15,7 @@
  */
 
 export type SentenceTokenKind =
-  | 'Text' | 'Quiet' | 'Word' | 'Value' | 'Who' | 'Placeholder' | 'Mirror' | 'Problem' | 'Badge';
+  | 'Text' | 'Quiet' | 'Word' | 'Value' | 'Who' | 'Placeholder' | 'Mirror' | 'Problem' | 'Link' | 'Badge';
 
 export interface SentenceToken {
   readonly Key: string;
@@ -35,7 +35,7 @@ export interface SentenceToken {
 }
 
 const TAPPABLE_KINDS: ReadonlySet<SentenceTokenKind> =
-  new Set(['Word', 'Value', 'Who', 'Placeholder', 'Mirror', 'Problem']);
+  new Set(['Word', 'Value', 'Who', 'Placeholder', 'Mirror', 'Problem', 'Link']);
 
 /** Whether a kind gets a hit rect and responds to a tap — every kind except Text, Quiet and Badge. */
 export const IsTappable = (kind: SentenceTokenKind): boolean => TAPPABLE_KINDS.has(kind);
@@ -99,6 +99,10 @@ export interface SentencePillPad {
 export interface SentenceLayoutResult {
   readonly Pieces: readonly SentencePiece[];
   readonly Hits: readonly SentenceHit[];
+  /** One hit rect per visible FILLER piece (a plain word such as "then", a "·", a ","; a Badge): the
+   *  same Voronoi share of its gaps a tappable token gets, so a press on a filler resolves to the filler
+   *  itself (nothing) rather than to whichever tappable word sits nearest. See `LayoutSentence`'s doc. */
+  readonly Fillers: readonly SentenceHit[];
   readonly PillPads: readonly SentencePillPad[];
   readonly Add: SentenceAddBox | null;
   readonly Height: number;
@@ -106,7 +110,7 @@ export interface SentenceLayoutResult {
 
 const WEIGHT_OF: Record<SentenceTokenKind, number> = {
   Text: 400, Quiet: 400, Word: 400, Value: 600, Who: 700,
-  Placeholder: 600, Mirror: 600, Problem: 700, Badge: 600,
+  Placeholder: 600, Mirror: 600, Problem: 700, Link: 400, Badge: 600,
 };
 
 const ADD_GAP = 4;
@@ -274,7 +278,7 @@ export function LayoutSentence(
   const wrapWidth = opts.WrapWidth > 0 ? opts.WrapWidth : Infinity;
 
   if (tokens.length === 0 && !ShowAdd) {
-    return { Pieces: [], Hits: [], PillPads: [], Add: null, Height: 0 };
+    return { Pieces: [], Hits: [], Fillers: [], PillPads: [], Add: null, Height: 0 };
   }
 
   const units = _buildUnits(tokens, Measure, ShowAdd);
@@ -381,8 +385,11 @@ export function LayoutSentence(
     if (list) list.push({ Left: left, Right: right });
     else rowEntries.set(row, [{ Left: left, Right: right }]);
   };
+  // An icon token (the mirror mark) carries empty text but real width: it is visible content, so it is a
+  // neighbour like any word, never mistaken for the whitespace the rule above leaves out.
+  const isBlank = (piece: SentencePiece): boolean => piece.Text.trim() === '' && !tokens[piece.TokenIndex]?.Icon;
   for (const piece of pieces) {
-    if (piece.Text.trim() === '') continue; // a pure-whitespace piece is never its own neighbour — see above.
+    if (isBlank(piece)) continue; // a pure-whitespace piece is never its own neighbour — see above.
     pushRowEntry(piece.Row, piece.X, piece.X + piece.Width);
   }
   if (add) pushRowEntry(add.Row, add.X, add.X + add.Width);
@@ -394,12 +401,15 @@ export function LayoutSentence(
   const PILL_HAIRLINE = 0.5; // shaved off EACH touching pill edge — a visible ~1px seam, never a silent overlap into a neighbour's own glyph.
   const TOUCH_HALF_HEIGHT = 22; // half of the 44pt touch-target floor.
 
-  const hits: SentenceHit[] = [];
-  const pillPads: SentencePillPad[] = [];
-  for (const piece of pieces) {
-    const kind = tokens[piece.TokenIndex]?.Kind;
-    if (!kind || !IsTappable(kind)) continue;
-
+  // Drill Sentences lane X3, item 4 (phone, first-time tester): a tap on the word "then" opened the
+  // "left flank" menu right after it. The Voronoi split above already stops a tappable word's own hit at
+  // the midpoint of its gap to "then", but nothing OWNED "then" itself: the host resolved a press there
+  // by asking only "which tappable rect holds this point?", so a finger landing on the filler's own edge,
+  // or rolling a few px toward its neighbour before lifting, read as the neighbour. Every visible filler
+  // piece (a plain word, "then", "·", ",", a Badge) now gets its own rect by the SAME rule, so the whole
+  // row is partitioned with no gap between owners, and `TokenSentence.ts` resolves a press inside a
+  // filler's rect to nothing at all (the row's own tap) rather than to the nearest word.
+  const hitOf = (piece: SentencePiece): { X: number; Y: number; Width: number; Height: number; Prev: _RowEntry | null; Next: _RowEntry | null } => {
     const rowList = rowEntries.get(piece.Row) ?? [];
     const selfIdx = rowList.findIndex((e) => e.Left === piece.X && e.Right === piece.X + piece.Width);
     const prev = selfIdx > 0 ? rowList[selfIdx - 1] : null;
@@ -415,11 +425,21 @@ export function LayoutSentence(
     const rowBoundaryBelow = (piece.Row + 1) * LineHeight;
     const hitTop = hasPrevRow ? Math.max(rowBoundaryAbove, centerY - TOUCH_HALF_HEIGHT) : centerY - TOUCH_HALF_HEIGHT;
     const hitBottom = hasNextRow ? Math.min(rowBoundaryBelow, centerY + TOUCH_HALF_HEIGHT) : centerY + TOUCH_HALF_HEIGHT;
+    return { X: hitLeft, Y: hitTop, Width: hitRight - hitLeft, Height: hitBottom - hitTop, Prev: prev, Next: next };
+  };
 
-    hits.push({
-      TokenIndex: piece.TokenIndex,
-      X: hitLeft, Y: hitTop, Width: hitRight - hitLeft, Height: hitBottom - hitTop,
-    });
+  const hits: SentenceHit[] = [];
+  const fillers: SentenceHit[] = [];
+  const pillPads: SentencePillPad[] = [];
+  for (const piece of pieces) {
+    const kind = tokens[piece.TokenIndex]?.Kind;
+    if (!kind) continue;
+    const tappable = IsTappable(kind);
+    if (!tappable && isBlank(piece)) continue; // whitespace is part of a gap, never an owner of its own.
+    const rect = hitOf(piece);
+    const hit: SentenceHit = { TokenIndex: piece.TokenIndex, X: rect.X, Y: rect.Y, Width: rect.Width, Height: rect.Height };
+    if (!tappable) { fillers.push(hit); continue; }
+    hits.push(hit);
 
     // Below PILL_GAP_THRESHOLD, the default 3px pad on BOTH sides would already touch or cross — shrink
     // to half the real gap, less the hairline, so the two pills always keep at least a 1px seam. At zero
@@ -427,19 +447,19 @@ export function LayoutSentence(
     // a hairline INTO each atom's own box rather than merely meeting with no pad at all, so two atoms
     // that touch with no space of their own still visibly read as two separate targets.
     let leftPad = PILL_PAD_X;
-    if (prev) {
-      const gap = piece.X - prev.Right;
+    if (rect.Prev) {
+      const gap = piece.X - rect.Prev.Right;
       if (gap < PILL_GAP_THRESHOLD) leftPad = gap / 2 - PILL_HAIRLINE;
     }
     let rightPad = PILL_PAD_X;
-    if (next) {
-      const gap = next.Left - (piece.X + piece.Width);
+    if (rect.Next) {
+      const gap = rect.Next.Left - (piece.X + piece.Width);
       if (gap < PILL_GAP_THRESHOLD) rightPad = gap / 2 - PILL_HAIRLINE;
     }
     pillPads.push({ TokenIndex: piece.TokenIndex, LeftPad: leftPad, RightPad: rightPad });
   }
 
-  return { Pieces: pieces, Hits: hits, PillPads: pillPads, Add: add, Height: height };
+  return { Pieces: pieces, Hits: hits, Fillers: fillers, PillPads: pillPads, Add: add, Height: height };
 }
 
 /** A tappable token's own pill rect — the SAME box `TokenSentence.ts`'s own hover/press/open/glow pills
