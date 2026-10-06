@@ -6,12 +6,16 @@
 // page. 14pt 700-weight matches the toolbar back-button glyph baseline
 // (Jwift_ToolbarBackGlyph) so cells across the chrome read as one set.
 
+// Opacity: 1 (Drill Sentences lane AA1, item 5): a glyph fades with its cell, never by its own presence.
+// Opacity multiplies down the tree, so a glyph also fading by itself ran a step behind its cell, a blank
+// cell for a moment on the way in and out.
 Jwift_GlassActionGlyph {
   FontFamily: JwiftIcons
   FontSize: 14pt
   FontWeight: 700
   Color: @Ink
   TextAlign: Center
+  Opacity: 1
 }
 
 // In-flow slot that reserves the closed pill's footprint so the toolbar
