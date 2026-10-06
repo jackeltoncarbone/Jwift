@@ -25,12 +25,15 @@ Jwift_GlassActionBarSlot {
 // Amber-tinted variant of the inline-cell glyph — for alert cells (warnings,
 // save-failed) so they read against the otherwise-monochrome action set.
 // Declared in full (not inherited) since cross-file JSS inheritance is dropped.
+// Opacity: 1 for the same reason as Jwift_GlassActionGlyph's own (Drill Sentences lane AA1, item 5: the
+// warning glyph went blank for a moment while its cell faded in).
 Jwift_GlassActionGlyph_Warn {
   FontFamily: JwiftIcons
   FontSize: 14pt
   FontWeight: 700
   Color: @Warning
   TextAlign: Center
+  Opacity: 1
 }
 
 // The disclosure chevron beside a single-cell expandable pill's glyph (the "menu button" tell — View and
@@ -47,7 +50,9 @@ Jwift_GlassDropdownCellChevron {
 
 // A cell's count (`GlassAction.Badge`): how many problems the warnings cell stands for, on its top
 // trailing corner, so the glyph reads as "3 problems" before it is pressed (Drill Sentences lane X2, item
-// 7). Placed inside the 40pt cell, never outside it, so the pill's own glass never clips it.
+// 7). Placed inside the 40pt cell, never outside it, so the pill's own glass never clips it. The badge
+// and its count fade with their cell and never by their own presence (Opacity: 1, lane AA1, item 5: a
+// badge and its count each fading on top of the cell's own fade showed a blank amber dot).
 Jwift_GlassActionBadge {
   Position: Placed
   Top: 2pt
@@ -61,6 +66,7 @@ Jwift_GlassActionBadge {
   Align: Center
   Background: @Warning
   PointerEvents: None
+  Opacity: 1
 }
 Jwift_GlassActionBadgeText {
   UserSelect: None
@@ -70,11 +76,15 @@ Jwift_GlassActionBadgeText {
   FontWeight: 700
   Color: rgba(0, 0, 0, 0.85)
   TextAlign: Center
+  Opacity: 1
 }
 
 // The hover tip under a cell (`HoverTip.ts`): a wide, empty, centred box so the pill inside it centres on
 // the cell whatever its text's width, then the pill itself, the house's quiet panel surface. Never hit:
-// a tip names a control, it is not one.
+// a tip names a control, it is not one. Only the outer box fades; the pill and its words wear Opacity: 1
+// (Drill Sentences lane AA1, item 5: "an empty tooltip box"). Opacity multiplies down the tree, so with all
+// three fading by their own presence the words ran two steps behind the box, an empty pill on the way in
+// and out.
 Jwift_GlassActionTip {
   Position: Placed
   Height: 28pt
@@ -93,6 +103,7 @@ Jwift_GlassActionTipPill {
   BorderWidth: 1pt
   BorderColor: @Line
   PointerEvents: None
+  Opacity: 1
 }
 Jwift_GlassActionTipText {
   UserSelect: None
@@ -102,4 +113,5 @@ Jwift_GlassActionTipText {
   FontWeight: 500
   Color: @Ink
   MaxLines: 1
+  Opacity: 1
 }

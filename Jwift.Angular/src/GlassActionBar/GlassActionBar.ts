@@ -20,6 +20,7 @@ import { GlassDropdownItem } from '../GlassDropdown/GlassDropdownItem';
 import { JwiftSpinner } from '../Spinner/JwiftSpinner';
 import GlassActionBarJss from './GlassActionBar.jss';
 import { HoverTip } from './HoverTip';
+import { BarRoom } from './GlassActionBar.Room';
 
 /**
  * One collapsing button group in the toolbar trailing cluster. Renders as its
@@ -230,7 +231,8 @@ export class GlassActionBar implements OnDestroy {
     for (const gp of this._GroupPills()) {
       const index = gp.Cells.findIndex((a) => a.Id === id);
       if (index >= 0) {
-        const label = gp.Cells[index].Label;
+        // A tip never shows without words (Drill Sentences lane AA1, item 5).
+        const label = gp.Cells[index].Label?.trim();
         if (!label) return null;
         const centre = left + pad + index * (cell + gap) + cell / 2;
         return {
@@ -254,6 +256,10 @@ export class GlassActionBar implements OnDestroy {
   private static readonly _PillGapPt = 10;
   private static readonly _ToolbarPadPt = 10;
   private static readonly _HysteresisPt = 8;
+  /** Jwift_ToolbarTrailing's own Gap, between the bar and whatever else the trailing cluster holds. */
+  private static readonly _TrailingGapPt = 8;
+  /** The trailing cluster's other children, each watched once so its width stays live. */
+  private readonly _watchedSiblings = new WeakSet<object>();
 
   /** Per-group inline cell counts, aligned to `Groups()` by index. */
   private readonly _counts = signal<number[]>([]);
@@ -514,7 +520,16 @@ export class GlassActionBar implements OnDestroy {
     const innerW   = toolbar.Width - 2 * tbPad;
     const leadingW = leading?.Width ?? 0;
     if (innerW <= 0) return; // not laid out yet
-    const available = Math.max(0, innerW - leadingW - pillGap);
+    // Whatever else rides the trailing cluster beside the bar takes its share of the row first (`BarRoom`,
+    // Drill Sentences lane AA1, item 6: uncounted, it left a phone's title truncated for good).
+    const siblings = trailing.Children.filter(c => c !== barNode);
+    for (const c of siblings) {
+      if (!this._watchedSiblings.has(c)) { this._watchedSiblings.add(c); c.WatchRect?.(true); }
+    }
+    const available = BarRoom({
+      InnerWidth: innerW, LeadingWidth: leadingW, PillGap: pillGap,
+      SiblingWidths: siblings.map(c => c.Width), TrailingGap: GlassActionBar._TrailingGapPt * ps,
+    });
 
     const counts = [...this._counts()];
     if (counts.length !== this.Groups().length) {
