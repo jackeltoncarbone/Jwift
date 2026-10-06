@@ -88,9 +88,18 @@ export interface SentenceAddBox {
   readonly Hit: { readonly X: number; readonly Y: number; readonly Width: number; readonly Height: number };
 }
 
+/** A tappable token's own pill, clipped against its immediate row-neighbours — see `LayoutSentence`'s
+ *  "Drill Sentences lane W2, item 1" doc comment for why this pad can shrink below the free-side default. */
+export interface SentencePillPad {
+  readonly TokenIndex: number;
+  readonly LeftPad: number;
+  readonly RightPad: number;
+}
+
 export interface SentenceLayoutResult {
   readonly Pieces: readonly SentencePiece[];
   readonly Hits: readonly SentenceHit[];
+  readonly PillPads: readonly SentencePillPad[];
   readonly Add: SentenceAddBox | null;
   readonly Height: number;
 }
@@ -265,7 +274,7 @@ export function LayoutSentence(
   const wrapWidth = opts.WrapWidth > 0 ? opts.WrapWidth : Infinity;
 
   if (tokens.length === 0 && !ShowAdd) {
-    return { Pieces: [], Hits: [], Add: null, Height: 0 };
+    return { Pieces: [], Hits: [], PillPads: [], Add: null, Height: 0 };
   }
 
   const units = _buildUnits(tokens, Measure, ShowAdd);
@@ -337,26 +346,100 @@ export function LayoutSentence(
     pieces.push({ TokenIndex: p.Unit.TokenIndex, Text: p.Unit.Text, X: p.X, Y: p.Y, Width: p.Unit.Width, Row: p.Row });
   }
 
-  // Hits: one per tappable token's piece — the visible pill (X-3, Y+(LH-(1.2FS+2))/2, W+6, 1.2FS+2),
-  // expanded again by 3 horizontally and 9 vertically for the actual hit target (the concept's `.tk::after`).
-  const hits: SentenceHit[] = [];
-  for (const piece of pieces) {
-    const kind = tokens[piece.TokenIndex]?.Kind;
-    if (!kind || !IsTappable(kind)) continue;
-    const pillHeight = 1.2 * FontSize + 2;
-    const pillY = piece.Y + (LineHeight - pillHeight) / 2;
-    const pillX = piece.X - 3;
-    const pillWidth = piece.Width + 6;
-    hits.push({
-      TokenIndex: piece.TokenIndex,
-      X: pillX - 3, Y: pillY - 9, Width: pillWidth + 6, Height: pillHeight + 18,
-    });
-  }
-
   const maxRow = placed.reduce((m, p) => Math.max(m, p.Row), 0);
   const height = placed.length === 0 ? 0 : (maxRow + 1) * LineHeight;
 
-  return { Pieces: pieces, Hits: hits, Add: add, Height: height };
+  // Hits & pill pads: Drill Sentences lane W2, item 1 (a blind tester aiming for "16" in "march forward
+  // 16 counts" hit "march"/"forward" instead, twice). Before this, every tappable token's hit rect was
+  // padded by the SAME fixed amount (3px past the pill, 3 more past that, 9 vertically) regardless of
+  // what sat beside it — two adjacent tokens with only a thin word-space between them (or, ja/zh, NO
+  // space at all between a verb and its value) got hit rects that could overlap each other, or leave a
+  // dead strip belonging to neither, instead of ever meeting in the middle.
+  //
+  // The fix is a Voronoi split, row by row: a tappable token's hit area extends toward a neighbour only
+  // as far as the MIDPOINT of the gap between them (zero gap -> the hit areas meet exactly at the
+  // touching point, never past it), and only falls back to the old fixed pad on a side with no neighbour
+  // at all (the free end of a row) — `rowEntries` below builds that neighbour lookup once, from every
+  // placed piece that carries real, visible content (tappable or not — a hit still never reaches past a
+  // plain word or "then" beside it) plus the add button, so the last token on a row never balloons into
+  // "+"'s own hit either. A PURE WHITESPACE piece (the space between "march" and "forward") is NEVER its
+  // own neighbour entry — it is already counted for free, as part of the gap's own width, between the
+  // real content on either side of it; treating it as a neighbour in its own right would zero out the
+  // gap (the whitespace piece starts exactly where the word before it ends) and strip the comfortable
+  // padding an ordinary word-spaced sentence has always had.
+  //
+  // Vertically, the same midpoint rule applies BETWEEN WRAPPED ROWS of this one sentence (never the next
+  // sentence/line — this component has no idea what sits outside it): a row with a neighbour above or
+  // below is clipped at the boundary exactly halfway between the two rows' centers, which (rows being
+  // LineHeight apart with no gap) is exactly `row * LineHeight` / `(row + 1) * LineHeight`. A row with
+  // nothing to clip against (the common case — most cues are one line) is instead free to reach a real
+  // touch target, at least 44pt tall, centered on the line.
+  interface _RowEntry { readonly Left: number; readonly Right: number; }
+  const rowEntries = new Map<number, _RowEntry[]>();
+  const pushRowEntry = (row: number, left: number, right: number): void => {
+    const list = rowEntries.get(row);
+    if (list) list.push({ Left: left, Right: right });
+    else rowEntries.set(row, [{ Left: left, Right: right }]);
+  };
+  for (const piece of pieces) {
+    if (piece.Text.trim() === '') continue; // a pure-whitespace piece is never its own neighbour — see above.
+    pushRowEntry(piece.Row, piece.X, piece.X + piece.Width);
+  }
+  if (add) pushRowEntry(add.Row, add.X, add.X + add.Width);
+  for (const list of rowEntries.values()) list.sort((a, b) => a.Left - b.Left);
+
+  const FREE_PAD_X = 3; // the hit's own extra pad past the pill, kept on a side with nothing to split against.
+  const PILL_PAD_X = 3; // PillRectOf's own default horizontal pad — see below, mirrored here for the free side.
+  const PILL_GAP_THRESHOLD = PILL_PAD_X * 2; // below this natural gap, two default-padded pills would already touch or cross.
+  const PILL_HAIRLINE = 0.5; // shaved off EACH touching pill edge — a visible ~1px seam, never a silent overlap into a neighbour's own glyph.
+  const TOUCH_HALF_HEIGHT = 22; // half of the 44pt touch-target floor.
+
+  const hits: SentenceHit[] = [];
+  const pillPads: SentencePillPad[] = [];
+  for (const piece of pieces) {
+    const kind = tokens[piece.TokenIndex]?.Kind;
+    if (!kind || !IsTappable(kind)) continue;
+
+    const rowList = rowEntries.get(piece.Row) ?? [];
+    const selfIdx = rowList.findIndex((e) => e.Left === piece.X && e.Right === piece.X + piece.Width);
+    const prev = selfIdx > 0 ? rowList[selfIdx - 1] : null;
+    const next = selfIdx >= 0 && selfIdx < rowList.length - 1 ? rowList[selfIdx + 1] : null;
+
+    const hitLeft = prev ? (prev.Right + piece.X) / 2 : piece.X - FREE_PAD_X - PILL_PAD_X;
+    const hitRight = next ? (piece.X + piece.Width + next.Left) / 2 : piece.X + piece.Width + FREE_PAD_X + PILL_PAD_X;
+
+    const centerY = piece.Y + LineHeight / 2;
+    const hasPrevRow = piece.Row > 0;
+    const hasNextRow = piece.Row < maxRow;
+    const rowBoundaryAbove = piece.Row * LineHeight;
+    const rowBoundaryBelow = (piece.Row + 1) * LineHeight;
+    const hitTop = hasPrevRow ? Math.max(rowBoundaryAbove, centerY - TOUCH_HALF_HEIGHT) : centerY - TOUCH_HALF_HEIGHT;
+    const hitBottom = hasNextRow ? Math.min(rowBoundaryBelow, centerY + TOUCH_HALF_HEIGHT) : centerY + TOUCH_HALF_HEIGHT;
+
+    hits.push({
+      TokenIndex: piece.TokenIndex,
+      X: hitLeft, Y: hitTop, Width: hitRight - hitLeft, Height: hitBottom - hitTop,
+    });
+
+    // Below PILL_GAP_THRESHOLD, the default 3px pad on BOTH sides would already touch or cross — shrink
+    // to half the real gap, less the hairline, so the two pills always keep at least a 1px seam. At zero
+    // gap (the ja/zh glued-atom case) that formula goes slightly NEGATIVE, which is deliberate: it eats
+    // a hairline INTO each atom's own box rather than merely meeting with no pad at all, so two atoms
+    // that touch with no space of their own still visibly read as two separate targets.
+    let leftPad = PILL_PAD_X;
+    if (prev) {
+      const gap = piece.X - prev.Right;
+      if (gap < PILL_GAP_THRESHOLD) leftPad = gap / 2 - PILL_HAIRLINE;
+    }
+    let rightPad = PILL_PAD_X;
+    if (next) {
+      const gap = next.Left - (piece.X + piece.Width);
+      if (gap < PILL_GAP_THRESHOLD) rightPad = gap / 2 - PILL_HAIRLINE;
+    }
+    pillPads.push({ TokenIndex: piece.TokenIndex, LeftPad: leftPad, RightPad: rightPad });
+  }
+
+  return { Pieces: pieces, Hits: hits, PillPads: pillPads, Add: add, Height: height };
 }
 
 /** A tappable token's own pill rect — the SAME box `TokenSentence.ts`'s own hover/press/open/glow pills
@@ -370,9 +453,11 @@ export function PillRectOf(
   piece: { readonly X: number; readonly Y: number; readonly Width: number },
   fontSize: number,
   lineHeight: number,
+  leftPad = 3,
+  rightPad = 3,
 ): { readonly X: number; readonly Y: number; readonly Width: number; readonly Height: number } {
   const height = 1.2 * fontSize + 2;
-  return { X: piece.X - 3, Y: piece.Y + (lineHeight - height) / 2, Width: piece.Width + 6, Height: height };
+  return { X: piece.X - leftPad, Y: piece.Y + (lineHeight - height) / 2, Width: piece.Width + leftPad + rightPad, Height: height };
 }
 
 /**

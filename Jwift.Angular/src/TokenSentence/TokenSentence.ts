@@ -38,7 +38,15 @@ interface _KindStyle { readonly Ink: string; readonly Weight: number; readonly U
 const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
   Text:        { Ink: '@Ink',     Weight: 400, Underline: null },
   Quiet:       { Ink: '@InkSoft', Weight: 400, Underline: null },
-  Word:        { Ink: '@Ink',     Weight: 400, Underline: '@Line' },
+  // Drill Sentences lane W2, item 6 (a persistent, quiet editability cue): the first-run hint only ever
+  // glows once; after that, a neutral `@Line` hairline was the ONLY remaining signal that a word is
+  // tappable, and it reads identically to a stray rule drawn for any other reason. Every TAPPABLE kind's
+  // underline is `@AccentInkLine` now — the brand accent at a quiet 60% alpha, the Apple "text link" way:
+  // "tappable" equals "accent-underlined" everywhere, permanently, not just during the one-time glow.
+  // `Problem` keeps its own `@Danger` underline below -- that one is a different signal (something here
+  // needs fixing), not "this is editable", and must not be diluted into the same quiet accent as everything
+  // else.
+  Word:        { Ink: '@Ink',     Weight: 400, Underline: '@AccentInkLine' },
   // Drill Sentences U1, item 5 (two first-time testers): "16 counts" is already ONE atom end to end — the
   // app's own `CountsText`/`lengthToken` (Render.ts) bake the number and its unit word into a single
   // token, and `TokenSentence.Layout.ts`'s own `_buildUnits` never splits a tappable kind, so the hit rect
@@ -48,9 +56,15 @@ const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
   // Value half ("forward" in "march forward") had the identical gap. Underlined now, matching Word --
   // the whole visible run (number AND unit, or verb AND value) reads as one continuous tappable phrase,
   // never half of it looking like inert text.
-  Value:       { Ink: '@Ink',     Weight: 600, Underline: '@Line' },
-  Who:         { Ink: '@Ink',     Weight: 700, Underline: null },
-  Placeholder: { Ink: '@GoldInk', Weight: 600, Underline: null },
+  Value:       { Ink: '@Ink',     Weight: 600, Underline: '@AccentInkLine' },
+  // Who ("1a", a squad name) is exactly as tappable as a move word — it opens WhoChooser — and carried
+  // the identical gap Value did before item 5: bold ink, no underline, nothing that reads as "tap me"
+  // once the one-time glow has passed. Same fix, same reasoning.
+  Who:         { Ink: '@Ink',     Weight: 700, Underline: '@AccentInkLine' },
+  // Placeholder already paints its ink in gold (a stronger, standing cue that this word still needs the
+  // director's input) — adding the same accent underline underneath is a small, consistent "this is a
+  // tappable word" signal on top of it, not a competing one, since both read the identical hue.
+  Placeholder: { Ink: '@GoldInk', Weight: 600, Underline: '@AccentInkLine' },
   // The mirror pair's own icon (Render.ts's `Icon: 'arrow.left.and.right'`) tints the SAME as the "who"
   // tokens either side of it, not the softer ink the bare glyph used to carry -- the pair reads as one
   // unit, "1a ⇄ 1b", not an accent between two names.
@@ -297,7 +311,13 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       if (!IsTappable(token.Kind)) continue;
       const s = state.get(token.Key);
       if (!s || !(s.Hover || s.Press || s.Open || s.Glow)) continue;
-      const pill = PillRectOf(piece, this.FontSizePt(), this.LineHeightPt());
+      // Drill Sentences lane W2, item 1: a hairline gap between two tappable atoms that sit (almost)
+      // touching — ja/zh glue a move's verb straight to its value with no space token between them —
+      // so this pill never visually bleeds into the neighbour's own glyph. `layout.PillPads` (pure,
+      // `TokenSentence.Layout.ts`) already worked out how much of the default 3px pad this piece's own
+      // left/right edge can actually keep without crossing that neighbour's own half of the gap.
+      const pad = layout.PillPads.find((p) => p.TokenIndex === piece.TokenIndex);
+      const pill = PillRectOf(piece, this.FontSizePt(), this.LineHeightPt(), pad?.LeftPad, pad?.RightPad);
       // Item 9: Glow is the lowest-priority, passive "look here" cue — any REAL interaction state (the
       // control is open, mid-press, or merely hovered) always wins over it, same as it would mid-gesture
       // on the very token the hint is pointing at.
