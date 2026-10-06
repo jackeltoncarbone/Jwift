@@ -31,8 +31,12 @@ export interface GlassAction {
   /** Image asset name — alternative to Icon for menu items (e.g. provider
    *  logos). Wins over Icon when both are set. */
   Image?: string;
-  /** Optional label. Inline cells ignore it; menu items render it. */
+  /** The action's name. Menu items render it; an inline cell carries it as its accessible label and,
+   *  in `<glass-action-bar>`, as the hover tip a desktop pointer reads before pressing a bare glyph. */
   Label?: string;
+  /** Inline cell only: a count drawn on the cell's top trailing corner (how many problems a warnings
+   *  cell stands for). Zero or unset draws nothing. */
+  Badge?: number;
   /** Highlights the inline cell with the active background (a toggle that is on, a panel that is open). */
   Active?: boolean;
   /** The action switches a setting on and off, and `Active` is that state: in the menu it draws UIMenu's
@@ -124,7 +128,8 @@ export interface GlassAction {
               <jwift-spinner [size]="20" />
             </jiv>
           } @else {
-            <jiv [class]="_CellClass(action)" (click)="_OnCellClick(action, $event)">
+            <jiv [class]="_CellClass(action)" semantics="Button" [label]="action.Label ?? null"
+                 (click)="_OnCellClick(action, $event)">
               <icon class="Jwift_GlassActionGlyph" [Name]="action.Icon ?? ''" />
             </jiv>
           }

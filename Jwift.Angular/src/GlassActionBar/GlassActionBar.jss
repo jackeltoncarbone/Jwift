@@ -44,3 +44,62 @@ Jwift_GlassDropdownCellChevron {
   Opacity: 0.6
   TextAlign: Center
 }
+
+// A cell's count (`GlassAction.Badge`): how many problems the warnings cell stands for, on its top
+// trailing corner, so the glyph reads as "3 problems" before it is pressed (Drill Sentences lane X2, item
+// 7). Placed inside the 40pt cell, never outside it, so the pill's own glass never clips it.
+Jwift_GlassActionBadge {
+  Position: Placed
+  Top: 2pt
+  Left: 22pt
+  MinWidth: 16pt
+  Height: 16pt
+  Padding: 0pt 4pt
+  BorderRadius: 8pt
+  Direction: Row
+  Justify: Center
+  Align: Center
+  Background: @Warning
+  PointerEvents: None
+}
+Jwift_GlassActionBadgeText {
+  UserSelect: None
+  PointerEvents: None
+  FontFamily: Inter
+  FontSize: 10pt
+  FontWeight: 700
+  Color: rgba(0, 0, 0, 0.85)
+  TextAlign: Center
+}
+
+// The hover tip under a cell (`HoverTip.ts`): a wide, empty, centred box so the pill inside it centres on
+// the cell whatever its text's width, then the pill itself, the house's quiet panel surface. Never hit:
+// a tip names a control, it is not one.
+Jwift_GlassActionTip {
+  Position: Placed
+  Height: 28pt
+  Direction: Row
+  Justify: Center
+  Align: Center
+  PointerEvents: None
+}
+Jwift_GlassActionTipPill {
+  Height: 26pt
+  Padding: 0pt 10pt
+  BorderRadius: 8pt
+  Direction: Row
+  Align: Center
+  Background: @Panel
+  BorderWidth: 1pt
+  BorderColor: @Line
+  PointerEvents: None
+}
+Jwift_GlassActionTipText {
+  UserSelect: None
+  PointerEvents: None
+  FontFamily: Inter
+  FontSize: 12pt
+  FontWeight: 500
+  Color: @Ink
+  MaxLines: 1
+}
