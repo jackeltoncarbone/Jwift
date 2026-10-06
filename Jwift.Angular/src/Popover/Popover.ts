@@ -20,12 +20,15 @@ import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 import PaperJss from '../Paper/Paper.jss';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverJss from './Popover.jss';
-import { PlacePopover, PointInRect, type PopoverHold, type PopoverPlacement, type PopoverRect } from './Popover.Placement';
+import {
+  PlacePopover, PointInRect, POPOVER_PANEL_PADDING, type PopoverHold, type PopoverPlacement, type PopoverRect,
+} from './Popover.Placement';
 
 export type { PopoverRect };
 
-/** The room a Popover's open panel has below its top edge, in canvas px. PopoverMenu caps its scroll
- *  body with it; fixed-size content simply ignores it. `Infinity` before the first placement runs. */
+/** The room a Popover's open panel holds for its content, in canvas px: the panel's capped height less its
+ *  own padding. PopoverMenu caps its scroll body with it; fixed-size content simply ignores it. `Infinity`
+ *  before the first placement runs. */
 export const JWIFT_POPOVER_ROOM = new InjectionToken<Signal<number>>('JWIFT_POPOVER_ROOM');
 
 /** What closed the popover — the swipe-dismiss / tap-outside distinction a consumer's own "closes on
@@ -98,8 +101,51 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private readonly _styleLoader = inject(JwiftStyleLoader);
 
   private readonly _placement = signal<PopoverPlacement | null>(null);
+  /** Whether the last placement may cap the panel: only while content that scrolls is mounted. */
+  private readonly _capped = signal(false);
   /** Published through `JWIFT_POPOVER_ROOM`. */
-  readonly _room = computed(() => this._placement()?.MaxHeight ?? Infinity);
+  readonly _room = computed(() => {
+    const p = this._placement();
+    return p ? Math.max(0, p.MaxHeight - 2 * POPOVER_PANEL_PADDING) : Infinity;
+  });
+
+  // ── The natural height (Drill Sentences lane AA2, items 1 and 2) ────────────────────────────────────
+  // Placement used to read `Node.Height` as the panel's natural height on every frame. Once a placement
+  // capped the panel, that read came back as the CAP, so the next placement measured the cap, never the
+  // content, and could never learn the panel no longer fit. A fixed-height count wheel capped that way
+  // (it cannot shrink) spilled out of its own frame over the very line it edits. Content that scrolls
+  // registers itself (`AddScroller`), optionally reporting the height it would have uncapped; anything
+  // else is never capped at all, and its own measured height is its natural one.
+  private readonly _scrollers: { readonly ContentHeight: (() => number) | null }[] = [];
+  /** The last height measured while the panel was not capped. */
+  private _measuredNatural = 0;
+
+  /** Content that scrolls within the panel's room calls this when it mounts (PopoverMenu, a chooser with
+   *  its own scroll body) and the returned release when it goes. `contentHeight` reads the content's
+   *  whole unscrolled height, px, panel padding excluded; 0 (not measured yet) falls back to the
+   *  panel's own last uncapped measurement. */
+  AddScroller(contentHeight: (() => number) | null = null): () => void {
+    const entry = { ContentHeight: contentHeight };
+    this._scrollers.push(entry);
+    this._placeKey = '';
+    return () => {
+      const i = this._scrollers.indexOf(entry);
+      if (i >= 0) this._scrollers.splice(i, 1);
+      this._placeKey = '';
+    };
+  }
+
+  private _naturalHeight(scrolls: boolean): number {
+    const measured = this.Node.Height;
+    const p = this._placement();
+    const capped = scrolls && p !== null && measured >= p.MaxHeight - 0.5;
+    this._measuredNatural = capped ? Math.max(this._measuredNatural, measured) : measured;
+    for (const scroller of this._scrollers) {
+      const content = scroller.ContentHeight?.() ?? 0;
+      if (content > 0) return content + 2 * POPOVER_PANEL_PADDING;
+    }
+    return this._measuredNatural;
+  }
 
   /** The width its content asks for, px, or null to keep `Width`. Drill Sentences lane Y3, item 5: a
    *  `<popover-menu>` measures its widest row and sets this, so the panel fits "Move with other squads…"
@@ -167,10 +213,12 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
       if (p) {
         patch['Top'] = `${p.Y}px`;
         patch['Left'] = `${p.X}px`;
-        patch['MaxHeight'] = `${p.MaxHeight}px`;
         patch['VisualOrigin'] = `${p.OriginX} ${p.OriginY}`;
       }
       this.SetStyleOverride(patch);
+      // Only a panel whose content scrolls is ever capped (`_naturalHeight`'s own comment above).
+      if (p && this._capped()) this.SetStyleOverride({ MaxHeight: `${p.MaxHeight}px` });
+      else this.ClearStyleOverride('MaxHeight');
     });
   }
 
@@ -282,13 +330,17 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (this._placement() === null && this.Node.Height <= 0) return;
     const rect = el.getBoundingClientRect();
     const region = this._resolveRegion(rect.width, rect.height);
-    const h = this.Node.Height;
+    const scrolls = this._scrollers.length > 0;
+    const h = this._naturalHeight(scrolls);
     const w = this._width();
-    const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}`;
+    const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}|${scrolls}`;
     if (key === this._placeKey) return;
     this._placeKey = key;
-    const placement = PlacePopover({ Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold });
+    const placement = PlacePopover({
+      Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls,
+    });
     this._prevDown = placement.Down;
+    this._capped.set(scrolls);
     this._placement.set(placement);
   }
 }

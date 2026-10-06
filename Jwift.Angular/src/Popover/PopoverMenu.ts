@@ -266,6 +266,7 @@ export class PopoverMenu implements OnInit, OnDestroy {
   });
 
   private _unbindIndicator: (() => void) | null = null;
+  private _releaseScroller: (() => void) | null = null;
 
   RegisterRow(row: RowIndicatorRow): void { this._rowIndicator.RegisterRow(row); }
   UnregisterRow(row: RowIndicatorRow): void { this._rowIndicator.UnregisterRow(row); }
@@ -273,9 +274,14 @@ export class PopoverMenu implements OnInit, OnDestroy {
   ngOnInit(): void {
     this._styleLoader.Ensure(this._jss, 'GlassDropdown', GlassDropdownJss);
     this._unbindIndicator = this._rowIndicator.Bind(this._doc, () => true);
+    // Drill Sentences lane AA2, item 1: the rows scroll within the panel's room, and the panel places by
+    // their whole unscrolled height (the watched scroll body's own content extent), never by the height
+    // an earlier placement already capped it to.
+    this._releaseScroller = this._popover?.AddScroller(() => this._scrollBody()?.Node.ContentHeight ?? 0) ?? null;
   }
 
   ngOnDestroy(): void {
+    this._releaseScroller?.();
     this._unbindIndicator?.();
     // A popover that swaps this menu for other content (a phrase's Measures page) keeps its own Width.
     this._popover?.ContentWidth.set(null);

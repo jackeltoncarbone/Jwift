@@ -1,5 +1,70 @@
 import { describe, expect, it } from 'vitest';
-import { PointInRect, type PopoverRect } from './Popover.Placement';
+import { PlacePopover, PointInRect, type PopoverRect } from './Popover.Placement';
+
+// Drill Sentences lane AA2, items 1 and 2 (blind first-time testers, phone 402x874 and desktop 1440x900).
+describe('PlacePopover keeps every row on screen and never covers the word it edits', () => {
+  /** The desktop window, inset the way Popover's own default region is (8pt each side). */
+  const desktop: PopoverRect = { X: 8, Y: 8, Width: 1424, Height: 884 };
+  /** The phone, inset 8pt plus its safe areas (59pt top, 34pt bottom). */
+  const phone: PopoverRect = { X: 8, Y: 67, Width: 386, Height: 765 };
+  const bottomOf = (p: { Y: number; MaxHeight: number }): number => p.Y + p.MaxHeight;
+
+  it('a row menu low in the list flips up rather than open into room it does not fit (item 1)', () => {
+    // The 5-8 row's "…" in M5-12, low in the desktop list: 244pt below it, a 350pt menu.
+    const anchor: PopoverRect = { X: 1380, Y: 608, Width: 28, Height: 28 };
+    const p = PlacePopover({ Anchor: anchor, Region: desktop, W: 260, H: 350, PrevDown: null });
+    expect(p.Down).toBe(false);
+    expect(p.MaxHeight).toBe(350); // every row shows, Move down and Delete included.
+    expect(p.Y).toBeGreaterThanOrEqual(desktop.Y);
+    expect(bottomOf(p)).toBeLessThanOrEqual(anchor.Y);
+  });
+
+  it('still prefers below whenever the whole menu fits there', () => {
+    const anchor: PopoverRect = { X: 1380, Y: 200, Width: 28, Height: 28 };
+    const p = PlacePopover({ Anchor: anchor, Region: desktop, W: 260, H: 350, PrevDown: null });
+    expect(p.Down).toBe(true);
+    expect(p.Y).toBeGreaterThanOrEqual(anchor.Y + anchor.Height);
+  });
+
+  it('caps to the roomier side and scrolls only when neither side holds the menu, inside the region', () => {
+    const anchor: PopoverRect = { X: 180, Y: 420, Width: 28, Height: 28 };
+    const p = PlacePopover({ Anchor: anchor, Region: phone, W: 260, H: 900, PrevDown: null });
+    expect(p.MaxHeight).toBeLessThan(900);
+    expect(p.Y).toBeGreaterThanOrEqual(phone.Y);
+    expect(bottomOf(p)).toBeLessThanOrEqual(phone.Y + phone.Height);
+    expect(p.Down ? p.Y >= anchor.Y + anchor.Height : bottomOf(p) <= anchor.Y).toBe(true);
+  });
+
+  it('an open menu that stops fitting its side as the list scrolls moves to the side where it fits', () => {
+    const anchor: PopoverRect = { X: 180, Y: 600, Width: 28, Height: 28 };
+    const p = PlacePopover({ Anchor: anchor, Region: phone, W: 260, H: 330, PrevDown: true });
+    expect(p.Down).toBe(false);
+    expect(p.MaxHeight).toBe(330);
+  });
+
+  it('a count wheel, which cannot scroll, is never capped and never covers the line it edits (item 2)', () => {
+    // "16 counts" anywhere down the phone's list, and the 200pt wheel (its 180pt drum and the padding).
+    for (const y of [120, 300, 520, 700]) {
+      const anchor: PopoverRect = { X: 140, Y: y, Width: 70, Height: 26 };
+      const p = PlacePopover({ Anchor: anchor, Region: phone, W: 250, H: 200, PrevDown: null, Scrolls: false });
+      expect(p.MaxHeight, `anchor at ${y}`).toBe(200);
+      if (p.Down) expect(p.Y, `anchor at ${y}`).toBeGreaterThanOrEqual(anchor.Y + anchor.Height);
+      else expect(p.Y + 200, `anchor at ${y}`).toBeLessThanOrEqual(anchor.Y);
+    }
+  });
+
+  it('a submenu page still holds the panel where it stood (lane Y3, item 6)', () => {
+    const anchor: PopoverRect = { X: 180, Y: 600, Width: 28, Height: 28 };
+    const p = PlacePopover({
+      Anchor: anchor, Region: phone, W: 260, H: 500, PrevDown: false,
+      Hold: { Down: false, X: 40, TopFromAnchor: -340 },
+    });
+    expect(p.Down).toBe(false);
+    expect(p.X).toBe(40);
+    expect(p.Y).toBe(260);
+    expect(bottomOf(p)).toBeLessThanOrEqual(anchor.Y);
+  });
+});
 
 // PointInRect is Popover's own outside-dismiss and anchor-toggle decision (LaneM.md): a press on the
 // floating panel OR on the anchor that opened it both read as "inside" and must never dismiss, so the

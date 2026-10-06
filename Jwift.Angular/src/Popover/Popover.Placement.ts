@@ -1,7 +1,8 @@
 /**
  * Popover's placement math — ported from the concept's `placePop` (DrillSentences.Concept.html:1208).
- * Pure: a rect in, a box out, no DOM. Prefers below the anchor; keeps its side across re-places unless
- * the room it has shrinks past a floor and the other side has more; never overlaps the anchor.
+ * Pure: a rect in, a box out, no DOM. Prefers below the anchor when the whole panel fits there, else above
+ * when it fits there, else whichever side has more room; keeps its side across re-places while the panel
+ * still fits there; never overlaps the anchor.
  */
 
 export interface PopoverRect {
@@ -18,8 +19,13 @@ export interface PopoverPlacementInput {
   readonly Region: PopoverRect;
   /** The panel's authored width. */
   readonly W: number;
-  /** The panel's natural (unconstrained) height. */
+  /** The panel's natural (unconstrained) height: everything its content would show with no cap at all,
+   *  never a height an earlier placement already capped (`Popover.ts` keeps the two apart). */
   readonly H: number;
+  /** Whether the content scrolls inside a capped panel (it reads `JWIFT_POPOVER_ROOM`). Content that does
+   *  not (a count wheel, a stepper page) cannot shrink, so its panel is never capped: a cap would only let
+   *  it spill out of its own frame, over the very word it points at. Absent means it scrolls. */
+  readonly Scrolls?: boolean;
   /** `null` on the first placement (pick whichever side fits); the previous `Down` on every re-place
    *  after that, so an open popover doesn't flip sides on every frame of a scroll. */
   readonly PrevDown: boolean | null;
@@ -52,7 +58,8 @@ export function PointInRect(x: number, y: number, rect: PopoverRect): boolean {
 export interface PopoverPlacement {
   readonly X: number;
   readonly Y: number;
-  /** The panel's capped height — never taller than the room on the side it landed. */
+  /** The panel's capped height — never taller than the room on the side it landed, for content that
+   *  scrolls; the natural height for content that does not (`PopoverPlacementInput.Scrolls`). */
   readonly MaxHeight: number;
   readonly Down: boolean;
   /** The arrow's tip X, in the SAME canvas-px space as `Region`/`Anchor` (not yet relative to `X`). */
@@ -65,6 +72,11 @@ export interface PopoverPlacement {
 
 /** The arrow's own height — how far the panel stands off the anchor on the side it opens. */
 const ARROW_HEIGHT = 12;
+/** Popover.jss's own `Padding: 10pt` around the content, on every side (the sheet outlet a popover is
+ *  teleported to draws at PointScale 1, so a point is a pixel there). The content's own room is the
+ *  panel's capped height less this twice over: a scroll body capped at the PANEL's height used to run
+ *  20pt past the panel's bottom, past the window's edge on a menu placed low. */
+export const POPOVER_PANEL_PADDING = 10;
 /** The shortest a popover is ever capped to; below this it would stop reading as a panel. */
 const MIN_HEIGHT = 44;
 /** How close to the panel's short corners the arrow tip is kept from — a 17×17 diamond needs clearance
@@ -87,17 +99,30 @@ export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
   const below = regionBottom - (aBottom + ARROW_HEIGHT);
   const above = (aTop - ARROW_HEIGHT) - regionTop;
 
+  // Drill Sentences lane AA2, item 1 (blind tester, desktop): the 5-8 row's "…" menu sat low in the list
+  // and opened DOWNWARD into 260pt of room for a 350pt menu, since the first placement went below whenever
+  // 240pt was free there. Capped and scrolled, its last two rows (Move down, Delete) sat under the window's
+  // edge with nothing saying the panel scrolled. A side is only preferred when the WHOLE panel fits it;
+  // a cap (and a scroll) is the last resort, when neither side holds it.
+  const fitsBelow = H <= below;
+  const fitsAbove = H <= above;
   let down: boolean;
   if (PrevDown === null) {
-    down = below >= Math.min(H, 240) || below >= above;
+    down = fitsBelow || (!fitsAbove && below >= above);
   } else {
+    // Keeps its side across a scroll while the panel fits there; once it no longer does, it moves to the
+    // other side when the panel fits there or the other side simply has more room. Flipping only ever
+    // gains room, so it never flips straight back.
     down = PrevDown;
+    const fits = down ? fitsBelow : fitsAbove;
+    const otherFits = down ? fitsAbove : fitsBelow;
     const room = down ? below : above;
     const other = down ? above : below;
-    if (room < Math.min(H, 140) && other > room) down = !down;
+    if (!fits && (otherFits || other > room)) down = !down;
   }
 
-  const h = Math.max(MIN_HEIGHT, Math.min(H, down ? below : above));
+  const scrolls = input.Scrolls ?? true;
+  const h = scrolls ? Math.max(MIN_HEIGHT, Math.min(H, down ? below : above)) : H;
   const x = Clamp(aCenterX - W / 2, regionLeft, regionRight - W);
   const y = down
     ? Math.max(aBottom + ARROW_HEIGHT, regionTop)

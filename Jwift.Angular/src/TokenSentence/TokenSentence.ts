@@ -204,6 +204,11 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
 
   readonly TokenTap = output<{ Key: string; Anchor: PopoverRect }>();
   readonly AddTap = output<{ Anchor: PopoverRect }>();
+  /** Drill Sentences lane AA2, item 6: which token the pointer is over, on every move over this sentence
+   *  and once more (`Key: null`) as it leaves, with the move itself so a caller can tell a resting mouse
+   *  from a finger (`HoverTip`, the toolbar's own tip timing, reads both). A caller shows a word's quiet
+   *  explanation from it; the sentence itself draws nothing new. */
+  readonly TokenHover = output<{ Key: string | null; Event: PointerEvent }>();
 
   private readonly _canvasRef = inject(Jaui, { optional: true });
   private readonly _doc = inject(DOCUMENT);
@@ -560,6 +565,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   protected _onHostPointerMove(e: PointerEvent): void {
     this._storePoint(e);
     this._updateHover();
+    this.TokenHover.emit({ Key: this._hoveredKey(), Event: e });
   }
   /**
    * Drill Sentences U1 live fix (item 2, two first-time testers): a tap that lands on an actual token or
@@ -623,6 +629,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
         this.SetStyleOverride({ Cursor: 'Default' });
         this._docUnbind?.();
         this._docUnbind = null;
+        this.TokenHover.emit({ Key: null, Event: e });
       }
     };
     this._doc.addEventListener('pointermove', onDocMove, true);
