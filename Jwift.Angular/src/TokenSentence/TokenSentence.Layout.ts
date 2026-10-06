@@ -359,6 +359,43 @@ export function LayoutSentence(
   return { Pieces: pieces, Hits: hits, Add: add, Height: height };
 }
 
+/** A tappable token's own pill rect — the SAME box `TokenSentence.ts`'s own hover/press/open/glow pills
+ *  all paint into (`_visiblePills`'s own `pill = PillRectOf(piece, ...)`) and the box the hit rect
+ *  (`LayoutSentence`'s own `Hits`, above) further pads: `piece`'s own measured box, widened 3px either
+ *  side and a little past top/bottom to sit comfortably around the ink, never the raw unpadded glyph box.
+ *  Pure and exported here (not just a private helper inside the component) so the first-run glow pill —
+ *  item 9's "a pill exactly covering the target token's text box" — and every other state pill are
+ *  provably the ONE geometry, not two copies that could drift apart. */
+export function PillRectOf(
+  piece: { readonly X: number; readonly Y: number; readonly Width: number },
+  fontSize: number,
+  lineHeight: number,
+): { readonly X: number; readonly Y: number; readonly Width: number; readonly Height: number } {
+  const height = 1.2 * fontSize + 2;
+  return { X: piece.X - 3, Y: piece.Y + (lineHeight - height) / 2, Width: piece.Width + 6, Height: height };
+}
+
+/**
+ * Drill Sentences U1, item 9 (a gentle first-run hint), live fix: the hint used to glow/anchor the
+ * sentence's first TAPPABLE token in document order, which for "Everyone · mark time 16 counts" is the
+ * leading Who token ("Everyone") — a first-time director tapping it learns "this names a name," not "a
+ * word opens a control." Live, this put the glow pill and its tip popover over a short, often-abbreviated
+ * name at the very start of the line instead of over the move itself, reading as a small, mispositioned
+ * dot rather than a wash behind "mark time."
+ *
+ * The first MOVE word (`Kind: 'Word'`) teaches the concept this hint exists for — "tap a word" — far
+ * better than a name ever could, so it is preferred outright over every other tappable kind regardless of
+ * where in the sentence it falls. The Who token (or any other tappable kind) still counts as a fallback
+ * for the rare line with no Word token at all (e.g. a pure "ftl path" line), so the hint still has
+ * somewhere to point rather than never showing.
+ */
+export function FirstGlowTarget(tokens: readonly SentenceToken[]): string | null {
+  const firstMoveWord = tokens.find((t) => t.Kind === 'Word');
+  if (firstMoveWord) return firstMoveWord.Key;
+  const firstTappable = tokens.find((t) => IsTappable(t.Kind));
+  return firstTappable?.Key ?? null;
+}
+
 /**
  * One Angular `@for` track key per piece, ALIGNED to `pieces` by index — stable across a reflow that
  * only nudges a piece's own X (a sub-pixel rewrap, a `_pageFontEpoch` bump), never its WHICH-PIECE

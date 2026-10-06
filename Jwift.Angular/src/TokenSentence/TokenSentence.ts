@@ -23,6 +23,7 @@ import TokenSentenceJss from './TokenSentence.jss';
 import {
   IsTappable,
   LayoutSentence,
+  PillRectOf,
   TextPieceKeys,
   type SentenceHit,
   type SentenceLayoutResult,
@@ -291,7 +292,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       if (!IsTappable(token.Kind)) continue;
       const s = state.get(token.Key);
       if (!s || !(s.Hover || s.Press || s.Open || s.Glow)) continue;
-      const pill = _pillRect(piece, this.FontSizePt(), this.LineHeightPt());
+      const pill = PillRectOf(piece, this.FontSizePt(), this.LineHeightPt());
       // Item 9: Glow is the lowest-priority, passive "look here" cue — any REAL interaction state (the
       // control is open, mid-press, or merely hovered) always wins over it, same as it would mid-gesture
       // on the very token the hint is pointing at.
@@ -588,9 +589,4 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
 
 function _rect(x: number, y: number, w: number, h: number): Record<string, unknown> {
   return { Position: 'Placed', Left: `${x}px`, Top: `${y}px`, Width: `${w}px`, Height: `${h}px` };
-}
-
-function _pillRect(piece: { X: number; Y: number; Width: number }, fontSize: number, lineHeight: number) {
-  const height = 1.2 * fontSize + 2;
-  return { X: piece.X - 3, Y: piece.Y + (lineHeight - height) / 2, Width: piece.Width + 6, Height: height };
 }
