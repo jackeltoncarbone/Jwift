@@ -19,7 +19,7 @@ import TitleButtonJss from './TitleButton.jss';
   template: `
     <jyle [source]="Jss" />
     <jiv class="Jwift_TitleButton" (click)="titleClick.emit()">
-      <jext class="Jwift_ToolbarTitle" [text]="text()" />
+      <jext class="Jwift_ToolbarTitle Jwift_TitleButtonLabel" [text]="text()" />
       <icon class="Jwift_TitleButtonChevron" Name="chevron.down" />
     </jiv>
   `,
