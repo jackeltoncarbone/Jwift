@@ -403,10 +403,22 @@ export function FirstGlowTarget(tokens: readonly SentenceToken[]): string | null
  * own fix for two pieces sharing a row), so ANY X move read to Angular as a brand-new piece — the old
  * `<jext>` torn down, a fresh one mounted, whose own `TextAnimator` starts at Opacity 0 and springs in
  * (the engine's own new-content fade), live as words blanking out then fading back during a phone sheet
- * drag. An ORDINAL position among the SAME token's own pieces is exactly as unique as X ever was
- * (`LayoutSentence` never emits two pieces for one token at the same ordinal on the same row) but never
- * changes just because the piece moved a few px — the key this returns names WHICH piece it is, not
- * WHERE it currently sits, so the same jext updates in place instead of being reborn.
+ * drag. An ORDINAL position among the SAME token's own pieces is exactly as unique as X ever was and
+ * never changes just because the piece moved — the key this returns names WHICH piece it is, not WHERE
+ * it currently sits, so the same jext updates in place instead of being reborn.
+ *
+ * Drill Sentences lane V2, item 6 (two first-time testers): "a word briefly vanished mid-sentence during a
+ * transition." Round 14's own key was `tokenKeyOf:Row#ordinal` — `Row` was carried over from the X-based
+ * scheme it replaced, on the reasoning that "ordinal, same row" was the uniqueness round 14 could point
+ * to in `LayoutSentence`'s own behaviour. But the ordinal itself (a counter over `pieces` in LAYOUT order,
+ * incrementing once per piece already seen for that token) is unique across EVERY row on its own — two
+ * pieces of the same token never share an ordinal, row or no row — so `Row` added nothing to the key's
+ * uniqueness and everything to its instability: a token elsewhere in the sentence changing WIDTH (its
+ * text growing or shrinking) can shift the wrap and push a LATER, utterly unchanged token onto a
+ * different row, and that token's key changed anyway, purely because `Row` was riding along in it —
+ * the exact "a word I never touched vanished" live bug, one step beyond the X move round 14 already
+ * fixed. Dropping `Row` from the key closes it: a piece whose own token is unchanged keeps the SAME key
+ * (and so the SAME jext, never refaded) no matter which row it lands on after a reflow elsewhere.
  */
 export function TextPieceKeys(
   pieces: readonly SentencePiece[], tokenKeyOf: (tokenIndex: number) => string,
@@ -415,6 +427,6 @@ export function TextPieceKeys(
   return pieces.map((piece) => {
     const n = ordinal.get(piece.TokenIndex) ?? 0;
     ordinal.set(piece.TokenIndex, n + 1);
-    return `${tokenKeyOf(piece.TokenIndex)}:${piece.Row}#${n}`;
+    return `${tokenKeyOf(piece.TokenIndex)}#${n}`;
   });
 }

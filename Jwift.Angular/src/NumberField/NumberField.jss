@@ -58,8 +58,19 @@ Jwift_NumberFieldSegLabel_On : Jwift_NumberFieldSegLabel {
   FontWeight: 600
 }
 
-Jwift_NumberFieldWheel {
+// Item 2 (Drill Sentences lane V2): the minus/plus steppers flank the wheel rather than sitting below it
+// as their own separate control — one row, the wheel taking whatever width the two 30pt buttons leave.
+Jwift_NumberFieldWheelRow {
+  Direction: Row
+  Justify: Center
+  Align: Center
+  Gap: 4pt
   Width: 100%
+  Padding: 0pt 10pt
+}
+Jwift_NumberFieldWheel {
+  FlexGrow: 1
+  MinWidth: 0
 }
 
 Jwift_NumberFieldRow {

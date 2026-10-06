@@ -19,7 +19,9 @@ import { WheelItem } from './WheelItem';
 import {
   ClampPosition,
   DefaultWheelGeometry,
+  DragDeltaToPositionDelta,
   NearestIndex,
+  WheelDeltaToPositionDelta,
   type WheelGeometry,
 } from './WheelPicker.Logic';
 import WheelPickerJss from './WheelPicker.jss';
@@ -167,8 +169,11 @@ export class WheelPicker extends JivHost implements OnInit, OnDestroy {
       const dy = e.clientY - this._lastY;
       const dt = now - this._lastT;
       const ih = this.itemHeight();
-      if (dt > 0) this._velocity = (-dy / ih) / dt;
-      this.ScrollPosition.update(p => ClampPosition(p - dy / ih, this._count()));
+      // WheelPicker.Logic.ts's own `DragDeltaToPositionDelta` doc comment: dragging content UP (dy < 0)
+      // reveals larger values below.
+      const delta = DragDeltaToPositionDelta(dy, ih);
+      if (dt > 0) this._velocity = delta / dt;
+      this.ScrollPosition.update(p => ClampPosition(p + delta, this._count()));
       this._lastY = e.clientY;
       this._lastT = now;
     };
@@ -200,7 +205,9 @@ export class WheelPicker extends JivHost implements OnInit, OnDestroy {
                : e.deltaMode === 2 ? e.deltaY * this.Node.Height
                : e.deltaY;
       const ih = this.itemHeight();
-      this.ScrollPosition.update(p => ClampPosition(p + px / (ih * 2), this._count()));
+      // WheelPicker.Logic.ts's own `WheelDeltaToPositionDelta` doc comment: deltaY > 0 (scrolling down)
+      // moves the content up and the selection forward — larger values, like scrolling a list.
+      this.ScrollPosition.update(p => ClampPosition(p + WheelDeltaToPositionDelta(px, ih), this._count()));
       if (this._wheelSnapTimer !== null) clearTimeout(this._wheelSnapTimer);
       this._wheelSnapTimer = setTimeout(() => {
         this._wheelSnapTimer = null;

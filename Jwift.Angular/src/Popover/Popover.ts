@@ -237,12 +237,20 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (!el) return;
     const anchor = this._resolveAnchor();
     if (!anchor) return;
+    // Drill Sentences lane V2, item 3: "the phrase dropdown's row positions shift between opens, so the
+    // same tap picked different phrases." Root cause, found here rather than in the menu: the frame is
+    // `Height: MinContent`, so its first `Node.Height` read is 0 — this used to fall back to a guessed
+    // 240 and commit an up/down decision on THAT, then re-placed moments later once the real content
+    // height came in, which could FLIP the decision (`PlacePopover`'s own `PrevDown !== null` branch uses
+    // a tighter 140pt threshold than the first guess's 240) and visibly reposition every row mid-open,
+    // while the panel is still growing in (`Popover.jss`'s own 0.4s `Presence` spring) — fast enough for a
+    // second tap aimed at the FIRST layout to land on whatever the SECOND one put there instead. Waiting
+    // for a real measurement before ever committing a placement means the first placement this popover
+    // ever shows is already the one it settles on — nothing left to flip out from under a reader's finger.
+    if (this._placement() === null && this.Node.Height <= 0) return;
     const rect = el.getBoundingClientRect();
     const region = this._resolveRegion(rect.width, rect.height);
-    // The frame is `Height: MinContent`: before the first placement its natural height is whatever
-    // the content measures to; fall back to something reasonable rather than collapsing the first
-    // placement to the 44pt floor.
-    const h = this.Node.Height > 0 ? this.Node.Height : 240;
+    const h = this.Node.Height;
     const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}`;
     if (key === this._placeKey) return;
     this._placeKey = key;

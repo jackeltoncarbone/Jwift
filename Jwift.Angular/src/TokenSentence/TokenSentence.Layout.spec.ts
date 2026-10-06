@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { FirstGlowTarget, IsTappable, LayoutSentence, PillRectOf, type SentenceToken } from './TokenSentence.Layout';
+import {
+  FirstGlowTarget, IsTappable, LayoutSentence, PillRectOf, TextPieceKeys, type SentencePiece, type SentenceToken,
+} from './TokenSentence.Layout';
 
 /**
  * Drill Sentences U1, item 5 (two first-time testers): "On phone, tapping the words '16 counts' did
@@ -99,5 +101,58 @@ describe('PillRectOf', () => {
     expect(hit.Y).toBeCloseTo(pill.Y - 9, 5);
     expect(hit.Width).toBeCloseTo(pill.Width + 6, 5);
     expect(hit.Height).toBeCloseTo(pill.Height + 18, 5);
+  });
+});
+
+/** Drill Sentences lane V2, item 6 (two first-time testers): "a word briefly vanished mid-sentence during
+ *  a transition." A piece's key must track WHICH piece it is (its own token, and which of that token's
+ *  own pieces), never WHERE it currently renders (its row) — row 14's own fix dropped `X` for exactly
+ *  this reason but still carried `Row`, which a reflow triggered by some OTHER token's text changing
+ *  width can change for a piece whose own token never did. */
+const piece = (o: Partial<SentencePiece> & { TokenIndex: number }): SentencePiece =>
+  ({ Text: '', X: 0, Y: 0, Width: 10, Row: 0, ...o });
+
+describe('TextPieceKeys', () => {
+  it('keys a piece by its token and ordinal alone — never by which row it currently sits on', () => {
+    const pieces = [piece({ TokenIndex: 0, Row: 0 })];
+    const keyAtRow0 = TextPieceKeys(pieces, (i) => `tok${i}`)[0];
+    const keyAtRow1 = TextPieceKeys([piece({ TokenIndex: 0, Row: 1 })], (i) => `tok${i}`)[0];
+    expect(keyAtRow0).toBe(keyAtRow1);
+  });
+
+  it('a reflow that moves a LATER, unchanged token to a different row keeps that token\'s own key — it ' +
+    'never refades just because something earlier on the line grew or shrank', () => {
+    // Before: token 0 ("8") and token 1 ("counts") both sit on row 0.
+    const before = TextPieceKeys(
+      [piece({ TokenIndex: 0, Row: 0 }), piece({ TokenIndex: 1, Row: 0 })],
+      (i) => `tok${i}`,
+    );
+    // After: token 0's own text grew ("8" -> "100"), pushing token 1 onto row 1 — token 1 itself never
+    // changed at all.
+    const after = TextPieceKeys(
+      [piece({ TokenIndex: 0, Row: 0 }), piece({ TokenIndex: 1, Row: 1 })],
+      (i) => `tok${i}`,
+    );
+    expect(after[1]).toBe(before[1]);
+  });
+
+  it('still gives each piece of a MULTI-PIECE token (a Text/Quiet run split into units) its own, stable, ' +
+    'ordinal-keyed identity', () => {
+    const pieces = [
+      piece({ TokenIndex: 0, Row: 0 }), // token 0's 1st piece
+      piece({ TokenIndex: 1, Row: 0 }), // token 1's 1st piece (a different token)
+      piece({ TokenIndex: 0, Row: 1 }), // token 0's 2nd piece, wrapped onto the next row
+    ];
+    const keys = TextPieceKeys(pieces, (i) => `tok${i}`);
+    expect(new Set(keys).size).toBe(3); // all three are distinct...
+    expect(keys[0]).not.toBe(keys[2]); // ...in particular, token 0's two pieces never collide.
+  });
+
+  it('two different tokens never collide, even landing on the identical row and ordinal', () => {
+    const keys = TextPieceKeys(
+      [piece({ TokenIndex: 0, Row: 2 }), piece({ TokenIndex: 1, Row: 2 })],
+      (i) => `tok${i}`,
+    );
+    expect(keys[0]).not.toBe(keys[1]);
   });
 });

@@ -3,12 +3,37 @@ import {
   ClampPosition,
   DefaultWheelGeometry,
   DegreesPerItem,
+  DragDeltaToPositionDelta,
   NearestIndex,
   ProjectSlot,
+  WheelDeltaToPositionDelta,
   type WheelGeometry,
 } from './WheelPicker.Logic';
 
 const G: WheelGeometry = DefaultWheelGeometry;
+
+describe('direction mapping (Drill Sentences lane V2, item 2) — against iOS UIPickerView', () => {
+  it('dragging content UP (finger moves up, dy < 0) increases the position — larger values', () => {
+    expect(DragDeltaToPositionDelta(-10, 34)).toBeGreaterThan(0);
+  });
+
+  it('dragging content DOWN (dy > 0) decreases the position — smaller values', () => {
+    expect(DragDeltaToPositionDelta(10, 34)).toBeLessThan(0);
+  });
+
+  it('the mouse wheel scrolling down (deltaY > 0) increases the position, same sign as a drag up', () => {
+    expect(WheelDeltaToPositionDelta(10, 34)).toBeGreaterThan(0);
+  });
+
+  it('the mouse wheel scrolling up (deltaY < 0) decreases the position, same sign as a drag down', () => {
+    expect(WheelDeltaToPositionDelta(-10, 34)).toBeLessThan(0);
+  });
+
+  it('a no-op input moves nothing', () => {
+    expect(DragDeltaToPositionDelta(0, 34)).toBe(0);
+    expect(WheelDeltaToPositionDelta(0, 34)).toBe(0);
+  });
+});
 
 describe('ProjectSlot — centered row', () => {
   it('is identity at the selection center', () => {

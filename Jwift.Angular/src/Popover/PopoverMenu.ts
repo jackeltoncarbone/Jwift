@@ -12,6 +12,7 @@ import {
   output,
   signal,
   viewChild,
+  viewChildren,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Jaui, Jext, Jiv, Jyle, JSS_REGISTRY } from 'jaui-angular';
@@ -169,6 +170,34 @@ export class PopoverMenu implements OnInit, OnDestroy {
   // resolves after the first view pass; an effect (not ngOnInit) is what can wait for that.
   private readonly _watchScrollBody = effect(() => { this._scrollBody()?.Node.WatchRect(true); });
 
+  // ── Open scrolled to the checked row (Drill Sentences lane V2, item 3) ─────────────────────────────
+  // "The phrase dropdown's row positions shift between opens" had a second half beyond Popover.ts's own
+  // placement fix: nothing here ever scrolled a long menu to its CURRENT item at all, so a phrase near the
+  // bottom of a long show opened scrolled to the TOP, out of view, every time. Every `PopoverMenuRow` this
+  // template ever creates is a `[popoverMenuRow]` on the `@default` (Kind: 'Item') branch, in the SAME
+  // order `_page().Items` itself lists them — `viewChildren` below collects them in that same template
+  // order, so index-matching the two against the `Item`-kind subsequence is exact, never a guess.
+  private readonly _rows = viewChildren(PopoverMenuRow);
+  /** True from mount (or a page push/pop) until the one scroll below has run for THIS page — never
+   *  re-fires on a later tick just because `Items()` itself produced a new array reference (e.g. a
+   *  caller's own `computed()` recomputing while the menu stays open), which would otherwise fight a
+   *  reader already scrolling the list by hand. */
+  private readonly _scrollToCheckedPending = signal(true);
+  private readonly _scrollToChecked = effect(() => {
+    if (!this._scrollToCheckedPending()) return;
+    const rows = this._rows();
+    const body = this._scrollBody();
+    const items = this._page().Items.filter((i) => i.Kind === 'Item');
+    if (!body || rows.length === 0 || rows.length !== items.length) return; // not fully settled yet.
+    this._scrollToCheckedPending.set(false);
+    const idx = items.findIndex((i) => i.Checked);
+    if (idx < 0) return; // nothing checked — opens at the top, same as before.
+    // `Motion: 'Instant'` — this runs before the panel's own grow-in (`Popover.jss`'s `Presence` spring)
+    // ever reads as settled, so an ANIMATED scroll here would be the exact "rows move under the finger"
+    // bug item 3 is fixing, just moved into the list body instead of the panel's own placement.
+    body.Node.ScrollTo({ Element: rows[idx].Node, Align: 'Center', Motion: 'Instant' });
+  });
+
   protected readonly _ScrollLayout = computed(() => {
     const room = this._room ? this._room() : Infinity;
     return { MaxHeight: Number.isFinite(room) ? `${room}px` : 'none' };
@@ -211,11 +240,13 @@ export class PopoverMenu implements OnInit, OnDestroy {
     // sitting at) -- the pill could keep reading as "on" over whatever NEW row happens to start where the
     // OLD one left off, with no real hover/press to back it. A fresh page starts with nothing highlighted.
     this._rowIndicator.Reset();
+    this._scrollToCheckedPending.set(true); // a pushed submenu gets the SAME "open scrolled to checked" treatment.
   }
 
   Back(): void {
     this._pushed.update((s) => s.slice(0, -1));
     this._rowIndicator.Reset(); // same reasoning as PushPage's own Reset, above.
+    this._scrollToCheckedPending.set(true); // the page returned to gets scrolled to its own checked row again.
   }
 
   protected _RowClass(item: PopoverMenuItem): string {

@@ -61,6 +61,26 @@ export const NearestIndex = (position: number, count: number): number =>
   count <= 0 ? 0 : Math.max(0, Math.min(count - 1, Math.round(position)));
 
 /**
+ * THE DIRECTION RULE (Drill Sentences lane V2, item 2; two first-time testers: "the count wheel's
+ * direction felt backwards... overshot twice with the mouse wheel"), checked against iOS UIPickerView and
+ * pinned here so it can never silently invert again:
+ *
+ *   - DRAGGING content UP reveals LARGER values below — direct manipulation, the row tracking the finger
+ *     1:1: drag up (the finger's screen-Y DECREASES), and rows that were below the selection move up
+ *     toward it, the same motion as scrolling a list forward.
+ *   - The MOUSE WHEEL carries the SAME sign a plain scrollable region already uses everywhere else in the
+ *     app: `deltaY > 0` (the notch that scrolls a page DOWN) moves the content UP and the selection
+ *     FORWARD — larger values — never inverted for this one control.
+ *
+ * Both reduce to the identical `ScrollPosition` delta a positive input produces: POSITIVE. Extracted pure
+ * (rather than left as the two inline expressions `WheelPicker.ts`'s `onMove`/`onWheel` used to carry) so
+ * the rule is itself a unit, asserted once, instead of trusted to stay matched across two call sites by
+ * eye.
+ */
+export const DragDeltaToPositionDelta = (dy: number, itemHeight: number): number => -dy / itemHeight;
+export const WheelDeltaToPositionDelta = (deltaY: number, itemHeight: number): number => deltaY / (itemHeight * 2);
+
+/**
  * Project one row onto the 2D drum. `distance` is the row's signed offset
  * from the selection center in rows (index − scrollPosition): 0 is centered,
  * positive is below, negative is above.

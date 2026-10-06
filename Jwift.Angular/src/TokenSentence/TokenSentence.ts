@@ -282,8 +282,13 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       const token = tokens[piece.TokenIndex];
       if (!token) continue;
       if (token.Kind === 'Badge') {
+        // Item 6 (Drill Sentences lane V2): no `:Row` here any more — a Badge is an ATOM (one piece,
+        // `TokenSentence.Layout.ts`'s own doc comment), so `token.Key` alone already names it uniquely,
+        // and keying on its CURRENT row the same way `TextPieceKeys` used to meant a later reflow (another
+        // token's text changing width) could shift this one onto a different row and remount/refade a
+        // badge that never itself changed. Same fix as `TextPieceKeys`, same reasoning.
         out.push({
-          Key: `${token.Key}:${piece.Row}:badge`,
+          Key: `${token.Key}:badge`,
           Class: 'Jwift_TokenSentenceBadgePill',
           Layout: _rect(piece.X - 8, piece.Y + (this.LineHeightPt() - 19) / 2, piece.Width + 16, 19),
         });
@@ -301,7 +306,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
         : s.Press ? 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Press'
           : s.Hover ? 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Hover'
             : 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Glow';
-      out.push({ Key: `${token.Key}:${piece.Row}`, Class: cls, Layout: _rect(pill.X, pill.Y, pill.Width, pill.Height) });
+      // Item 6: no `:Row` here either — a tappable token is also an ATOM (one piece), so `token.Key` alone
+      // already names it, and the same reflow-reorders-row remount this file's other two keys just lost
+      // would otherwise flicker the hover/press/open/glow pill off a token nobody touched.
+      out.push({ Key: token.Key, Class: cls, Layout: _rect(pill.X, pill.Y, pill.Width, pill.Height) });
     }
     return out;
   });
@@ -320,8 +328,11 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       if (!underline) continue;
       const s = state.get(token.Key);
       if (s?.Open) continue; // the pill says "active" instead.
+      // Item 6: same fix as `_visiblePills`/`TextPieceKeys` — Underline tokens (Word/Value/Problem) are
+      // also ATOMS, so `token.Key` alone is enough, and dropping `:Row` stops a reflow elsewhere in the
+      // sentence from remounting (and refading) an underline whose own token never changed.
       out.push({
-        Key: `${token.Key}:${piece.Row}`,
+        Key: token.Key,
         Style: { Background: underline },
         Layout: _rect(piece.X, piece.Y + lh / 2 + 0.36 * fs + 4, piece.Width, 1),
       });
@@ -352,6 +363,17 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     // `TextPieceKeys` (TokenSentence.Layout.ts, pure and spec'd there) keys a piece by an ORDINAL position
     // among that token's own pieces instead -- just as unique as `piece.X` ever was, but names WHICH
     // piece it is rather than WHERE it currently sits, so the existing jext updates in place.
+    //
+    // Item 6 (Drill Sentences lane V2, two first-time testers): "a word briefly vanished mid-sentence
+    // during a transition" -- round 14's own key also carried `piece.Row`, reasoning it was needed
+    // alongside the ordinal for uniqueness; it never was (the ordinal is a running count over EVERY piece
+    // of that token, across every row, so it alone never repeats), and carrying it meant a token could
+    // still remount for a reason that has nothing to do with it: another token's TEXT changing width
+    // elsewhere in the sentence reflows the wrap, pushes THIS token onto a different row, and `Row`
+    // riding in the key read that as a brand-new piece -- faded exactly like the round-14 bug, just
+    // triggered by a text change instead of a drag. `TextPieceKeys` (and `_visiblePills`/`_underlines`
+    // just above, the same fix) drop `Row` from the key entirely now: a piece whose own token is
+    // unchanged keeps the identical key regardless of which row it lands on.
     const keys = TextPieceKeys(layout.Pieces, (i) => tokens[i]?.Key ?? '');
     layout.Pieces.forEach((piece, pieceIndex) => {
       const token = tokens[piece.TokenIndex];
