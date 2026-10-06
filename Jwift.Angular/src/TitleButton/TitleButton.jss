@@ -13,6 +13,17 @@ Jwift_TitleButton {
   UserSelect: None
 }
 
+// The name, worn beside `Jwift_ToolbarTitle` (its type). A title-button shares its row with whatever the
+// toolbar carries, so a long name gives way: one line, cut with an ellipsis BEFORE the chevron, which never
+// shrinks (Jwift_TitleButtonChevron's FlexShrink 0). Before this the name kept its full width and pushed the
+// chevron out from under a neighbor that grew beside it (the drill editor's undo and redo pair, on a phone).
+Jwift_TitleButtonLabel {
+  MaxLines: 1
+  TextOverflow: Ellipsis
+  FlexShrink: 1
+  MinWidth: 0
+}
+
 Jwift_TitleButtonChevron {
   FontFamily: JwiftIcons
   FontSize: 9pt
