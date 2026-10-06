@@ -16,6 +16,7 @@ import { Jaui, Jext, Jiv } from 'jaui-angular';
 import { ComposeFontFamily, TabularFamilyStack } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { Icon } from '../Icon/Icon';
+import { IconData } from '../Icon/Icon.Data';
 import { CanvasPress } from '../Internal/CanvasPress';
 import type { PopoverRect } from '../Popover/Popover.Placement';
 import TokenSentenceJss from './TokenSentence.jss';
@@ -40,10 +41,34 @@ const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
   Value:       { Ink: '@Ink',     Weight: 600, Underline: null },
   Who:         { Ink: '@Ink',     Weight: 700, Underline: null },
   Placeholder: { Ink: '@GoldInk', Weight: 600, Underline: null },
-  Mirror:      { Ink: '@InkSoft', Weight: 600, Underline: null },
+  // The mirror pair's own icon (Render.ts's `Icon: 'arrow.left.and.right'`) tints the SAME as the "who"
+  // tokens either side of it, not the softer ink the bare glyph used to carry -- the pair reads as one
+  // unit, "1a ⇄ 1b", not an accent between two names.
+  Mirror:      { Ink: '@Ink',     Weight: 600, Underline: null },
   Problem:     { Ink: '@Danger',  Weight: 700, Underline: '@Danger' },
   Badge:       { Ink: '@InkSoft', Weight: 600, Underline: null },
 };
+
+/**
+ * An icon token's own font-size, as a multiple of the sentence's `FontSizePt` — scaled so the icon's
+ * drawn ink is the SAME HEIGHT as a capital letter in the surrounding sentence text ("sized to cap
+ * height", the SF Symbols rule for a glyph standing in for a character), not eyeballed:
+ *
+ *   - Inter's own capHeight is 1490/2048 em (fontkit against `Tools/PerfHarness/fonts/Inter-latin.woff2`,
+ *     the one committed real-Inter-bytes file in the repo; `Icon.Conformance.spec.ts` reads the SAME
+ *     kind of metric off the generated icon font the same way).
+ *   - `arrow.left.and.right`'s own ink -- the mirror pair's icon -- is 1394/2048 em tall (fontkit
+ *     against the committed `Icon.Font.woff2`); every glyph this generator builds is centered
+ *     vertically ON THE GLYPH ORIGIN (`Icon.Conformance.spec.ts`'s own "centered on the baseline"
+ *     check), which is exactly where Jaui's text paint lands (`Text.Measure.ts`'s own
+ *     `ctx.textBaseline = 'middle'`) -- so scaling the icon's OWN font-size by capHeight/inkHeight
+ *     makes its drawn ink match a capital letter's height at THIS sentence's FontSizePt, no separate
+ *     baseline shift needed.
+ *
+ * 1490/1394 ≈ 1.0689 -- coincidentally close to `Icon.jss`'s own hand-picked 17pt default against a
+ * 16pt body size (17/16 = 1.0625), which was probably eyeballing the exact same thing.
+ */
+const ICON_TOKEN_SCALE = 1490 / 1394;
 
 /** A fresh canvas 2D context per page-font generation, mirroring Jinput's `_watchPageFonts`/`_fontGen`
  *  — moved whenever the page may have gained a face, so a word measured before its font landed is
@@ -169,13 +194,22 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
    *  calls it for the worker's real measure/paint. Composing it here too, over the identical base string,
    *  keeps this thread's own pre-layout wrap decision shaped against the exact font the worker ends up
    *  painting -- the same mismatch class as the tabular twin above, just for a different face. */
-  private readonly _measure = (text: string, weight: number): number => {
-    if (!text) return 0;
+  private readonly _measure = (text: string, weight: number, icon?: string): number => {
+    if (!text && !icon) return 0;
     if (typeof document === 'undefined') return 0;
     if (!this._measureCtx) {
       const c = document.createElement('canvas').getContext('2d');
       if (!c) return 0;
       this._measureCtx = c;
+    }
+    if (icon) {
+      // JwiftIcons named first: the glyph it maps `icon` to is drawn from THAT font, never the body
+      // stack's own fallback chain (the whole reason this is an icon token and not a text glyph).
+      const size = this.FontSizePt() * ICON_TOKEN_SCALE + _pageFontEpoch() * 1e-4;
+      const cp = IconData[icon.toLowerCase()];
+      const glyph = cp != null ? String.fromCodePoint(cp) : '';
+      this._measureCtx.font = `${weight} ${size}px JwiftIcons`;
+      return this._measureCtx.measureText(glyph).width;
     }
     const size = this.FontSizePt() + _pageFontEpoch() * 1e-4;
     const base = this.Tabular() ? TabularFamilyStack('Inter, system-ui, sans-serif') : 'Inter, system-ui, sans-serif';
@@ -294,20 +328,38 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       const inNowGroup = token.Group !== null && token.Group !== undefined && token.Group === nowGroup;
       let ink = style.Ink;
       if (tappable && (s?.Open || inNowGroup) && token.Kind !== 'Problem') ink = '@GoldInk';
+      // An icon token (today, only the mirror pair's "⇄") draws a JwiftIcons glyph instead of the piece's
+      // own text -- resolved here, at paint time, same as `<icon>` itself resolves a name
+      // (`Icon.ts`'s own `IconData[name.toLowerCase()]`), so this pure-text piece list stays the single
+      // place that knows how a sentence token becomes pixels.
+      let pieceText = piece.Text;
+      let fontFamily = 'Inter, system-ui, sans-serif';
+      let fontSize = `${fs}pt`;
+      let fontVariantNumeric: 'Normal' | 'TabularNums' = this.Tabular() ? 'TabularNums' : 'Normal';
+      if (token.Icon) {
+        const cp = IconData[token.Icon.toLowerCase()];
+        if (cp == null) console.error(`[TokenSentence] no glyph named "${token.Icon}" in Icon.Data — the token renders blank`);
+        pieceText = cp != null ? String.fromCodePoint(cp) : '';
+        fontFamily = 'JwiftIcons';
+        fontSize = `${fs * ICON_TOKEN_SCALE}pt`;
+        fontVariantNumeric = 'Normal'; // no digits in an icon glyph; never let the tabular twin swap it out.
+      }
       out.push({
         Key: keys[pieceIndex],
-        Text: piece.Text,
+        Text: pieceText,
         TextStyle: {
           // Base stack only -- Jaui's own ApplyTextStyle (Text.Measure.ts) extends this with the CJK
           // sans fallback at paint/measure time (ComposeFontFamily), the same composition `_measure`
           // above applies by hand for this thread's own pre-layout wrap pass. Keep this literal in sync
-          // with `_measure`'s own base string -- they must resolve the identical stack.
-          FontFamily: 'Inter, system-ui, sans-serif',
-          FontSize: `${fs}pt`,
+          // with `_measure`'s own base string -- they must resolve the identical stack. (An icon token
+          // overrides this to the bare `JwiftIcons` family, first and alone -- see above -- so it never
+          // rides this fallback chain at all.)
+          FontFamily: fontFamily,
+          FontSize: fontSize,
           FontWeight: style.Weight,
           LineHeight: `${lh}pt`,
           Color: ink,
-          FontVariantNumeric: this.Tabular() ? 'TabularNums' : 'Normal',
+          FontVariantNumeric: fontVariantNumeric,
           // Jack, live (round 12): a bold atom's own ink can run past its measured advance width right
           // at a wrapped row's own edge -- the whole reason this piece's own box (below) is wider than
           // its content. That overflow room only ever stays invisible, harmless dead space (every

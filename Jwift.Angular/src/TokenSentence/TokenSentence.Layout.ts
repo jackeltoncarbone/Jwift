@@ -23,6 +23,15 @@ export interface SentenceToken {
   readonly Kind: SentenceTokenKind;
   readonly Group?: number;
   readonly Label?: string;
+  /** A JwiftIcons vocabulary name (`Icon.Names.json`, e.g. "arrow.left.and.right") this token draws
+   *  AS AN ICON instead of as text — the mirror pair's "⇄" being the first: a symbol drawn through
+   *  the app's own text font risks the font's fallback chain landing on a face that lacks the glyph
+   *  (CJK sans faces ahead of the generic fallback, `Jaui`'s `ComposeFontFamily`, starved it for
+   *  everyone, not only CJK readers — confirmed live, "1a ⇄ 1b" drawing as two dots). `Text` is still
+   *  carried (usually empty) for a token whose `Icon` lookup fails; `Label` remains the accessible
+   *  name either way. See `TokenSentence.ts`'s own `_measure`/`_textPieces` for how `Icon` resolves to
+   *  a glyph, a font, and a size. */
+  readonly Icon?: string;
 }
 
 const TAPPABLE_KINDS: ReadonlySet<SentenceTokenKind> =
@@ -45,7 +54,10 @@ export interface SentenceLayoutOptions {
   readonly WrapWidth: number;
   readonly LineHeight: number;
   readonly FontSize: number;
-  readonly Measure: (text: string, weight: number) => number;
+  /** `icon`, when a token carries one, names which glyph to measure INSTEAD of `text` — the host
+   *  (`TokenSentence.ts`'s own `_measure`) owns resolving that name to an actual font/size/width; this
+   *  pure layout file never imports icon data itself. */
+  readonly Measure: (text: string, weight: number, icon?: string) => number;
   readonly ShowAdd: boolean;
 }
 
@@ -156,7 +168,7 @@ const _splitTextQuiet = (text: string): { Text: string; IsWhitespace: boolean; I
  */
 const _buildUnits = (
   tokens: readonly SentenceToken[],
-  measure: (t: string, w: number) => number,
+  measure: (t: string, w: number, icon?: string) => number,
   showAdd: boolean,
 ): Unit[] => {
   const units: Unit[] = [];
@@ -175,7 +187,7 @@ const _buildUnits = (
     } else {
       // Tappable kinds and Badge: one atom, carrying the token's FULL text, never split.
       push({
-        TokenIndex: tokenIndex, Text: token.Text, Width: measure(token.Text, weight),
+        TokenIndex: tokenIndex, Text: token.Text, Width: measure(token.Text, weight, token.Icon),
         IsWhitespace: false, IsCjk: false, IsAtom: true, IsAdd: false,
       });
     }
