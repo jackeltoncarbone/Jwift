@@ -64,6 +64,13 @@ Jwift_MediaTransportBtn:Hover {
 Jwift_MediaTransportBtn:Active {
   BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
 }
+// One skip button with nowhere to go (`skipBackDisabled`/`skipForwardDisabled`): the row's own disabled
+// dim, on that button alone, with no hover or press lift to suggest it would do something.
+Jwift_MediaTransportBtn:Disabled {
+  Opacity: 0.3
+  Cursor: Default
+  BackdropFilter: None
+}
 // Round 16: Apple's own now-playing size -- every button (not only the sides) shares one 44pt hit; only
 // the glyph itself grows for play/pause (Jwift_MediaTransportGlyphPrimary_Compact below).
 Jwift_MediaTransportBtn_Compact {

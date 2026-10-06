@@ -27,13 +27,13 @@ export type MediaTransportSize = 'regular' | 'compact';
     <jiv class="Jwift_MediaTransport">
       <ng-content></ng-content>
       <jiv [class]="RowClass()" [disabled]="disabled()">
-        <jiv [class]="BtnClass()" [attr.aria-label]="skipBackLabel()" (click)="skipBack.emit()">
+        <jiv [class]="BtnClass()" [disabled]="skipBackDisabled()" [attr.aria-label]="skipBackLabel()" (click)="_skipBack()">
           <icon [class]="GlyphClass()" Name="backward.fill" />
         </jiv>
         <jiv [class]="BtnPrimaryClass()" [attr.aria-label]="playing() ? pauseLabel() : playLabel()" (click)="playPause.emit()">
           <icon [class]="GlyphPrimaryClass()" [Name]="playing() ? 'pause.fill' : 'play.fill'" />
         </jiv>
-        <jiv [class]="BtnClass()" [attr.aria-label]="skipForwardLabel()" (click)="skipForward.emit()">
+        <jiv [class]="BtnClass()" [disabled]="skipForwardDisabled()" [attr.aria-label]="skipForwardLabel()" (click)="_skipForward()">
           <icon [class]="GlyphClass()" Name="forward.fill" />
         </jiv>
       </jiv>
@@ -46,6 +46,10 @@ export class MediaTransport {
 
   readonly playing = input(false, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
+  /** One skip button with nowhere to go (a player already at its first or last item): dimmed, and a press
+   *  does nothing, while play/pause and the other skip stay live. `disabled` above still greys the row. */
+  readonly skipBackDisabled = input(false, { transform: booleanAttribute });
+  readonly skipForwardDisabled = input(false, { transform: booleanAttribute });
   readonly size = input<MediaTransportSize>('regular');
 
   /** Plain English defaults so every call site has SOME accessible name out of the box; a localized app
@@ -59,6 +63,14 @@ export class MediaTransport {
   readonly playPause = output<void>();
   readonly skipBack = output<void>();
   readonly skipForward = output<void>();
+
+  protected _skipBack(): void {
+    if (!this.skipBackDisabled()) this.skipBack.emit();
+  }
+
+  protected _skipForward(): void {
+    if (!this.skipForwardDisabled()) this.skipForward.emit();
+  }
 
   private readonly _compact = computed(() => this.size() === 'compact');
   /** REPLACES, not merges onto the base `Jwift_MediaTransportRow` -- that class pins a fixed 260pt Width,
