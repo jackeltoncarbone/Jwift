@@ -2,7 +2,8 @@
  * Popover's placement math — ported from the concept's `placePop` (DrillSentences.Concept.html:1208).
  * Pure: a rect in, a box out, no DOM. Prefers below the anchor when the whole panel fits there, else above
  * when it fits there, else whichever side has more room; keeps its side across re-places while the panel
- * still fits there; never overlaps the anchor.
+ * still fits there; never overlaps the anchor. Given `Beside`, it opens to the right of the column its
+ * anchor sits in first, whenever the whole panel fits there.
  */
 
 export interface PopoverRect {
@@ -31,6 +32,14 @@ export interface PopoverPlacementInput {
   readonly PrevDown: boolean | null;
   /** A frame held where it already stands (`PopoverHold`), or absent to place afresh. */
   readonly Hold?: PopoverHold | null;
+  /**
+   * The right edge of the column the anchor sits in (a list panel down the screen's left side), or absent.
+   * Drill Sentences lane EE2, item 4 (a blind desktop tester tapped "3a ⇔ 3b" and its popover opened over the
+   * next line of the list): a panel placed above or below a word in a column of sentences covers the
+   * sentences around it. Given this, the panel opens beside the column instead, its arrow pointing back at
+   * the word, whenever the whole panel fits to its right; else it places above or below as ever.
+   */
+  readonly Beside?: number | null;
 }
 
 /**
@@ -42,6 +51,8 @@ export interface PopoverPlacementInput {
  */
 export interface PopoverHold {
   readonly Down: boolean;
+  /** Opened beside the anchor's column (`PopoverPlacementInput.Beside`): held there, its arrow on its left. */
+  readonly Side?: boolean;
   readonly X: number;
   /** The panel's top, less the anchor's own top. */
   readonly TopFromAnchor: number;
@@ -68,6 +79,10 @@ export interface PopoverPlacement {
   /** `VisualOrigin` fraction pair: where the panel grows from, so it opens out of the arrow tip. */
   readonly OriginX: number;
   readonly OriginY: number;
+  /** Opened beside the anchor's column (`PopoverPlacementInput.Beside`): the arrow stands on the panel's left
+   *  edge at `ArrowY` (canvas px, like `ArrowX`), pointing back at the anchor. */
+  readonly Side?: boolean;
+  readonly ArrowY?: number;
 }
 
 /** The box an open panel's rows are laid out in: its placement, at its own width, as tall as its content up
@@ -96,7 +111,9 @@ const ARROW_MARGIN = 32;
 const Clamp = (v: number, min: number, max: number): number => Math.max(min, Math.min(max, v));
 
 export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
-  if (input.Hold) return holdPopover(input, input.Hold);
+  if (input.Hold) return input.Hold.Side ? holdBeside(input, input.Hold) : holdPopover(input, input.Hold);
+  const beside = input.Beside === null || input.Beside === undefined ? null : placeBeside(input, input.Beside);
+  if (beside) return beside;
   const { Anchor: a, Region: r, W, H, PrevDown } = input;
   const aTop = a.Y;
   const aBottom = a.Y + a.Height;
@@ -152,6 +169,52 @@ export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
     OriginX: W > 0 ? (arrowX - x) / W : 0.5,
     OriginY: down ? 0 : 1,
   };
+}
+
+/** The panel beside the anchor's column (lane EE2, item 4), or null when the whole panel does not fit to the
+ *  column's right. Its top stands level with the anchor, pulled up only as far as the region's bottom asks;
+ *  its arrow sits on its left edge, at the anchor's middle as far as the panel's corners allow. */
+function placeBeside(input: PopoverPlacementInput, column: number): PopoverPlacement | null {
+  const { Anchor: a, Region: r, W, H } = input;
+  const x = Math.max(r.X, column + ARROW_HEIGHT);
+  if (x + W > r.X + r.Width) return null;
+  const scrolls = input.Scrolls ?? true;
+  if (!scrolls && H > r.Height) return null;
+  const h = scrolls ? Math.max(MIN_HEIGHT, Math.min(H, r.Height)) : H;
+  // Its top as far above the word's middle as the arrow stays clear of the panel's corner, so its first row
+  // stands level with the word and the arrow meets the word's middle.
+  const y = Clamp(a.Y + a.Height / 2 - ARROW_MARGIN, r.Y, r.Y + r.Height - h);
+  return besideAt(input, x, y, h);
+}
+
+/** A beside panel at `x`, `y`, `h` tall, with its arrow at the anchor's middle. */
+function besideAt(input: PopoverPlacementInput, x: number, y: number, h: number): PopoverPlacement {
+  const { Anchor: a, Region: r } = input;
+  const aMiddle = a.Y + a.Height / 2;
+  const arrowY = h > 2 * ARROW_MARGIN ? Clamp(aMiddle, y + ARROW_MARGIN, y + h - ARROW_MARGIN) : y + h / 2;
+  return {
+    X: x,
+    Y: y,
+    MaxHeight: h,
+    Down: true,
+    ArrowX: x,
+    ArrowVisible: aMiddle >= Math.max(r.Y, y) && aMiddle <= Math.min(r.Y + r.Height, y + h),
+    OriginX: 0,
+    OriginY: h > 0 ? (arrowY - y) / h : 0.5,
+    Side: true,
+    ArrowY: arrowY,
+  };
+}
+
+/** A held beside panel: same leading edge, same top relative to the anchor's top (so it rides a scroll and
+ *  holds still through the anchor's own reflow, as `holdPopover` does), its room everything below its top. */
+function holdBeside(input: PopoverPlacementInput, hold: PopoverHold): PopoverPlacement {
+  const { Anchor: a, Region: r, W, H } = input;
+  const x = Clamp(hold.X, r.X, r.X + r.Width - W);
+  const y = Clamp(a.Y + hold.TopFromAnchor, r.Y, r.Y + r.Height - MIN_HEIGHT);
+  const room = r.Y + r.Height - y;
+  const scrolls = input.Scrolls ?? true;
+  return besideAt(input, x, y, scrolls ? Math.max(MIN_HEIGHT, Math.min(H, room)) : H);
 }
 
 /** A held frame (`PopoverHold`): same side, same leading edge (clamped back inside the region if the page

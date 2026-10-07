@@ -103,6 +103,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   /** A passive panel with nothing to press (a hover tip): a press outside it closes it and still reaches what
    *  it lands on. Every other popover swallows that press (`SwallowPress`, lane BB2, item 3). */
   readonly PassThrough = input(false);
+  /** The right edge of the column the anchor sits in, canvas px, to open beside it rather than over the
+   *  column's other rows (`PopoverPlacementInput.Beside`, Drill Sentences lane EE2, item 4), or null. */
+  readonly Beside = input<number | null>(null);
 
   private readonly _jss = inject(JSS_REGISTRY);
   private readonly _canvasRef = inject(Jaui, { optional: true });
@@ -177,7 +180,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const p = this._placement();
     const anchor = this._resolveAnchor();
     if (!p || !anchor) return;
-    this._hold = { Down: p.Down, X: p.X, TopFromAnchor: p.Y - anchor.Y };
+    this._hold = { Down: p.Down, Side: p.Side, X: p.X, TopFromAnchor: p.Y - anchor.Y };
     this._placeKey = '';
   }
   /** A new anchor (the same panel handed to another word) places afresh. */
@@ -193,6 +196,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   protected readonly _ArrowLayout = computed(() => {
     const p = this._placement();
     if (!p) return { Position: 'Placed' as const };
+    // Beside its anchor's column (lane EE2, item 4), the arrow stands on the panel's left edge.
+    if (p.Side) return { Position: 'Placed' as const, Left: '-8.5px', Top: `${(p.ArrowY ?? p.Y) - p.Y - 8.5}px` };
     return {
       Position: 'Placed' as const,
       Left: `${p.ArrowX - p.X - 8.5}px`,
@@ -360,11 +365,12 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const scrolls = this._scrollers.length > 0;
     const h = this._naturalHeight(scrolls);
     const w = this._width();
-    const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}|${scrolls}`;
+    const beside = this.Beside();
+    const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}|${scrolls}|${beside}`;
     if (key === this._placeKey) return;
     this._placeKey = key;
     const placement = PlacePopover({
-      Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls,
+      Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls, Beside: beside,
     });
     // The first placement moves the whole subtree off the spot its first layout put it; it lands there.
     if (placed === null) this._openSnap.Hold(this.Node);

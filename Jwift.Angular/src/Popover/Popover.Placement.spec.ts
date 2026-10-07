@@ -218,3 +218,50 @@ describe('PointInRect', () => {
     expect(PointInRect(pressOnAnchor.x, pressOnAnchor.y, anchor)).toBe(true);
   });
 });
+
+// Drill Sentences lane EE2, item 4 (a round 10 blind desktop tester at 1440x900): tapping "3a ⇔ 3b" opened its
+// mirror popover ("3b mirrors 3a / Write 3b separately") right over the next line of the sentence list.
+describe('PlacePopover opens beside the column its word sits in, clear of the sentences around it', () => {
+  const desktop: PopoverRect = { X: 8, Y: 8, Width: 1424, Height: 884 };
+  /** The desktop island's right edge at 1440 (16pt in, 432pt wide). */
+  const column = 448;
+  /** "3a ⇔ 3b", the who word of a line part way down the list. */
+  const word: PopoverRect = { X: 40, Y: 300, Width: 70, Height: 22 };
+  const words = { Anchor: word, Region: desktop, W: 250, H: 120, PrevDown: null };
+
+  it('to the right of the column, its arrow on its left edge pointing back at the word', () => {
+    const p = PlacePopover({ ...words, Beside: column });
+    expect(p.Side).toBe(true);
+    expect(p.X).toBeGreaterThanOrEqual(column);
+    expect(p.X + 250).toBeLessThanOrEqual(desktop.X + desktop.Width);
+    expect(p.ArrowY).toBeCloseTo(word.Y + word.Height / 2, 5);
+    expect(p.ArrowVisible).toBe(true);
+    expect(p.Y).toBeLessThanOrEqual(word.Y);
+    expect(p.Y + p.MaxHeight).toBeGreaterThanOrEqual(word.Y + word.Height);
+  });
+
+  it('a word low in the list keeps its whole panel on screen, its arrow still at the word', () => {
+    const low: PopoverRect = { ...word, Y: 860 };
+    const p = PlacePopover({ ...words, Anchor: low, Beside: column });
+    expect(p.Y + p.MaxHeight).toBeLessThanOrEqual(desktop.Y + desktop.Height);
+    expect(p.ArrowY).toBeGreaterThanOrEqual(low.Y);
+    expect(p.ArrowY).toBeLessThanOrEqual(low.Y + low.Height);
+  });
+
+  it('above or below the word as ever where the panel does not fit beside the column', () => {
+    const narrow: PopoverRect = { X: 8, Y: 8, Width: 600, Height: 884 };
+    expect(PlacePopover({ ...words, Region: narrow, Beside: 400 }).Side).toBeFalsy();
+    expect(PlacePopover({ ...words }).Side).toBeFalsy();
+  });
+
+  it('held, it stays beside the column through its word\'s own reflow and rides a scroll', () => {
+    const p = PlacePopover({ ...words, Beside: column });
+    const hold = { Down: p.Down, Side: p.Side, X: p.X, TopFromAnchor: p.Y - word.Y };
+    const reflowed = PlacePopover({ ...words, Anchor: { ...word, Height: 44 }, Beside: column, Hold: hold });
+    expect(reflowed.Side).toBe(true);
+    expect(reflowed.X).toBe(p.X);
+    expect(reflowed.Y).toBe(p.Y);
+    const scrolled = PlacePopover({ ...words, Anchor: { ...word, Y: word.Y - 40 }, Beside: column, Hold: hold });
+    expect(scrolled.Y).toBe(p.Y - 40);
+  });
+});
