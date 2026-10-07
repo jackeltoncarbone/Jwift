@@ -10,6 +10,7 @@ import {
   input,
   output,
   signal,
+  viewChildren,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Jaui, Jext, Jiv } from 'jaui-angular';
@@ -22,9 +23,12 @@ import type { PopoverRect } from '../Popover/Popover.Placement';
 import TokenSentenceJss from './TokenSentence.jss';
 import {
   IsTappable,
+  LandPieces,
   LayoutSentence,
   PillRectOf,
+  SameWords,
   TextPieceKeys,
+  type PieceLanding,
   type SentenceHit,
   type SentenceLayoutResult,
   type SentenceToken,
@@ -127,6 +131,9 @@ const _watchPageFonts = (): void => {
 
 interface _PieceState { Hover: boolean; Press: boolean; Open: boolean; Glow: boolean; }
 
+/** The "+"'s own key among the pieces `LandPieces` tracks (never a real token key, which is the caller's). */
+const ADD_KEY = '\u0000add';
+
 /**
  * `<token-sentence>`: a cue rendered as tappable prose — every word a token you can tap, karaoke
  * highlighting the token a playhead is over, a trailing "+" to append. A `JivHost`; every visual child
@@ -149,13 +156,13 @@ interface _PieceState { Hover: boolean; Press: boolean; Open: boolean; Glow: boo
     }
     @for (t of _textPieces(); track t.Key) {
       @if (t.Tappable) {
-        <jext class="Jwift_TokenSentenceTextHit" [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout"
+        <jext class="Jwift_TokenSentenceWord Jwift_TokenSentenceTextHit" [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout"
               semantics="Button" [label]="t.Label" (click)="_onMirrorActivate(t.TokenKey)" />
       } @else {
-        <jext [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout" />
+        <jext class="Jwift_TokenSentenceWord" [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout" />
       }
     }
-    @if (_add(); as add) {
+    @for (add of _add(); track add.Key) {
       <jiv [class]="add.Class" [childLayout]="add.Layout" semantics="Button" [label]="AddLabel()" (click)="_onAddClick()">
         <icon class="Jwift_TokenSentenceAddGlyph" Name="plus" />
       </jiv>
@@ -287,6 +294,31 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     });
   });
 
+  // ── Lane BB2, item 4: a change of words lands at once (`LandPieces`) ────────────────────────────────
+  /** Where every piece (and the "+", under `ADD_KEY`) stood at the last layout, and its generation. */
+  private _landings: ReadonlyMap<string, PieceLanding> = new Map();
+  /** The words `_landings` was last measured for; null before the first layout. */
+  private _landedWords: readonly SentenceToken[] | null = null;
+  /** Every piece's key (`TextPieceKeys`) under the generation it last landed at, piece for piece, and the
+   *  "+"'s: a piece that moved as the words changed is a new node where it now goes, never one sliding there. */
+  private readonly _landedKeys = computed<{ readonly Pieces: readonly string[]; readonly Add: string }>(() => {
+    const layout = this._layout();
+    const tokens = this.Tokens();
+    const keys = TextPieceKeys(layout.Pieces, (i) => tokens[i]?.Key ?? '');
+    const spots = layout.Pieces.map((p, i) => ({ Key: keys[i], X: p.X, Y: p.Y }));
+    if (layout.Add) spots.push({ Key: ADD_KEY, X: layout.Add.X, Y: layout.Add.Y });
+    const changed = this._landedWords !== null && !SameWords(this._landedWords, tokens);
+    this._landings = LandPieces(this._landings, spots, changed);
+    this._landedWords = tokens;
+    const keyed = (key: string): string => `${key}@${this._landings.get(key)?.Generation ?? 0}`;
+    return { Pieces: keys.map(keyed), Add: keyed(ADD_KEY) };
+  });
+  /** Every word lands at once when it changes in place, rather than cross fading over itself (`SnapText`). */
+  private readonly _words = viewChildren(Jext);
+  private readonly _snapWords = effect(() => {
+    for (const word of this._words()) word.Node.SnapText = true;
+  });
+
   private readonly _state = computed<ReadonlyMap<string, _PieceState>>(() => {
     const hovered = this._hoveredKey();
     const pressed = this._pressedKey();
@@ -303,8 +335,9 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     const layout = this._layout();
     const tokens = this.Tokens();
     const state = this._state();
+    const landed = this._landedKeys().Pieces;
     const out: { Key: string; Class: string; Layout: Record<string, unknown> }[] = [];
-    for (const piece of layout.Pieces) {
+    for (const [pieceIndex, piece] of layout.Pieces.entries()) {
       const token = tokens[piece.TokenIndex];
       if (!token) continue;
       if (token.Kind === 'Badge') {
@@ -314,7 +347,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
         // token's text changing width) could shift this one onto a different row and remount/refade a
         // badge that never itself changed. Same fix as `TextPieceKeys`, same reasoning.
         out.push({
-          Key: `${token.Key}:badge`,
+          Key: `${landed[pieceIndex]}:badge`,
           Class: 'Jwift_TokenSentenceBadgePill',
           Layout: _rect(piece.X - 8, piece.Y + (this.LineHeightPt() - 19) / 2, piece.Width + 16, 19),
         });
@@ -341,7 +374,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       // Item 6: no `:Row` here either — a tappable token is also an ATOM (one piece), so `token.Key` alone
       // already names it, and the same reflow-reorders-row remount this file's other two keys just lost
       // would otherwise flicker the hover/press/open/glow pill off a token nobody touched.
-      out.push({ Key: token.Key, Class: cls, Layout: _rect(pill.X, pill.Y, pill.Width, pill.Height) });
+      out.push({ Key: landed[pieceIndex], Class: cls, Layout: _rect(pill.X, pill.Y, pill.Width, pill.Height) });
     }
     return out;
   });
@@ -352,8 +385,9 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     const state = this._state();
     const fs = this.FontSizePt();
     const lh = this.LineHeightPt();
+    const landed = this._landedKeys().Pieces;
     const out: { Key: string; Style: Record<string, unknown>; Layout: Record<string, unknown> }[] = [];
-    for (const piece of layout.Pieces) {
+    for (const [pieceIndex, piece] of layout.Pieces.entries()) {
       const token = tokens[piece.TokenIndex];
       if (!token) continue;
       const underline = KIND_STYLE[token.Kind].Underline;
@@ -364,7 +398,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       // also ATOMS, so `token.Key` alone is enough, and dropping `:Row` stops a reflow elsewhere in the
       // sentence from remounting (and refading) an underline whose own token never changed.
       out.push({
-        Key: token.Key,
+        Key: landed[pieceIndex],
         Style: { Background: underline },
         Layout: _rect(piece.X, piece.Y + lh / 2 + 0.36 * fs + 4, piece.Width, 1),
       });
@@ -406,7 +440,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     // triggered by a text change instead of a drag. `TextPieceKeys` (and `_visiblePills`/`_underlines`
     // just above, the same fix) drop `Row` from the key entirely now: a piece whose own token is
     // unchanged keeps the identical key regardless of which row it lands on.
-    const keys = TextPieceKeys(layout.Pieces, (i) => tokens[i]?.Key ?? '');
+    //
+    // Lane BB2, item 4: ...unless the WORDS changed and it moved, when it lands afresh where it now goes
+    // (`_landedKeys`, `LandPieces`) rather than slide there through the words arriving around it.
+    const keys = this._landedKeys().Pieces;
     layout.Pieces.forEach((piece, pieceIndex) => {
       const token = tokens[piece.TokenIndex];
       if (!token) return;
@@ -474,10 +511,12 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     return out;
   });
 
+  /** The "+", as a list of at most one keyed by where it last landed (`_landedKeys`), so a "+" the words
+   *  pushed elsewhere lands there afresh instead of sliding over them (lane BB2, item 4). */
   protected readonly _add = computed(() => {
     const layout = this._layout();
     const add = layout.Add;
-    if (!add) return null;
+    if (!add) return [];
     const open = this.AddOpen();
     const hover = this._hoveredKey() === '+';
     // Item 8: an open popover's own anchor stays visible regardless of AddVisible — it cannot be faded
@@ -487,7 +526,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       : !visible ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Faded'
         : hover ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Hover'
           : 'Jwift_TokenSentenceAdd';
-    return { Class: cls, Layout: _rect(add.X, add.Y, add.Width, add.Height) };
+    return [{ Key: this._landedKeys().Add, Class: cls, Layout: _rect(add.X, add.Y, add.Width, add.Height) }];
   });
 
   constructor() {

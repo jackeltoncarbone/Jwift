@@ -66,6 +66,50 @@ describe('PlacePopover keeps every row on screen and never covers the word it ed
   });
 });
 
+// Drill Sentences lane BB2, item 2 (blind testers): every − and + on the count wheel rewrites the sentence it
+// points at, so its anchor (the word's column across the whole sentence) moves sideways and the sentence
+// wraps a line shorter or longer, and the panel re-placed on each tap moved the − out from under the finger.
+// A token's control holds the placement it opened with (`Popover.HoldOnOpen`), like a submenu page.
+describe('a held panel stands still while the sentence it points at reflows (lane BB2, item 2)', () => {
+  const desktop: PopoverRect = { X: 8, Y: 8, Width: 1424, Height: 884 };
+  const wheel = { W: 250, H: 120, Scrolls: false };
+  /** "march forward 10 counts" as a three-line sentence band, its count on the last line. */
+  const band: PopoverRect = { X: 300, Y: 200, Width: 70, Height: 69 };
+  const opened = PlacePopover({ Anchor: band, Region: desktop, ...wheel, PrevDown: null });
+  const hold = { Down: opened.Down, X: opened.X, TopFromAnchor: opened.Y - band.Y };
+
+  it('a tap that rewraps the sentence a line shorter and moves the word leaves the panel where it stood', () => {
+    expect(opened.Down).toBe(true);
+    const reflowed: PopoverRect = { X: 262, Y: 200, Width: 62, Height: 46 };
+    const held = PlacePopover({ Anchor: reflowed, Region: desktop, ...wheel, PrevDown: true, Hold: hold });
+    expect(held).toMatchObject({ Down: true, X: opened.X, Y: opened.Y });
+    // Unheld, the same tap moved it: up by the line the sentence lost, and sideways after the word.
+    const unheld = PlacePopover({ Anchor: reflowed, Region: desktop, ...wheel, PrevDown: true });
+    expect(unheld.Y).toBeLessThan(opened.Y);
+    expect(unheld.X).not.toBe(opened.X);
+  });
+
+  it('still rides a scroll of the list, and is pushed only as far as a sentence grown into it needs', () => {
+    const scrolled = PlacePopover({ Anchor: { ...band, Y: band.Y - 40 }, Region: desktop, ...wheel, PrevDown: true, Hold: hold });
+    expect(scrolled.Y).toBe(opened.Y - 40);
+    const grown: PopoverRect = { ...band, Height: band.Height + 23 };
+    const pushed = PlacePopover({ Anchor: grown, Region: desktop, ...wheel, PrevDown: true, Hold: hold });
+    expect(pushed.Y).toBe(grown.Y + grown.Height + 12);
+    expect(pushed.X).toBe(opened.X);
+  });
+
+  it('a panel above its sentence holds the same way', () => {
+    const low: PopoverRect = { X: 300, Y: 760, Width: 70, Height: 69 };
+    const above = PlacePopover({ Anchor: low, Region: desktop, ...wheel, PrevDown: null });
+    expect(above.Down).toBe(false);
+    const held = PlacePopover({
+      Anchor: { X: 340, Y: 760, Width: 60, Height: 46 }, Region: desktop, ...wheel, PrevDown: false,
+      Hold: { Down: false, X: above.X, TopFromAnchor: above.Y - low.Y },
+    });
+    expect(held).toMatchObject({ Down: false, X: above.X, Y: above.Y });
+  });
+});
+
 // PointInRect is Popover's own outside-dismiss and anchor-toggle decision (LaneM.md): a press on the
 // floating panel OR on the anchor that opened it both read as "inside" and must never dismiss, so the
 // anchor's own click handler — not a stray pointerdown — decides whether a second press closes the

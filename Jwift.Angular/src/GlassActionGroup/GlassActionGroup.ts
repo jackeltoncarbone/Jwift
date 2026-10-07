@@ -34,6 +34,10 @@ export interface GlassAction {
   /** The action's name. Menu items render it; an inline cell carries it as its accessible label and,
    *  in `<glass-action-bar>`, as the hover tip a desktop pointer reads before pressing a bare glyph. */
   Label?: string;
+  /** Inline cell only: the hover tip in `<glass-action-bar>` when the bare name says too little to someone
+   *  who has never pressed it ("Cast: your band's members and squads" for a cell named "Cast"). `Label`
+   *  stays the cell's name everywhere else. */
+  Tip?: string;
   /** Inline cell only: a count drawn on the cell's top trailing corner (how many problems a warnings
    *  cell stands for). Zero or unset draws nothing. */
   Badge?: number;

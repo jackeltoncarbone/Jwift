@@ -51,11 +51,23 @@ Jwift_TokenSentenceBadgePill {
 }
 
 // Word/Problem's underline — a 1pt hairline under the ink, hidden while the token is open (the pill
-// says "active" instead).
+// says "active" instead). It goes the way its word goes (Jwift_TokenSentenceWord, below).
 Jwift_TokenSentenceUnderline {
   Position: Placed
   Height: 1pt
   PointerEvents: None
+  Opacity: Presence * (1 - Exiting)
+  @Transition Opacity { Duration: 0ms }
+}
+
+// Every word of the sentence. Drill Sentences lane BB2, item 4 (blind testers: "outs8 counts" after a
+// grouping, "theright face" after an undo): a word the sentence no longer has used to fade out where it
+// stood for the presence spring's ~400ms, under the words now standing there. It goes at once; a word that
+// arrives still fades in, in its own place (`LandPieces`, TokenSentence.Layout.ts, keeps any word from
+// sliding through another).
+Jwift_TokenSentenceWord {
+  Opacity: Presence * (1 - Exiting)
+  @Transition Opacity { Duration: 0ms }
 }
 
 // A tappable token's own TEXT glyph. Round 14, live: a direct hit on the glyph itself (not its
@@ -75,13 +87,16 @@ Jwift_TokenSentenceTextHit {
   PointerEvents: None
 }
 
-// The trailing "+" add button: a small round glyph glued to the sentence's last token.
+// The trailing "+" add button: a small round glyph glued to the sentence's last token. One the words
+// pushed elsewhere goes at once, as a word does (lane BB2, item 4).
 Jwift_TokenSentenceAdd {
   Position: Placed
   Width: 28pt
   Height: 26pt
   BorderRadius: 13pt
   PointerEvents: None
+  Opacity: Presence * (1 - Exiting)
+  @Transition Opacity { Duration: 0ms }
 }
 Jwift_TokenSentenceAdd_Hover {
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
@@ -100,6 +115,8 @@ Jwift_TokenSentenceAdd_Open {
 Jwift_TokenSentenceAdd_Faded {
   Opacity: 0
   @If (Ancestor(Jwift_HoverGroup):Hover) { Opacity: 1 }
+  // The hover reveal still eases in (the "+" class above lands its own exit at once).
+  @Transition Opacity { Duration: 200ms }
 }
 Jwift_TokenSentenceAddGlyph {
   FontFamily: JwiftIcons

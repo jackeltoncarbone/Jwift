@@ -535,3 +535,41 @@ export function TextPieceKeys(
     return `${tokenKeyOf(piece.TokenIndex)}#${n}`;
   });
 }
+
+/** Where a piece (`TextPieceKeys`) stood at the last layout, and how many times it has landed afresh. */
+export interface PieceLanding {
+  readonly X: number;
+  readonly Y: number;
+  readonly Generation: number;
+}
+
+/** Whether two token lists read the same words: the same keys, kinds and texts, in order. */
+export function SameWords(a: readonly SentenceToken[], b: readonly SentenceToken[]): boolean {
+  return a.length === b.length && a.every((t, i) => t.Key === b[i].Key && t.Kind === b[i].Kind && t.Text === b[i].Text && t.Icon === b[i].Icon);
+}
+
+/**
+ * Drill Sentences lane BB2, item 4 (blind testers, three times: "outs8 counts" after a grouping,
+ * "theright face" after an undo, a tangle after 16 became 12): when a sentence's words change, the words
+ * that stay slid from where they stood to where they now go, through the words just arriving there, while
+ * the words that left faded out where they had stood. Two words were drawn over each other until it settled.
+ *
+ * A change of words now lands at once. A piece that stays where it stood keeps its node (its text, if it
+ * changed, swaps at once: `SnapText`); a piece that moves lands afresh where it now goes, a new node under a
+ * new `Generation`, and fades in there; a piece that goes vanishes at once (`TokenSentence.jss`). Nothing
+ * slides through anything. Only a change of WIDTH with the same words (a sheet resized) still slides its
+ * pieces into their new rows, as before: nothing arrives or leaves then, so nothing can overlap.
+ */
+export function LandPieces(
+  previous: ReadonlyMap<string, PieceLanding>, pieces: readonly { readonly Key: string; readonly X: number; readonly Y: number }[],
+  wordsChanged: boolean,
+): Map<string, PieceLanding> {
+  const out = new Map<string, PieceLanding>();
+  for (const piece of pieces) {
+    const was = previous.get(piece.Key);
+    const moved = !!was && (Math.abs(was.X - piece.X) > 0.5 || Math.abs(was.Y - piece.Y) > 0.5);
+    const generation = !was ? 0 : wordsChanged && moved ? was.Generation + 1 : was.Generation;
+    out.set(piece.Key, { X: piece.X, Y: piece.Y, Generation: generation });
+  }
+  return out;
+}

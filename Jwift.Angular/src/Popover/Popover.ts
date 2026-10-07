@@ -23,6 +23,7 @@ import PopoverJss from './Popover.jss';
 import {
   PlacePopover, PointInRect, POPOVER_PANEL_PADDING, type PopoverHold, type PopoverPlacement, type PopoverRect,
 } from './Popover.Placement';
+import { SwallowPress } from './Popover.OutsidePress';
 
 export type { PopoverRect };
 
@@ -94,6 +95,13 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   readonly Arrow = input(true);
   /** The accessibility name for the panel. */
   readonly Label = input<string | null>(null);
+  /** Drill Sentences lane BB2, item 2: the panel holds the placement it opens with until it closes
+   *  (`HoldPlacement`), for content that reflows its own anchor: a count wheel's every tap rewrites the
+   *  sentence it points at, and a panel re-placed on each one moved its − button out from under the finger. */
+  readonly HoldOnOpen = input(false);
+  /** A passive panel with nothing to press (a hover tip): a press outside it closes it and still reaches what
+   *  it lands on. Every other popover swallows that press (`SwallowPress`, lane BB2, item 3). */
+  readonly PassThrough = input(false);
 
   private readonly _jss = inject(JSS_REGISTRY);
   private readonly _canvasRef = inject(Jaui, { optional: true });
@@ -172,9 +180,13 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     this._placeKey = '';
   }
   /** A new anchor (the same panel handed to another word) places afresh. */
+  private _heldAnchor: PopoverRect | (() => PopoverRect | null) | null = null;
   private readonly _releaseHold = effect(() => {
-    this.Anchor();
+    const anchor = this.Anchor();
+    if (anchor === this._heldAnchor) return;
+    this._heldAnchor = anchor;
     this._hold = null;
+    this._placeKey = '';
   });
 
   protected readonly _ArrowLayout = computed(() => {
@@ -243,7 +255,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         const anchor = this._resolveAnchor();
         if (anchor && PointInRect(px, py, anchor)) return;
       }
-      // Never swallowed: lane E's own field taps swallow what they need to.
+      // Lane BB2, item 3: the press that closes a popover does nothing else, like iOS. It used to reach the
+      // canvas too, and a tap meant to close the count picker opened another row's "•••" menu.
+      if (!this.PassThrough()) SwallowPress(this._doc, e);
       this.OpenChange.emit(false);
       this.Closed.emit({ ByOutsideTap: true, At: Date.now() });
     };
@@ -342,5 +356,6 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     this._prevDown = placement.Down;
     this._capped.set(scrolls);
     this._placement.set(placement);
+    if (this.HoldOnOpen()) this.HoldPlacement();
   }
 }

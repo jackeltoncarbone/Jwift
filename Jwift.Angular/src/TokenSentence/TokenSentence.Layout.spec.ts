@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FirstGlowTarget, IsTappable, LayoutSentence, PillRectOf, TextPieceKeys, type SentencePiece, type SentenceToken,
+  FirstGlowTarget, IsTappable, LandPieces, LayoutSentence, PillRectOf, SameWords, TextPieceKeys, type SentencePiece,
+  type SentenceToken,
 } from './TokenSentence.Layout';
 
 /**
@@ -324,5 +325,65 @@ describe('LayoutSentence — a filler word owns its own hit area', () => {
     const whoHit = r.Hits.find((h) => h.TokenIndex === 0)!;
     const mirrorHit = r.Hits.find((h) => h.TokenIndex === 2)!;
     expect(whoHit.X + whoHit.Width).toBeCloseTo(mirrorHit.X, 5);
+  });
+});
+
+// Drill Sentences lane BB2, item 4 (blind testers, three times: "outs8 counts" after a grouping, "theright
+// face" after an undo, a tangle after 16 became 12): when the words changed, the words that stayed slid to
+// their new places through the words arriving there, while the words that left faded out under them.
+describe('LandPieces: a change of words lands at once, no word ever drawn over another', () => {
+  const layout = (words: readonly string[]) => {
+    const tokens: SentenceToken[] = words.map((w, i) => ({ Key: `w${i}`, Text: w, Kind: w.trim() ? 'Word' : 'Text' }));
+    const r = LayoutSentence(tokens, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: measure, ShowAdd: false });
+    const keys = TextPieceKeys(r.Pieces, (i) => tokens[i].Key);
+    return { Tokens: tokens, Spots: r.Pieces.map((p, i) => ({ Key: keys[i], X: p.X, Y: p.Y })) };
+  };
+
+  it('the undo: a word that stays put keeps its node, every word that moved lands afresh where it now goes', () => {
+    const before = layout(['then', ' ', 'march', ' ', 'right']);
+    const after = layout(['then', ' ', 'the', ' ', 'right', ' ', 'face']);
+    const was = LandPieces(new Map(), before.Spots, false);
+    const now = LandPieces(was, after.Spots, !SameWords(before.Tokens, after.Tokens));
+    expect(now.get('w0#0')!.Generation).toBe(0); // "then" never moved.
+    expect(now.get('w2#0')!.Generation).toBe(0); // the word in that slot swapped its text in place, at once.
+    expect(now.get('w4#0')!.Generation).toBe(1); // "right" moved: a new node where it now stands.
+    expect(now.get('w6#0')!.Generation).toBe(0); // "face" is new.
+    // No word is ever carried from one spot to another: anything that moved is a node of a new generation.
+    for (const spot of after.Spots) {
+      const old = was.get(spot.Key);
+      if (old && (old.X !== spot.X || old.Y !== spot.Y)) expect(now.get(spot.Key)!.Generation).toBe(old.Generation + 1);
+    }
+  });
+
+  it('a sheet resized with the same words still slides its words into their new rows, keeping every node', () => {
+    const words = layout(['march', ' ', 'forward', ' ', '16 counts']);
+    const was = LandPieces(new Map(), words.Spots, false);
+    const narrow = words.Spots.map((s, i) => (i === 4 ? { ...s, X: 0, Y: 23 } : s));
+    const now = LandPieces(was, narrow, false);
+    expect([...now.values()].every((l) => l.Generation === 0)).toBe(true);
+    expect(now.get(words.Spots[4].Key)).toMatchObject({ X: 0, Y: 23 });
+  });
+
+  it('reads the same words as the same, whatever list carries them', () => {
+    const a = layout(['march', ' ', 'forward']).Tokens;
+    expect(SameWords(a, a.map((t) => ({ ...t })))).toBe(true);
+    expect(SameWords(a, a.map((t, i) => (i === 2 ? { ...t, Text: 'backward' } : t)))).toBe(false);
+  });
+
+  it('a word that goes vanishes at once, and the sentence lands its words rather than sliding or cross fading them', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const url = await import('node:url');
+    const here = path.dirname(url.fileURLToPath(import.meta.url));
+    const jss = fs.readFileSync(path.join(here, 'TokenSentence.jss'), 'utf8');
+    const ts = fs.readFileSync(path.join(here, 'TokenSentence.ts'), 'utf8');
+    for (const cls of ['Jwift_TokenSentenceWord', 'Jwift_TokenSentenceUnderline']) {
+      const block = new RegExp(`\\n${cls}\\s*\\{([^}]*)\\}`).exec(jss)![1];
+      expect(block, cls).toMatch(/Opacity:\s*Presence \* \(1 - Exiting\)/);
+      expect(block, cls).toMatch(/@Transition Opacity \{ Duration: 0ms/);
+    }
+    expect((ts.match(/<jext class="[^"]*Jwift_TokenSentenceWord/g) ?? []).length).toBe(2);
+    expect(ts).toContain('word.Node.SnapText = true');
+    expect(ts).toMatch(/LandPieces\(this\._landings, spots, changed\)/);
   });
 });

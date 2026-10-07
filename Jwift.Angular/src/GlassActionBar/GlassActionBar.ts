@@ -231,8 +231,9 @@ export class GlassActionBar implements OnDestroy {
     for (const gp of this._GroupPills()) {
       const index = gp.Cells.findIndex((a) => a.Id === id);
       if (index >= 0) {
-        // A tip never shows without words (Drill Sentences lane AA1, item 5).
-        const label = gp.Cells[index].Label?.trim();
+        // A tip never shows without words (Drill Sentences lane AA1, item 5), and says what the cell is when
+        // its name alone would not (`GlassAction.Tip`, lane BB2, item 5).
+        const label = (gp.Cells[index].Tip ?? gp.Cells[index].Label)?.trim();
         if (!label) return null;
         const centre = left + pad + index * (cell + gap) + cell / 2;
         return {

@@ -145,10 +145,16 @@ export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
 }
 
 /** A held frame (`PopoverHold`): same side, same leading edge (clamped back inside the region if the page
- *  got wider), same top relative to the anchor. A downward panel's room is everything below its top, so a
- *  taller page grows down into it; an upward panel's room ends at the arrow, so a taller page scrolls
+ *  got wider), same top relative to the anchor's top. A downward panel's room is everything below its top,
+ *  so a taller page grows down into it; an upward panel's room ends at the arrow, so a taller page scrolls
  *  within it, and a shorter one leaves the panel where it stood with its arrow hidden (it no longer
- *  reaches the anchor), the way an iOS menu's submenu stays put. Never overlaps the anchor either way. */
+ *  reaches the anchor), the way an iOS menu's submenu stays put. Never overlaps the anchor either way.
+ *
+ *  Drill Sentences lane BB2, item 2: the anchor itself may reflow under a held panel (a count wheel's taps
+ *  rewrite the sentence it points at, and the sentence wraps one line shorter or longer). The top rides the
+ *  anchor's TOP, which a reflow inside the anchor never moves and a scroll does, so the panel holds still
+ *  through the one and follows the other. Only an anchor grown down into a downward panel pushes it, as far
+ *  as it must and no further. */
 function holdPopover(input: PopoverPlacementInput, hold: PopoverHold): PopoverPlacement {
   const { Anchor: a, Region: r, W, H } = input;
   const aTop = a.Y;
@@ -160,7 +166,7 @@ function holdPopover(input: PopoverPlacementInput, hold: PopoverHold): PopoverPl
   let y: number;
   let room: number;
   if (down) {
-    y = Math.max(aBottom + ARROW_HEIGHT, r.Y);
+    y = Math.max(aTop + hold.TopFromAnchor, aBottom + ARROW_HEIGHT, r.Y);
     room = Math.max(MIN_HEIGHT, regionBottom - y);
   } else {
     const floor = aTop - ARROW_HEIGHT;
@@ -171,7 +177,8 @@ function holdPopover(input: PopoverPlacementInput, hold: PopoverHold): PopoverPl
   const anchorShown = down
     ? (aBottom >= r.Y - 2 && aBottom <= regionBottom)
     : (aTop <= regionBottom + 2 && aTop >= r.Y);
-  const reachesArrow = down || H >= room - 0.5;
+  // The arrow shows only while the panel still stands one arrow off the anchor.
+  const reachesArrow = down ? y <= aBottom + ARROW_HEIGHT + 0.5 : H >= room - 0.5;
   return {
     X: x,
     Y: y,
