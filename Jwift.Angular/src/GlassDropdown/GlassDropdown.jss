@@ -62,6 +62,12 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
   Height: MaxContent
   MinWidth: 48pt
   MinHeight: 48pt
+  // BACK IN ITS OWN SLOT. Drill Sentences lane HH1, item 2 (a round 12 blind desktop tester: after the problems
+  // list closed, its button came back 54pt below the toolbar, at the open list's place, and stayed there). The
+  // open panel is Placed at Top 0 (Top 54pt opened below, `Jwift_GlassDropdown_OpenBelow`), and a JivHost
+  // rebuilds a node's ChildLayout over the one it has (`JivHost._buildOpts`), so a key this class leaves out
+  // keeps the open panel's value. Top is stated, so the closed pill always lands at the top of its slot.
+  Top: 0pt
 }
 
 // Closed-state cell — flat 40pt round hit-target inside a closed dropdown.

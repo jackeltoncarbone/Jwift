@@ -21,6 +21,7 @@ import type { JivHandle } from 'jaui';
 import { GlassButton } from '../GlassButton/GlassButton';
 import { Icon } from '../Icon/Icon';
 import { JivHost } from '../Internal/JivHost';
+import { IsEscapeKey } from '../Internal/Keys';
 import { JWIFT_MATERIAL, type JwiftMaterial } from '../Internal/Material';
 import SheetJss from './Sheet.jss';
 import {
@@ -599,7 +600,7 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
       },
     });
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape' && this._stack.Top() === this) this.AttemptDismiss();
+      if (IsEscapeKey(e) && this._stack.Top() === this) this.AttemptDismiss();
     };
     const onResize = (): void => this._measureContainer();
     this._doc.addEventListener('keydown', onKey);

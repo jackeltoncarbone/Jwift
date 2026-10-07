@@ -14,7 +14,9 @@ import {
 import { DOCUMENT } from '@angular/common';
 import { Jaui, Jiv, JSS_REGISTRY } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
+import { IsEscapeKey } from '../Internal/Keys';
 import { RowIndicator, type RowIndicatorRow } from '../Internal/RowIndicator';
+import { EscapeStep } from './GlassDropdown.Escape';
 import GlassDropdownJss from './GlassDropdown.jss';
 
 /** The shortest a capped menu is allowed to be: the glass's 6pt padding, three 44pt rows and the two
@@ -131,9 +133,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
       if (want === this._open()) return;
       if (!want) { this.Close(); return; }
       if (!this.canOpen()) return;
-      this.Open();
-      const dp = this.defaultPage();
-      if (dp !== null) this._page.set(dp);
+      this.Open(this.defaultPage());
     });
   }
 
@@ -167,12 +167,16 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
       if (this._rowIndicator.HasRowAt(e.clientX, e.clientY)) return;
       this.Close();
     };
+    // Drill Sentences lane HH1, item 2 (a round 12 blind desktop tester opened "9 problems" and pressed Escape: the
+    // button went and an empty glass shell stayed). Escape popped ANY page back to the root, and a pill that opens
+    // straight onto its one page (the problems list, `defaultPage`) has nothing at its root, so it stayed open
+    // on no rows with its cells hidden. Escape steps back only to the page the open began on, and closes there
+    // (`EscapeStep`).
     const onKey = (e: KeyboardEvent) => {
-      if (!this._open()) return;
-      if (e.key === 'Escape') {
-        if (this._page() !== null) this._page.set(null);
-        else this.Close();
-      }
+      if (!this._open() || !IsEscapeKey(e)) return;
+      const step = EscapeStep(this._page(), this._entryPage);
+      if (step === 'Close') this.Close();
+      else this._page.set(step.Page);
     };
     // A window that gets shorter while a menu is open takes room away from it, and the cap is only as
     // current as its last measurement. Re-measure rather than leave a menu sized for a window that is
@@ -204,7 +208,12 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     this._detachOnDestroy();
   }
 
-  Open(): void {
+  /** Opens the panel, onto `page` when given (a cell that opens straight onto its page, a single page pill's
+   *  `defaultPage`). The page an open begins on is where Escape closes it (`EscapeStep`); a page pushed past it
+   *  (`PushPage`) steps back to it first. Already open, `page` is pushed like any other. */
+  Open(page: string | null = null): void {
+    if (!this._open()) this._entryPage = page;
+    if (page !== null) this._page.set(page);
     this._releaseTopLayer();
     this._open.set(true);
     this._fitToRoom();
@@ -253,6 +262,9 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
 
   /** The last ceiling written, so a re-measure that lands on the same number costs nothing. */
   private _cap: string | null = null;
+
+  /** The page this open began on (`Open`), null for the root: where Escape closes the panel. */
+  private _entryPage: string | null = null;
 
   /** The device's bottom safe inset, in px, as Jaui publishes it to every sheet (`@SafeBottom`, latched
    *  by the host from `env(safe-area-inset-bottom)`). Zero on every desktop browser; on a phone it is
@@ -363,8 +375,6 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     // growth tracking that keeps the hover indicator aligned while the menu expands - which is why the
     // fix for that looked inert: the tracking loop never ran on the path people actually use, because
     // tapping the glass is how this menu opens. Two ways to open must not mean two behaviours.
-    this.Open();
-    const dp = this.defaultPage();
-    if (dp !== null) this._page.set(dp);
+    this.Open(this.defaultPage());
   }
 }

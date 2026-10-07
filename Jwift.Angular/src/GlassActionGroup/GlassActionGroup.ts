@@ -422,7 +422,7 @@ export class GlassActionGroup implements OnDestroy {
     if (this._OpenItems(dd.Page()).length === 0) dd.Close();
   }
 
-  Open(): void { this._Dd?.Open(); }
+  Open(page: string | null = null): void { this._Dd?.Open(page); }
   Close(): void { this._Dd?.Close(); }
   Toggle(): void { this._Dd?.Toggle(); }
   PushPage(id: string): void { this._Dd?.PushPage(id); }
@@ -537,8 +537,7 @@ export class GlassActionGroup implements OnDestroy {
       // A press that is already showing this exact page closes rather than re-opening to the
       // same place — the toggle every anchored trigger owes a second press (LaneM.md).
       if (this._Dd?.IsOpen() && this._Dd?.Page() === action.Page) { this._Dd?.Close(); return; }
-      this._Dd?.Open();
-      this._Dd?.PushPage(action.Page);
+      this._Dd?.Open(action.Page);
       return;
     }
     // An account id goes where the account provider sends it, so a page that
@@ -556,8 +555,7 @@ export class GlassActionGroup implements OnDestroy {
       // Same toggle as _Dispatch's own Page branch: a second press on an avatar that already opens
       // straight to `page` closes it, rather than reopening to the page it is already showing.
       if (this._Dd?.IsOpen() && this._Dd?.Page() === page) { this._Dd?.Close(); return; }
-      this._Dd?.Open();
-      this._Dd?.PushPage(page);
+      this._Dd?.Open(page);
       return;
     }
     if (!this.AvatarOpensMenu()) event.stopPropagation();

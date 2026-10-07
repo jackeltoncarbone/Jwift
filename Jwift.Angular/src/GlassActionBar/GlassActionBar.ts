@@ -447,7 +447,7 @@ export class GlassActionBar implements OnDestroy {
   protected _OnExpandableCell(a: GlassAction, event: MouseEvent, gd: GlassDropdown): void {
     event.stopPropagation();
     if (a.Disabled) return;
-    if (a.Page) { gd.Open(); gd.PushPage(a.Page); return; }
+    if (a.Page) { gd.Open(a.Page); return; }
     this.ActionClick.emit(a.Id);
   }
 

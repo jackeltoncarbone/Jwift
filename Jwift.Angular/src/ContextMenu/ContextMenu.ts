@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { Jaui, Jiv, Jext, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
+import { IsEscapeKey } from '../Internal/Keys';
 import { ContextMenuService, type ContextMenuItem } from './ContextMenu.Service';
 import ContextMenuJss from './ContextMenu.jss';
 
@@ -107,7 +108,7 @@ export class ContextMenu implements OnInit, OnDestroy {
 
   private _onKey = (e: KeyboardEvent): void => {
     if (!this.Service.IsOpen()) return;
-    if (e.key === 'Escape') {
+    if (IsEscapeKey(e)) {
       e.preventDefault();
       this.Service.Close();
     }

@@ -16,6 +16,7 @@ import {
 import { DOCUMENT } from '@angular/common';
 import { Jaui, Jiv, JSS_REGISTRY } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
+import { IsEscapeKey } from '../Internal/Keys';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 import PaperJss from '../Paper/Paper.jss';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
@@ -282,7 +283,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     };
     const onKey = (e: KeyboardEvent): void => {
       if (!this.Open()) return;
-      if (e.key !== 'Escape') return;
+      if (!IsEscapeKey(e)) return;
       this.OpenChange.emit(false);
       this.Closed.emit({ ByOutsideTap: false, At: Date.now() });
     };
