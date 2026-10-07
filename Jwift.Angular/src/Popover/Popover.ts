@@ -22,7 +22,7 @@ import PaperJss from '../Paper/Paper.jss';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverJss from './Popover.jss';
 import {
-  PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, type PopoverHold, type PopoverPlacement, type PopoverRect,
+  ArrowShows, ArrowTop, PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, type PopoverHold, type PopoverPlacement, type PopoverRect,
 } from './Popover.Placement';
 import { SwallowPress } from './Popover.OutsidePress';
 import { OpenSnap } from './Popover.OpenSnap';
@@ -202,15 +202,15 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (!p) return { Position: 'Placed' as const };
     // Beside its anchor's column (lane EE2, item 4), the arrow stands on the panel's left edge.
     if (p.Side) return { Position: 'Placed' as const, Left: '-8.5px', Top: `${(p.ArrowY ?? p.Y) - p.Y - 8.5}px` };
-    return {
-      Position: 'Placed' as const,
-      Left: `${p.ArrowX - p.X - 8.5}px`,
-      Top: `${p.Down ? -8.5 : this.Node.Height - 8.5}px`,
-    };
+    // Lane II2, item 6: on the bottom the placement gives the panel, never its trailing watched height (`ArrowTop`).
+    return { Position: 'Placed' as const, Left: `${p.ArrowX - p.X - 8.5}px`, Top: `${ArrowTop(p, this._placedHeight)}px` };
   });
+  /** The panel's height as last drawn (`Node.Height`), read each placement frame: the arrow shows only once the
+   *  panel stands at the height its placement gave it (`ArrowShows`). */
+  private readonly _drawnHeight = signal(0);
   protected readonly _ArrowStyle = computed(() => {
     const p = this._placement();
-    const hidden = !this.Arrow() || !p?.ArrowVisible;
+    const hidden = !this.Arrow() || !p || !ArrowShows(p, this._placedHeight, this._drawnHeight());
     return { Opacity: hidden ? '0' : '1', PointerEvents: 'None' as const };
   });
 
@@ -353,6 +353,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (!anchor) return;
     const placed = this._placement();
     if (placed) this._openSnap.ReleaseOn(this.Node, placed);
+    this._drawnHeight.set(this.Node.Height);
     // Drill Sentences lane V2, item 3: "the phrase dropdown's row positions shift between opens, so the
     // same tap picked different phrases." Root cause, found here rather than in the menu: the frame is
     // `Height: MinContent`, so its first `Node.Height` read is 0 — this used to fall back to a guessed

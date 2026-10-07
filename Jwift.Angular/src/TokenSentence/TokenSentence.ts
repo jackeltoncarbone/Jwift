@@ -561,6 +561,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._docUnbind?.();
+    this._pressUnbind?.();
     this._rectUnwatch?.();
     this.Node.WatchRect(false);
     this._detachOnDestroy();
@@ -603,6 +604,45 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     this._pressedKey.set(key);
     this._downKey = key;
     this._downSeen = true;
+    if (key !== null) this._watchPress(e);
+  }
+
+  /** How far a press may travel and still be a tap on its word, a finger's own tap slop: past it, the list under
+   *  it is scrolling. */
+  private static readonly PRESS_SLOP_PX = 10;
+  private _pressUnbind: (() => void) | null = null;
+  /**
+   * Drill Sentences lane II2, item 6 (a round 13 blind phone tester: a word, "left flank", stayed pressed after the
+   * list scrolled). A word's pressed look came off only with its click, and a press that became a scroll never
+   * clicks, so it stayed lit, and the click that next landed anywhere on this sentence would have spent the
+   * scroll's old key. The press is watched until it ends: once it travels past `PRESS_SLOP_PX` it was a scroll,
+   * so the word lets go and the press resolves to nothing; its release or cancel clears the look either way.
+   */
+  private _watchPress(down: PointerEvent): void {
+    this._pressUnbind?.();
+    const doc = this._doc;
+    // Any pointer stream: the canvas's own events and Jaui's bridged copies of them number one finger differently.
+    const onMove = (e: PointerEvent): void => {
+      if (!e.buttons && e.pointerType === 'mouse') return; // a mouse moving with its button up is no drag.
+      if (Math.hypot(e.clientX - down.clientX, e.clientY - down.clientY) < TokenSentence.PRESS_SLOP_PX) return;
+      this._pressedKey.set(null);
+      this._downKey = null;
+      unbind();
+    };
+    const onEnd = (): void => {
+      this._pressedKey.set(null);
+      unbind();
+    };
+    const unbind = (): void => {
+      doc.removeEventListener('pointermove', onMove, true);
+      doc.removeEventListener('pointerup', onEnd, true);
+      doc.removeEventListener('pointercancel', onEnd, true);
+      if (this._pressUnbind === unbind) this._pressUnbind = null;
+    };
+    doc.addEventListener('pointermove', onMove, true);
+    doc.addEventListener('pointerup', onEnd, true);
+    doc.addEventListener('pointercancel', onEnd, true);
+    this._pressUnbind = unbind;
   }
   protected _onHostPointerMove(e: PointerEvent): void {
     this._storePoint(e);

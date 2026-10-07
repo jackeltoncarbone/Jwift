@@ -102,6 +102,22 @@ export function PopoverTargetRect(p: PopoverPlacement, width: number, naturalHei
   return { X: p.X, Y: p.Y, Width: width, Height: Math.min(p.MaxHeight, naturalHeight) };
 }
 
+/**
+ * WHERE THE ARROW STANDS, AND WHETHER IT SHOWS (Drill Sentences lane II2, item 6; a round 13 blind phone tester
+ * picked Hold in the "+" menu and the menu's pointer floated away from it). An upward panel's arrow sat at the
+ * panel's watched height, which trails each placement by a frame or more and follows the panel's own resize, so
+ * when a held panel changed page and height the arrow stood where the old bottom had been, out in the gap. The
+ * arrow now stands on the bottom the placement itself gives the panel (`placedHeight`, its natural height, capped),
+ * and shows only while the panel it hangs from is drawn at that height (`measuredHeight`) and touches the anchor
+ * (`ArrowVisible`), so it never stands apart from either.
+ */
+export function ArrowTop(p: PopoverPlacement, placedHeight: number): number {
+  return p.Down ? -8.5 : Math.min(p.MaxHeight, placedHeight) - 8.5;
+}
+export function ArrowShows(p: PopoverPlacement, placedHeight: number, measuredHeight: number): boolean {
+  return p.ArrowVisible && (!!p.Side || p.Down || Math.abs(measuredHeight - Math.min(p.MaxHeight, placedHeight)) <= 1);
+}
+
 /** The arrow's own height — how far the panel stands off the anchor on the side it opens. */
 const ARROW_HEIGHT = 12;
 /** Popover.jss's own `Padding: 10pt` around the content, on every side (the sheet outlet a popover is
