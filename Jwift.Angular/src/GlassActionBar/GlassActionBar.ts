@@ -10,6 +10,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChildren,
 } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
@@ -245,6 +246,13 @@ export class GlassActionBar implements OnDestroy {
   /** Which cell's name a resting desktop pointer reads (Drill Sentences lane X2, item 7: a row of bare
    *  glyphs read as unlabeled to blind first-time testers). `HoverTip.ts` carries the timing. */
   protected readonly _Tip = new HoverTip();
+  /** Each new value hides the tip showing and quiets its cell until a fresh rest (`HoverTip.Quiet`): the page says
+   *  something under the bar, a notice, whose place the tip would cover (Drill Sentences lane JJ1, item 5). */
+  readonly QuietTips = input<unknown>(null);
+  private readonly _quietTipsEffect = effect(() => {
+    this.QuietTips();
+    untracked(() => this._Tip.Quiet());
+  });
   /** The tip's own box: wide enough for any one cell's name, centred under its cell (the bar lays its
    *  pills out with the same geometry the collapse solver below already models, so a cell's centre is a
    *  sum, never a measurement), just below the bar. The pill inside sizes to its text. */
