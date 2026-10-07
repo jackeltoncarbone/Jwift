@@ -5,10 +5,12 @@ import {
   ViewChild,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  viewChildren,
 } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { type ChildLayout } from 'jaui';
@@ -102,14 +104,14 @@ export interface ActionGroup {
                        (click)="_OnExpandableCell(a, $event, gd)" (pointermove)="_Tip.Over(a.Id, $event)">
                     <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
                     @if (_ShowsTitle(a)) {
-                      <jext class="Jwift_GlassActionTitle" [text]="a.Label ?? ''" />
+                      <jext #cellText class="Jwift_GlassActionTitle" [text]="a.Label ?? ''" />
                     }
                     @if (a.Disclosure) {
                       <icon class="Jwift_GlassDropdownCellChevron" Name="chevron.down" />
                     }
                     @if (a.Badge && !_ShowsTitle(a)) {
                       <jiv class="Jwift_GlassActionBadge">
-                        <jext class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
+                        <jext #cellText class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
                       </jiv>
                     }
                   </jiv>
@@ -155,11 +157,11 @@ export interface ActionGroup {
                      (click)="_OnCell(a, $event)" (pointermove)="_Tip.Over(a.Id, $event)">
                   <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
                   @if (_ShowsTitle(a)) {
-                    <jext class="Jwift_GlassActionTitle" [text]="a.Label ?? ''" />
+                    <jext #cellText class="Jwift_GlassActionTitle" [text]="a.Label ?? ''" />
                   }
                   @if (a.Badge && !_ShowsTitle(a)) {
                     <jiv class="Jwift_GlassActionBadge">
-                      <jext class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
+                      <jext #cellText class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
                     </jiv>
                   }
                 </jiv>
@@ -208,6 +210,15 @@ export class GlassActionBar implements OnDestroy {
    *  land UNDER the consolidated overflow with a divider above them. */
   protected readonly _EffectiveMenu = computed<readonly GlassAction[]>(() =>
     this.Menu() ?? this._Account?.Menu() ?? []);
+
+  /** Drill Sentences lane EE1, item 3 (a blind desktop tester read "10problems" as the warnings cell's count
+   *  changed): a cell's name and its count land at once when they change in place. Jaui's per word animator
+   *  slid the unchanged "problems" from where it stood after "6" while the wider "10" was already drawn, so
+   *  the two ran together mid change (`SnapText`). */
+  private readonly _cellTexts = viewChildren<Jext>('cellText');
+  private readonly _snapCellTexts = effect(() => {
+    for (const text of this._cellTexts()) text.Node.SnapText = true;
+  });
 
   /** Sink sub-page item lists (e.g. auth providers), forwarded to the sink. */
   readonly Pages = input<Record<string, readonly GlassAction[]>>({});
