@@ -65,10 +65,13 @@ const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
   // the identical gap Value did before item 5: bold ink, no underline, nothing that reads as "tap me"
   // once the one-time glow has passed. Same fix, same reasoning.
   Who:         { Ink: '@Ink',     Weight: 700, Underline: '@AccentInkLine' },
-  // Placeholder already paints its ink in gold (a stronger, standing cue that this word still needs the
-  // director's input) — adding the same accent underline underneath is a small, consistent "this is a
-  // tappable word" signal on top of it, not a competing one, since both read the identical hue.
-  Placeholder: { Ink: '@GoldInk', Weight: 600, Underline: '@AccentInkLine' },
+  // A word still waiting on the director's input ("along a path", no path drawn yet): the soft ink of a
+  // placeholder, Apple's secondary label, bold enough to stand out, with the accent underline every tappable
+  // word wears. Drill Sentences lane HH2, item 7 (a round 12 blind tester: at the end of a playback "along a
+  // path" stayed gold): it used to stand in gold, the very ink the playing step's words wear (`NowGroup`), so
+  // a placeholder in the last step read as the highlight left behind once the playback stopped. Gold ink on a
+  // sentence word means one thing now: the step playing, or the word whose control is open.
+  Placeholder: { Ink: '@InkSoft', Weight: 600, Underline: '@AccentInkLine' },
   // The mirror pair's own icon (Render.ts's `Icon: 'arrow.left.and.right'`) tints the SAME as the "who"
   // tokens either side of it, not the softer ink the bare glyph used to carry -- the pair reads as one
   // unit, "1a ⇄ 1b", not an accent between two names.
