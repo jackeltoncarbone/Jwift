@@ -111,7 +111,13 @@ Jwift_GlassActionBadgeText {
 // Drill Sentences lane CC2, item 4 (a blind tester read "Cast: your band's members and"): a tip one line
 // tall cut its words off at the box's width. The pill now takes the box's width at most and its words wrap
 // to a second line inside it, centred, the pill growing to fit them.
+//
+// Drill Sentences lane EE2, item 4 (a blind desktop tester: the Undo tip showed under the drill editor's
+// selection bar). Layer is sibling local, so a tip inside the toolbar sat under any floating chrome the page
+// layers above its header. A tip names what the pointer rests on and must read over everything, so it takes
+// the engine's top layer, as an open menu does (GlassDropdown.jss).
 Jwift_GlassActionTip {
+  Layer: Top
   Position: Placed
   Direction: Row
   Justify: Center
