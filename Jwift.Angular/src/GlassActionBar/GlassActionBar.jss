@@ -48,6 +48,28 @@ Jwift_GlassDropdownCellChevron {
   TextAlign: Center
 }
 
+// A cell wearing its name beside its glyph (`GlassAction.Titled`, Drill Sentences lane DD2, item 5: blind
+// desktop testers met four bare glyphs). Worn WITH Jwift_GlassDropdownCell, which keeps its press, its
+// height and its round ends; only the row's spacing is restated here. Its Width is the solver's own number
+// (`CellWidth`, GlassActionBar.Room.ts), set on the cell, so the pill and its slot always agree.
+Jwift_GlassDropdownCell_Titled {
+  Justify: Center
+  Gap: 6pt
+  Padding: 0pt 14pt 0pt 12pt
+}
+// The name itself: the toolbar's own ink, a size under the title, one line. Opacity: 1, so it fades with its
+// cell and never a step behind it (Jwift_GlassActionGlyph's own note).
+Jwift_GlassActionTitle {
+  UserSelect: None
+  PointerEvents: None
+  FontFamily: Inter
+  FontSize: 13pt
+  FontWeight: 600
+  Color: @Ink
+  MaxLines: 1
+  Opacity: 1
+}
+
 // A cell's count (`GlassAction.Badge`): how many problems the warnings cell stands for, on its top
 // trailing corner, so the glyph reads as "3 problems" before it is pressed (Drill Sentences lane X2, item
 // 7). Placed inside the 40pt cell, never outside it, so the pill's own glass never clips it. The badge

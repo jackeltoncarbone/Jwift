@@ -10,6 +10,11 @@ import MediaTransportJss from './MediaTransport.jss';
  *  (where-pill / transport / mute) without pushing the sides off-balance. */
 export type MediaTransportSize = 'regular' | 'compact';
 
+/** What the skip buttons step by, which picks their glyphs the way iOS does: `Seek` jumps through time
+ *  (`backward.fill`/`forward.fill`, rewind and fast forward), `Track` goes to the previous or next item
+ *  (`backward.end.fill`/`forward.end.fill`, the now-playing previous and next track). */
+export type MediaTransportSkip = 'Seek' | 'Track';
+
 /**
  * `<media-transport>` — skip back / play-pause / skip forward. HOUSE geometry, promoted from Drill.jss's
  * `TransportRow` ladder. An optional scrub slider goes ABOVE the buttons, projected via `<ng-content>`.
@@ -28,13 +33,13 @@ export type MediaTransportSize = 'regular' | 'compact';
       <ng-content></ng-content>
       <jiv [class]="RowClass()" [disabled]="disabled()">
         <jiv [class]="BtnClass()" [disabled]="skipBackDisabled()" [attr.aria-label]="skipBackLabel()" (click)="_skipBack()">
-          <icon [class]="GlyphClass()" Name="backward.fill" />
+          <icon [class]="GlyphClass()" [Name]="SkipBackGlyph()" />
         </jiv>
         <jiv [class]="BtnPrimaryClass()" [attr.aria-label]="playing() ? pauseLabel() : playLabel()" (click)="playPause.emit()">
           <icon [class]="GlyphPrimaryClass()" [Name]="playing() ? 'pause.fill' : 'play.fill'" />
         </jiv>
         <jiv [class]="BtnClass()" [disabled]="skipForwardDisabled()" [attr.aria-label]="skipForwardLabel()" (click)="_skipForward()">
-          <icon [class]="GlyphClass()" Name="forward.fill" />
+          <icon [class]="GlyphClass()" [Name]="SkipForwardGlyph()" />
         </jiv>
       </jiv>
     </jiv>
@@ -51,6 +56,11 @@ export class MediaTransport {
   readonly skipBackDisabled = input(false, { transform: booleanAttribute });
   readonly skipForwardDisabled = input(false, { transform: booleanAttribute });
   readonly size = input<MediaTransportSize>('regular');
+  /** Drill Sentences lane DD2, item 5 (blind testers): the drill player's skips go to the previous and next
+   *  phrase, and wearing rewind's glyphs they read as rewind. `Track` gives them the previous and next track's. */
+  readonly skip = input<MediaTransportSkip>('Seek');
+  protected readonly SkipBackGlyph = computed(() => (this.skip() === 'Track' ? 'backward.end.fill' : 'backward.fill'));
+  protected readonly SkipForwardGlyph = computed(() => (this.skip() === 'Track' ? 'forward.end.fill' : 'forward.fill'));
 
   /** Plain English defaults so every call site has SOME accessible name out of the box; a localized app
    *  passes its own strings through `T(...)` (EditorPlayer.ts does). Jwift has no i18n of its own to draw

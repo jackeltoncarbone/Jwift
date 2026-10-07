@@ -24,6 +24,7 @@ import {
   PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, type PopoverHold, type PopoverPlacement, type PopoverRect,
 } from './Popover.Placement';
 import { SwallowPress } from './Popover.OutsidePress';
+import { OpenSnap } from './Popover.OpenSnap';
 
 export type { PopoverRect };
 
@@ -204,6 +205,10 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     return { Opacity: hidden ? '0' : '1', PointerEvents: 'None' as const };
   });
 
+  /** Lane DD2, item 1: the content lands on the placement it opens with rather than gliding to it
+   *  (`Popover.OpenSnap.ts`), so a control is hit where it is drawn from the first placed frame. */
+  private readonly _openSnap = new OpenSnap();
+
   private _unbindDoc: (() => void) | null = null;
   private _raf: number | null = null;
   private _prevDown: boolean | null = null;
@@ -337,6 +342,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (!el) return;
     const anchor = this._resolveAnchor();
     if (!anchor) return;
+    const placed = this._placement();
+    if (placed) this._openSnap.ReleaseOn(this.Node, placed);
     // Drill Sentences lane V2, item 3: "the phrase dropdown's row positions shift between opens, so the
     // same tap picked different phrases." Root cause, found here rather than in the menu: the frame is
     // `Height: MinContent`, so its first `Node.Height` read is 0 — this used to fall back to a guessed
@@ -359,6 +366,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const placement = PlacePopover({
       Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls,
     });
+    // The first placement moves the whole subtree off the spot its first layout put it; it lands there.
+    if (placed === null) this._openSnap.Hold(this.Node);
     this._prevDown = placement.Down;
     this._placedHeight = h;
     this._capped.set(scrolls);

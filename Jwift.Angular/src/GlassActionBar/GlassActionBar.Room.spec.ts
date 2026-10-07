@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BarRoom } from './GlassActionBar.Room';
+import { BarRoom, CELL_PT, CellWidth, PillWidth, ShowsTitle, TitleWidth } from './GlassActionBar.Room';
 
 describe('BarRoom (Drill Sentences lane AA1, item 6: a phone title truncated while there was room)', () => {
   it('counts every other child of the trailing cluster, each with the cluster\'s gap', () => {
@@ -19,5 +19,39 @@ describe('BarRoom (Drill Sentences lane AA1, item 6: a phone title truncated whi
     const bar = 106;
     const room = BarRoom({ InnerWidth: 338 - 12, LeadingWidth: 338 - 56 - bar, PillGap: 10, SiblingWidths: [48], TrailingGap: 8 });
     expect(room).toBeLessThan(bar);
+  });
+});
+
+/** Drill Sentences lane DD2, item 5 (blind desktop testers met four bare glyphs at the toolbar's end). */
+describe('a titled cell wears its name beside its glyph while there is room', () => {
+  const cast = { Label: 'Cast', Titled: true };
+  const camera = { Label: 'Camera', Titled: true, Disclosure: true };
+  const undo = { Label: 'Undo' };
+
+  it('only a cell marked Titled, with a name, and only while the bar\'s names are on', () => {
+    expect(ShowsTitle(cast, true)).toBe(true);
+    expect(ShowsTitle(cast, false)).toBe(false);
+    expect(ShowsTitle(undo, true)).toBe(false);
+    expect(ShowsTitle({ Label: ' ', Titled: true }, true)).toBe(false);
+  });
+
+  it('a bare cell is the 40pt circle; a titled one grows by its name, and a disclosure chevron\'s room', () => {
+    expect(CellWidth(cast, false)).toBe(CELL_PT);
+    expect(CellWidth(undo, true)).toBe(CELL_PT);
+    expect(CellWidth(cast, true)).toBeGreaterThan(CELL_PT + TitleWidth('Cast') - 1);
+    expect(CellWidth({ ...camera, Disclosure: false }, true)).toBeLessThan(CellWidth(camera, true));
+    expect(CellWidth({ Label: '9 problems', Titled: true }, true)).toBeGreaterThan(CellWidth(cast, true));
+  });
+
+  it('sizes a name to its own words, CJK a whole em a character', () => {
+    expect(TitleWidth('Library')).toBeGreaterThan(TitleWidth('Cast'));
+    expect(TitleWidth('全員', 10)).toBe(20);
+  });
+
+  it('a pill is its cells, the gaps between them and its padding; the names cost the bar room', () => {
+    expect(PillWidth([], true, 4, 4)).toBe(0);
+    expect(PillWidth([undo, undo], false, 4, 4)).toBe(2 * 4 + 2 * CELL_PT + 4);
+    expect(PillWidth([cast, undo], true, 4, 4)).toBe(2 * 4 + CellWidth(cast, true) + CELL_PT + 4);
+    expect(PillWidth([cast, camera], true, 4, 4)).toBeGreaterThan(PillWidth([cast, camera], false, 4, 4));
   });
 });

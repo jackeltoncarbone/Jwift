@@ -118,5 +118,7 @@
   "mappin": { "Pack": "Framework7", "Glyph": "map_pin" },
   "text.bubble": { "Pack": "Framework7", "Glyph": "text_bubble" },
   "text.bubble.fill": { "Pack": "Framework7", "Glyph": "text_bubble_fill" },
-  "shift": { "Pack": "Framework7", "Glyph": "shift" }
+  "shift": { "Pack": "Framework7", "Glyph": "shift" },
+  "backward.end.fill": { "Pack": "Framework7", "Glyph": "backward_end_fill" },
+  "forward.end.fill": { "Pack": "Framework7", "Glyph": "forward_end_fill" }
 }

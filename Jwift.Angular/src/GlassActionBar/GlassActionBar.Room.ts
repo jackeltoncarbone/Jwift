@@ -27,3 +27,56 @@ export function BarRoom(o: BarRoomInput): number {
   for (const w of o.SiblingWidths) if (w > 0) siblings += w + o.TrailingGap;
   return Math.max(0, o.InnerWidth - o.LeadingWidth - o.PillGap - siblings);
 }
+
+// ── A cell's name beside its glyph (Drill Sentences lane DD2, item 5) ────────────────────────────────────
+// Blind desktop testers met four bare glyphs at the toolbar's trailing end. A cell marked `Titled` wears its
+// name beside its glyph while the bar has room (`GlassActionBar.Titled`), as a Mac toolbar's "Icon and Text"
+// does; the names are the first thing the bar gives up as it narrows, before any group folds. The solver
+// lays the bar out from these widths, never from a measurement, so the cell is sized to the same number
+// (its own `Width`) and the two can never disagree.
+
+/** A bare cell: the house 40pt circle (`Jwift_GlassDropdownCell`). */
+export const CELL_PT = 40;
+/** The name's size (`Jwift_GlassActionTitle`). */
+export const TITLE_FONT_PT = 13;
+/** A titled cell's own insets and gaps: lead to the glyph, the glyph, glyph to name, name to the trailing
+ *  edge, and a disclosure chevron's room when it has one (`Jwift_GlassDropdownCell_Titled`). */
+const TITLED_LEAD_PT = 12;
+const TITLED_GLYPH_PT = 18;
+const TITLED_GAP_PT = 6;
+const TITLED_TRAIL_PT = 14;
+const TITLED_CHEVRON_PT = 4 + 10;
+
+/** About how wide `text` runs at `fontPt`, rounded up: a little over half an em for Latin at Inter's
+ *  semibold, a whole em for CJK. Generous by design, since the cell is sized to it. */
+export function TitleWidth(text: string, fontPt = TITLE_FONT_PT): number {
+  let em = 0;
+  for (const ch of text) em += (ch.codePointAt(0) ?? 0) >= 0x2e80 ? 1 : 0.64;
+  return Math.ceil(em * fontPt);
+}
+
+export interface TitledCell {
+  readonly Label?: string;
+  readonly Titled?: boolean;
+  readonly Disclosure?: boolean;
+}
+
+/** Whether `cell` shows its name, the bar's names being on (`titles`). */
+export function ShowsTitle(cell: TitledCell, titles: boolean): boolean {
+  return titles && !!cell.Titled && !!cell.Label?.trim();
+}
+
+/** A cell's width in pt: the bare circle, or, while its name shows, the glyph and the name with their insets. */
+export function CellWidth(cell: TitledCell, titles: boolean): number {
+  if (!ShowsTitle(cell, titles)) return CELL_PT;
+  return TITLED_LEAD_PT + TITLED_GLYPH_PT + TITLED_GAP_PT + TitleWidth(cell.Label!.trim()) + TITLED_TRAIL_PT
+    + (cell.Disclosure ? TITLED_CHEVRON_PT : 0);
+}
+
+/** A pill's width in pt: its cells, the gaps between them and its own padding on both ends. */
+export function PillWidth(cells: readonly TitledCell[], titles: boolean, gap: number, pad: number): number {
+  if (cells.length === 0) return 0;
+  let sum = 0;
+  for (const cell of cells) sum += CellWidth(cell, titles);
+  return 2 * pad + sum + (cells.length - 1) * gap;
+}

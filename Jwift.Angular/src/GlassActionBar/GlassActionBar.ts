@@ -20,7 +20,7 @@ import { GlassDropdownItem } from '../GlassDropdown/GlassDropdownItem';
 import { JwiftSpinner } from '../Spinner/JwiftSpinner';
 import GlassActionBarJss from './GlassActionBar.jss';
 import { HoverTip } from './HoverTip';
-import { BarRoom } from './GlassActionBar.Room';
+import { BarRoom, CELL_PT, CellWidth, PillWidth, ShowsTitle } from './GlassActionBar.Room';
 
 /**
  * One collapsing button group in the toolbar trailing cluster. Renders as its
@@ -86,7 +86,7 @@ export interface ActionGroup {
                in-flow slot sized to the closed footprint — that holds the bar's
                flow steady (no sibling reflow) and the open menu anchors to this
                slot, popping under its own pill rather than the bar's corner. -->
-          <jiv class="Jwift_GlassActionBarSlot" [childLayout]="_PillSlot(gp.Cells.length)">
+          <jiv class="Jwift_GlassActionBarSlot" [childLayout]="_PillSlot(gp.Cells)">
           <glass-dropdown #gd
             [defaultPage]="_GroupDefaultPage(gp.Group)"
             [canOpen]="_GroupCanOpen(gp.Group)"
@@ -98,13 +98,16 @@ export interface ActionGroup {
                     <jwift-spinner [size]="20" />
                   </jiv>
                 } @else {
-                  <jiv [class]="_CellClass(a)" semantics="Button" [label]="a.Label ?? null"
+                  <jiv [class]="_CellClass(a)" [childLayout]="_CellLayout(a)" semantics="Button" [label]="a.Label ?? null"
                        (click)="_OnExpandableCell(a, $event, gd)" (pointermove)="_Tip.Over(a.Id, $event)">
                     <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
+                    @if (_ShowsTitle(a)) {
+                      <jext class="Jwift_GlassActionTitle" [text]="a.Label ?? ''" />
+                    }
                     @if (a.Disclosure) {
                       <icon class="Jwift_GlassDropdownCellChevron" Name="chevron.down" />
                     }
-                    @if (a.Badge) {
+                    @if (a.Badge && !_ShowsTitle(a)) {
                       <jiv class="Jwift_GlassActionBadge">
                         <jext class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
                       </jiv>
@@ -148,10 +151,13 @@ export interface ActionGroup {
                   <jwift-spinner [size]="20" />
                 </jiv>
               } @else {
-                <jiv [class]="_CellClass(a)" semantics="Button" [label]="a.Label ?? null"
+                <jiv [class]="_CellClass(a)" [childLayout]="_CellLayout(a)" semantics="Button" [label]="a.Label ?? null"
                      (click)="_OnCell(a, $event)" (pointermove)="_Tip.Over(a.Id, $event)">
                   <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
-                  @if (a.Badge) {
+                  @if (_ShowsTitle(a)) {
+                    <jext class="Jwift_GlassActionTitle" [text]="a.Label ?? ''" />
+                  }
+                  @if (a.Badge && !_ShowsTitle(a)) {
                     <jiv class="Jwift_GlassActionBadge">
                       <jext class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
                     </jiv>
@@ -211,6 +217,12 @@ export class GlassActionBar implements OnDestroy {
   readonly AvatarFallbackIcon = input<string>('person.fill');
   readonly CollaboratorAvatarUrls = input<readonly string[]>([]);
 
+  /** Drill Sentences lane DD2, item 5 (blind desktop testers met four bare glyphs): a cell marked `Titled`
+   *  wears its name beside its glyph while the bar has room for every name (`GlassActionBar.Room.ts`). The
+   *  names go first as the bar narrows, all together, before any group folds, and come back last. Off, the
+   *  bar is glyphs alone, as on a phone. */
+  readonly Titled = input(false);
+
   /** Fires the clicked action id — from a group cell or a sink menu item. */
   readonly ActionClick = output<string>();
 
@@ -230,16 +242,21 @@ export class GlassActionBar implements OnDestroy {
   protected readonly _TipLayout = computed<{ Label: string; Layout: Partial<ChildLayout> } | null>(() => {
     const id = this._Tip.Shown();
     if (id === null) return null;
-    const cell = GlassActionBar._CellPt, gap = GlassActionBar._GapPt, pad = GlassActionBar._PadPt;
+    const gap = GlassActionBar._GapPt, pad = GlassActionBar._PadPt;
+    const titles = this._TitlesOn();
     let left = 0;
     for (const gp of this._GroupPills()) {
       const index = gp.Cells.findIndex((a) => a.Id === id);
       if (index >= 0) {
         // A tip never shows without words (Drill Sentences lane AA1, item 5), and says what the cell is when
-        // its name alone would not (`GlassAction.Tip`, lane BB2, item 5).
-        const label = (gp.Cells[index].Tip ?? gp.Cells[index].Label)?.trim();
+        // its name alone would not (`GlassAction.Tip`, lane BB2, item 5). A cell already wearing its name
+        // (lane DD2) has a tip only for words it does not already show.
+        const target = gp.Cells[index];
+        const label = (ShowsTitle(target, titles) ? target.Tip : target.Tip ?? target.Label)?.trim();
         if (!label) return null;
-        const centre = left + pad + index * (cell + gap) + cell / 2;
+        let before = 0;
+        for (let i = 0; i < index; i++) before += CellWidth(gp.Cells[i], titles) + gap;
+        const centre = left + pad + before + CellWidth(target, titles) / 2;
         return {
           Label: label,
           Layout: {
@@ -248,14 +265,13 @@ export class GlassActionBar implements OnDestroy {
           },
         };
       }
-      left += this._pillWidth(gp.Cells.length, cell, gap, pad) + GlassActionBar._PillGapPt;
+      left += PillWidth(gp.Cells, titles, gap, pad) + GlassActionBar._PillGapPt;
     }
     return null;
   });
 
-  // Geometry — in sync with Jwift_GlassDropdown_Closed (40pt cells, 4pt gap,
+  // Geometry — in sync with Jwift_GlassDropdown_Closed (40pt cells, `CELL_PT`, 4pt gap,
   // 4pt pad) and Jwift_GlassActionBar (10pt inter-pill gap).
-  private static readonly _CellPt    = 40;
   private static readonly _GapPt     =  4;
   private static readonly _PadPt     =  4;
   private static readonly _PillGapPt = 10;
@@ -268,6 +284,9 @@ export class GlassActionBar implements OnDestroy {
 
   /** Per-group inline cell counts, aligned to `Groups()` by index. */
   private readonly _counts = signal<number[]>([]);
+  /** Whether the bar has room for its cells' names right now (the solver's half of `Titled`). */
+  private readonly _titlesFit = signal(true);
+  protected readonly _TitlesOn = computed(() => this.Titled() && this._titlesFit());
   private _countsKey = '';
   private _rectsWired = false;
   private _rafId = 0;
@@ -364,12 +383,19 @@ export class GlassActionBar implements OnDestroy {
    *  same geometry the solver uses (`_pillWidth`): 2·pad + n·cell + (n−1)·gap.
    *  Height is the fixed 48pt closed-pill height. Kept in flow so opening the
    *  pill's Placed dropdown never reflows the bar. */
-  protected _PillSlot(n: number): Partial<ChildLayout> {
-    const pad = GlassActionBar._PadPt;
-    const cell = GlassActionBar._CellPt;
-    const gap = GlassActionBar._GapPt;
-    const w = n > 0 ? 2 * pad + n * cell + (n - 1) * gap : 0;
+  protected _PillSlot(cells: readonly GlassAction[]): Partial<ChildLayout> {
+    const w = PillWidth(cells, this._TitlesOn(), GlassActionBar._GapPt, GlassActionBar._PadPt);
     return { Width: w + 'pt', Height: '48pt' };
+  }
+
+  /** Whether a cell wears its name beside its glyph now. */
+  protected _ShowsTitle(a: GlassAction): boolean {
+    return ShowsTitle(a, this._TitlesOn());
+  }
+
+  /** A titled cell's width, the same number the solver laid the bar out with (`CellWidth`). */
+  protected _CellLayout(a: GlassAction): Partial<ChildLayout> | undefined {
+    return this._ShowsTitle(a) ? { Width: `${CellWidth(a, true)}pt` } : undefined;
   }
 
   /** A menu with any row checked keeps a check column, so its rows line up (as GlassActionGroup does). */
@@ -379,6 +405,7 @@ export class GlassActionBar implements OnDestroy {
 
   protected _CellClass(a: GlassAction): string {
     const classes = ['Jwift_GlassDropdownCell'];
+    if (this._ShowsTitle(a)) classes.push('Jwift_GlassDropdownCell_Titled');
     if (a.Active) classes.push('Jwift_GlassDropdownCell_Active');
     if (a.Disabled) classes.push('Jwift_GlassDropdownCell_Disabled');
     return classes.join(' ');
@@ -425,23 +452,21 @@ export class GlassActionBar implements OnDestroy {
 
   // ── collapse solver ───────────────────────────────────────────────────────
 
-  private _pillWidth(n: number, cell: number, gap: number, pad: number): number {
-    return n > 0 ? 2 * pad + n * cell + (n - 1) * gap : 0;
-  }
-
-  /** Total bar width (pills + gaps + sink) for a candidate count vector. */
-  private _barWidth(counts: number[], cell: number, gap: number, pad: number, pillGap: number): number {
-    const sinkW = 2 * pad + cell; // avatar-only sink
+  /** Total bar width (pills + gaps + sink) for a candidate count vector, the cells wearing their names or
+   *  not (`titles`), in px at `ps`. */
+  private _barWidth(counts: number[], titles: boolean, ps: number): number {
+    const gap = GlassActionBar._GapPt, pad = GlassActionBar._PadPt;
+    const sinkW = 2 * pad + CELL_PT; // avatar-only sink
     let sumPills = 0, visible = 0;
     this.Groups().forEach((g, i) => {
-      const eligible = this._cellEligible(g).length;
-      const n = Math.min(eligible, counts[i] ?? eligible);
+      const eligible = this._cellEligible(g);
+      const n = Math.min(eligible.length, counts[i] ?? eligible.length);
       if (n <= 0) return;
-      sumPills += this._pillWidth(n, cell, gap, pad);
+      sumPills += PillWidth(eligible.slice(0, n), titles, gap, pad);
       visible++;
     });
     // children = visible pills + sink; gaps between them = visible (pill→…→sink).
-    return sumPills + sinkW + pillGap * visible;
+    return (sumPills + sinkW + GlassActionBar._PillGapPt * visible) * ps;
   }
 
   private _fullCounts(): number[] {
@@ -515,9 +540,6 @@ export class GlassActionBar implements OnDestroy {
     }
 
     const ps = toolbar.ResolveCtx?.PointScale ?? 1;
-    const cell    = GlassActionBar._CellPt    * ps;
-    const gap     = GlassActionBar._GapPt     * ps;
-    const pad     = GlassActionBar._PadPt     * ps;
     const pillGap = GlassActionBar._PillGapPt * ps;
     const tbPad   = GlassActionBar._ToolbarPadPt * ps;
     const hyst    = GlassActionBar._HysteresisPt * ps;
@@ -542,26 +564,33 @@ export class GlassActionBar implements OnDestroy {
       return;
     }
 
+    // Lane DD2, item 5: the cells' names are the first thing given up and the last thing restored.
+    const named = this.Titled();
+    let titles = named && this._titlesFit();
     let guard = 0;
-    // Fold while the bar overflows.
-    while (this._barWidth(counts, cell, gap, pad, pillGap) > available && guard++ < 200) {
+    // Fold while the bar overflows: the names first, then group by group.
+    while (this._barWidth(counts, titles, ps) > available && guard++ < 200) {
+      if (titles) { titles = false; continue; }
       const i = this._nextToFold(counts);
       if (i < 0) break;
       this._foldOne(counts, i);
     }
     // Unfold while there's room to restore the next group + hysteresis margin.
     guard = 0;
-    while (guard++ < 200) {
+    while (!titles && guard++ < 200) {
       const i = this._nextToUnfold(counts);
       if (i < 0) break;
       const trial = [...counts];
       this._unfoldOne(trial, i);
-      if (this._barWidth(trial, cell, gap, pad, pillGap) + hyst <= available) {
+      if (this._barWidth(trial, false, ps) + hyst <= available) {
         counts[i] = trial[i];
       } else break;
     }
+    // With every group back inline, the names return once they fit too.
+    if (named && !titles && this._nextToUnfold(counts) < 0 && this._barWidth(counts, true, ps) + hyst <= available) titles = true;
 
     const cur = this._counts();
     if (counts.some((v, i) => v !== cur[i])) this._counts.set(counts);
+    if (named && titles !== this._titlesFit()) this._titlesFit.set(titles);
   }
 }

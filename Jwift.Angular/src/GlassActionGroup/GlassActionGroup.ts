@@ -77,6 +77,9 @@ export interface GlassAction {
   /** Inline cell only — draws a small trailing chevron.down beside the glyph, marking a single-cell
    *  pill as a MENU BUTTON (it always opens a menu, never acts directly) before it is even tapped. */
   Disclosure?: boolean;
+  /** Inline cell in `<glass-action-bar [Titled]="true">` only — wears its `Label` beside its glyph while the
+   *  bar has room for every name; the first thing the bar gives up as it narrows (`GlassActionBar.Room.ts`). */
+  Titled?: boolean;
 }
 
 /**
