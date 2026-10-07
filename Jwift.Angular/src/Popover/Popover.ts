@@ -21,7 +21,7 @@ import PaperJss from '../Paper/Paper.jss';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverJss from './Popover.jss';
 import {
-  PlacePopover, PointInRect, POPOVER_PANEL_PADDING, type PopoverHold, type PopoverPlacement, type PopoverRect,
+  PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, type PopoverHold, type PopoverPlacement, type PopoverRect,
 } from './Popover.Placement';
 import { SwallowPress } from './Popover.OutsidePress';
 
@@ -207,6 +207,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private _unbindDoc: (() => void) | null = null;
   private _raf: number | null = null;
   private _prevDown: boolean | null = null;
+  /** The natural height the last placement was made for (`PopoverTargetRect`). */
+  private _placedHeight = 0;
   private _placeKey = '';
 
   constructor() {
@@ -246,6 +248,10 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         const px = e.clientX - rect.left, py = e.clientY - rect.top;
         const n = this.Node;
         if (PointInRect(px, py, { X: n.X, Y: n.Y, Width: n.Width, Height: n.Height })) return;
+        // Lane CC1, item 5: the watched rect trails each placement by a frame or more, so a row picked while
+        // the panel grows in is judged against the box its rows are laid out in (`PopoverTargetRect`) too.
+        const p = this._placement();
+        if (p && PointInRect(px, py, PopoverTargetRect(p, this._width(), this._placedHeight))) return;
         // The toggle bug (LaneM.md): a press on the ANCHOR — the button that opened this popover —
         // used to read as "outside" (the anchor lives outside the panel's own Node), so this fired
         // close() on pointerdown, and the anchor's own click handler reopened it right after on the
@@ -354,6 +360,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
       Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls,
     });
     this._prevDown = placement.Down;
+    this._placedHeight = h;
     this._capped.set(scrolls);
     this._placement.set(placement);
     if (this.HoldOnOpen()) this.HoldPlacement();

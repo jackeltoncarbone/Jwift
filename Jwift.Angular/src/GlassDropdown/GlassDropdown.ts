@@ -155,6 +155,9 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
         const n = this.Node;
         if (px >= n.X && px < n.X + n.Width && py >= n.Y && py < n.Y + n.Height) return;
       }
+      // Drill Sentences lane CC1, item 5: the open grows the panel's box for 280ms around rows already at
+      // their final places, so a row picked mid open is a press on the menu, not outside it.
+      if (this._rowIndicator.HasRowAt(e.clientX, e.clientY)) return;
       this.Close();
     };
     const onKey = (e: KeyboardEvent) => {

@@ -70,6 +70,16 @@ export interface PopoverPlacement {
   readonly OriginY: number;
 }
 
+/** The box an open panel's rows are laid out in: its placement, at its own width, as tall as its content up
+ *  to its cap. Drill Sentences lane CC1, item 5 (a blind phone tester): a row picked while the panel was still
+ *  growing in only closed it. The rows hit test at this box from the first frame (the grow is a visual scale),
+ *  but the outside press read the panel's own watched rect, which arrives from the worker a frame or more
+ *  after each placement and so still stood where the panel was before it was placed. A press inside this
+ *  box is a press on the panel. */
+export function PopoverTargetRect(p: PopoverPlacement, width: number, naturalHeight: number): PopoverRect {
+  return { X: p.X, Y: p.Y, Width: width, Height: Math.min(p.MaxHeight, naturalHeight) };
+}
+
 /** The arrow's own height — how far the panel stands off the anchor on the side it opens. */
 const ARROW_HEIGHT = 12;
 /** Popover.jss's own `Padding: 10pt` around the content, on every side (the sheet outlet a popover is
@@ -153,8 +163,13 @@ export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
  *  Drill Sentences lane BB2, item 2: the anchor itself may reflow under a held panel (a count wheel's taps
  *  rewrite the sentence it points at, and the sentence wraps one line shorter or longer). The top rides the
  *  anchor's TOP, which a reflow inside the anchor never moves and a scroll does, so the panel holds still
- *  through the one and follows the other. Only an anchor grown down into a downward panel pushes it, as far
- *  as it must and no further. */
+ *  through the one and follows the other.
+ *
+ *  Drill Sentences lane CC1, item 1 (blind testers, phone and desktop): an anchor grown down into a downward
+ *  panel used to push it, "only as far as needed". The first − of a count wheel wrote a filler that wrapped
+ *  the sentence onto a new line, the push moved the wheel 8 to 20pt, and the next − landed beside it. Like an
+ *  iOS popover, a held panel never moves for its anchor's own reflow: a sentence that grows under it is
+ *  covered, and only a scroll (the anchor's top moving) moves it. */
 function holdPopover(input: PopoverPlacementInput, hold: PopoverHold): PopoverPlacement {
   const { Anchor: a, Region: r, W, H } = input;
   const aTop = a.Y;
@@ -166,7 +181,7 @@ function holdPopover(input: PopoverPlacementInput, hold: PopoverHold): PopoverPl
   let y: number;
   let room: number;
   if (down) {
-    y = Math.max(aTop + hold.TopFromAnchor, aBottom + ARROW_HEIGHT, r.Y);
+    y = Math.max(aTop + hold.TopFromAnchor, r.Y);
     room = Math.max(MIN_HEIGHT, regionBottom - y);
   } else {
     const floor = aTop - ARROW_HEIGHT;
@@ -177,8 +192,9 @@ function holdPopover(input: PopoverPlacementInput, hold: PopoverHold): PopoverPl
   const anchorShown = down
     ? (aBottom >= r.Y - 2 && aBottom <= regionBottom)
     : (aTop <= regionBottom + 2 && aTop >= r.Y);
-  // The arrow shows only while the panel still stands one arrow off the anchor.
-  const reachesArrow = down ? y <= aBottom + ARROW_HEIGHT + 0.5 : H >= room - 0.5;
+  // The arrow shows only while the panel still stands one arrow off the anchor: not over a sentence grown
+  // under it, nor short of one that shrank away from it.
+  const reachesArrow = down ? Math.abs(y - (aBottom + ARROW_HEIGHT)) <= 0.5 : H >= room - 0.5;
   return {
     X: x,
     Y: y,

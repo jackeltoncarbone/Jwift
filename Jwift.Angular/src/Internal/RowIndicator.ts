@@ -72,6 +72,21 @@ export class RowIndicator {
     return null;
   }
 
+  /** Whether a press at this client point lands on one of the menu's rows, a disabled one included. Drill
+   *  Sentences lane CC1, item 5 (a blind phone tester): the rows stand at their final places from the first
+   *  frame of an open while the panel's own box still grows around them, so a row picked mid open read as
+   *  a press outside the panel and only closed it. The owner asks this before it calls a press outside. */
+  HasRowAt(clientX: number, clientY: number): boolean {
+    const canvas = this._canvas()?.Canvas;
+    if (!canvas) return false;
+    const [x, y] = canvas.ClientToNodePoint(clientX, clientY);
+    for (const row of this._rows) {
+      const n = row.Node;
+      if (n.Width > 0 && n.Height > 0 && x >= n.X && x < n.X + n.Width && y >= n.Y && y < n.Y + n.Height) return true;
+    }
+    return false;
+  }
+
   /** The indicator's box, relative to the owner, from the CURRENT geometry of both. `null` while the
    *  owner has not resolved yet (nothing to be relative to). */
   private _indicatorBoxFor(row: RowIndicatorRow): RowIndicatorBox | null {

@@ -161,3 +161,19 @@ describe('RowIndicator release clears touch hover, not mouse hover (round 14)', 
     unbind();
   });
 });
+
+// Drill Sentences lane CC1, item 5 (a blind phone tester): a row picked while its menu was still growing in
+// only closed the menu. The rows stand at their final places from the first frame while the panel's own box
+// grows around them, so the owner asks the rows, not just its own box, before it calls a press outside.
+describe('RowIndicator.HasRowAt: a press on a row of a menu still growing in', () => {
+  it('is on a row wherever the row stands, a disabled one included, and nowhere else', () => {
+    const first = handle(10, 50, 200, 44);
+    const last = handle(10, 230, 200, 44);
+    const off = handle(10, 274, 200, 44);
+    const { ri } = makeIndicator(new Map([[row(first), first], [row(last), last], [row(off, true), off]]));
+    expect(ri.HasRowAt(100, 250)).toBe(true); // the last row, below where the growing box ends.
+    expect(ri.HasRowAt(100, 290)).toBe(true); // a disabled row is still the menu's.
+    expect(ri.HasRowAt(100, 150)).toBe(false); // between rows there is no row.
+    expect(ri.HasRowAt(400, 250)).toBe(false);
+  });
+});
