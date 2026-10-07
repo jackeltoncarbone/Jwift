@@ -265,3 +265,38 @@ describe('PlacePopover opens beside the column its word sits in, clear of the se
     expect(scrolled.Y).toBe(p.Y - 40);
   });
 });
+
+// Drill Sentences lane GG2, item 4 (a round 11 blind desktop tester: the count wheel, opened beside the panel,
+// covered 3a, the squad its sentence names).
+describe('PlacePopover beside its column keeps clear of what it is told to avoid', () => {
+  const desktop: PopoverRect = { X: 8, Y: 8, Width: 1424, Height: 884 };
+  const column = 448;
+  const word: PopoverRect = { X: 40, Y: 400, Width: 70, Height: 22 };
+  const wheel = { Anchor: word, Region: desktop, W: 250, H: 200, PrevDown: null, Beside: column, Scrolls: false };
+  const covers = (p: { X: number; Y: number; MaxHeight: number }, r: PopoverRect): boolean =>
+    p.X < r.X + r.Width && r.X < p.X + 250 && p.Y < r.Y + r.Height && r.Y < p.Y + p.MaxHeight;
+
+  it('a squad just below the word: the panel rises over the column, its arrow still on the word', () => {
+    const squad: PopoverRect = { X: 470, Y: 470, Width: 60, Height: 30 };
+    expect(covers(PlacePopover(wheel), squad)).toBe(true);
+    const p = PlacePopover({ ...wheel, Avoid: [squad] });
+    expect(p.Side).toBe(true);
+    expect(covers(p, squad)).toBe(false);
+    expect(p.Y + p.MaxHeight).toBeLessThanOrEqual(squad.Y);
+    expect(p.ArrowY).toBeCloseTo(word.Y + word.Height / 2, 5);
+    expect(p.ArrowVisible).toBe(true);
+  });
+
+  it('a squad above the word: the panel keeps hanging down from it, the side away from the squad', () => {
+    const squad: PopoverRect = { X: 470, Y: 300, Width: 60, Height: 40 };
+    const p = PlacePopover({ ...wheel, Avoid: [squad] });
+    expect(covers(p, squad)).toBe(false);
+    expect(p).toEqual(PlacePopover(wheel));
+  });
+
+  it('nothing to avoid, or nothing in the way: the panel stands level with the word, as ever', () => {
+    const plain = PlacePopover(wheel);
+    expect(PlacePopover({ ...wheel, Avoid: [] })).toEqual(plain);
+    expect(PlacePopover({ ...wheel, Avoid: [{ X: 1000, Y: 100, Width: 40, Height: 40 }] })).toEqual(plain);
+  });
+});

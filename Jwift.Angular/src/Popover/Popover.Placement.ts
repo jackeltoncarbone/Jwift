@@ -40,6 +40,13 @@ export interface PopoverPlacementInput {
    * the word, whenever the whole panel fits to its right; else it places above or below as ever.
    */
   readonly Beside?: number | null;
+  /**
+   * What a panel opened beside its column keeps clear of where it can, or absent. Drill Sentences lane GG2,
+   * item 4 (a round 11 blind desktop tester: the count wheel opened over 3a, the squad its sentence names):
+   * the panel slides up or down its column, its arrow still on the word, to the place that covers least of
+   * these, the side away from them first.
+   */
+  readonly Avoid?: readonly PopoverRect[];
 }
 
 /**
@@ -184,7 +191,41 @@ function placeBeside(input: PopoverPlacementInput, column: number): PopoverPlace
   // Its top as far above the word's middle as the arrow stays clear of the panel's corner, so its first row
   // stands level with the word and the arrow meets the word's middle.
   const y = Clamp(a.Y + a.Height / 2 - ARROW_MARGIN, r.Y, r.Y + r.Height - h);
-  return besideAt(input, x, y, h);
+  return besideAt(input, x, clearOf(input, x, y, h), h);
+}
+
+/** How much of `avoid` a panel at `x`, `y`, `w` by `h` covers, in px squared. */
+function coverOf(avoid: readonly PopoverRect[], x: number, y: number, w: number, h: number): number {
+  let area = 0;
+  for (const r of avoid) {
+    const dx = Math.min(x + w, r.X + r.Width) - Math.max(x, r.X);
+    const dy = Math.min(y + h, r.Y + r.Height) - Math.max(y, r.Y);
+    if (dx > 0 && dy > 0) area += dx * dy;
+  }
+  return area;
+}
+
+/** The top a beside panel takes to keep clear of `Avoid` (lane GG2, item 4): `y` when that covers none of it,
+ *  else, of every top that still keeps the arrow on the anchor's middle and the panel in the region, the one
+ *  covering least, the nearest to `y` on a tie. */
+function clearOf(input: PopoverPlacementInput, x: number, y: number, h: number): number {
+  const avoid = input.Avoid ?? [];
+  if (!avoid.length || coverOf(avoid, x, y, input.W, h) === 0) return y;
+  const { Anchor: a, Region: r } = input;
+  const middle = a.Y + a.Height / 2;
+  const reach = h > 2 * ARROW_MARGIN ? ARROW_MARGIN : h / 2;
+  const lo = Math.max(r.Y, middle - h + reach);
+  const hi = Math.min(r.Y + r.Height - h, middle - reach);
+  if (!(hi > lo)) return y;
+  let best = y;
+  let bestCover = coverOf(avoid, x, y, input.W, h);
+  const steps = Math.ceil((hi - lo) / 4);
+  for (let i = 0; i <= steps; i++) {
+    const top = lo + ((hi - lo) * i) / steps;
+    const cover = coverOf(avoid, x, top, input.W, h);
+    if (cover < bestCover || (cover === bestCover && Math.abs(top - y) < Math.abs(best - y))) { best = top; bestCover = cover; }
+  }
+  return best;
 }
 
 /** A beside panel at `x`, `y`, `h` tall, with its arrow at the anchor's middle. */

@@ -106,6 +106,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   /** The right edge of the column the anchor sits in, canvas px, to open beside it rather than over the
    *  column's other rows (`PopoverPlacementInput.Beside`, Drill Sentences lane EE2, item 4), or null. */
   readonly Beside = input<number | null>(null);
+  /** What a panel opened `Beside` its column keeps clear of where it can, canvas px (`PopoverPlacementInput.Avoid`,
+   *  Drill Sentences lane GG2, item 4: the squads a count wheel's sentence names). */
+  readonly Avoid = input<readonly PopoverRect[]>([]);
 
   private readonly _jss = inject(JSS_REGISTRY);
   private readonly _canvasRef = inject(Jaui, { optional: true });
@@ -366,11 +369,13 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const h = this._naturalHeight(scrolls);
     const w = this._width();
     const beside = this.Beside();
-    const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}|${scrolls}|${beside}`;
+    const avoid = this.Avoid();
+    const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}|${scrolls}|${beside}`
+      + `|${avoid.map((r) => `${r.X},${r.Y},${r.Width},${r.Height}`).join(';')}`;
     if (key === this._placeKey) return;
     this._placeKey = key;
     const placement = PlacePopover({
-      Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls, Beside: beside,
+      Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls, Beside: beside, Avoid: avoid,
     });
     // The first placement moves the whole subtree off the spot its first layout put it; it lands there.
     if (placed === null) this._openSnap.Hold(this.Node);
