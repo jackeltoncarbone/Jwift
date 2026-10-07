@@ -49,6 +49,9 @@ export interface ActionGroup {
    *  `Pages['warnings']`. Declaring this makes the pill expandable; omit it for
    *  a plain cell-row pill that only emits `ActionClick`. */
   Pages?: Record<string, readonly GlassAction[]>;
+  /** The group's dropdown opens under its pill, the bar left in view above it, rather than over the pill
+   *  (`GlassDropdown.openBelow`). For a list read against the toolbar, like a page's problems. */
+  OpenBelow?: boolean;
 }
 
 /**
@@ -86,7 +89,8 @@ export interface ActionGroup {
           <jiv class="Jwift_GlassActionBarSlot" [childLayout]="_PillSlot(gp.Cells.length)">
           <glass-dropdown #gd
             [defaultPage]="_GroupDefaultPage(gp.Group)"
-            [canOpen]="_GroupCanOpen(gp.Group)">
+            [canOpen]="_GroupCanOpen(gp.Group)"
+            [openBelow]="!!gp.Group.OpenBelow">
             @if (!gd.IsOpen()) {
               @for (a of gp.Cells; track a.Id) {
                 @if (a.Spinner) {

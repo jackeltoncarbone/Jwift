@@ -237,6 +237,12 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   @Transition RimStrength { Duration: 140ms }
 }
 
+// The panel opened under its pill rather than over it (`GlassDropdown.openBelow`): the closed pill's 48pt and
+// the 6pt gap a tip keeps below the bar (`Jwift_GlassActionTip`), so the bar that opened it stays in view.
+Jwift_GlassDropdown_OpenBelow {
+  Top: 54pt
+}
+
 // AN OPEN MENU DOES NOT REACT TO THE POINTER. ITS ROWS DO.
 //
 // Jack has now said this three times, each time closer to the principle. First: "just from hovering

@@ -85,17 +85,21 @@ Jwift_GlassActionBadgeText {
 // (Drill Sentences lane AA1, item 5: "an empty tooltip box"). Opacity multiplies down the tree, so with all
 // three fading by their own presence the words ran two steps behind the box, an empty pill on the way in
 // and out.
+//
+// Drill Sentences lane CC2, item 4 (a blind tester read "Cast: your band's members and"): a tip one line
+// tall cut its words off at the box's width. The pill now takes the box's width at most and its words wrap
+// to a second line inside it, centred, the pill growing to fit them.
 Jwift_GlassActionTip {
   Position: Placed
-  Height: 28pt
   Direction: Row
   Justify: Center
-  Align: Center
+  Align: Start
   PointerEvents: None
 }
 Jwift_GlassActionTipPill {
-  Height: 26pt
-  Padding: 0pt 10pt
+  MinHeight: 26pt
+  MaxWidth: 100%
+  Padding: 5pt 10pt
   BorderRadius: 8pt
   Direction: Row
   Align: Center
@@ -111,7 +115,11 @@ Jwift_GlassActionTipText {
   FontFamily: Inter
   FontSize: 12pt
   FontWeight: 500
+  LineHeight: 1.3
   Color: @Ink
-  MaxLines: 1
+  TextAlign: Center
+  MaxLines: 2
+  FlexShrink: 1
+  MinWidth: 0
   Opacity: 1
 }

@@ -117,5 +117,6 @@
   "eye": { "Pack": "Framework7", "Glyph": "eye" },
   "mappin": { "Pack": "Framework7", "Glyph": "map_pin" },
   "text.bubble": { "Pack": "Framework7", "Glyph": "text_bubble" },
-  "text.bubble.fill": { "Pack": "Framework7", "Glyph": "text_bubble_fill" }
+  "text.bubble.fill": { "Pack": "Framework7", "Glyph": "text_bubble_fill" },
+  "shift": { "Pack": "Framework7", "Glyph": "shift" }
 }

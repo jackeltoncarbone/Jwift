@@ -88,6 +88,13 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
    *  avatar-only sink so the avatar can fill the glass. */
   readonly closedVariant = input<string | null>(null);
 
+  /** Open the panel under the closed pill instead of over it (Drill Sentences lane CC2, item 4: a blind tester
+   *  saw the problems list open on top of the very toolbar icons that opened it). The panel's top then sits
+   *  one tip gap below the pill (`Jwift_GlassDropdown_OpenBelow`), so the bar stays in view above the list.
+   *  `_fitToRoom` measures the panel's real top each frame of the open, so the room it caps to is the room
+   *  below the bar. */
+  readonly openBelow = input<boolean>(false);
+
   /** Drive the panel open or closed from outside, as the ordinary Angular input/output pair so
    *  `[(open)]` binds. **`null` is UNCONTROLLED and is the default**, which is every consumer that
    *  exists today: the host click owns the state and this pair does nothing at all.
@@ -110,7 +117,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('GlassDropdown', GlassDropdownJss, 'Jwift_GlassDropdown_Closed', () => {
-      if (this._open()) return 'Jwift_GlassDropdown_Open';
+      if (this._open()) return this.openBelow() ? 'Jwift_GlassDropdown_Open Jwift_GlassDropdown_OpenBelow' : 'Jwift_GlassDropdown_Open';
       const extra = this.closedVariant();
       return extra ? `Jwift_GlassDropdown_Closed ${extra}` : 'Jwift_GlassDropdown_Closed';
     });

@@ -37,13 +37,15 @@ export interface PopoverMenuItem {
   readonly Danger?: boolean;
   /** This pick does not close the owning popover. */
   readonly Keep?: boolean;
+  /** The rows a pick pushes as a page of their own. Read live while that page shows, so a submenu whose
+   *  rows read a signal (a multi-select list checking its rows as they are picked) redraws as it changes. */
   readonly Submenu?: () => readonly PopoverMenuItem[];
   readonly SubmenuTitle?: string;
   readonly OnPick?: () => void;
 }
 
 interface _Page {
-  readonly Items: readonly PopoverMenuItem[];
+  readonly Items: () => readonly PopoverMenuItem[];
   readonly Title: string | null;
 }
 
@@ -120,15 +122,18 @@ export class PopoverMenuRow implements OnInit, OnDestroy, RowIndicatorRow {
            instead of it -- belt and suspenders, since a future row added above it here would reopen the
            same bug otherwise). -->
       <jiv #indicator [class]="_IndicatorClass()" [childLayout]="_IndicatorLayout()" />
+      <!-- Drill Sentences lane CC2, item 5 (a blind tester: the Hold submenu had a back chevron and no title):
+           a pushed page is titled with the name of the row that opened it, beside the chevron that goes
+           back, the way an iOS menu titles its submenus. -->
       @if (!_atRoot()) {
-        <jiv class="Jwift_PopoverMenuBack" semantics="Button" [label]="_parentTitle() ?? ''" (click)="Back()">
+        <jiv class="Jwift_PopoverMenuBack" semantics="Button" [label]="_page().Title ?? ''" (click)="Back()">
           <icon class="Jwift_PopoverMenuBackGlyph" Name="chevron.left" />
-          <jext class="Jwift_PopoverMenuBackLabel" [text]="_parentTitle() ?? ''" />
+          <jext class="Jwift_PopoverMenuBackLabel" [text]="_page().Title ?? ''" />
         </jiv>
       } @else if (Title()) {
         <jext class="Jwift_PopoverMenuHeader" [text]="Title() ?? ''" />
       }
-      @for (item of _page().Items; track item.Key ?? $index) {
+      @for (item of _items(); track item.Key ?? $index) {
         @switch (item.Kind) {
           @case ('Header') {
             <jext class="Jwift_PopoverMenuHeader" [text]="item.Label ?? ''" />
@@ -209,7 +214,7 @@ export class PopoverMenu implements OnInit, OnDestroy {
     if (!this._scrollToCheckedPending()) return;
     const rows = this._rows();
     const body = this._scrollBody();
-    const items = this._page().Items.filter((i) => i.Kind === 'Item');
+    const items = this._items().filter((i) => i.Kind === 'Item');
     if (!body || rows.length === 0 || rows.length !== items.length) return; // not fully settled yet.
     this._scrollToCheckedPending.set(false);
     const idx = items.findIndex((i) => i.Checked);
@@ -229,15 +234,10 @@ export class PopoverMenu implements OnInit, OnDestroy {
   protected readonly _atRoot = computed(() => this._pushed().length === 0);
   protected readonly _page = computed<_Page>(() => {
     const pushed = this._pushed();
-    return pushed.length > 0 ? pushed[pushed.length - 1] : { Items: this.Items(), Title: this.Title() };
+    return pushed.length > 0 ? pushed[pushed.length - 1] : { Items: () => this.Items(), Title: this.Title() };
   });
-  /** The title of the page a Back row returns to. */
-  protected readonly _parentTitle = computed(() => {
-    const pushed = this._pushed();
-    if (pushed.length === 0) return null;
-    const parent = pushed.length > 1 ? pushed[pushed.length - 2] : { Items: this.Items(), Title: this.Title() };
-    return parent.Title;
-  });
+  /** The rows the page shows, read live (`PopoverMenuItem.Submenu`). */
+  protected readonly _items = computed(() => this._page().Items());
 
   // ── Sized to its widest row (Drill Sentences lane Y3, item 5) ─────────────────────────────────────
   // A fixed 250pt panel cut "Move with other squads…" down to "Move with other". The page's own rows are
@@ -246,9 +246,8 @@ export class PopoverMenu implements OnInit, OnDestroy {
   // (`ContentWidth`), which grows to fit up to its `MaxWidth`; past that, the labels wrap
   // (`Jwift_PopoverMenuLabel` has no line cap). Measured per page, so a pushed submenu fits its own rows.
   private readonly _contentWidth = computed(() => {
-    const page = this._page();
     let widest = 0;
-    for (const item of page.Items) {
+    for (const item of this._items()) {
       if (item.Kind === 'Header') widest = Math.max(widest, MENU_ROW_PAD * 2 + _measure(item.Label ?? '', 13, 500));
       if (item.Kind !== 'Item') continue;
       const label = Math.max(_measure(item.Label ?? '', 17, 400), _measure(item.Caption ?? '', 13, 400));
@@ -256,8 +255,7 @@ export class PopoverMenu implements OnInit, OnDestroy {
       const chevron = item.Submenu ? MENU_ROW_GAP + MENU_CHEVRON : 0;
       widest = Math.max(widest, MENU_ROW_PAD * 2 + MENU_CHECK + MENU_ROW_GAP + label + detail + chevron);
     }
-    const back = this._parentTitle();
-    if (!this._atRoot()) widest = Math.max(widest, MENU_ROW_PAD * 2 + MENU_CHEVRON + MENU_ROW_GAP + _measure(back ?? '', 17, 600));
+    if (!this._atRoot()) widest = Math.max(widest, MENU_ROW_PAD * 2 + MENU_CHEVRON + MENU_ROW_GAP + _measure(this._page().Title ?? '', 17, 600));
     return widest > 0 ? Math.ceil(widest + MENU_PANEL_PAD * 2 + MENU_MEASURE_SLACK) : null;
   });
   private readonly _publishWidth = effect(() => {
@@ -287,7 +285,7 @@ export class PopoverMenu implements OnInit, OnDestroy {
     this._popover?.ContentWidth.set(null);
   }
 
-  PushPage(items: readonly PopoverMenuItem[], title: string | null): void {
+  PushPage(items: () => readonly PopoverMenuItem[], title: string | null): void {
     this._popover?.HoldPlacement(); // lane Y3, item 6: the panel stays put while the page changes.
     this._pushed.update((s) => [...s, { Items: items, Title: title }]);
     // Round 14, live ("a menu reopened fresh sometimes sticks on its first item"): the OLD page's rows
@@ -320,7 +318,7 @@ export class PopoverMenu implements OnInit, OnDestroy {
   protected _pick(item: PopoverMenuItem): void {
     if (item.Disabled) return;
     if (item.Submenu) {
-      this.PushPage(item.Submenu(), item.SubmenuTitle ?? item.Label ?? null);
+      this.PushPage(item.Submenu, item.SubmenuTitle ?? item.Label ?? null);
       return;
     }
     item.OnPick?.();
