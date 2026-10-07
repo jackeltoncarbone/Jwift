@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PlacePopover, PointInRect, type PopoverRect } from './Popover.Placement';
+import { PlacePopover, PointInRect, PopoverTargetRect, type PopoverRect } from './Popover.Placement';
 
 // Drill Sentences lane AA2, items 1 and 2 (blind first-time testers, phone 402x874 and desktop 1440x900).
 describe('PlacePopover keeps every row on screen and never covers the word it edits', () => {
@@ -89,13 +89,14 @@ describe('a held panel stands still while the sentence it points at reflows (lan
     expect(unheld.X).not.toBe(opened.X);
   });
 
-  it('still rides a scroll of the list, and is pushed only as far as a sentence grown into it needs', () => {
+  it('still rides a scroll of the list, and covers a sentence grown into it rather than move (lane CC1, item 1)', () => {
     const scrolled = PlacePopover({ Anchor: { ...band, Y: band.Y - 40 }, Region: desktop, ...wheel, PrevDown: true, Hold: hold });
     expect(scrolled.Y).toBe(opened.Y - 40);
     const grown: PopoverRect = { ...band, Height: band.Height + 23 };
-    const pushed = PlacePopover({ Anchor: grown, Region: desktop, ...wheel, PrevDown: true, Hold: hold });
-    expect(pushed.Y).toBe(grown.Y + grown.Height + 12);
-    expect(pushed.X).toBe(opened.X);
+    const covered = PlacePopover({ Anchor: grown, Region: desktop, ...wheel, PrevDown: true, Hold: hold });
+    expect(covered).toMatchObject({ X: opened.X, Y: opened.Y });
+    expect(covered.Y).toBeLessThan(grown.Y + grown.Height); // the new line sits under the panel, as on iOS.
+    expect(covered.ArrowVisible).toBe(false); // no arrow pointing into the words it covers.
   });
 
   it('a panel above its sentence holds the same way', () => {
@@ -107,6 +108,69 @@ describe('a held panel stands still while the sentence it points at reflows (lan
       Hold: { Down: false, X: above.X, TopFromAnchor: above.Y - low.Y },
     });
     expect(held).toMatchObject({ Down: false, X: above.X, Y: above.Y });
+  });
+});
+
+// Drill Sentences lane CC1, item 1 (blind testers, phone and desktop): after the first "−", a grey "mark time
+// N" filler wrapped the sentence onto a new line, the held panel was pushed down by that line, and the next
+// "−" taps missed. While a token's control is open its panel stands still on screen; only a scroll moves it.
+describe('four quick − presses on a count wheel whose sentence gains a line (lane CC1, item 1)', () => {
+  const phone: PopoverRect = { X: 8, Y: 67, Width: 386, Height: 765 };
+  /** The wheel's panel, and where its − button sits inside it (the panel's padding, then the stepper). */
+  const wheel = { W: 250, H: 200, Scrolls: false };
+  const minusIn = { X: 10, Y: 150, Width: 44, Height: 44 };
+  /** "march forward 16 counts" as a two-line band, the count on the last line. */
+  const band = (counts: number): PopoverRect => counts === 16
+    ? { X: 150, Y: 300, Width: 70, Height: 46 }
+    // From 15 on, the line ends short and its "mark time N" filler wraps the sentence a line longer; the
+    // count's own word moves a little left on its line, the way a rewrap moves it.
+    : { X: 138, Y: 300, Width: 66, Height: 69 };
+  const minusRect = (p: { X: number; Y: number }): PopoverRect =>
+    ({ X: p.X + minusIn.X, Y: p.Y + minusIn.Y, Width: minusIn.Width, Height: minusIn.Height });
+
+  it('gives 12, the − standing exactly where it was before and after each press', () => {
+    let counts = 16;
+    const opened = PlacePopover({ Anchor: band(counts), Region: phone, ...wheel, PrevDown: null });
+    const hold = { Down: opened.Down, X: opened.X, TopFromAnchor: opened.Y - band(counts).Y };
+    let minus = minusRect(opened);
+    for (let press = 0; press < 4; press++) {
+      // The finger lands on the − where it stands now.
+      const at = { X: minus.X + minus.Width / 2, Y: minus.Y + minus.Height / 2 };
+      expect(PointInRect(at.X, at.Y, minus), `press ${press + 1}`).toBe(true);
+      counts -= 1;
+      const after = PlacePopover({ Anchor: band(counts), Region: phone, ...wheel, PrevDown: opened.Down, Hold: hold });
+      expect(minusRect(after), `press ${press + 1}`).toEqual(minus);
+      minus = minusRect(after);
+    }
+    expect(counts).toBe(12);
+  });
+
+  it('a scroll of the list still carries the panel with its sentence', () => {
+    const opened = PlacePopover({ Anchor: band(16), Region: phone, ...wheel, PrevDown: null });
+    const hold = { Down: opened.Down, X: opened.X, TopFromAnchor: opened.Y - band(16).Y };
+    const scrolled = PlacePopover({ Anchor: { ...band(15), Y: 300 - 30 }, Region: phone, ...wheel, PrevDown: opened.Down, Hold: hold });
+    expect(scrolled.Y).toBe(opened.Y - 30);
+  });
+});
+
+// Drill Sentences lane CC1, item 5 (a blind phone tester): a row picked while the phrase menu was still
+// growing in only closed the menu. The rows are laid out at the panel's placement from its first frame; the
+// panel's own watched rect trails it, so the outside press is judged against the placement's box too.
+describe('PopoverTargetRect: where an opening panel\'s rows are', () => {
+  it('is the placement at the panel\'s width, as tall as its content up to its cap', () => {
+    const anchor: PopoverRect = { X: 100, Y: 400, Width: 120, Height: 44 };
+    const region: PopoverRect = { X: 8, Y: 67, Width: 386, Height: 765 };
+    const p = PlacePopover({ Anchor: anchor, Region: region, W: 250, H: 220, PrevDown: null });
+    const target = PopoverTargetRect(p, 250, 220);
+    expect(target).toEqual({ X: p.X, Y: p.Y, Width: 250, Height: 220 });
+    // A row near the menu's bottom, picked mid grow: inside the target, whatever the trailing rect says.
+    const stale: PopoverRect = { X: 0, Y: 0, Width: 250, Height: 110 };
+    const row = { X: p.X + 125, Y: p.Y + 200 };
+    expect(PointInRect(row.X, row.Y, stale)).toBe(false);
+    expect(PointInRect(row.X, row.Y, target)).toBe(true);
+    // A capped menu's box ends at its cap.
+    const capped = PlacePopover({ Anchor: anchor, Region: region, W: 250, H: 2000, PrevDown: null });
+    expect(PopoverTargetRect(capped, 250, 2000).Height).toBe(capped.MaxHeight);
   });
 });
 
