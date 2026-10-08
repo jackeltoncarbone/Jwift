@@ -207,7 +207,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private _roomWait: { readonly Since: number; StillSince: number; At: string } | null = null;
 
   /** Whether this frame's placement waits for the room the host is making. */
-  private _waitForRoom(anchor: PopoverRect, region: PopoverRect, h: number): boolean {
+  private _waitForRoom(anchor: PopoverRect, region: PopoverRect, h: number, over: boolean): boolean {
     const maker = this.MakeRoom();
     if (!maker) return false;
     const now = performance.now();
@@ -215,7 +215,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (this._placement() === null && !this._roomAsked) {
       this._roomAsked = true;
       this._roomHeight = h;
-      const short = ShortfallBelow(anchor, region, h);
+      const short = ShortfallBelow(anchor, region, h, over);
       if (short > 0.5 && maker(short, anchor)) {
         this._roomWait = { Since: now, StillSince: now, At: at };
       }
@@ -230,7 +230,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (wait.At !== at) { wait.At = at; wait.StillSince = now; }
     // Placed only once it fits below the word where the word has come to rest (`RoomWaitStep`), never on a word that
     // paused before the room was made.
-    const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });
+    const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h, over), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });
     if (step === 'Wait') return true;
     this._roomWait = null;
     return false;
@@ -272,8 +272,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private _growing: { readonly End: { readonly X: number; readonly Y: number; readonly Width: number }; Frames: number } | null = null;
   /** Set as it leaves, so the leaving apply wears the close (`Jwift_Popover_Closing`). */
   private _closing = false;
-  /** The source control this panel hid as it opened (`Source`), drawn again as it closes. */
-  private _hiddenSource: JivHandle | null = null;
+  /** The source control and everything drawn in it that this panel hid as it opened (`Source`), drawn again as it
+   *  closes; null while nothing is hidden. */
+  private _hiddenSource: JivHandle[] | null = null;
 
   /** Lane DD2, item 1: the content lands on the placement it opens with rather than gliding to it
    *  (`Popover.OpenSnap.ts`), so a control is hit where it is drawn from the first placed frame. */
@@ -386,20 +387,28 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     this._detachOnDestroy(leave);
   }
 
-  /** Hides the source control as the panel's glass takes its place (`Source`). Set before the open's `MorphFrom`, so
-   *  both reach the worker in one batch and the control and the panel are never drawn side by side. */
+  /** Hides the source control, its label and glyph with it, as the panel's glass takes its place (`Source`). Jaui's
+   *  `Visible` hides one node and still draws its children, so each node of the control that is drawn is hidden, and
+   *  only those are drawn again. Set before the open's `MorphFrom`, so both reach the worker in one batch and the
+   *  control and the panel are never drawn side by side. */
   private _hideSource(): void {
-    const node = this.Source()?.Node ?? null;
-    if (!node) return;
-    node.Visible = false;
-    this._hiddenSource = node;
+    const root = this.Source()?.Node ?? null;
+    if (!root) return;
+    const hidden: JivHandle[] = [];
+    const stack = [root];
+    while (stack.length > 0) {
+      const node = stack.pop()!;
+      if (node.Visible) { node.Visible = false; hidden.push(node); }
+      for (const child of node.Children) stack.push(child);
+    }
+    this._hiddenSource = hidden;
   }
 
   /** Draws the source control again under the collapsing glass, unless it went first. */
   private _showSource(): void {
-    const node = this._hiddenSource;
+    const hidden = this._hiddenSource;
     this._hiddenSource = null;
-    if (node?.Parent) node.Visible = true;
+    for (const node of hidden ?? []) if (node.Parent) node.Visible = true;
   }
 
   /** What the glass grows out of: `Origin`, else the anchor. */
@@ -480,11 +489,13 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     return Number.isFinite(v) ? v : 0;
   }
 
-  private _resolveRegion(canvasWidth: number, canvasHeight: number): PopoverRect {
+  /** A menu that is its control's own glass (`Source`) stands over the control, wherever it is, so it covers its own
+   *  toolbar's band (the show's title) rather than keeping below it as a panel opened from elsewhere does. */
+  private _resolveRegion(canvasWidth: number, canvasHeight: number, over: boolean): PopoverRect {
     const custom = this.Region();
     if (custom) return custom;
     const gap = 8;
-    const top = gap + this._envVar('SafeTop') + Math.max(this.TopInset(), this._topBand?.() ?? 0);
+    const top = gap + this._envVar('SafeTop') + Math.max(this.TopInset(), over ? 0 : this._topBand?.() ?? 0);
     const bottom = gap + this._envVar('SafeBottom');
     return {
       X: gap,
@@ -516,11 +527,13 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     // ever shows is already the one it settles on — nothing left to flip out from under a reader's finger.
     if (this._placement() === null && this.Node.Height <= 0) return;
     const rect = el.getBoundingClientRect();
-    const region = this._resolveRegion(rect.width, rect.height);
+    // Lane WW1, item 3: a menu from a glass control covers the control, growing from it (`PlacePopover`'s `Over`).
+    const over = !!this.Source();
+    const region = this._resolveRegion(rect.width, rect.height, over);
     const scrolls = this._scrollers.length > 0;
     const h = this._naturalHeight(scrolls);
     const w = this._width();
-    if (this._waitForRoom(anchor, region, h)) return;
+    if (this._waitForRoom(anchor, region, h, over)) return;
     const beside = this.Beside();
     const avoid = this.Avoid();
     const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}|${scrolls}|${beside}`
@@ -529,6 +542,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     this._placeKey = key;
     const placement = PlacePopover({
       Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls, Beside: beside, Avoid: avoid,
+      Over: over,
     });
     // The first placement moves the whole subtree off the spot its first layout put it; it lands there, unseen, and
     // shows on the next frame (`_stepOpen`).

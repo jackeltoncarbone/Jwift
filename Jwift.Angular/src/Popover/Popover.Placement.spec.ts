@@ -319,7 +319,7 @@ describe('ShortfallBelow: what a panel lacks under its word, for its host to mak
   it('a panel asks before its first placement, waits unseen until it fits below, and asks again for a taller held page', () => {
     const popover = readFileSync(new URL('./Popover.ts', import.meta.url), 'utf-8');
     expect(popover).toContain('if (short > 0.5 && maker(short, anchor)) {');
-    expect(popover).toContain('const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });');
+    expect(popover).toContain('const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h, over), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });');
     expect(popover).toContain('} else if (this._hold?.Down && !this._hold.Side && h > this._roomHeight + 0.5) {');
   });
 });
@@ -354,5 +354,55 @@ describe('RoomWaitStep: a panel that asked for room places below its word once t
 
   it('a host that could not make room: past the wait it places wherever it fits', () => {
     expect(RoomWaitStep({ Shortfall: 240, StillFor: 900, Elapsed: ROOM_WAIT_MS })).toBe('Place');
+  });
+});
+
+/** Drill Sentences lane WW1, item 3 (live, 1440x900: the phrase menu opened above its chip, the chip's spot a hole beside
+ *  it). A menu that is its control's own glass covers the control, its edges on the control's on the sides it grows from. */
+describe('PlacePopover over its control (Over)', () => {
+  const desktop: PopoverRect = { X: 8, Y: 8, Width: 1424, Height: 884 };
+  const contains = (p: { X: number; Y: number; MaxHeight: number }, w: number, r: PopoverRect): boolean =>
+    p.X <= r.X && p.Y <= r.Y && p.X + w >= r.X + r.Width && p.Y + p.MaxHeight >= r.Y + r.Height;
+
+  it('the player chip low on the screen: the bottom left corner on the chip\'s, growing up and right', () => {
+    const chip: PopoverRect = { X: 620, Y: 818, Width: 92, Height: 44 };
+    const p = PlacePopover({ Anchor: chip, Region: desktop, W: 270, H: 286, PrevDown: null, Over: true });
+    expect(p.Down).toBe(false);
+    expect(p.X).toBe(chip.X);
+    expect(p.Y + p.MaxHeight).toBe(chip.Y + chip.Height);
+    expect(contains(p, 270, chip)).toBe(true);
+  });
+
+  it('a "…" high on the screen near its right edge: the top right corner on the button\'s, growing down and left', () => {
+    const more: PopoverRect = { X: 1380, Y: 120, Width: 36, Height: 36 };
+    const p = PlacePopover({ Anchor: more, Region: desktop, W: 250, H: 300, PrevDown: null, Over: true });
+    expect(p.Down).toBe(true);
+    expect(p.Y).toBe(more.Y);
+    expect(p.X + 250).toBe(more.X + more.Width);
+    expect(contains(p, 250, more)).toBe(true);
+  });
+
+  it('stays on screen, capped to the larger room when neither side holds it, still over the control', () => {
+    const mid: PopoverRect = { X: 300, Y: 400, Width: 60, Height: 30 };
+    const p = PlacePopover({ Anchor: mid, Region: desktop, W: 250, H: 1200, PrevDown: null, Over: true });
+    expect(p.Y).toBeGreaterThanOrEqual(desktop.Y);
+    expect(p.Y + p.MaxHeight).toBeLessThanOrEqual(desktop.Y + desktop.Height);
+    expect(contains(p, 250, mid)).toBe(true);
+  });
+
+  it('held through a taller submenu: its side and its leading edge kept, only the growing edge moving', () => {
+    const chip: PopoverRect = { X: 620, Y: 818, Width: 92, Height: 44 };
+    const root = PlacePopover({ Anchor: chip, Region: desktop, W: 270, H: 286, PrevDown: null, Over: true });
+    const hold = { Down: root.Down, X: root.X, TopFromAnchor: root.Y - chip.Y };
+    const sub = PlacePopover({ Anchor: chip, Region: desktop, W: 270, H: 420, PrevDown: root.Down, Hold: hold, Over: true });
+    expect(sub.X).toBe(root.X);
+    expect(sub.Y + sub.MaxHeight).toBe(chip.Y + chip.Height);
+    expect(sub.Y).toBeLessThan(root.Y);
+  });
+
+  it('asks for room under the control\'s own top, not under its bottom', () => {
+    const region: PopoverRect = { X: 8, Y: 70, Width: 386, Height: 754 };
+    const more: PopoverRect = { X: 340, Y: 700, Width: 36, Height: 36 };
+    expect(ShortfallBelow(more, region, 300, true)).toBe(300 - (824 - 700));
   });
 });

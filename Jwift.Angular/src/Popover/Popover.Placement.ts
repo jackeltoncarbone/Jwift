@@ -47,6 +47,11 @@ export interface PopoverPlacementInput {
    * these, the side away from them first.
    */
   readonly Avoid?: readonly PopoverRect[];
+  /**
+   * The panel is its anchor's own glass, grown (`Popover.Source`, Drill Sentences lane WW1, item 3): it covers the
+   * anchor rather than standing off it, its edges on the anchor's edges on the sides it grows from (`placeOver`).
+   */
+  readonly Over?: boolean;
 }
 
 /**
@@ -113,8 +118,10 @@ const Clamp = (v: number, min: number, max: number): number => Math.max(min, Mat
 /** How much more room under `anchor` a panel `h` tall needs than `region` leaves there, px, its gap included: 0 when
  *  it fits below (Drill Sentences lane UU3, item 7: a panel opened in a phone's sheet asks its host for that room first,
  *  `Popover.MakeRoom`, rather than open above the word over the sheet's transport). */
-export function ShortfallBelow(anchor: PopoverRect, region: PopoverRect, h: number): number {
-  return Math.max(0, h - (region.Y + region.Height - (anchor.Y + anchor.Height + ANCHOR_GAP)));
+export function ShortfallBelow(anchor: PopoverRect, region: PopoverRect, h: number, over = false): number {
+  // A panel over its anchor (`Over`) grows down from the anchor's own top.
+  const top = over ? anchor.Y : anchor.Y + anchor.Height + ANCHOR_GAP;
+  return Math.max(0, h - (region.Y + region.Height - top));
 }
 
 /** How long the anchor stands still, fitting, before a panel that asked for room places, ms, and the longest it waits. */
@@ -135,6 +142,7 @@ export function RoomWaitStep(o: { readonly Shortfall: number; readonly StillFor:
 }
 
 export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
+  if (input.Over) return placeOver(input);
   if (input.Hold) return input.Hold.Side ? holdBeside(input, input.Hold) : holdPopover(input, input.Hold);
   const beside = input.Beside === null || input.Beside === undefined ? null : placeBeside(input, input.Beside);
   if (beside) return beside;
@@ -178,6 +186,36 @@ export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
   const y = down
     ? Math.max(aBottom + ANCHOR_GAP, regionTop)
     : Math.min(aTop - ANCHOR_GAP - h, regionBottom - h);
+  return { X: x, Y: y, MaxHeight: h, Down: down };
+}
+
+/**
+ * A MENU THAT IS ITS CONTROL'S GLASS COVERS THE CONTROL (`Over`; Drill Sentences lane WW1, item 3). In iOS 26 a menu
+ * from a button expands out of the button over the spot it stood on: the panel contains the anchor, its edges on the
+ * anchor's edges on the sides it grows from. It grows down from the anchor's top when the whole panel fits below it, up
+ * from the anchor's bottom when it fits above, else toward the larger room, capped; right from the anchor's leading
+ * edge when it fits there, else left from the trailing edge. It stays in the region, its side kept across re-places and
+ * its side and leading edge held while a submenu changes its height (`Hold`), the growing edge alone moving.
+ */
+function placeOver(input: PopoverPlacementInput): PopoverPlacement {
+  const { Anchor: a, Region: r, W, H, PrevDown, Hold: hold } = input;
+  const regionBottom = r.Y + r.Height;
+  const roomDown = regionBottom - a.Y;
+  const roomUp = a.Y + a.Height - r.Y;
+  let down: boolean;
+  if (hold) down = hold.Down;
+  else if (PrevDown === null) down = H <= roomDown || (H > roomUp && roomDown >= roomUp);
+  else {
+    down = PrevDown;
+    const fits = H <= (down ? roomDown : roomUp);
+    const otherFits = H <= (down ? roomUp : roomDown);
+    if (!fits && (otherFits || (down ? roomUp : roomDown) > (down ? roomDown : roomUp))) down = !down;
+  }
+  const scrolls = input.Scrolls ?? true;
+  const h = scrolls ? Math.max(MIN_HEIGHT, Math.min(H, down ? roomDown : roomUp)) : H;
+  const y = Clamp(down ? a.Y : a.Y + a.Height - h, r.Y, regionBottom - h);
+  const leading = a.X + W <= r.X + r.Width ? a.X : a.X + a.Width - W;
+  const x = Clamp(hold ? hold.X : leading, r.X, r.X + r.Width - W);
   return { X: x, Y: y, MaxHeight: h, Down: down };
 }
 
