@@ -165,6 +165,19 @@ JwiftGlass {
   BorderLayer: 10
 }
 
+// NO GLASS ON GLASS (Drill Sentences lane WW1). iOS 26 puts no glass on glass: a control inside a glass container (a
+// "…" in a sheet's row, a button in the player, the selection bar or a menu) is a vibrant fill on that glass, and only a
+// control floating over content (a toolbar group, the recenter button, a field chip) is glass. Jaui answers `InGlass`
+// from the live tree (Jss.Predicate.ts), so every glass control takes the tertiary fill wherever it sits in glass, with
+// its hover and press as the house's lifts (JwiftPress, below), and no rim of its own. Before this a control in a panel
+// read the field through the panel (Jaui's plate, Glass.Plate.ts) and stood in it as a bright hole.
+JwiftGlass:InGlass {
+  Glass: None
+  RimWidth: 0pt
+  RimStrength: 0
+  BackdropFilter: Vibrancy(@JwiftVibrancyTertiaryFill)
+}
+
 // Apple's clear glass: one face for both themes, a lighter blur, a rim all the way round, no shadow.
 JwiftClearGlass : JwiftGlass {
   Glass: Clear
@@ -192,6 +205,14 @@ JwiftPanelGlass : JwiftGlass {
   // Outside every scroll pocket, as UIKit's platter and its sheets are: the frost is the panel's wherever it opens.
   GlassFrost: Automatic
   GlassBlur: @JwiftPanelGlassBlur
+}
+// A panel within a panel (a list's pinned heading) is no control: it is the container's own glass, read from the same
+// plate under every glass, so it reads as the container itself rather than as a second layer.
+JwiftPanelGlass:InGlass {
+  Glass: Regular
+  RimWidth: @JwiftRimWidth
+  RimStrength: @JwiftRimStrength
+  BackdropFilter: Vibrancy(0)
 }
 
 // ── JwiftSolidGlass ─────────────────────────────────────────────────
@@ -480,6 +501,10 @@ JwiftPressGlass : JwiftPress, JwiftFlex {
 
 JwiftPressGlass:Active {
   BackdropFilter: None
+}
+// A glass control inside glass is a fill (`JwiftGlass:InGlass`), so its press is the fill's own deeper lift.
+JwiftPressGlass:(InGlass && Active) {
+  BackdropFilter: Vibrancy(@JwiftVibrancyFillPressed)
 }
 
 // ── JwiftWash / JwiftWashStrong / JwiftHoverWash ───────────────────
