@@ -93,6 +93,14 @@ Jwift_PopoverMenuCheckGlyph : JwiftLabelVibrancy {
   FontSize: 16pt
   FontWeight: 700
 }
+// A row's own leading image (`PopoverMenuItem.Icon`), the SAME column the checkmark stands in — never
+// both on one row — in the row's secondary ink, a template glyph beside the label's own weight rather
+// than a second accent.
+Jwift_PopoverMenuItemGlyph : JwiftSecondaryLabelVibrancy {
+  FontFamily: JwiftIcons
+  FontSize: 16pt
+  FontWeight: 500
+}
 
 Jwift_PopoverMenuLabelCol {
   Direction: Column

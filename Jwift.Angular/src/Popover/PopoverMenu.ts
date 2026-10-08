@@ -37,6 +37,10 @@ export interface PopoverMenuItem {
   readonly Danger?: boolean;
   /** This pick does not close the owning popover. */
   readonly Keep?: boolean;
+  /** A leading SF Symbol style glyph (`Icon.Names.json`), in the same column `Checked`'s mark stands in —
+   *  never both on one row. Apple's own menu rule: a menu either leads every row with an image or none of
+   *  them (never some), so a caller sets this on every `Item` in one `Items`/`Submenu` list or on none. */
+  readonly Icon?: string;
   /** The rows a pick pushes as a page of their own. Read live while that page shows, so a submenu whose
    *  rows read a signal (a multi-select list checking its rows as they are picked) redraws as it changes. */
   readonly Submenu?: () => readonly PopoverMenuItem[];
@@ -150,7 +154,11 @@ export class PopoverMenuRow implements OnInit, OnDestroy, RowIndicatorRow {
             <jiv [popoverMenuRow]="!!item.Disabled" [class]="_RowClass(item)"
                  semantics="Button" [label]="_RowLabel(item)" (click)="_pick(item)">
               <jiv class="Jwift_PopoverMenuCheck">
-                @if (item.Checked) { <icon class="Jwift_PopoverMenuCheckGlyph" Name="checkmark" /> }
+                @if (item.Checked) {
+                  <icon class="Jwift_PopoverMenuCheckGlyph" Name="checkmark" />
+                } @else if (item.Icon) {
+                  <icon class="Jwift_PopoverMenuItemGlyph" [Name]="item.Icon" />
+                }
               </jiv>
               <jiv class="Jwift_PopoverMenuLabelCol">
                 <jext class="Jwift_PopoverMenuLabel" [text]="item.Label ?? ''" />
