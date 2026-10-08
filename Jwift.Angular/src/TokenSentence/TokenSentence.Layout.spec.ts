@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FirstGlowTarget, IsTappable, LandPieces, LayoutSentence, PillRectOf, SameWords, TextPieceKeys, type SentencePiece,
-  type SentenceToken,
+  FirstGlowTarget, IsTappable, LandPieces, LayoutSentence, PillRectOf, SameWords, SFProTracking, TextPieceKeys,
+  type SentencePiece, type SentenceToken,
 } from './TokenSentence.Layout';
 
 /**
@@ -470,5 +470,32 @@ describe('LayoutSentence — a narrow word reaches the least across, and no two 
     const laid = LayoutSentence(tokens, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: measure, ShowAdd: true });
     const last = laid.Hits.find((h) => h.TokenIndex === 2)!;
     expect(laid.Add!.Hit.X).toBeGreaterThanOrEqual(last.X + last.Width - 1e-6);
+  });
+});
+
+// Drill Sentences lane YY3b, item 10: SF Pro's own per-size tracking (Apple's HIG Typography table,
+// `Jwift/Apple/HIG.md` section 15) — negative through the body/UI mid-range, positive again at a small
+// caption or a large display size.
+describe('SFProTracking', () => {
+  it('matches every published rung exactly', () => {
+    expect(SFProTracking(11)).toBeCloseTo(0.06, 6);
+    expect(SFProTracking(12)).toBeCloseTo(0, 6);
+    expect(SFProTracking(13)).toBeCloseTo(-0.08, 6);
+    expect(SFProTracking(15)).toBeCloseTo(-0.23, 6);
+    expect(SFProTracking(17)).toBeCloseTo(-0.43, 6);
+    expect(SFProTracking(22)).toBeCloseTo(-0.26, 6);
+    expect(SFProTracking(34)).toBeCloseTo(0.40, 6);
+  });
+
+  it('interpolates piecewise-linearly between two published rungs', () => {
+    // Halfway from 12 (0) to 13 (-0.08).
+    expect(SFProTracking(12.5)).toBeCloseTo(-0.04, 6);
+    // Halfway from 22 (-0.26) to 24 (+0.07): the sign actually crosses here.
+    expect(SFProTracking(23)).toBeCloseTo((-0.26 + 0.07) / 2, 6);
+  });
+
+  it('clamps flat past either published end, never extrapolating the slope', () => {
+    expect(SFProTracking(8)).toBeCloseTo(0.06, 6); // below 11: the smallest rung's own value, not more positive.
+    expect(SFProTracking(60)).toBeCloseTo(0.40, 6); // above 34: the largest rung's own value, not more positive still.
   });
 });

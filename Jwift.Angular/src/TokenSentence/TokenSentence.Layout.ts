@@ -613,6 +613,28 @@ export function PillRectOf(
   return { X: piece.X - leftPad, Y: piece.Y + (lineHeight - height) / 2, Width: piece.Width + leftPad + rightPad, Height: height };
 }
 
+/** SF Pro's own per-size tracking, pt (Drill Sentences lane YY3b, item 10; Apple's HIG Typography page,
+ *  `Jwift/Apple/HIG.md` section 15): negative through the body/UI mid-range, positive again at small
+ *  caption sizes and large display sizes — a single constant letter-spacing visibly mismatches at both
+ *  ends. The published rungs, piecewise-linearly interpolated between the two nearest (clamped flat past
+ *  either end, the usual shape for a measured curve with no stated law between its own samples): 11 +0.06,
+ *  12 0, 13 −0.08, 14 −0.15, 15 −0.23, 16 −0.31, 17 −0.43, 20 −0.45, 22 −0.26, 24 +0.07, 28 +0.38, 34 +0.40. */
+const SF_PRO_TRACKING: readonly (readonly [size: number, tracking: number])[] = [
+  [11, 0.06], [12, 0], [13, -0.08], [14, -0.15], [15, -0.23], [16, -0.31], [17, -0.43],
+  [20, -0.45], [22, -0.26], [24, 0.07], [28, 0.38], [34, 0.40],
+];
+
+export function SFProTracking(fontSizePt: number): number {
+  const table = SF_PRO_TRACKING;
+  if (fontSizePt <= table[0][0]) return table[0][1];
+  if (fontSizePt >= table[table.length - 1][0]) return table[table.length - 1][1];
+  for (let i = 0; i + 1 < table.length; i++) {
+    const [lo, loT] = table[i], [hi, hiT] = table[i + 1];
+    if (fontSizePt >= lo && fontSizePt <= hi) return loT + ((hiT - loT) * (fontSizePt - lo)) / (hi - lo);
+  }
+  return 0; // unreachable — the clamp guards above cover every size outside the table.
+}
+
 /**
  * Drill Sentences U1, item 9 (a gentle first-run hint), live fix: the hint used to glow/anchor the
  * sentence's first TAPPABLE token in document order, which for "Everyone · mark time 16 counts" is the

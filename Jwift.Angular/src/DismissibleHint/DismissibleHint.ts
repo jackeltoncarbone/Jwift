@@ -23,7 +23,13 @@ import DismissibleHintJss from './DismissibleHint.jss';
         <icon class="Jwift_DismissibleHintGlyph" [Name]="glyph()" />
       }
       <jext [class]="LabelClass()" [text]="text()" />
-      <jiv class="Jwift_DismissibleHintDrop" [label]="dismissLabel()" (click)="dismiss.emit()">
+      <!-- Drill Sentences lane YY3b, item 8: tapping this ✕ also reached whatever stood under the hint (the
+           field, the player's own scrub rail — both arm themselves on `pointerdown`, before a `click` ever
+           fires). `click` alone, with nothing stopping the press that precedes it, is exactly the gap
+           `EditorPlayer.ts`'s own `OnDotDown` already closes for every other small glyph drawn over a
+           pointerdown-driven surface: stop the press here too, so a tap on the dismiss is only ever the
+           dismiss's. -->
+      <jiv class="Jwift_DismissibleHintDrop" [label]="dismissLabel()" (pointerdown)="$event.stopPropagation()" (click)="dismiss.emit()">
         <icon class="Jwift_DismissibleHintDropGlyph" Name="xmark" />
       </jiv>
     </jiv>

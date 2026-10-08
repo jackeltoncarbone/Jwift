@@ -9,7 +9,7 @@ Jwift_NumberField {
 }
 
 Jwift_NumberFieldHeader : JwiftSecondaryLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 13pt
   FontWeight: 500
   Padding: 10pt 14pt 4pt 14pt
@@ -47,7 +47,7 @@ Jwift_NumberFieldSegItem_On : Jwift_NumberFieldSegItem {
   ShadowOffsetY: 3pt
 }
 Jwift_NumberFieldSegLabel : JwiftLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 15pt
   FontWeight: 500
   MaxLines: 1
@@ -94,7 +94,7 @@ Jwift_NumberFieldTagCell {
   Align: Center
 }
 Jwift_NumberFieldTag {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 11pt
   FontWeight: 700
   Color: @GoldInk
@@ -103,7 +103,7 @@ Jwift_NumberFieldTag {
   Padding: 2pt 7pt
 }
 Jwift_NumberFieldMain : JwiftLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 22pt
   FontWeight: 500
   TextAlign: Center
@@ -116,7 +116,7 @@ Jwift_NumberFieldSubCell {
   Align: Center
 }
 Jwift_NumberFieldSub : JwiftSecondaryLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 13pt
   FontWeight: 400
 }
@@ -127,7 +127,7 @@ Jwift_NumberFieldSub_Over {
 }
 
 Jwift_NumberFieldFoot : JwiftSecondaryLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 13pt
   FontWeight: 400
   TextAlign: Center

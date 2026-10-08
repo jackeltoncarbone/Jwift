@@ -29,6 +29,7 @@ import {
   LayoutSentence,
   PillRectOf,
   SameWords,
+  SFProTracking,
   TextPieceKeys,
   UnderlineOf,
   type PieceLanding,
@@ -114,6 +115,15 @@ const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
  * 16pt body size (17/16 = 1.0625), which was probably eyeballing the exact same thing.
  */
 const ICON_TOKEN_SCALE = 1490 / 1394;
+
+/** The sentence's own base family stack (Drill Sentences lane YY3b, item 10): San Francisco first on an
+ *  Apple device, Inter everywhere else — `-apple-system`/`BlinkMacSystemFont` ahead of the web font, exactly
+ *  the one shape `ComposeFontFamily`'s own `_GENERIC_FAMILIES` fix (`Text.Measure.ts`) makes possible without
+ *  silently dropping `Inter`. The ONE literal both `_measure` (this thread's pre-layout wrap) and
+ *  `_textPieces` (the piece the engine actually paints) compose from, so the two can never name a different
+ *  stack the way the "1ain" bug's own root cause once let them (this file's own long-standing doc comment,
+ *  just below). */
+const SENTENCE_FONT_STACK = '-apple-system, BlinkMacSystemFont, Inter';
 
 /** A fresh canvas 2D context per page-font generation, mirroring Jinput's `_watchPageFonts`/`_fontGen`
  *  — moved whenever the page may have gained a face, so a word measured before its font landed is
@@ -299,7 +309,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       return this._measureCtx.measureText(glyph).width;
     }
     const size = this.FontSizePt() + _pageFontEpoch() * 1e-4;
-    const base = this.Tabular() ? TabularFamilyStack('Inter, system-ui, sans-serif') : 'Inter, system-ui, sans-serif';
+    const base = this.Tabular() ? TabularFamilyStack(SENTENCE_FONT_STACK) : SENTENCE_FONT_STACK;
     this._measureCtx.font = `${weight} ${size}px ${ComposeFontFamily(base)}`;
     return this._measureCtx.measureText(text).width;
   };
@@ -536,7 +546,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       // (`Icon.ts`'s own `IconData[name.toLowerCase()]`), so this pure-text piece list stays the single
       // place that knows how a sentence token becomes pixels.
       let pieceText = piece.Text;
-      let fontFamily = 'Inter, system-ui, sans-serif';
+      let fontFamily = SENTENCE_FONT_STACK;
       let pieceSize = fs;
       let fontVariantNumeric: 'Normal' | 'TabularNums' = this.Tabular() ? 'TabularNums' : 'Normal';
       if (token.Icon) {
@@ -572,6 +582,11 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
           LineHeight: `${lh / pieceSize}`,
           Color: level ? 'rgb(255, 255, 255)' : ink,
           FontVariantNumeric: fontVariantNumeric,
+          // Drill Sentences lane YY3b, item 10: SF Pro's own per-size tracking (`SFProTracking`,
+          // `TokenSentence.Layout.ts`, Apple's HIG Typography table) -- negative through the body/UI mid
+          // range, positive again at a small caption or a large display size. An icon glyph (`token.Icon`)
+          // carries none: a symbol's own advance is not kerned against a reading of text the way a letter is.
+          LetterSpacing: token.Icon ? '0pt' : `${SFProTracking(pieceSize)}pt`,
           // Jack, live (round 12): a bold atom's own ink can run past its measured advance width right
           // at a wrapped row's own edge -- the whole reason this piece's own box (below) is wider than
           // its content. That overflow room only ever stays invisible, harmless dead space (every
