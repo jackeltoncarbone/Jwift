@@ -96,11 +96,15 @@ Jwift_SheetCard_Inspector : Jwift_SheetCard {
 // AppleConformance.md). The sheet's subvariant drops the outer refraction and the edge bleed's reach and keeps
 // the drop shadow (Apple/Sheets.md) [C].
 Jwift_SheetGlass : JwiftPanelGlass {
+  // A platter floats: Apple's drop shadow and, under it, UIKit's platter shadow (Jaui GlassShadow, Glass.Jss.md) [I].
+  GlassShadow: Platter
   GlassOuterRefraction: None
   GlassBleed: None
 }
 // The form sheet in regular width floats as glass at every size: regular glass, no subvariant [C].
 Jwift_SheetGlass_Form : JwiftPanelGlass {
+  // A platter floats: Apple's drop shadow and, under it, UIKit's platter shadow (Jaui GlassShadow, Glass.Jss.md) [I].
+  GlassShadow: Platter
 }
 // Solid, for the one surface that is deliberately not glass: the inspector column (Pages' and Keynote's own
 // solid trailing pane), never the edge-attached or form sheet card.
@@ -276,6 +280,8 @@ Jwift_SheetGrabber_Hidden : Jwift_SheetGrabber {
 // control that raised it, as a menu under the X: Apple's menu platter, 250 pt wide, 32 pt corners [C], in the one
 // panel material every menu wears.
 Jwift_SheetAsk : JwiftPanelGlass {
+  // A platter floats: Apple's drop shadow and, under it, UIKit's platter shadow (Jaui GlassShadow, Glass.Jss.md) [I].
+  GlassShadow: Platter
   Layer: 4
   Position: Placed
   Top: @JwiftSheetBarInset + 50pt

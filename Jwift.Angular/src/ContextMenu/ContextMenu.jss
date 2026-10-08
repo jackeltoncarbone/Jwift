@@ -27,6 +27,8 @@ Jwift_ContextMenuBackdrop {
 // A menu is the one panel material (JwiftPanelGlass, Jwift.Glass.jss), regular glass as UIKit's platter is (Jwift/Apple/
 // LiquidGlass.md 3.2); its size gives it Apple's edge bleed and colored shadow. Only the panel's own geometry is here.
 Jwift_ContextMenuPanel : JwiftPanelGlass {
+  // A platter floats: Apple's drop shadow and, under it, UIKit's platter shadow (Jaui GlassShadow, Glass.Jss.md) [I].
+  GlassShadow: Platter
   Position: Placed
   Direction: Column
   Justify: Start

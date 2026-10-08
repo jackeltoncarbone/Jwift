@@ -184,6 +184,8 @@ Jwift_GlassDropdownCell_Ellipsis : Jwift_GlassDropdownCell {
 // The open menu is the pill's own glass grown to a menu (the class swap springs its Width and Height, above), worn as
 // the one panel material every menu and panel takes (JwiftPanelGlass, Jwift.Glass.jss; later base wins).
 Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftPanelGlass {
+  // A platter floats: Apple's drop shadow and, under it, UIKit's platter shadow (Jaui GlassShadow, Glass.Jss.md) [I].
+  GlassShadow: Platter
   // A VERY SLIGHT FLEX, HELD RATHER THAN CHASED. Jack: "shouldn't an open dropdown have a very slight
   // flex?" So the panel takes Auto -- which sizes itself into the Large class at a menu's dimensions and
   // calms its own lift and glow accordingly, the mechanism Glass.Jss.md 3a names -- and holds a fraction of

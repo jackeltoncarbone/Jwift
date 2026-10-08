@@ -16,6 +16,8 @@
 // steps one frame however long the frame that drew its start took (Jaui Animation/Step.Span.ts), so a slow renderer
 // shows the growth too.
 Jwift_Popover : JwiftPanelGlass {
+  // A platter floats: Apple's drop shadow and, under it, UIKit's platter shadow (Jaui GlassShadow, Glass.Jss.md) [I].
+  GlassShadow: Platter
   Position: Placed
   // Layer 50: "Ask" (Design/Layers.ts — Jwift cannot import it, so the rung is named here instead).
   Layer: 50
