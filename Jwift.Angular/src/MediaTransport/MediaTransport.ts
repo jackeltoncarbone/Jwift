@@ -73,12 +73,15 @@ export class MediaTransport {
 
   /** Drill Sentences lane KK1, item 2 (a round 15 blind phone tester pressed what they took for Pause three times,
    *  and each press played the phrase again): a player stopped by itself at the end of what it plays, where the
-   *  next press plays that again from its start. Its primary button wears replay's glyph (iOS's
-   *  `arrow.counterclockwise`), never Play's, so an ended player cannot read as one still playing. Ignored while
-   *  `playing`. */
+   *  next press plays that again from its start. Ignored while `playing`.
+   *
+   *  Drill Sentences lane XX3, item 3 (a round 25 blind phone tester took the replay glyph a stopped player wore for
+   *  Pause, 23-paused.png, 24-check.png): Apple's convention, as Music's and Podcasts' players keep it. A stopped player
+   *  shows Play, whatever its press will do, so the button reads stopped at a glance and never as Pause; replay is what
+   *  the press does, named to assistive tech (`replayLabel`), never a glyph of its own. */
   readonly replay = input(false, { transform: booleanAttribute });
   readonly replayLabel = input('Replay');
-  protected readonly PrimaryGlyph = computed(() => (this.playing() ? 'pause.fill' : this.replay() ? 'arrow.counterclockwise' : 'play.fill'));
+  protected readonly PrimaryGlyph = computed(() => (this.playing() ? 'pause.fill' : 'play.fill'));
   protected readonly PrimaryLabel = computed(() => (this.playing() ? this.pauseLabel() : this.replay() ? this.replayLabel() : this.playLabel()));
 
   readonly playPause = output<void>();
