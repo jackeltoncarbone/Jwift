@@ -33,6 +33,9 @@ Jwift_Popover : JwiftPanelGlass {
   @Transition Width { Duration: 350ms }
   @Transition Height { Duration: 350ms }
   @Transition BorderRadius { Duration: 350ms }
+  // Drill Sentences lane XX2, item 4: a panel riding its word up while its room opens (`Popover._ride`) stands under the
+  // word every frame, never easing after it.
+  @Transition VisualTranslate { Duration: 0ms }
 }
 
 // Grown out of its anchor: the glass is there at once, at the anchor's own rect, and only its shape moves.

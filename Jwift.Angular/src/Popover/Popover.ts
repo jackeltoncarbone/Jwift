@@ -129,10 +129,11 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   /**
    * Asked once, before the first placement, when the whole panel does not fit below its anchor: how many px more it
    * needs there (`ShortfallBelow`). The host makes room if it can (scrolls the anchor's list up, raises its sheet) and
-   * answers true; the panel then waits, unseen, until it fits below the anchor and the anchor stands still there, and
-   * places below it (`RoomWaitStep`; past the wait, wherever it fits). Asked again as
+   * answers true; the panel then shows at once below its anchor and rides it up while the room opens, until it fits
+   * there and the anchor stands still (`RoomWaitStep`; past the host's time, wherever it fits). Asked again as
    * a held panel that opened below takes a taller page (a submenu). Drill Sentences lane UU3, item 7 (a round 24 phone
-   * tester's join menu opened above its row with room for two rows, and the count wheel covered the transport).
+   * tester's join menu opened above its row with room for two rows, and the count wheel covered the transport); lane
+   * XX2, item 4 (round 25: the wheel waited unseen for the sheet to rise and settle, about 1.5s).
    */
   readonly MakeRoom = input<((shortfall: number, anchor: PopoverRect) => boolean) | null>(null);
 
@@ -205,9 +206,17 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private _roomHeight = 0;
   /** While the host makes room: when it was asked, and the anchor as it stood since it last moved. */
   private _roomWait: { readonly Since: number; StillSince: number; At: string } | null = null;
+  /** While the room opens (`_makingRoom`, lane XX2, item 4): the anchor the panel was placed below, null otherwise. The
+   *  panel keeps that placement and rides its anchor by a visual translate of itself and everything in it (`_ride`, px),
+   *  so its glass and its rows move with the word as one and its growth from the word runs undisturbed. A placement
+   *  moved every frame would set the glass gliding on its own 350ms ease behind rows snapped to their places. Once the
+   *  room is made the panel lands on its real placement and the translate goes, in one commit (`_place`). */
+  private _rideFrom: PopoverRect | null = null;
+  private readonly _ride = signal<{ readonly X: number; readonly Y: number }>({ X: 0, Y: 0 });
 
-  /** Whether this frame's placement waits for the room the host is making. */
-  private _waitForRoom(anchor: PopoverRect, region: PopoverRect, h: number, over: boolean): boolean {
+  /** Whether the host is still making room under the anchor this frame (`RoomWaitStep`): the panel then stands below its
+   *  anchor, shown and riding it up (`PopoverPlacementInput.MakingRoom`), never unseen (lane XX2, item 4). */
+  private _makingRoom(anchor: PopoverRect, region: PopoverRect, h: number, over: boolean): boolean {
     const maker = this.MakeRoom();
     if (!maker) return false;
     const now = performance.now();
@@ -228,10 +237,10 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const wait = this._roomWait;
     if (!wait) return false;
     if (wait.At !== at) { wait.At = at; wait.StillSince = now; }
-    // Placed only once it fits below the word where the word has come to rest (`RoomWaitStep`), never on a word that
+    // Made only once the panel fits below the word where the word has come to rest (`RoomWaitStep`), never on a word that
     // paused before the room was made.
     const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h, over), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });
-    if (step === 'Wait') return true;
+    if (step === 'Rising') return true;
     this._roomWait = null;
     return false;
   }
@@ -261,8 +270,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   });
 
   // ── The open and the close (Drill Sentences lane WW1, item 3) ────────────────────────────────────────
-  // The panel is unseen until it is placed (and, waiting for room, until it fits: `MakeRoom`). The frame after its
-  // first placement it shows: a menu's glass from the anchor's own rect and corner, springing to its placement
+  // The panel is unseen until it is placed, its height measured (a room still being made under it places it below its
+  // anchor at once: `MakeRoom`). The frame after its first placement it shows: a menu's glass from the anchor's own rect and corner, springing to its placement
   // (`Jwift_Popover_Morph`), a passive tip or a reduced motion reader's in place (`Jwift_Popover_Fade`).
   /** How it opened, or null while it is still unseen. */
   private readonly _shown = signal<GlassMotion | null>(null);
@@ -299,7 +308,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     this._styleLoader.Ensure(this._jss, 'GlassDropdown', GlassDropdownJss);
     effect(() => {
       const p = this._placement();
-      const patch: Record<string, unknown> = { Width: `${this._width()}pt` };
+      // Lane XX2, item 4: the ride and the placement go out together, so the landing moves nothing on screen.
+      const ride = this._ride();
+      const patch: Record<string, unknown> = { Width: `${this._width()}pt`, VisualTranslate: `${ride.X}px ${ride.Y}px` };
       if (p) {
         patch['Top'] = `${p.Y}px`;
         patch['Left'] = `${p.X}px`;
@@ -320,7 +331,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
       const el = this._canvasRef?.Canvas?.Element;
       if (el) {
         const rect = el.getBoundingClientRect();
-        const px = e.clientX - rect.left, py = e.clientY - rect.top;
+        // Lane XX2, item 4: a panel riding its anchor up stands its ride away from its box.
+        const ride = this._ride();
+        const px = e.clientX - rect.left - ride.X, py = e.clientY - rect.top - ride.Y;
         const n = this.Node;
         if (PointInRect(px, py, { X: n.X, Y: n.Y, Width: n.Width, Height: n.Height })) return;
         // Lane CC1, item 5: the watched rect trails each placement by a frame or more, so a row picked while
@@ -336,7 +349,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         // Lane WW1, item 3: a hidden source control takes no press, so a press where it stood is this
         // panel's own close.
         const anchor = this._resolveAnchor();
-        if (anchor && PointInRect(px, py, anchor) && !this._hiddenSource) return;
+        if (anchor && PointInRect(px + ride.X, py + ride.Y, anchor) && !this._hiddenSource) return;
       }
       // Lane BB2, item 3: the press that closes a popover does nothing else, like iOS. It used to reach the
       // canvas too, and a tap meant to close the count picker opened another row's "•••" menu.
@@ -439,7 +452,10 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         this._shown.set('Fade');
         return;
       }
-      const start = GlassMorphStart(origin, this.OriginRadius());
+      // A panel riding its anchor up (`_ride`) grows from where the origin stands within its own placement.
+      const anchor = this._rideFrom ? this._resolveAnchor() : null;
+      const ride = anchor && this._rideFrom ? { X: anchor.X - this._rideFrom.X, Y: anchor.Y - this._rideFrom.Y } : { X: 0, Y: 0 };
+      const start = GlassMorphStart({ ...origin, X: origin.X - ride.X, Y: origin.Y - ride.Y }, this.OriginRadius());
       const end = GlassMorphEnd({ X: p.X, Y: p.Y, Width: this._width(), Height: this._placedHeight }, p.MaxHeight,
         this._jss.VarPoints('JwiftDropdownRadius'));
       this._growing = { End: { X: end.X, Y: end.Y, Width: end.Width }, Frames: 0 };
@@ -533,27 +549,41 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const scrolls = this._scrollers.length > 0;
     const h = this._naturalHeight(scrolls);
     const w = this._width();
-    if (this._waitForRoom(anchor, region, h, over)) return;
+    const making = this._makingRoom(anchor, region, h, over);
+    // Lane XX2, item 4: while the room opens the panel keeps its placement and rides its anchor (`_rideFrom`).
+    if (making && this._rideFrom && placed) {
+      this._ride.set({ X: anchor.X - this._rideFrom.X, Y: anchor.Y - this._rideFrom.Y });
+      return;
+    }
+    const landing = !making && this._rideFrom !== null;
     const beside = this.Beside();
     const avoid = this.Avoid();
     const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}|${scrolls}|${beside}`
-      + `|${avoid.map((r) => `${r.X},${r.Y},${r.Width},${r.Height}`).join(';')}`;
+      + `|${avoid.map((r) => `${r.X},${r.Y},${r.Width},${r.Height}`).join(';')}|${making}`;
     if (key === this._placeKey) return;
     this._placeKey = key;
     const placement = PlacePopover({
       Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls, Beside: beside, Avoid: avoid,
-      Over: over,
+      Over: over, MakingRoom: making,
     });
     // The first placement moves the whole subtree off the spot its first layout put it; it lands there, unseen, and
     // shows on the next frame (`_stepOpen`).
     if (placed === null) {
       this._openSnap.Hold(this.Node);
       this._showPending = true;
+    } else if (landing && (this._ride().X !== 0 || this._ride().Y !== 0)) {
+      // The room is made: the panel lands on its real placement as its ride goes, snapped in the one commit that carries
+      // both, so nothing moves on screen; it and its rows let go once it stands there (`OpenSnap.ReleaseOn`).
+      this._openSnap.Hold(this.Node);
     }
+    this._rideFrom = making ? anchor : null;
+    if (landing) this._ride.set({ X: 0, Y: 0 });
     this._prevDown = placement.Down;
     this._placedHeight = h;
-    this._capped.set(scrolls);
+    // Whole while the room opens under it; capped, for content that scrolls, once it is made.
+    this._capped.set(scrolls && !making);
     this._placement.set(placement);
-    if (this.HoldOnOpen()) this.HoldPlacement();
+    // Held where it lands once the room is made, never where the rising sheet carried it on the way.
+    if (this.HoldOnOpen() && !making) this.HoldPlacement();
   }
 }

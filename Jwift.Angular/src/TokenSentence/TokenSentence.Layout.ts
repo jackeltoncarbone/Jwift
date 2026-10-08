@@ -294,6 +294,50 @@ const _groupWords = (units: readonly Unit[]): Word[] => {
   return words;
 };
 
+/**
+ * ROOM BETWEEN NARROW WORDS FOR THEIR HITS (Drill Sentences lane XX2, item 3; lane WW2 named the one shortfall it left, a
+ * mirrored pair's "3a ⇔ 3b" under a finger: two names and the mark between them, a word space either side, three 28pt
+ * targets in about 60pt). A hit never reaches over a neighbour's ink, so a word narrower than `minHit` takes what it
+ * lacks from the space beside it, half from each side (`LayoutSentence`'s `meet`), all of it from a free end of the
+ * sentence. Where the space between a narrow tappable word and its neighbour is too short for both their halves, it
+ * widens to just that much, and no further; a mirror mark stands evenly between its two names, so the pair still reads
+ * as one name. A pointer's least (20pt) asks nothing of an ordinary word space; a finger's (28pt) widens the spaces
+ * around a mirror mark from a word space to about 9pt.
+ */
+const _roomForHits = (units: readonly Unit[], tokens: readonly SentenceToken[], minHit: number): Unit[] => {
+  if (!(minHit > 0)) return [...units];
+  const out = [...units];
+  const tappableAtom = (u: Unit | undefined): boolean => !!u && u.IsAtom && !u.IsAdd && IsTappable(tokens[u.TokenIndex]?.Kind ?? 'Text');
+  const deficit = (u: Unit): number => (tappableAtom(u) ? Math.max(0, minHit - u.Width) : 0);
+  const visible = out.map((u, i) => ({ U: u, I: i })).filter((v) => !v.U.IsWhitespace);
+  // A word at a free end of the sentence takes its least from that end (`meet`), and asks nothing of the space inside.
+  const first = visible[0]?.I ?? -1;
+  const last = visible.length && !visible[visible.length - 1].U.IsAdd ? visible[visible.length - 1].I : -1;
+  /** The whitespace run between two visible units, and how much of it their hits need. */
+  const runs: { readonly Spaces: number[]; Need: number; readonly Mirror: number | null }[] = [];
+  for (let v = 0; v + 1 < visible.length; v++) {
+    const a = visible[v], b = visible[v + 1];
+    const spaces: number[] = [];
+    for (let i = a.I + 1; i < b.I; i++) spaces.push(i);
+    if (!spaces.length) continue;
+    const need = (a.I === first ? 0 : deficit(a.U) / 2) + (b.I === last ? 0 : deficit(b.U) / 2);
+    const mirror = tokens[a.U.TokenIndex]?.Kind === 'Mirror' ? a.I : tokens[b.U.TokenIndex]?.Kind === 'Mirror' ? b.I : null;
+    runs.push({ Spaces: spaces, Need: need, Mirror: mirror });
+  }
+  // Both sides of a mirror mark take the larger need of the two.
+  for (const run of runs) {
+    if (run.Mirror === null) continue;
+    for (const other of runs) if (other.Mirror === run.Mirror) run.Need = Math.max(run.Need, other.Need);
+  }
+  for (const run of runs) {
+    const width = run.Spaces.reduce((sum, i) => sum + out[i].Width, 0);
+    if (run.Need <= width + 1e-9) continue;
+    const at = run.Spaces[run.Spaces.length - 1];
+    out[at] = { ...out[at], Width: out[at].Width + (run.Need - width) };
+  }
+  return out;
+};
+
 interface Placed { readonly Unit: Unit; readonly X: number; readonly Y: number; readonly Row: number; }
 
 /**
@@ -315,7 +359,7 @@ export function LayoutSentence(
     return { Pieces: [], Hits: [], Fillers: [], PillPads: [], Add: null, Height: 0 };
   }
 
-  const units = _buildUnits(tokens, Measure, ShowAdd);
+  const units = _roomForHits(_buildUnits(tokens, Measure, ShowAdd), tokens, opts.MinHitWidth ?? 0);
   const words = _groupWords(units);
 
   const placed: Placed[] = [];
@@ -434,7 +478,14 @@ export function LayoutSentence(
     pushRowEntry(piece.Row, piece.X, piece.X + piece.Width, kind === 'Mirror', !!kind && IsTappable(kind));
   }
   if (add) pushRowEntry(add.Row, add.X, add.X + add.Width);
-  for (const list of rowEntries.values()) list.sort((a, b) => a.Left - b.Left);
+  // Lane XX2, item 3: a row's first and last entries stand at its free ends, where a narrow word takes its least.
+  const freeStart = new Set<_RowEntry>();
+  const freeEnd = new Set<_RowEntry>();
+  for (const list of rowEntries.values()) {
+    list.sort((a, b) => a.Left - b.Left);
+    freeStart.add(list[0]);
+    freeEnd.add(list[list.length - 1]);
+  }
 
   const FREE_PAD_X = 3; // the hit's own extra pad past the pill, kept on a side with nothing to split against.
   const PILL_PAD_X = 3; // PillRectOf's own default horizontal pad — see below, mirrored here for the free side.
@@ -447,14 +498,15 @@ export function LayoutSentence(
   // couple of points of gap): where two neighbours meet. Each side's edge is the split above; then a tappable entry
   // narrower than `minHit` reaches toward its least about its own center, as far as the neighbour's ink and no further,
   // the neighbour giving way; where both reach, they meet halfway between their wants. One rule for both sides of a gap,
-  // so two hits never overlap.
+  // so two hits never overlap. Lane XX2, item 3: a word at a row's free end takes its least from that end, as `hitOf`
+  // reaches it there, and so wants nothing of the gap inside, which goes to the neighbour that needs it.
   const wantRight = (e: _RowEntry): number => (e.Tappable && e.Right - e.Left < minHit ? (e.Left + e.Right) / 2 + minHit / 2 : -Infinity);
   const wantLeft = (e: _RowEntry): number => (e.Tappable && e.Right - e.Left < minHit ? (e.Left + e.Right) / 2 - minHit / 2 : Infinity);
   const meet = (a: _RowEntry, b: _RowEntry): { readonly ARight: number; readonly BLeft: number } => {
     let aRight = a.Tight ? a.Right : b.Tight ? b.Left : (a.Right + b.Left) / 2;
     let bLeft = b.Tight ? b.Left : a.Tight ? a.Right : (a.Right + b.Left) / 2;
-    const aWant = wantRight(a);
-    const bWant = wantLeft(b);
+    const aWant = freeStart.has(a) ? -Infinity : wantRight(a);
+    const bWant = freeEnd.has(b) ? Infinity : wantLeft(b);
     aRight = Math.max(aRight, Math.min(aWant, b.Left));
     bLeft = Math.min(bLeft, Math.max(bWant, a.Right));
     if (aRight > bLeft) {
