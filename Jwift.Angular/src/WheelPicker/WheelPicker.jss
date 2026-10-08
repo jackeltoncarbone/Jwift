@@ -29,7 +29,7 @@ Jwift_WheelPicker {
 }
 
 // The chosen row's highlight — Apple's UIPickerView / SwiftUI `.wheel` selection band: a rounded-rect
-// fill behind the centered row, full row width inset by the picker's own side margin, never the rows'
+// fill behind the centered row, the wheel's full width, never the rows'
 // own bright glass (Apple/Sizing.md section 12, [I] — no `_UIPickerView` chunk is in the restore read so
 // far, so this is measured off Apple's own wheel captures rather than cited to a decompile). Sits BEHIND
 // the rows (Layer 0) so the centered item reads ON TOP of the band, exactly like iOS; the band itself
@@ -49,8 +49,12 @@ Jwift_WheelPicker {
 Jwift_WheelSelectionBand : JwiftGlass {
   Position: Placed
   Top: 50%
-  Left: 10pt
-  Right: 10pt
+  // An explicit width, never `Left` + `Right`: a Placed box given both collapses to its content width in
+  // the engine (see Jwift_WheelItem below), and the band has no content, so it drew zero wide and was
+  // never seen. The wheel's own width is already the sheet's content column, the same one the sheet's
+  // full-width Done spans, so band and Done line up edge to edge.
+  Left: 0pt
+  Width: 100%
   // 32 to 34pt (Sizing.md 12, [I]): the row pitch NumberField passes (`itemHeight="34"`).
   Height: 34pt
   // Pull the band up by HALF ITS OWN HEIGHT so `Top: 50%` centres it on the drum
@@ -62,7 +66,7 @@ Jwift_WheelSelectionBand : JwiftGlass {
   VisualTranslate: 0 -17pt
   Layer: 0
   // Concentric with the house menu/popover chain NumberField lives in (`@JwiftDropdownRadius` 32pt, less
-  // the popover's own 10pt padding and this band's own 10pt side inset: 32 - 20 = 12), not Apple's bare
+  // the 20pt that sits between that edge and this band: 32 - 20 = 12), not Apple's bare
   // ~8pt (Sizing.md 12) — the house rule (Sizing.md 11) is that every corner near an edge derives from
   // what encloses it, and this one does.
   BorderRadius: 12pt
