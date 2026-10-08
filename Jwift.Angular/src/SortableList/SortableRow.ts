@@ -49,6 +49,10 @@ import SortableListJss from './SortableList.jss';
 export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableEntryHandle {
   readonly Key = input.required<string>();
   readonly Selected = input(false);
+  /** True for one tick right after an edit commits, to wear the quiet edit pulse (Jwift.Glass.jss, JwiftEditPulse)
+   *  and fade -- the caller flips it back to `false` itself; this input only decides whether the row wears the
+   *  pulse class, not how long the flash lasts (that is the class's own `@Transition` duration). */
+  readonly Edited = input(false);
   readonly Trailing = input<readonly SwipeAction[]>([]);
   readonly Leading = input<readonly SwipeAction[]>([]);
   readonly FullSwipe = input(true);
@@ -109,6 +113,8 @@ export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableE
       const parts = ['Jwift_SortableRow'];
       if (this._section) parts.push('Jwift_SortableRow_InSection');
       if (this.Selected()) parts.push('Jwift_SortableRow_Selected');
+      // After Selected, so a line edited while selected still flashes the pulse on top of the quiet selection fill.
+      if (this.Edited()) parts.push('Jwift_SortableRow_EditPulse');
       // Drill Sentences lane PP1, item 1a (a round 20 blind phone tester's lift hid every other row): the lifted row
       // wore `Jwift_PaperSurface` for its material, and that class is a backdrop panel, placed at its parent's
       // top-left at 100% of its size, so the row left the flow and covered the whole list. The lifted class carries

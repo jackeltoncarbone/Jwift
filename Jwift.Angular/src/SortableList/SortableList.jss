@@ -79,8 +79,13 @@ Jwift_SortableRow {
   @Transition Background { Duration: 140ms }
   @Transition BackdropFilter { Duration: 140ms }
 }
-// The house gold as a vibrant fill on the glass, never an olive wash (Jwift.Glass.jss, JwiftSelectionTint).
-Jwift_SortableRow_Selected : JwiftSelectionTint {
+// Apple's own measured level for a selected row, neutral and quiet (Jwift.Glass.jss, JwiftSelectedRowFill) --
+// never the house gold, which read as a second prominent, tinted element (Drill Sentences lane AB3, round 27 item 1).
+Jwift_SortableRow_Selected : JwiftSelectedRowFill {
+}
+// A line just edited flashes the house gold at low opacity and fades (Jwift.Glass.jss, JwiftEditPulse) --
+// Apple's own brief, quiet confirmation, never a held paint.
+Jwift_SortableRow_EditPulse : JwiftEditPulse {
 }
 Jwift_SortableRow_InSection {
   Margin: 0pt 0pt 0pt 18pt
