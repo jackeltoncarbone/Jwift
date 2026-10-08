@@ -94,10 +94,14 @@ Jwift_NumberFieldTag {
   BorderRadius: 9pt
   Padding: 2pt 7pt
 }
+// Regular weight (400), not Medium (Drill Sentences lane ZZ4, item 1: a live check found the wheel's
+// centered row read too heavy against Apple's own UIPickerView / SwiftUI `.wheel`, Sizing.md 12 [I]):
+// Apple's wheel rows are regular at every position, 21 to 23pt for the centered one, the roll/fade past
+// it the only thing that marks it, never a bolder weight.
 Jwift_NumberFieldMain : JwiftLabelVibrancy {
   FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 22pt
-  FontWeight: 500
+  FontWeight: 400
   TextAlign: Center
   MinWidth: 44pt
 }

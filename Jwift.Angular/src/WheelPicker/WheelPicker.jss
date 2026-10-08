@@ -28,22 +28,30 @@ Jwift_WheelPicker {
   Perspective: 900
 }
 
-// The chosen row's highlight — a bright-glass capsule pinned at the vertical
-// center, matching the nav's Jwift_SelectionIndicator. Sits BEHIND the rows (Layer 0)
-// so the centered item reads ON TOP of the pill, exactly like iOS.
+// The chosen row's highlight — Apple's UIPickerView / SwiftUI `.wheel` selection band: a rounded-rect
+// fill behind the centered row, full row width inset by the picker's own side margin, never the rows'
+// own bright glass (Apple/Sizing.md section 12, [I] — no `_UIPickerView` chunk is in the restore read so
+// far, so this is measured off Apple's own wheel captures rather than cited to a decompile). Sits BEHIND
+// the rows (Layer 0) so the centered item reads ON TOP of the band, exactly like iOS; the band itself
+// never moves, the numbers roll through it.
 //
-// A selection band is a wash, and a wash is a LIFT (Jwift.Glass.jss, THE WASH). @WashStrong's white at
-// 0.16 sat OVER the sheet the wheel is on; +30 of 255 brightens that sheet instead and carries its
-// color. The Brightness(1.5) beside it is kept to the digit and is the reason this site is worth
-// reading twice: the hairline below exists because "Brightness(1.5) of a near-black backdrop barely
-// lifts", which is the multiply-versus-add argument stated as a bug report two months before the law
-// was measured. A multiply scales a dark backdrop by nothing; the +30 is what actually moves it.
-// The border stays: it is a real iOS hairline, not a workaround for the missing step.
-Jwift_WheelSelectionBand {
+// THE FIX (Drill Sentences lane ZZ4, item 1: a live check found no band worth the name): this used to
+// paint its own one-off fill, `Vibrancy(@JwiftVibrancyFill) Brightness(1.5) Saturate(1.25)` — the SELECTED
+// TAB's level (lane WW1's "the one Liquid Glass selection Apple draws", @JwiftVibrancyFill), not a resting
+// field's. Apple's own band is a TERTIARY system fill at rest, not a selection tint, and the no-glass-on-
+// glass law (`JwiftGlass:InGlass`, Jwift.Glass.jss) already states that level (`@JwiftVibrancyTertiaryFill`)
+// for exactly this case — a control resting IN glass, never a second material of its own — which is also
+// the fill Apple's own Stepper track wears now (`Stepper.jss`'s `Jwift_Stepper : JwiftGlass`). Extending
+// `JwiftGlass` here does the same: `Glass: Regular` as authored, answered down to `Glass: None` plus the
+// tertiary fill by the engine's `InGlass` ancestry state the moment this sits inside glass (a popover, a
+// sheet), the same way `Jwift_Stepper` does, rather than a fill typed by hand that drifts from the law.
+// The hairline border stays of its own accord: it is a real iOS edge, not standing in for the fill.
+Jwift_WheelSelectionBand : JwiftGlass {
   Position: Placed
   Top: 50%
   Left: 10pt
   Right: 10pt
+  // 32 to 34pt (Sizing.md 12, [I]): the row pitch NumberField passes (`itemHeight="34"`).
   Height: 34pt
   // Pull the band up by HALF ITS OWN HEIGHT so `Top: 50%` centres it on the drum
   // axis. This was `TranslateY: -50%` — not a JSS property, so it never ran and
@@ -53,8 +61,11 @@ Jwift_WheelSelectionBand {
   // as the absolute half of the 34pt height above.
   VisualTranslate: 0 -17pt
   Layer: 0
+  // Concentric with the house menu/popover chain NumberField lives in (`@JwiftDropdownRadius` 32pt, less
+  // the popover's own 10pt padding and this band's own 10pt side inset: 32 - 20 = 12), not Apple's bare
+  // ~8pt (Sizing.md 12) — the house rule (Sizing.md 11) is that every corner near an edge derives from
+  // what encloses it, and this one does.
   BorderRadius: 12pt
-  BackdropFilter: Vibrancy(@JwiftVibrancyFill) Brightness(1.5) Saturate(1.25)
   // Hairline edge that defines the band like iOS.
   BorderWidth: 1pt
   BorderColor: @Line
@@ -85,9 +96,13 @@ Jwift_WheelItem {
 
 // Default text rendering for the convenience `label` path (a row that
 // projects its own canvas content ignores this).
+//
+// Regular weight (400), not the house's Medium default (Drill Sentences lane ZZ4, item 1, Sizing.md 12
+// [I]): Apple's own wheel rows are never bolded, the centered row included — the roll/fade through
+// VisualScale/Opacity is the only thing that marks it out, exactly as kept above.
 Jwift_WheelItemLabel : JwiftLabelVibrancy {
   FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 19pt
-  FontWeight: 500
+  FontWeight: 400
   TextAlign: Center
 }

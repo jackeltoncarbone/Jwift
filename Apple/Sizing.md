@@ -211,6 +211,22 @@ The display's own corner (`UITraitCollection.displayCornerRadius`), by portrait 
 
 These are recorded facts; the app does not clip to them. Jack's rule (2026-09-25): concentric means the same thing on every device, so the app's outer corner is DERIVED from the tab bar, `@JwiftScreenRadius = @JwiftTabBarHeight / 2 + @JwiftTabBarInset` (31 + 21 = 52 pt), on a phone, an iPad and the web alike. Everything near the edge is that radius less its gap (Apple's ConcentricRectangle rule): the expanded 60 pt bar sits 52 - 30 = 22 pt in, a partial sheet 8 pt in wears 44 pt corners and 52 at the edge, a menu's 28 pt panel keeps 24 pt from the screen's foot.
 
+## 12. Wheel picker (UIPickerView, SwiftUI `.wheel`)
+
+No `_UIPickerView` chunk has been pulled from the iOS 26.1 restore yet, and the HIG publishes only the
+picker's behavior (section 14), not its geometry. Measured off Apple's own date/time wheel and widely
+observed device behavior (Clock's timer, Health's units, a `.wheel` date picker), pending a [C] decompile
+pass. Read for Drill Sentences lane ZZ4, item 1 (a live check of the phone count sheet's `NumberField`
+Wheel mode, Jwift's `WheelPicker`): no selection band, and the centered row read too heavy.
+
+| part | value | status |
+|---|---|---|
+| selection band | a rounded-rect fill behind the centered row, full row width inset by the picker's own side margin; the band never moves, the rows roll through it via the usual 3D perspective, not the band | [I] |
+| band fill | a resting field's tertiary system fill (quaternary in dark reads close) — never the brighter selection/tab level | [I] |
+| band height | 32 to 34 pt, matching the row pitch | [I] |
+| band corner radius | about 8 pt in a compact (iPhone-width) picker; concentric with whatever sheet or popover hosts it, same as every other near-edge radius (section 11) | [I] |
+| row font | Regular (400) weight at every row, 21 to 23 pt for the centered row; off-center rows shrink and fade by the roll (VisualScale/Opacity), never heavier | [I] |
+
 ## Not found
 
 These need the binary's `__const` data section, which the decompile does not carry: every `dbl_*` / `xmmword_*` table value (button insets, segmented font sizes, the tab config slots 88, 184, 304 and the bottom offset at vtable+0x138), the segmented pill inset and divider width, the `off_1E70ECD20` / `off_1E70ECD28` font weights. DesignLibrary holds iOS metrics only for Switch, Stepper and ProgressView (`DesignLibrary_01` to `_15`; its `iOSProgressView` is a SwiftUI mock whose frame values are float arguments the decompile dropped, and UIKit's own files, sections 8 and 9, supersede it); there are no iOS token plists or asset catalogs in the restore. [C] for the absence.
