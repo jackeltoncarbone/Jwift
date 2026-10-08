@@ -28,9 +28,10 @@ import {
   LandPieces,
   LayoutSentence,
   PillRectOf,
+  ResolvesSanFrancisco,
   SameWords,
-  SFProTracking,
   TextPieceKeys,
+  TrackingFor,
   UnderlineOf,
   type PieceLanding,
   type SentenceHit,
@@ -124,6 +125,53 @@ const ICON_TOKEN_SCALE = 1490 / 1394;
  *  stack the way the "1ain" bug's own root cause once let them (this file's own long-standing doc comment,
  *  just below). */
 const SENTENCE_FONT_STACK = '-apple-system, BlinkMacSystemFont, Inter';
+
+/**
+ * Drill Sentences lane YY3b, item 10 follow-up (live, 1440x900: a gap opened before every comma and
+ * between some tokens, "left face , then left flank 8 counts ,", y9-picker.png/y9-clear.png). Root cause,
+ * two bugs stacked: `SFProTracking` (San Francisco's own measured optical metrics, `Jwift/Apple/HIG.md`
+ * section 15) applied to every piece's `LetterSpacing` UNCONDITIONALLY -- on Windows, where `-apple-system`
+ * is valid CSS syntax but names no actual font, the stack falls through to Inter same as ever, but
+ * San Francisco's tracking (negative through the body range, e.g. -0.43 at 17pt) was still being asked
+ * of Inter's own, different letterforms. And `_measure` (this thread's pre-layout wrap pass) never
+ * applied letter-spacing to its OWN canvas context at all, so the WIDTH that decided where the next piece
+ * starts never shrank by the tracking the engine then DREW with -- a piece measured wide, painted
+ * narrower (negative tracking), left unused room where `_measure` thought its own ink ran, reading as a
+ * gap before whatever came next.
+ *
+ * `_resolvesSanFrancisco`, below, answers which is true on THIS device with a canvas probe, not a
+ * platform/UA sniff: the same test string's measured advance under "-apple-system" alone against "Inter"
+ * alone, fed to `TokenSentence.Layout.ts`'s own pure `ResolvesSanFrancisco` (spec'd there against
+ * synthetic widths, no real canvas needed). Identical widths mean the identical fallback resolved both
+ * times -- no San Francisco here, and tracking must read 0, Inter's own spacing being correct exactly as
+ * it always was before this lane's font-family fix. Different widths mean San Francisco drew, and
+ * `SFProTracking`'s numbers are the right ones to ask for. `_measure` applies the SAME resolved tracking
+ * to its OWN `ctx.letterSpacing` that `_textPieces` asks the engine to paint with (`Text.Measure.ts`'s own
+ * `ApplyTextStyle`, the identical canvas API, `letterSpacing`) -- one law, read twice, never two numbers
+ * that could drift the way `_measure`'s own font-family literal and the engine's used to (this file's
+ * "1ain" doc comment, above).
+ */
+let _sfProbe: { Epoch: number; Resolves: boolean } | null = null;
+const _resolvesSanFrancisco = (ctx: CanvasRenderingContext2D, epoch: number): boolean => {
+  if (_sfProbe && _sfProbe.Epoch === epoch) return _sfProbe.Resolves;
+  const probe = 'San Francisco probe gIl1';
+  const prevFont = ctx.font;
+  ctx.font = '16px -apple-system';
+  const appleWidth = ctx.measureText(probe).width;
+  ctx.font = '16px Inter';
+  const interWidth = ctx.measureText(probe).width;
+  ctx.font = prevFont;
+  const resolves = ResolvesSanFrancisco(appleWidth, interWidth);
+  _sfProbe = { Epoch: epoch, Resolves: resolves };
+  return resolves;
+};
+/** Letter-spacing's own canvas API name isn't in `CanvasRenderingContext2D`'s TS type ("Chrome 94+,
+ *  Safari 16.4+; fallback: ignored" -- `Text.Measure.ts`'s own `ApplyTextStyle`, the identical cast). A
+ *  browser that ignores it ignores it in BOTH `_measure` and the engine's own paint alike, so there is
+ *  still only ever one number read twice, never a measured-wide/painted-narrow mismatch either way. */
+const _setLetterSpacing = (ctx: CanvasRenderingContext2D, px: number): void => {
+  (ctx as unknown as { letterSpacing: string }).letterSpacing = `${px}px`;
+};
 
 /** A fresh canvas 2D context per page-font generation, mirroring Jinput's `_watchPageFonts`/`_fontGen`
  *  — moved whenever the page may have gained a face, so a word measured before its font landed is
@@ -311,7 +359,14 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     const size = this.FontSizePt() + _pageFontEpoch() * 1e-4;
     const base = this.Tabular() ? TabularFamilyStack(SENTENCE_FONT_STACK) : SENTENCE_FONT_STACK;
     this._measureCtx.font = `${weight} ${size}px ${ComposeFontFamily(base)}`;
-    return this._measureCtx.measureText(text).width;
+    // The same resolved tracking `_textPieces` asks the engine to paint with (see this file's own doc
+    // comment on `_resolvesSanFrancisco`, above) -- so the width that decides where the NEXT piece starts
+    // already accounts for however much this one's own ink will actually spread or tighten.
+    const tracking = TrackingFor(this.FontSizePt(), _resolvesSanFrancisco(this._measureCtx, _pageFontEpoch()));
+    _setLetterSpacing(this._measureCtx, tracking);
+    const width = this._measureCtx.measureText(text).width;
+    _setLetterSpacing(this._measureCtx, 0);
+    return width;
   };
 
   /** `Node.Width`, watched live. `Infinity` before the first rect arrives, so the first layout pass
@@ -499,6 +554,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     const nowGroup = this.NowGroup();
     const fs = this.FontSizePt();
     const lh = this.LineHeightPt();
+    // The SAME resolved family `_measure` already settled this layout pass against (`_layout()`, just
+    // above, runs `_measure` for every piece before this computed ever reads its result) — one probe, one
+    // answer, shared by every piece of this sentence rather than asked again per piece.
+    const tracking = TrackingFor(fs, !!this._measureCtx && _resolvesSanFrancisco(this._measureCtx, _pageFontEpoch()));
     const out: {
       Key: string; Class: string; Text: string; TextStyle: Record<string, unknown>; Layout: Record<string, unknown>;
       Tappable: boolean; TokenKey: string; Label: string;
@@ -584,9 +643,14 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
           FontVariantNumeric: fontVariantNumeric,
           // Drill Sentences lane YY3b, item 10: SF Pro's own per-size tracking (`SFProTracking`,
           // `TokenSentence.Layout.ts`, Apple's HIG Typography table) -- negative through the body/UI mid
-          // range, positive again at a small caption or a large display size. An icon glyph (`token.Icon`)
-          // carries none: a symbol's own advance is not kerned against a reading of text the way a letter is.
-          LetterSpacing: token.Icon ? '0pt' : `${SFProTracking(pieceSize)}pt`,
+          // range, positive again at a small caption or a large display size, and ONLY where San Francisco
+          // is actually what draws (`tracking`, above, computed once for the whole sentence) -- asking
+          // Inter for San Francisco's own measured metrics opened a gap before every comma on a device
+          // with no San Francisco to draw, the piece measured wide (`_measure`, no tracking applied) and
+          // painted narrower (tracking applied regardless of the resolved face) than it was laid out for.
+          // An icon glyph (`token.Icon`) carries none either way: a symbol's own advance is not kerned
+          // against a reading of text the way a letter is.
+          LetterSpacing: token.Icon ? '0pt' : `${tracking}pt`,
           // Jack, live (round 12): a bold atom's own ink can run past its measured advance width right
           // at a wrapped row's own edge -- the whole reason this piece's own box (below) is wider than
           // its content. That overflow room only ever stays invisible, harmless dead space (every

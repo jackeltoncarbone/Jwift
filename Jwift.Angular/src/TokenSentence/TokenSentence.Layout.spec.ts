@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FirstGlowTarget, IsTappable, LandPieces, LayoutSentence, PillRectOf, SameWords, SFProTracking, TextPieceKeys,
-  type SentencePiece, type SentenceToken,
+  FirstGlowTarget, IsTappable, LandPieces, LayoutSentence, PillRectOf, ResolvesSanFrancisco, SameWords, SFProTracking,
+  TextPieceKeys, TrackingFor, type SentencePiece, type SentenceToken,
 } from './TokenSentence.Layout';
 
 /**
@@ -497,5 +497,38 @@ describe('SFProTracking', () => {
   it('clamps flat past either published end, never extrapolating the slope', () => {
     expect(SFProTracking(8)).toBeCloseTo(0.06, 6); // below 11: the smallest rung's own value, not more positive.
     expect(SFProTracking(60)).toBeCloseTo(0.40, 6); // above 34: the largest rung's own value, not more positive still.
+  });
+});
+
+// Drill Sentences lane YY3b, item 10 follow-up (live, 1440x900: a gap opened before every comma and
+// between some tokens on Windows, "left face , then left flank 8 counts ," — y9-picker.png, y9-clear.png).
+// `-apple-system` is valid CSS syntax everywhere but names an actual font only on an Apple OS; on Windows
+// the stack falls through to Inter same as ever, but San Francisco's own tracking table was still being
+// asked of Inter's different letterforms, AND `_measure` (TokenSentence.ts's pre-layout wrap pass) never
+// applied the tracking it was measuring against at all — a piece measured wide, painted narrower (negative
+// tracking) than the next piece's own position accounted for, read as a gap. `ResolvesSanFrancisco`/
+// `TrackingFor` are the decision TokenSentence.ts's own canvas probe feeds, spec'd here against synthetic
+// widths so the logic is provable without a real browser/canvas.
+describe('ResolvesSanFrancisco / TrackingFor', () => {
+  it('reads "no San Francisco" when the probe measures the identical width under both families (Inter resolved both times)', () => {
+    expect(ResolvesSanFrancisco(42, 42)).toBe(false);
+    expect(ResolvesSanFrancisco(0, 0)).toBe(false); // an unmeasured/blank context is never read as "resolved".
+  });
+
+  it('reads "San Francisco" only when the probe measures a genuinely different width', () => {
+    expect(ResolvesSanFrancisco(40, 42)).toBe(true);
+    expect(ResolvesSanFrancisco(44, 42)).toBe(true);
+  });
+
+  it('a sub-pixel float difference from measurement noise does not read as San Francisco', () => {
+    expect(ResolvesSanFrancisco(42.001, 42)).toBe(false);
+  });
+
+  it('TrackingFor is zero whenever San Francisco did not resolve, at every size — Inter keeps its own spacing', () => {
+    for (const size of [11, 13, 15, 17, 20, 22, 28, 34]) expect(TrackingFor(size, false)).toBe(0);
+  });
+
+  it('TrackingFor matches SFProTracking exactly once San Francisco resolved', () => {
+    for (const size of [11, 13, 15, 17, 20, 22, 28, 34]) expect(TrackingFor(size, true)).toBe(SFProTracking(size));
   });
 });

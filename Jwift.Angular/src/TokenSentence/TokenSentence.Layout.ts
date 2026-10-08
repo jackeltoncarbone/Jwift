@@ -636,6 +636,26 @@ export function SFProTracking(fontSizePt: number): number {
 }
 
 /**
+ * Whether a canvas probe's two measured widths say San Francisco actually drew (Drill Sentences lane
+ * YY3b, item 10 follow-up: a gap opened before every comma on Windows, where `-apple-system` is valid CSS
+ * syntax but names no font, so the stack fell through to Inter same as ever while San Francisco's own
+ * tracking table was still being asked of it). `appleWidth`/`interWidth`: the SAME test string's measured
+ * advance under "-apple-system" alone against "Inter" alone. Identical widths (within a px of float
+ * slop) mean the identical fallback resolved both times — no San Francisco here. Pulled out pure so the
+ * decision is spec'd against synthetic widths, without a real canvas/font environment to probe
+ * (`TokenSentence.ts`'s own `_resolvesSanFrancisco` is the canvas-facing half of this). */
+export function ResolvesSanFrancisco(appleWidth: number, interWidth: number): boolean {
+  return appleWidth > 0 && Math.abs(appleWidth - interWidth) > 0.01;
+}
+
+/** The tracking a piece actually asks for: `SFProTracking`'s own number where San Francisco resolved,
+ *  zero otherwise — San Francisco's measured optical metrics are simply wrong for Inter's different
+ *  letterforms, not merely imprecise, so they apply only where San Francisco is what actually draws. */
+export function TrackingFor(fontSizePt: number, resolvesSanFrancisco: boolean): number {
+  return resolvesSanFrancisco ? SFProTracking(fontSizePt) : 0;
+}
+
+/**
  * Drill Sentences U1, item 9 (a gentle first-run hint), live fix: the hint used to glow/anchor the
  * sentence's first TAPPABLE token in document order, which for "Everyone · mark time 16 counts" is the
  * leading Who token ("Everyone") — a first-time director tapping it learns "this names a name," not "a
