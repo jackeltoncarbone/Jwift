@@ -303,7 +303,13 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this._stopTracking();
     this._unbindDoc?.();
-    this._detachOnDestroy();
+    // Drill Sentences lane KK1, item 6 (a round 15 blind phone tester: after the count picker's Done, an empty glass
+    // outline stood under the "M5-12" pill). The panel and every row in it leave together, and Jaui lays a leaving
+    // child out of its parent at once (`Layout.Intrinsic.ts`), so this `Height: MinContent` panel collapsed to its
+    // own padding and faded out as an empty sliver of glass. It leaves at the height it was drawn, its rows fading
+    // in place inside it.
+    const drawn = this.Node.Height;
+    this._detachOnDestroy(drawn > 0 ? { Height: `${drawn}px` } : undefined);
   }
 
   private _startTracking(): void {

@@ -240,7 +240,13 @@ export abstract class JivHost {
     if (target !== null) parentNode.MoveChildToIndex(this.Node, target);
   }
 
-  protected _detachOnDestroy(): void {
+  /** `leaveWith`: style the node keeps as it leaves, applied at once (the host's own effect no longer runs once
+   *  it is being destroyed), such as the height a panel was drawn at (`Popover`, Drill Sentences lane KK1, item 6). */
+  protected _detachOnDestroy(leaveWith?: Record<string, unknown>): void {
+    if (leaveWith) {
+      this._styleOverride.set({ ...untracked(() => this._styleOverride()), ...leaveWith });
+      this._apply();
+    }
     // Per the Presence.md framework-binding contract — and matching the plain
     // Jaui `<jiv>` directive, which was already fixed — ngOnDestroy calls ONLY
     // RequestLeave. The engine's PresenceManager fades the node out (Presence

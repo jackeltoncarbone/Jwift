@@ -35,8 +35,8 @@ export type MediaTransportSkip = 'Seek' | 'Track';
         <jiv [class]="BtnClass()" [disabled]="skipBackDisabled()" [attr.aria-label]="skipBackLabel()" (click)="_skipBack()">
           <icon [class]="GlyphClass()" [Name]="SkipBackGlyph()" />
         </jiv>
-        <jiv [class]="BtnPrimaryClass()" [attr.aria-label]="playing() ? pauseLabel() : playLabel()" (click)="playPause.emit()">
-          <icon [class]="GlyphPrimaryClass()" [Name]="playing() ? 'pause.fill' : 'play.fill'" />
+        <jiv [class]="BtnPrimaryClass()" [attr.aria-label]="PrimaryLabel()" (click)="playPause.emit()">
+          <icon [class]="GlyphPrimaryClass()" [Name]="PrimaryGlyph()" />
         </jiv>
         <jiv [class]="BtnClass()" [disabled]="skipForwardDisabled()" [attr.aria-label]="skipForwardLabel()" (click)="_skipForward()">
           <icon [class]="GlyphClass()" [Name]="SkipForwardGlyph()" />
@@ -69,6 +69,16 @@ export class MediaTransport {
   readonly skipForwardLabel = input('Next');
   readonly playLabel = input('Play');
   readonly pauseLabel = input('Pause');
+
+  /** Drill Sentences lane KK1, item 2 (a round 15 blind phone tester pressed what they took for Pause three times,
+   *  and each press played the phrase again): a player stopped by itself at the end of what it plays, where the
+   *  next press plays that again from its start. Its primary button wears replay's glyph (iOS's
+   *  `arrow.counterclockwise`), never Play's, so an ended player cannot read as one still playing. Ignored while
+   *  `playing`. */
+  readonly replay = input(false, { transform: booleanAttribute });
+  readonly replayLabel = input('Replay');
+  protected readonly PrimaryGlyph = computed(() => (this.playing() ? 'pause.fill' : this.replay() ? 'arrow.counterclockwise' : 'play.fill'));
+  protected readonly PrimaryLabel = computed(() => (this.playing() ? this.pauseLabel() : this.replay() ? this.replayLabel() : this.playLabel()));
 
   readonly playPause = output<void>();
   readonly skipBack = output<void>();

@@ -97,6 +97,12 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
    *  below the bar. */
   readonly openBelow = input<boolean>(false);
 
+  /** The open panel's width in pt when its rows are sentences, not a menu's words (Drill Sentences lane KK1, item 5:
+   *  a round 15 blind desktop tester read "12a takes big steps in the stack up in…" in the 250pt problems list).
+   *  Null keeps the menu's own width (`Jwift_GlassDropdown_Open`). The panel still opens anchored at its pill's
+   *  right edge, and takes no more than the room left of that edge (`_fitToRoom`). */
+  readonly openWidth = input<number | null>(null);
+
   /** Drive the panel open or closed from outside, as the ordinary Angular input/output pair so
    *  `[(open)]` binds. **`null` is UNCONTROLLED and is the default**, which is every consumer that
    *  exists today: the host click owns the state and this pair does nothing at all.
@@ -255,13 +261,25 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     // re-applies the whole resolved class bag; this runs on every frame of the 600ms growth track, so
     // an unguarded write would post three dozen identical `apply` ops per open and fight the height
     // spring with sub-pixel dust while it flies.
-    if (this._cap === cap) return;
+    const width = this._openWidthFor(this.Node.X + this.Node.Width - gap);
+    if (this._cap === cap && this._width === width) return;
     this._cap = cap;
-    this.SetStyleOverride({ MaxHeight: cap });
+    this._width = width;
+    this.SetStyleOverride(width ? { MaxHeight: cap, Width: width } : { MaxHeight: cap });
   }
 
   /** The last ceiling written, so a re-measure that lands on the same number costs nothing. */
   private _cap: string | null = null;
+  /** The last open width written (`openWidth`), or null for the menu's own. */
+  private _width: string | null = null;
+
+  /** `openWidth`, held to `room`: from the screen's left edge, the concentric gap in from it, to the panel's right
+   *  edge, the pill's it is anchored to (read before the open grows, the closed pill's right edge is already the
+   *  panel's). Never narrower than the menu's own 250pt. Null when there is no `openWidth`. */
+  private _openWidthFor(room: number): string | null {
+    const want = this.openWidth();
+    return want === null ? null : `${Math.round(Math.max(Math.min(want, room), 250))}px`;
+  }
 
   /** The page this open began on (`Open`), null for the root: where Escape closes the panel. */
   private _entryPage: string | null = null;
@@ -327,6 +345,8 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     // which `ResolveBound` reads as Infinity), so this says no ceiling rather than hoping for one.
     this._cap = null;
     this.SetStyleOverride({ MaxHeight: 'none' });
+    // The open width is the open panel's alone: the closed pill takes its own (`Jwift_GlassDropdown_Closed`) back.
+    if (this._width !== null) { this._width = null; this.ClearStyleOverride('Width'); }
     this._holdTopLayerWhileClosing();
     this._open.set(false); this._page.set(null); this._rowIndicator.Reset();
     // The output half of [(open)]. Emitted from Close() and Open() rather than from the click handler,

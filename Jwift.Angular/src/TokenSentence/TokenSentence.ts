@@ -556,7 +556,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     // (confirmed live: reading it directly off the running page matched the flex-resolved width exactly);
     // this just keeps `_wrapWidth` tracking THAT, the same `Node.OnRect` pattern the rail's own track
     // width already uses (EditorPlayer.ts) for the identical reason.
-    this._rectUnwatch = this.Node.OnRect(() => { if (this.Node.Width > 0) this._wrapWidth.set(this.Node.Width); });
+    this._rectUnwatch = this.Node.OnRect(() => {
+      if (this.Node.Width > 0) this._wrapWidth.set(this.Node.Width);
+      this._onMoved();
+    });
   }
 
   ngOnDestroy(): void {
@@ -604,7 +607,29 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     this._pressedKey.set(key);
     this._downKey = key;
     this._downSeen = true;
+    this._pressedAt = key !== null ? { X: this.Node.X, Y: this.Node.Y } : null;
     if (key !== null) this._watchPress(e);
+  }
+
+  /** Where this sentence stood when its word was pressed, while the press lasts (`_onMoved`). */
+  private _pressedAt: { X: number; Y: number } | null = null;
+
+  /**
+   * The sentence moved on screen (Drill Sentences lane KK1, item 6; a round 15 blind phone tester: "forward" stayed
+   * lit after the list scrolled away from under the touch). A press the list carried past the tap slop was a
+   * scroll, so the word lets go and the press resolves to nothing, as one the finger dragged does
+   * (`_watchPress`); and the word under a resting mouse is read again where the words now stand, so a word that
+   * scrolled away from under it stops looking hovered.
+   */
+  private _onMoved(): void {
+    const at = this._pressedAt;
+    if (at && Math.hypot(this.Node.X - at.X, this.Node.Y - at.Y) >= TokenSentence.PRESS_SLOP_PX) {
+      this._pressedKey.set(null);
+      this._downKey = null;
+      this._pressedAt = null;
+      this._pressUnbind?.();
+    }
+    if (this._hoveredKey() !== null) this._updateHover();
   }
 
   /** How far a press may travel and still be a tap on its word, a finger's own tap slop: past it, the list under
@@ -631,6 +656,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     };
     const onEnd = (): void => {
       this._pressedKey.set(null);
+      this._pressedAt = null;
       unbind();
     };
     const unbind = (): void => {
@@ -644,10 +670,27 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     doc.addEventListener('pointercancel', onEnd, true);
     this._pressUnbind = unbind;
   }
+  /**
+   * Lane KK1, item 6 (a round 15 blind phone tester touched "forward", and it stayed lit after the finger had gone):
+   * a finger's own moves lit the word under it as hovered, and nothing ends a hover a finger leaves behind (no
+   * move off the sentence follows a lift). Only a mouse or a pen hovers; a finger's word shows pressed while it
+   * is down (`_watchPress`), and nothing once it lifts. The move is still reported, a finger's included, for a
+   * caller that tells them apart (`HoverTip`).
+   */
   protected _onHostPointerMove(e: PointerEvent): void {
     this._storePoint(e);
-    this._updateHover();
-    this.TokenHover.emit({ Key: this._hoveredKey(), Event: e });
+    if (e.pointerType === 'touch') this._clearHover();
+    else this._updateHover();
+    this.TokenHover.emit({ Key: e.pointerType === 'touch' ? this._hitAt(this._lastPointer) : this._hoveredKey(), Event: e });
+  }
+
+  /** No word hovered, and no watch left waiting for the pointer to leave. */
+  private _clearHover(): void {
+    if (this._hoveredKey() === null) return;
+    this._hoveredKey.set(null);
+    this.SetStyleOverride({ Cursor: 'Default' });
+    this._docUnbind?.();
+    this._docUnbind = null;
   }
   /**
    * Drill Sentences U1 live fix (item 2, two first-time testers): a tap that lands on an actual token or

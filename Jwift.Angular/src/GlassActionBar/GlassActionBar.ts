@@ -55,6 +55,9 @@ export interface ActionGroup {
   /** The group's dropdown opens under its pill, the bar left in view above it, rather than over the pill
    *  (`GlassDropdown.openBelow`). For a list read against the toolbar, like a page's problems. */
   OpenBelow?: boolean;
+  /** The open dropdown's width in pt, for a page of sentences rather than a menu's words (`GlassDropdown.openWidth`,
+   *  Drill Sentences lane KK1, item 5: a page's problems). Omit for the menu's own width. */
+  PageWidth?: number;
 }
 
 /**
@@ -93,7 +96,7 @@ export interface ActionGroup {
           <glass-dropdown #gd
             [defaultPage]="_GroupDefaultPage(gp.Group)"
             [canOpen]="_GroupCanOpen(gp.Group)"
-            [openBelow]="!!gp.Group.OpenBelow">
+            [openBelow]="!!gp.Group.OpenBelow" [openWidth]="gp.Group.PageWidth ?? null">
             @if (!gd.IsOpen()) {
               @for (a of gp.Cells; track a.Id) {
                 @if (a.Spinner) {
