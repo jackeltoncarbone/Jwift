@@ -437,6 +437,35 @@ describe('LayoutSentence — a narrow word reaches the least across, and no two 
     expect(p(wide).X + p(wide).Width).toBeLessThanOrEqual(dot.X + 1e-6);
   });
 
+  // Drill Sentences lane XX2, item 3: lane WW2 left "3a ⇔ 3b" under a finger short, the mark and "3b" a few points under 28.
+  it('a mirrored pair meets 28 in three: the spaces beside the mark widen evenly, only as far as the hits need', () => {
+    const pair: readonly SentenceToken[] = [
+      { Key: 'who', Text: '3a', Kind: 'Who' }, { Key: 's1', Text: ' ', Kind: 'Text' },
+      { Key: 'mirror', Text: '', Kind: 'Mirror', Icon: 'arrow.left.and.right' }, { Key: 's2', Text: ' ', Kind: 'Text' },
+      { Key: 'partner', Text: '3b', Kind: 'Who' }, { Key: 'dot', Text: ' · ', Kind: 'Text' }, { Key: 'move', Text: 'left face', Kind: 'Word' },
+    ];
+    // Inter Bold at 16pt, as measured off a round 25 phone: "3a" 18.8, the mark 17.5, "3b" 19.7, a space 4.4.
+    const real = (text: string, _weight: number, icon?: string): number =>
+      icon ? 17.5 : text === '3a' ? 18.8 : text === '3b' ? 19.7 : text.trim() === '' ? 4.4 * text.length : measure(text);
+    const laid = (min: number): ReturnType<typeof LayoutSentence> =>
+      LayoutSentence(pair, { WrapWidth: 1000, LineHeight: 28, FontSize: 16, Measure: real, ShowAdd: false, MinHitWidth: min });
+    const piece = (r: ReturnType<typeof LayoutSentence>, key: string): SentencePiece => r.Pieces.find((p) => pair[p.TokenIndex].Key === key)!;
+    const hit = (r: ReturnType<typeof LayoutSentence>, key: string) => r.Hits.find((h) => pair[h.TokenIndex].Key === key)!;
+    const finger = laid(28);
+    const before = piece(finger, 'mirror').X - (piece(finger, 'who').X + 18.8);
+    const after = piece(finger, 'partner').X - (piece(finger, 'mirror').X + 17.5);
+    expect(before).toBeCloseTo(after, 6);
+    // The mark's half deficit and "3b"'s: 5.25 + 4.15, about two word spaces, the pair still one name.
+    expect(before).toBeCloseTo(5.25 + 4.15, 6);
+    for (const key of ['who', 'mirror', 'partner']) expect(hit(finger, key).Width, key).toBeGreaterThanOrEqual(28 - 1e-6);
+    // "3a" takes its least from the sentence's free start, leaving the gap to the mark.
+    expect(hit(finger, 'who').X + hit(finger, 'who').Width).toBeCloseTo(piece(finger, 'mirror').X - 5.25, 6);
+    // A pointer's least asks nothing of a word space.
+    const pointer = laid(20);
+    expect(piece(pointer, 'mirror').X - (piece(pointer, 'who').X + 18.8)).toBeCloseTo(4.4, 6);
+    expect(laid(0).Pieces.map((p) => p.X)).toEqual(pointer.Pieces.map((p) => p.X));
+  });
+
   it('the "+" reaches toward the last word only as far as the two meet', () => {
     const laid = LayoutSentence(tokens, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: measure, ShowAdd: true });
     const last = laid.Hits.find((h) => h.TokenIndex === 2)!;

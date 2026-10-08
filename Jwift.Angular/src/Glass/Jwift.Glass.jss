@@ -392,6 +392,16 @@ JwiftScrollEdgeTopScene : JwiftScrollEdgeTop {
   BackdropFilter: Brightness(@JwiftScrollEdgeDim) Contrast(@JwiftScrollEdgeContrast) Saturate(@JwiftScrollEdgeVivid) Blur(@JwiftScrollEdgeBlur)
 }
 
+// THE BAR'S OWN EDGE, over a scene the person works in rather than one that scrolls past (Drill Sentences lane XX2,
+// item 2; a round 25 blind phone tester read the back half of the drill field as a rendering smudge). Two bands of
+// dissolve suit content that scrolls under the bar and away; a field the director reads edge to edge has its far
+// sideline, its yard numbers and its far hash right under the bar, and the second band blurred and dimmed every one of
+// them. Apple's soft scroll edge over a scene hugs the bar: the strip is the bar band alone (@JwiftScrollEdgeBar, the
+// toolbar's row and the 28pt run out below its buttons), below the safe top, the dissolve finishing just past the bar.
+JwiftScrollEdgeTopSceneBar : JwiftScrollEdgeTopScene {
+  Height: @SafeTop + @JwiftScrollEdgeBar
+}
+
 // The same treatment at the bottom, from the same numbers: one behaviour, measured once. It inherits the
 // bottom's own geometry, Justify: End, ProgressiveBlurDirection: ToBottom and the 140pt strip, which puts
 // its start 0.9 of the 64pt bar's height above the bar, where Apple's starts.

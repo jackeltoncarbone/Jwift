@@ -52,6 +52,11 @@ export interface PopoverPlacementInput {
    * anchor rather than standing off it, its edges on the anchor's edges on the sides it grows from (`placeOver`).
    */
   readonly Over?: boolean;
+  /**
+   * The host is making room under the anchor (`Popover.MakeRoom`; Drill Sentences lane XX2, item 4): the panel stands
+   * below it from the first frame, whole and uncapped, riding it up as the room opens (`placeBelow`).
+   */
+  readonly MakingRoom?: boolean;
 }
 
 /**
@@ -124,24 +129,34 @@ export function ShortfallBelow(anchor: PopoverRect, region: PopoverRect, h: numb
   return Math.max(0, h - (region.Y + region.Height - top));
 }
 
-/** How long the anchor stands still, fitting, before a panel that asked for room places, ms, and the longest it waits. */
+/** How long the anchor stands still, fitting, before the room counts as made, ms, and the longest the host has. */
 export const ROOM_STILL_MS = 120;
 export const ROOM_WAIT_MS = 1600;
 
 /**
- * Whether a panel that asked its host for room (`Popover.MakeRoom`) waits another frame or places now. Drill Sentences lane
- * UU3, item 7, live (402x874, "16 counts" in M5-12 at the sheet's Medium detent: the sheet rose to Large and the word came
- * up to y 505, but the count wheel had opened above it, over the transport). The panel placed once its word stood still,
- * and the word stood still for a moment before the sheet began to rise, still low, so the first placement went above and
- * the held panel kept that side. It waits until the whole panel fits below the word (`Shortfall` 0) and the word has stood
- * still there (`StillFor`), or until the host has had `ROOM_WAIT_MS` (`Elapsed`), when it places wherever it fits.
+ * Whether the host is still making the room a panel asked for (`Popover.MakeRoom`): 'Rising' while it is, 'Made' once it
+ * has. Drill Sentences lane UU3, item 7, live (402x874, "16 counts" in M5-12 at the sheet's Medium detent: the sheet rose to
+ * Large and the word came up to y 505, but the count wheel had opened above it, over the transport): the room is made once
+ * the whole panel fits below the word (`Shortfall` 0) and the word has stood still there (`StillFor`), or once the host
+ * has had `ROOM_WAIT_MS` (`Elapsed`), when the panel takes wherever it fits.
+ *
+ * Drill Sentences lane XX2, item 4 (a round 25 blind phone tester tapped "16 counts" and saw nothing for about 1.5s,
+ * 04-tap16counts.png, then the wheel, 05-after-wait.png). UU3 kept the panel unseen while the room was made, the sheet's
+ * rise and its settle: a hidden wait of a second and more. The panel shows at once now, growing from its word, and rides
+ * the word up below it while the room opens (`PopoverPlacementInput.MakingRoom`). The timeline at the Medium detent:
+ *   0 ms     the tap; the panel mounts, unseen, to be measured.
+ *   ~16 ms   measured: it asks for room, the sheet starts to rise and the list to scroll, and it places below its word.
+ *   ~33 ms   it shows, its glass growing from the word's highlight (`GlassMorph`), its top a gap under the word.
+ *   rising   each frame it stands a gap under the word, wherever the rising sheet carries it.
+ *   settled  the word still for `ROOM_STILL_MS` with the panel whole below it: the room is made, and it stays there.
  */
-export function RoomWaitStep(o: { readonly Shortfall: number; readonly StillFor: number; readonly Elapsed: number }): 'Wait' | 'Place' {
-  if (o.Elapsed >= ROOM_WAIT_MS) return 'Place';
-  return o.Shortfall <= 0.5 && o.StillFor >= ROOM_STILL_MS ? 'Place' : 'Wait';
+export function RoomWaitStep(o: { readonly Shortfall: number; readonly StillFor: number; readonly Elapsed: number }): 'Rising' | 'Made' {
+  if (o.Elapsed >= ROOM_WAIT_MS) return 'Made';
+  return o.Shortfall <= 0.5 && o.StillFor >= ROOM_STILL_MS ? 'Made' : 'Rising';
 }
 
 export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
+  if (input.MakingRoom) return placeBelow(input);
   if (input.Over) return placeOver(input);
   if (input.Hold) return input.Hold.Side ? holdBeside(input, input.Hold) : holdPopover(input, input.Hold);
   const beside = input.Beside === null || input.Beside === undefined ? null : placeBeside(input, input.Beside);
@@ -187,6 +202,17 @@ export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
     ? Math.max(aBottom + ANCHOR_GAP, regionTop)
     : Math.min(aTop - ANCHOR_GAP - h, regionBottom - h);
   return { X: x, Y: y, MaxHeight: h, Down: down };
+}
+
+/** A panel whose host is making room under its anchor (`MakingRoom`, lane XX2, item 4): below it whatever the room left
+ *  this frame, whole and uncapped, its top a gap under the anchor (on the anchor's own top for a panel over it, `Over`),
+ *  so it rides the anchor up as the room opens. Its side is settled: the room is being made for it there. */
+function placeBelow(input: PopoverPlacementInput): PopoverPlacement {
+  const { Anchor: a, Region: r, W, H } = input;
+  const leading = a.X + W <= r.X + r.Width ? a.X : a.X + a.Width - W;
+  const x = Clamp(input.Over ? leading : a.X + a.Width / 2 - W / 2, r.X, r.X + r.Width - W);
+  const y = Math.max(input.Over ? a.Y : a.Y + a.Height + ANCHOR_GAP, r.Y);
+  return { X: x, Y: y, MaxHeight: H, Down: true };
 }
 
 /**
