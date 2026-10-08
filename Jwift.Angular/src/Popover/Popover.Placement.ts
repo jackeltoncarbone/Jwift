@@ -133,6 +133,13 @@ const ARROW_MARGIN = 32;
 
 const Clamp = (v: number, min: number, max: number): number => Math.max(min, Math.min(max, v));
 
+/** How much more room under `anchor` a panel `h` tall needs than `region` leaves there, px, its arrow included: 0 when
+ *  it fits below (Drill Sentences lane UU3, item 7: a panel opened in a phone's sheet asks its host for that room first,
+ *  `Popover.MakeRoom`, rather than open above the word over the sheet's transport). */
+export function ShortfallBelow(anchor: PopoverRect, region: PopoverRect, h: number): number {
+  return Math.max(0, h - (region.Y + region.Height - (anchor.Y + anchor.Height + ARROW_HEIGHT)));
+}
+
 export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
   if (input.Hold) return input.Hold.Side ? holdBeside(input, input.Hold) : holdPopover(input, input.Hold);
   const beside = input.Beside === null || input.Beside === undefined ? null : placeBeside(input, input.Beside);

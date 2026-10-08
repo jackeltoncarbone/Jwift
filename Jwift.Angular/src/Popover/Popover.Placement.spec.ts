@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { PlacePopover, PointInRect, PopoverTargetRect, type PopoverRect } from './Popover.Placement';
+import { readFileSync } from 'node:fs';
+import { PlacePopover, PointInRect, PopoverTargetRect, ShortfallBelow, type PopoverRect } from './Popover.Placement';
 
 // Drill Sentences lane AA2, items 1 and 2 (blind first-time testers, phone 402x874 and desktop 1440x900).
 describe('PlacePopover keeps every row on screen and never covers the word it edits', () => {
@@ -298,5 +299,28 @@ describe('PlacePopover beside its column keeps clear of what it is told to avoid
     const plain = PlacePopover(wheel);
     expect(PlacePopover({ ...wheel, Avoid: [] })).toEqual(plain);
     expect(PlacePopover({ ...wheel, Avoid: [{ X: 1000, Y: 100, Width: 40, Height: 40 }] })).toEqual(plain);
+  });
+});
+
+/** Drill Sentences lane UU3, item 7 (round 23 and 24 blind phone testers: in the sheet at Medium the count wheel opened above
+ *  its sentence over the transport, and the join menu above its row with room for two rows). */
+describe('ShortfallBelow: what a panel lacks under its word, for its host to make room', () => {
+  const region: PopoverRect = { X: 8, Y: 70, Width: 386, Height: 754 };
+
+  it('the room under the word, its arrow included, less the panel\'s height', () => {
+    // 402x874 at Medium: the word's band ends at 700, a 225px wheel needs 225 + 12 under it.
+    const word: PopoverRect = { X: 120, Y: 664, Width: 60, Height: 36 };
+    expect(ShortfallBelow(word, region, 225)).toBe(225 - (824 - (700 + 12)));
+  });
+
+  it('nothing when the whole panel fits below', () => {
+    expect(ShortfallBelow({ X: 120, Y: 300, Width: 60, Height: 36 }, region, 225)).toBe(0);
+  });
+
+  it('a panel asks before its first placement, waits unseen for its word to stand still, and asks again for a taller held page', () => {
+    const popover = readFileSync(new URL('./Popover.ts', import.meta.url), 'utf-8');
+    expect(popover).toContain('if (short > 0.5 && maker(short, anchor)) {');
+    expect(popover).toContain('if (now - wait.StillSince < ROOM_STILL_MS && now - wait.Since < ROOM_WAIT_MS) return true;');
+    expect(popover).toContain('} else if (this._hold?.Down && !this._hold.Side && h > this._roomHeight + 0.5) {');
   });
 });

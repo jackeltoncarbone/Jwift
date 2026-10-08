@@ -307,6 +307,9 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       ShowAdd: this.ShowAdd(),
     });
   });
+  /** How tall the words stand, laid out, pt: known the moment they change, ahead of the box the engine springs to it
+   *  (Drill Sentences lane UU3, item 4: a row's caption under its sentence knows at once that the sentence moved it). */
+  readonly Height = computed(() => this._layout().Height);
 
   // ── Lane BB2, item 4: a change of words lands at once (`LandPieces`) ────────────────────────────────
   /** Where every piece (and the "+", under `ADD_KEY`) stood at the last layout, and its generation. */

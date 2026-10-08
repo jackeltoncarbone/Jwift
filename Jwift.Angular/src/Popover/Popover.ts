@@ -22,7 +22,8 @@ import PaperJss from '../Paper/Paper.jss';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverJss from './Popover.jss';
 import {
-  ArrowShows, ArrowTop, PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, type PopoverHold, type PopoverPlacement, type PopoverRect,
+  ArrowShows, ArrowTop, PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, ShortfallBelow,
+  type PopoverHold, type PopoverPlacement, type PopoverRect,
 } from './Popover.Placement';
 import { SwallowPress } from './Popover.OutsidePress';
 import { OpenSnap } from './Popover.OpenSnap';
@@ -38,6 +39,11 @@ export const JWIFT_POPOVER_ROOM = new InjectionToken<Signal<number>>('JWIFT_POPO
  *  placement. Every popover under the provider keeps its panel below that band, as it keeps clear of the canvas edge,
  *  so no panel covers the toolbar's controls (Drill Sentences lane QQ2, item 3: the who chooser hid Undo). */
 export const JWIFT_POPOVER_TOP_BAND = new InjectionToken<() => number>('JWIFT_POPOVER_TOP_BAND');
+
+/** How long the anchor stands still before a panel that asked for room (`Popover.MakeRoom`) places, ms, and the longest
+ *  it waits for that. */
+const ROOM_STILL_MS = 120;
+const ROOM_WAIT_MS = 1200;
 
 /** What closed the popover — the swipe-dismiss / tap-outside distinction a consumer's own "closes on
  *  the same word, doesn't reopen" guard needs (lane E's job; see LaneC.md risk 10). */
@@ -115,6 +121,14 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   /** What a panel opened `Beside` its column keeps clear of where it can, canvas px (`PopoverPlacementInput.Avoid`,
    *  Drill Sentences lane GG2, item 4: the squads a count wheel's sentence names). */
   readonly Avoid = input<readonly PopoverRect[]>([]);
+  /**
+   * Asked once, before the first placement, when the whole panel does not fit below its anchor: how many px more it
+   * needs there (`ShortfallBelow`). The host makes room if it can (scrolls the anchor's list up, raises its sheet) and
+   * answers true; the panel then waits, unseen, for the anchor to stand still, and places once it has. Asked again as
+   * a held panel that opened below takes a taller page (a submenu). Drill Sentences lane UU3, item 7 (a round 24 phone
+   * tester's join menu opened above its row with room for two rows, and the count wheel covered the transport).
+   */
+  readonly MakeRoom = input<((shortfall: number, anchor: PopoverRect) => boolean) | null>(null);
 
   private readonly _jss = inject(JSS_REGISTRY);
   private readonly _canvasRef = inject(Jaui, { optional: true });
@@ -178,6 +192,44 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const min = this.Width();
     return content === null ? min : Math.min(Math.max(min, content), Math.max(min, this.MaxWidth()));
   });
+
+  // ── Room under the anchor (`MakeRoom`, lane UU3, item 7) ─────────────────────────────────────────────
+  private _roomAsked = false;
+  /** The tallest page room has been asked for, or found to fit, below a held panel. */
+  private _roomHeight = 0;
+  /** While the host makes room: when it was asked, and the anchor as it stood since it last moved. */
+  private _roomWait: { readonly Since: number; StillSince: number; At: string } | null = null;
+  /** The panel stays unseen while it waits for its room. */
+  private readonly _roomHidden = signal(false);
+
+  /** Whether this frame's placement waits for the room the host is making. */
+  private _waitForRoom(anchor: PopoverRect, region: PopoverRect, h: number): boolean {
+    const maker = this.MakeRoom();
+    if (!maker) return false;
+    const now = performance.now();
+    const at = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}`;
+    if (this._placement() === null && !this._roomAsked) {
+      this._roomAsked = true;
+      this._roomHeight = h;
+      const short = ShortfallBelow(anchor, region, h);
+      if (short > 0.5 && maker(short, anchor)) {
+        this._roomWait = { Since: now, StillSince: now, At: at };
+        this._roomHidden.set(true);
+      }
+    } else if (this._hold?.Down && !this._hold.Side && h > this._roomHeight + 0.5) {
+      // A held panel's room is everything under its top, which rides the anchor's top.
+      this._roomHeight = h;
+      const short = h - (region.Y + region.Height - (anchor.Y + this._hold.TopFromAnchor));
+      if (short > 0.5) maker(short, anchor);
+    }
+    const wait = this._roomWait;
+    if (!wait) return false;
+    if (wait.At !== at) { wait.At = at; wait.StillSince = now; }
+    if (now - wait.StillSince < ROOM_STILL_MS && now - wait.Since < ROOM_WAIT_MS) return true;
+    this._roomWait = null;
+    this._roomHidden.set(false);
+    return false;
+  }
 
   /** Set once the content starts changing in place (`HoldPlacement`), and kept for the rest of the open. */
   private _hold: PopoverHold | null = null;
@@ -250,6 +302,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         patch['VisualOrigin'] = `${p.OriginX} ${p.OriginY}`;
       }
       this.SetStyleOverride(patch);
+      // Lane UU3, item 7: unseen while it waits for the room its host is making.
+      if (this._roomHidden()) this.SetStyleOverride({ Opacity: '0' });
+      else this.ClearStyleOverride('Opacity');
       // Only a panel whose content scrolls is ever capped (`_naturalHeight`'s own comment above).
       if (p && this._capped()) this.SetStyleOverride({ MaxHeight: `${p.MaxHeight}px` });
       else this.ClearStyleOverride('MaxHeight');
@@ -388,6 +443,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const scrolls = this._scrollers.length > 0;
     const h = this._naturalHeight(scrolls);
     const w = this._width();
+    if (this._waitForRoom(anchor, region, h)) return;
     const beside = this.Beside();
     const avoid = this.Avoid();
     const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}|${scrolls}|${beside}`

@@ -326,6 +326,30 @@ describe('LayoutSentence — a filler word owns its own hit area', () => {
     const mirrorHit = r.Hits.find((h) => h.TokenIndex === 2)!;
     expect(whoHit.X + whoHit.Width).toBeCloseTo(mirrorHit.X, 5);
   });
+
+  // Drill Sentences lane UU3, item 5 (a round 24 blind desktop tester clicked the squad name "3a ⇔ 3b" and landed on the
+  // mirror mark, which popped its menu): the mark is hit on its own glyph alone, and the names reach to its edges.
+  it('the mirror mark is hit on its own glyph alone, and the names either side take the space around it', () => {
+    const tokens: readonly SentenceToken[] = [
+      { Key: 'who', Text: '3a', Kind: 'Who' },
+      { Key: 'sp', Text: ' ', Kind: 'Text' },
+      { Key: 'mirror', Text: '', Kind: 'Mirror', Icon: 'arrow.left.and.right' },
+      { Key: 'sp2', Text: ' ', Kind: 'Text' },
+      { Key: 'partner', Text: '3b', Kind: 'Who' },
+    ];
+    const iconMeasure = (text: string, _weight: number, icon?: string): number => (icon ? 16 : measure(text));
+    const r = LayoutSentence(tokens, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: iconMeasure, ShowAdd: false });
+    const glyph = r.Pieces.find((p) => p.TokenIndex === 2)!;
+    const mirrorHit = r.Hits.find((h) => h.TokenIndex === 2)!;
+    expect(mirrorHit.X).toBeCloseTo(glyph.X, 5);
+    expect(mirrorHit.Width).toBeCloseTo(glyph.Width, 5);
+    // The touch target's height, as every word on a row of its own.
+    expect(mirrorHit.Height).toBe(44);
+    const whoHit = r.Hits.find((h) => h.TokenIndex === 0)!;
+    const partnerHit = r.Hits.find((h) => h.TokenIndex === 4)!;
+    expect(whoHit.X + whoHit.Width).toBeCloseTo(glyph.X, 5);
+    expect(partnerHit.X).toBeCloseTo(glyph.X + glyph.Width, 5);
+  });
 });
 
 // Drill Sentences lane BB2, item 4 (blind testers, three times: "outs8 counts" after a grouping, "theright

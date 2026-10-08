@@ -408,19 +408,25 @@ export function LayoutSentence(
   // LineHeight apart with no gap) is exactly `row * LineHeight` / `(row + 1) * LineHeight`. A row with
   // nothing to clip against (the common case — most cues are one line) is instead free to reach a real
   // touch target, at least 44pt tall, centered on the line.
-  interface _RowEntry { readonly Left: number; readonly Right: number; }
+  //
+  // Drill Sentences lane UU3, item 5 (a round 24 blind desktop tester clicked the squad name "3a ⇔ 3b" and landed on its
+  // mirror mark, which popped the mirror menu): the mark stands between two names, the middle of the whole name, and its
+  // share of the gaps either side made it the target a click on the name found. A mirror mark is hit only on its own
+  // glyph across the row (`Tight`): the names beside it reach to its edges, so the space around it is theirs, and the
+  // mark takes no more than its own box and the touch target's height.
+  interface _RowEntry { readonly Left: number; readonly Right: number; readonly Tight: boolean; }
   const rowEntries = new Map<number, _RowEntry[]>();
-  const pushRowEntry = (row: number, left: number, right: number): void => {
+  const pushRowEntry = (row: number, left: number, right: number, tight = false): void => {
     const list = rowEntries.get(row);
-    if (list) list.push({ Left: left, Right: right });
-    else rowEntries.set(row, [{ Left: left, Right: right }]);
+    if (list) list.push({ Left: left, Right: right, Tight: tight });
+    else rowEntries.set(row, [{ Left: left, Right: right, Tight: tight }]);
   };
   // An icon token (the mirror mark) carries empty text but real width: it is visible content, so it is a
   // neighbour like any word, never mistaken for the whitespace the rule above leaves out.
   const isBlank = (piece: SentencePiece): boolean => piece.Text.trim() === '' && !tokens[piece.TokenIndex]?.Icon;
   for (const piece of pieces) {
     if (isBlank(piece)) continue; // a pure-whitespace piece is never its own neighbour — see above.
-    pushRowEntry(piece.Row, piece.X, piece.X + piece.Width);
+    pushRowEntry(piece.Row, piece.X, piece.X + piece.Width, tokens[piece.TokenIndex]?.Kind === 'Mirror');
   }
   if (add) pushRowEntry(add.Row, add.X, add.X + add.Width);
   for (const list of rowEntries.values()) list.sort((a, b) => a.Left - b.Left);
@@ -445,8 +451,12 @@ export function LayoutSentence(
     const prev = selfIdx > 0 ? rowList[selfIdx - 1] : null;
     const next = selfIdx >= 0 && selfIdx < rowList.length - 1 ? rowList[selfIdx + 1] : null;
 
-    const hitLeft = prev ? (prev.Right + piece.X) / 2 : piece.X - FREE_PAD_X - PILL_PAD_X;
-    const hitRight = next ? (piece.X + piece.Width + next.Left) / 2 : piece.X + piece.Width + FREE_PAD_X + PILL_PAD_X;
+    const tight = selfIdx >= 0 && rowList[selfIdx].Tight;
+    // Lane UU3, item 5: a tight mark keeps to its own glyph beside a neighbour, and the neighbour reaches its edge.
+    const hitLeft = !prev ? piece.X - FREE_PAD_X - PILL_PAD_X : tight ? piece.X : prev.Tight ? prev.Right : (prev.Right + piece.X) / 2;
+    const hitRight = !next
+      ? piece.X + piece.Width + FREE_PAD_X + PILL_PAD_X
+      : tight ? piece.X + piece.Width : next.Tight ? next.Left : (piece.X + piece.Width + next.Left) / 2;
 
     const centerY = piece.Y + LineHeight / 2;
     const hasPrevRow = piece.Row > 0;
