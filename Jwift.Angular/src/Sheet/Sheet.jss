@@ -47,6 +47,9 @@ Jwift_SheetLayer_Inspector : Jwift_SheetLayer {
 
 // The dimming view: black, at 0.2 in light and 0.48 in dark [C], never blurred. Its opacity is the component's.
 Jwift_SheetDim {
+  // The glass over the dim reads the content under it (Jaui Core/Glass.Plate.ts): an alert is the same glass as every
+  // popover, never a muddier one over the dim (Drill Sentences lane WW1, a round 25 blind tester's "Replace 9a's steps").
+  GlassSeesThrough: true
   Position: Placed
   Top: 0pt
   Left: 0pt

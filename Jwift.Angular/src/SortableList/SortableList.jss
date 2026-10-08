@@ -77,9 +77,10 @@ Jwift_SortableRow {
   Interactive: true
   Cursor: Pointer
   @Transition Background { Duration: 140ms }
+  @Transition BackdropFilter { Duration: 140ms }
 }
-Jwift_SortableRow_Selected {
-  Background: @GoldWash
+// The house gold as a vibrant fill on the glass, never an olive wash (Jwift.Glass.jss, JwiftSelectionTint).
+Jwift_SortableRow_Selected : JwiftSelectionTint {
 }
 Jwift_SortableRow_InSection {
   Margin: 0pt 0pt 0pt 18pt

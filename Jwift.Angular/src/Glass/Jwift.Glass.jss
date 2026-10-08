@@ -118,6 +118,19 @@ JwiftSeparatorVibrancy {
 @JwiftSelectionContrast: 0.78 * @Dark + 1.548 * @Light
 @JwiftSelectionSaturation: 1.165 * @Dark + 1.062 * @Light
 
+// ── THE SELECTION ON GLASS ──────────────────────────────────────────
+// The house gold as a vibrant fill, never a gold paint (Drill Sentences lane WW1). A selected row on the panel glass
+// wore @GoldWash, a gold at 0.2 painted over the glass, which kept 0.8 of the glass's green grey under it and read as a
+// muddy olive brown (a round 25 blind phone tester). A vibrant fill covers enough of what is under it that the green
+// goes and adds the gold, so the row stays gold on any glass, in both themes: over the dark panel (35, 41, 30) it lands
+// near (134, 102, 14), the gold's own hue at nine tenths of its saturation, where the wash gave (79, 69, 24).
+@JwiftSelectionGold: 118 * @Dark + 64 * @Light
+@JwiftSelectionGoldCover: 0.55 * @Dark + 0.28 * @Light
+JwiftSelectionTint {
+  Background: rgba(0, 0, 0, 0)
+  BackdropFilter: Vibrancy(rgb(255, 182, 0), @JwiftSelectionGold, @JwiftSelectionGoldCover)
+}
+
 // ── THE RIM ─────────────────────────────────────────────────────────
 // Apple's highlight (Jaui Core/Glass.md): a band 1 pt deep, lit by a key light upper left and a fill lower
 // right, recoloring what is under it by Apple's vibrant color matrix, so it carries the backdrop's hue
