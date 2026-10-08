@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { PlacePopover, PointInRect, PopoverTargetRect, ShortfallBelow, type PopoverRect } from './Popover.Placement';
+import {
+  PlacePopover, PointInRect, PopoverTargetRect, ROOM_STILL_MS, ROOM_WAIT_MS, RoomWaitStep, ShortfallBelow, type PopoverRect,
+} from './Popover.Placement';
 
 // Drill Sentences lane AA2, items 1 and 2 (blind first-time testers, phone 402x874 and desktop 1440x900).
 describe('PlacePopover keeps every row on screen and never covers the word it edits', () => {
@@ -317,10 +319,43 @@ describe('ShortfallBelow: what a panel lacks under its word, for its host to mak
     expect(ShortfallBelow({ X: 120, Y: 300, Width: 60, Height: 36 }, region, 225)).toBe(0);
   });
 
-  it('a panel asks before its first placement, waits unseen for its word to stand still, and asks again for a taller held page', () => {
+  it('a panel asks before its first placement, waits unseen until it fits below, and asks again for a taller held page', () => {
     const popover = readFileSync(new URL('./Popover.ts', import.meta.url), 'utf-8');
     expect(popover).toContain('if (short > 0.5 && maker(short, anchor)) {');
-    expect(popover).toContain('if (now - wait.StillSince < ROOM_STILL_MS && now - wait.Since < ROOM_WAIT_MS) return true;');
+    expect(popover).toContain('const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });');
     expect(popover).toContain('} else if (this._hold?.Down && !this._hold.Side && h > this._roomHeight + 0.5) {');
+  });
+});
+
+/** Lane UU3, item 7, live (402x874, "16 counts" in M5-12 at Medium, w2-wheel.png: the sheet rose and the word came up to
+ *  y 505, but the wheel had already opened above it, over the transport). The word paused, still low, before the sheet rose. */
+describe('RoomWaitStep: a panel that asked for room places below its word once the room is made', () => {
+  const region: PopoverRect = { X: 8, Y: 70, Width: 386, Height: 762 };
+  const wheel = 232;
+  const atMedium: PopoverRect = { X: 24, Y: 760, Width: 90, Height: 68 };
+  const atLarge: PopoverRect = { X: 24, Y: 450, Width: 90, Height: 68 };
+
+  it('word low at Medium: it waits, however long the word stands still there before the sheet begins to rise', () => {
+    expect(ShortfallBelow(atMedium, region, wheel)).toBeGreaterThan(0);
+    expect(RoomWaitStep({ Shortfall: ShortfallBelow(atMedium, region, wheel), StillFor: 300, Elapsed: 300 })).toBe('Wait');
+  });
+
+  it('the word on its way up: it waits', () => {
+    const rising = { ...atMedium, Y: 600 };
+    expect(RoomWaitStep({ Shortfall: ShortfallBelow(rising, region, wheel), StillFor: 0, Elapsed: 400 })).toBe('Wait');
+  });
+
+  it('room made at Large: once the word has stood still there it places, below the word', () => {
+    expect(ShortfallBelow(atLarge, region, wheel)).toBe(0);
+    expect(RoomWaitStep({ Shortfall: 0, StillFor: ROOM_STILL_MS - 1, Elapsed: 700 })).toBe('Wait');
+    expect(RoomWaitStep({ Shortfall: 0, StillFor: ROOM_STILL_MS, Elapsed: 720 })).toBe('Place');
+    const placed = PlacePopover({ Anchor: atLarge, Region: region, W: 250, H: wheel, PrevDown: null, Scrolls: false });
+    expect(placed.Down).toBe(true);
+    expect(placed.Y).toBe(atLarge.Y + atLarge.Height + 12);
+    expect(placed.Y + wheel).toBeLessThanOrEqual(region.Y + region.Height);
+  });
+
+  it('a host that could not make room: past the wait it places wherever it fits', () => {
+    expect(RoomWaitStep({ Shortfall: 240, StillFor: 900, Elapsed: ROOM_WAIT_MS })).toBe('Place');
   });
 });

@@ -140,6 +140,23 @@ export function ShortfallBelow(anchor: PopoverRect, region: PopoverRect, h: numb
   return Math.max(0, h - (region.Y + region.Height - (anchor.Y + anchor.Height + ARROW_HEIGHT)));
 }
 
+/** How long the anchor stands still, fitting, before a panel that asked for room places, ms, and the longest it waits. */
+export const ROOM_STILL_MS = 120;
+export const ROOM_WAIT_MS = 1600;
+
+/**
+ * Whether a panel that asked its host for room (`Popover.MakeRoom`) waits another frame or places now. Drill Sentences lane
+ * UU3, item 7, live (402x874, "16 counts" in M5-12 at the sheet's Medium detent: the sheet rose to Large and the word came
+ * up to y 505, but the count wheel had opened above it, over the transport). The panel placed once its word stood still,
+ * and the word stood still for a moment before the sheet began to rise, still low, so the first placement went above and
+ * the held panel kept that side. It waits until the whole panel fits below the word (`Shortfall` 0) and the word has stood
+ * still there (`StillFor`), or until the host has had `ROOM_WAIT_MS` (`Elapsed`), when it places wherever it fits.
+ */
+export function RoomWaitStep(o: { readonly Shortfall: number; readonly StillFor: number; readonly Elapsed: number }): 'Wait' | 'Place' {
+  if (o.Elapsed >= ROOM_WAIT_MS) return 'Place';
+  return o.Shortfall <= 0.5 && o.StillFor >= ROOM_STILL_MS ? 'Place' : 'Wait';
+}
+
 export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
   if (input.Hold) return input.Hold.Side ? holdBeside(input, input.Hold) : holdPopover(input, input.Hold);
   const beside = input.Beside === null || input.Beside === undefined ? null : placeBeside(input, input.Beside);

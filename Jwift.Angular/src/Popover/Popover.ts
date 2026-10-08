@@ -22,7 +22,7 @@ import PaperJss from '../Paper/Paper.jss';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverJss from './Popover.jss';
 import {
-  ArrowShows, ArrowTop, PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, ShortfallBelow,
+  ArrowShows, ArrowTop, PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, RoomWaitStep, ShortfallBelow,
   type PopoverHold, type PopoverPlacement, type PopoverRect,
 } from './Popover.Placement';
 import { SwallowPress } from './Popover.OutsidePress';
@@ -39,11 +39,6 @@ export const JWIFT_POPOVER_ROOM = new InjectionToken<Signal<number>>('JWIFT_POPO
  *  placement. Every popover under the provider keeps its panel below that band, as it keeps clear of the canvas edge,
  *  so no panel covers the toolbar's controls (Drill Sentences lane QQ2, item 3: the who chooser hid Undo). */
 export const JWIFT_POPOVER_TOP_BAND = new InjectionToken<() => number>('JWIFT_POPOVER_TOP_BAND');
-
-/** How long the anchor stands still before a panel that asked for room (`Popover.MakeRoom`) places, ms, and the longest
- *  it waits for that. */
-const ROOM_STILL_MS = 120;
-const ROOM_WAIT_MS = 1200;
 
 /** What closed the popover — the swipe-dismiss / tap-outside distinction a consumer's own "closes on
  *  the same word, doesn't reopen" guard needs (lane E's job; see LaneC.md risk 10). */
@@ -124,7 +119,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   /**
    * Asked once, before the first placement, when the whole panel does not fit below its anchor: how many px more it
    * needs there (`ShortfallBelow`). The host makes room if it can (scrolls the anchor's list up, raises its sheet) and
-   * answers true; the panel then waits, unseen, for the anchor to stand still, and places once it has. Asked again as
+   * answers true; the panel then waits, unseen, until it fits below the anchor and the anchor stands still there, and
+   * places below it (`RoomWaitStep`; past the wait, wherever it fits). Asked again as
    * a held panel that opened below takes a taller page (a submenu). Drill Sentences lane UU3, item 7 (a round 24 phone
    * tester's join menu opened above its row with room for two rows, and the count wheel covered the transport).
    */
@@ -225,7 +221,10 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const wait = this._roomWait;
     if (!wait) return false;
     if (wait.At !== at) { wait.At = at; wait.StillSince = now; }
-    if (now - wait.StillSince < ROOM_STILL_MS && now - wait.Since < ROOM_WAIT_MS) return true;
+    // Placed only once it fits below the word where the word has come to rest (`RoomWaitStep`), never on a word that
+    // paused before the room was made.
+    const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });
+    if (step === 'Wait') return true;
     this._roomWait = null;
     this._roomHidden.set(false);
     return false;
