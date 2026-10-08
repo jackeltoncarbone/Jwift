@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { Jaui, Jiv, JSS_REGISTRY } from 'jaui-angular';
+import type { JivHandle } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { IsEscapeKey } from '../Internal/Keys';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
@@ -105,6 +106,11 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   /** The origin's corner radius in canvas px (`GlassMorphStart`): a word's highlight. Null (the default) is a
    *  capsule, the shape of every glass control and pill a menu opens from. */
   readonly OriginRadius = input<number | null>(null);
+  /** The glass control the menu grows out of (a glass button, a title): while the menu stands open its glass IS the
+   *  control's, so the control is not drawn beside it, and it is drawn again as the menu collapses back into it
+   *  (Drill Sentences lane WW1, item 3). A press where it stood closes the menu, as a press on it would. Null for an
+   *  anchor that is no control (a word, a dot on a rail). */
+  readonly Source = input<{ readonly Node: JivHandle } | null | undefined>(null);
   /** The accessibility name for the panel. */
   readonly Label = input<string | null>(null);
   /** Drill Sentences lane BB2, item 2: the panel holds the placement it opens with until it closes
@@ -266,6 +272,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private _growing: { readonly End: { readonly X: number; readonly Y: number; readonly Width: number }; Frames: number } | null = null;
   /** Set as it leaves, so the leaving apply wears the close (`Jwift_Popover_Closing`). */
   private _closing = false;
+  /** The source control this panel hid as it opened (`Source`), drawn again as it closes. */
+  private _hiddenSource: JivHandle | null = null;
 
   /** Lane DD2, item 1: the content lands on the placement it opens with rather than gliding to it
    *  (`Popover.OpenSnap.ts`), so a control is hit where it is drawn from the first placed frame. */
@@ -324,8 +332,10 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         // same gesture: close-then-reopen read as "nothing happened" on a second press, or a visible
         // flicker. The anchor is where a press is MEANT to toggle, not dismiss — treat it as inside,
         // same as the panel itself, and leave the toggle decision to the anchor's own click handler.
+        // Lane WW1, item 3: a hidden source control takes no press, so a press where it stood is this
+        // panel's own close.
         const anchor = this._resolveAnchor();
-        if (anchor && PointInRect(px, py, anchor)) return;
+        if (anchor && PointInRect(px, py, anchor) && !this._hiddenSource) return;
       }
       // Lane BB2, item 3: the press that closes a popover does nothing else, like iOS. It used to reach the
       // canvas too, and a tap meant to close the count picker opened another row's "•••" menu.
@@ -372,7 +382,24 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
       Object.assign(leave, GlassCollapseStyle(GlassCollapseOnto({ X: this.Node.X, Y: this.Node.Y, Width: this.Node.Width, Height: drawn }, origin)));
     }
     this._closing = true;
+    this._showSource();
     this._detachOnDestroy(leave);
+  }
+
+  /** Hides the source control as the panel's glass takes its place (`Source`). Set before the open's `MorphFrom`, so
+   *  both reach the worker in one batch and the control and the panel are never drawn side by side. */
+  private _hideSource(): void {
+    const node = this.Source()?.Node ?? null;
+    if (!node) return;
+    node.Visible = false;
+    this._hiddenSource = node;
+  }
+
+  /** Draws the source control again under the collapsing glass, unless it went first. */
+  private _showSource(): void {
+    const node = this._hiddenSource;
+    this._hiddenSource = null;
+    if (node?.Parent) node.Visible = true;
   }
 
   /** What the glass grows out of: `Origin`, else the anchor. */
@@ -398,6 +425,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (this._showPending) {
       this._showPending = false;
       const origin = this._resolveOrigin();
+      this._hideSource();
       if (!origin || GlassMotionFor(this.PassThrough(), PrefersReducedMotion(this._doc)) === 'Fade') {
         this._shown.set('Fade');
         return;

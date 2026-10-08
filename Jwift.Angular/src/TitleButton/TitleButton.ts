@@ -42,4 +42,7 @@ export class TitleButton {
     const n = this._title()?.Node;
     return n && n.Width > 0 ? { X: n.X, Y: n.Y, Width: n.Width, Height: n.Height } : null;
   };
+
+  /** The title itself, which its menu stands in for while it is open (`Popover.Source`). */
+  readonly Control = (): Jiv | null => this._title() ?? null;
 }

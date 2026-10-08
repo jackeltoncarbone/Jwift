@@ -8,8 +8,13 @@
 // its placement (`Morph/GlassMorph.ts`, Jaui's `MorphFrom`), its rows standing at their places inside it, clipped by the
 // glass as it grows. Unseen until it opens, so its first, unplaced layout never shows.
 //
-// The springs are Apple's menu morph read as a response and a damping ratio: 0.4 s and 0.85, so the glass settles with
-// the slightest overshoot (FlexMovement.TuneSpring: K = (2 pi / 0.4)^2 = 246.7, D = 2 x 0.85 x sqrt(K) = 26.7).
+// The control it grows out of is not drawn while it stands open (`Popover.Source`): the menu IS that control's glass.
+//
+// The growth runs 350ms, eased out, critically damped (Jaui's @Transition): the glass leaves the control quickly and
+// settles onto the panel without overshoot, its growth plain to see through its whole length rather than spent in its
+// first hundred milliseconds, as the 0.4s, 0.85 spring this replaced spent most of it. The tick after the open begins
+// steps one frame however long the frame that drew its start took (Jaui Animation/Step.Span.ts), so a slow renderer
+// shows the growth too.
 Jwift_Popover : JwiftPanelGlass {
   Position: Placed
   // Layer 50: "Ask" (Design/Layers.ts — Jwift cannot import it, so the rung is named here instead).
@@ -23,11 +28,11 @@ Jwift_Popover : JwiftPanelGlass {
   // The rows show only inside the glass while it grows and while it collapses.
   Overflow: Hidden
   Opacity: 0
-  @Spring X { Stiffness: 246.7, Damping: 26.7, Mass: 1 }
-  @Spring Y { Stiffness: 246.7, Damping: 26.7, Mass: 1 }
-  @Spring Width { Stiffness: 246.7, Damping: 26.7, Mass: 1 }
-  @Spring Height { Stiffness: 246.7, Damping: 26.7, Mass: 1 }
-  @Spring BorderRadius { Stiffness: 246.7, Damping: 26.7, Mass: 1 }
+  @Transition X { Duration: 350ms }
+  @Transition Y { Duration: 350ms }
+  @Transition Width { Duration: 350ms }
+  @Transition Height { Duration: 350ms }
+  @Transition BorderRadius { Duration: 350ms }
 }
 
 // Grown out of its anchor: the glass is there at once, at the anchor's own rect, and only its shape moves.
@@ -42,12 +47,12 @@ Jwift_Popover_Fade : Jwift_Popover {
   @Transition Opacity { Duration: 200ms }
 }
 
-// The close. A morphed panel collapses onto its anchor (the scale and translate Popover.ts writes as it leaves, about
-// its centre) on the open's spring, and its glass fades over the same short run, so nothing is left standing once the
-// anchor is reached (Drill Sentences lane TT1, item 3: a closed menu's empty pane stood over the field for a second).
+// The close. A morphed panel collapses onto its control (the scale and translate Popover.ts writes as it leaves, about
+// its centre), the control drawn again under it, and its glass fades over a shorter run, so nothing is left standing
+// once the control is reached (Drill Sentences lane TT1, item 3: a closed menu's empty pane stood over the field).
 Jwift_Popover_Closing : Jwift_Popover {
   VisualOrigin: 0.5 0.5
-  @Spring VisualScale { Stiffness: 246.7, Damping: 26.7, Mass: 1 }
-  @Spring VisualTranslate { Stiffness: 246.7, Damping: 26.7, Mass: 1 }
+  @Transition VisualScale { Duration: 300ms }
+  @Transition VisualTranslate { Duration: 300ms }
   @Transition Opacity { Duration: 220ms }
 }
