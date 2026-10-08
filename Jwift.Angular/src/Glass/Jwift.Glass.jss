@@ -118,17 +118,30 @@ JwiftSeparatorVibrancy {
 @JwiftSelectionContrast: 0.78 * @Dark + 1.548 * @Light
 @JwiftSelectionSaturation: 1.165 * @Dark + 1.062 * @Light
 
-// ── THE SELECTION ON GLASS ──────────────────────────────────────────
-// The house gold as a vibrant fill, never a gold paint (Drill Sentences lane WW1). A selected row on the panel glass
-// wore @GoldWash, a gold at 0.2 painted over the glass, which kept 0.8 of the glass's green grey under it and read as a
-// muddy olive brown (a round 25 blind phone tester). A vibrant fill covers enough of what is under it that the green
-// goes and adds the gold, so the row stays gold on any glass, in both themes: over the dark panel (35, 41, 30) it lands
-// near (134, 102, 14), the gold's own hue at nine tenths of its saturation, where the wash gave (79, 69, 24).
-@JwiftSelectionGold: 118 * @Dark + 64 * @Light
-@JwiftSelectionGoldCover: 0.55 * @Dark + 0.28 * @Light
-JwiftSelectionTint {
+// ── THE SELECTED ROW ──────────────────────────────────────────────────
+// Apple's own measured level, not the house gold (Drill Sentences lane AB3, round 27 item 1). Lane WW1's full-
+// strength gold vibrant fill (below it once stood here as `JwiftSelectionTint`) fixed a muddy olive wash but
+// overshot into a second prominent, tinted element beside the drill's one real primary action (checklist 12, one
+// tinted primary per screen) -- a round 27 blind phone tester named the gold selected row outright. Apple's own
+// figure for a selected list row (THE FILLS, above: "iPad sidebar, selected row ... +16 +17 +17") sits at the
+// SECONDARY fill level (+18 dark / -12 light), neutral, the same family a hover or a resting field already
+// wears -- quiet, not a competing colour.
+JwiftSelectedRowFill {
   Background: rgba(0, 0, 0, 0)
-  BackdropFilter: Vibrancy(rgb(255, 182, 0), @JwiftSelectionGold, @JwiftSelectionGoldCover)
+  BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
+}
+
+// ── THE EDIT PULSE ───────────────────────────────────────────────────
+// A line just edited flashes once, the house gold at low opacity, and fades -- Apple's own brief, quiet edit
+// confirmation, never a held paint (round 27 item 1). A consumer flips its `Edited` input true for one tick and
+// back to false (SortableRow.ts); the fade is this transition's own duration, not a hold. Half the retired
+// `JwiftSelectionTint`'s cover (0.55 dark / 0.28 light), so a confirmation reads and does not compete.
+@JwiftEditPulseGold: 118 * @Dark + 64 * @Light
+@JwiftEditPulseGoldCover: 0.275 * @Dark + 0.14 * @Light
+JwiftEditPulse {
+  Background: rgba(0, 0, 0, 0)
+  BackdropFilter: Vibrancy(rgb(255, 182, 0), @JwiftEditPulseGold, @JwiftEditPulseGoldCover)
+  @Transition BackdropFilter { Duration: 500ms }
 }
 
 // ── THE RIM ─────────────────────────────────────────────────────────
