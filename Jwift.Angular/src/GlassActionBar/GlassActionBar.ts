@@ -58,6 +58,10 @@ export interface ActionGroup {
   /** The open dropdown's width in pt, for a page of sentences rather than a menu's words (`GlassDropdown.openWidth`,
    *  Drill Sentences lane KK1, item 5: a page's problems). Omit for the menu's own width. */
   PageWidth?: number;
+  /** The lowest the open dropdown's bottom may reach, canvas px (`GlassDropdown.openBottomLimit`): the page's next floating
+   *  layer below it (Drill Sentences lane OO2, item 4: the problems list over the selection bar). Omit for the screen's
+   *  own room. */
+  PageBottomLimit?: number | null;
 }
 
 /**
@@ -119,7 +123,8 @@ export interface ActionGroup {
           <glass-dropdown #gd
             [defaultPage]="_GroupDefaultPage(gp.Group)"
             [canOpen]="_GroupCanOpen(gp.Group)"
-            [openBelow]="!!gp.Group.OpenBelow" [openWidth]="gp.Group.PageWidth ?? null" [closedVariant]="_PillVariant(gp.Cells)">
+            [openBelow]="!!gp.Group.OpenBelow" [openWidth]="gp.Group.PageWidth ?? null" [closedVariant]="_PillVariant(gp.Cells)"
+            [openBottomLimit]="gp.Group.PageBottomLimit ?? null" (openRect)="PageRect.emit({ Group: gp.Id, Rect: $event })">
             @if (!gd.IsOpen()) {
               @for (a of gp.Cells; track a.Id) {
                 @if (a.Spinner) {
@@ -263,6 +268,9 @@ export class GlassActionBar implements OnDestroy {
 
   /** Fires the clicked action id — from a group cell or a sink menu item. */
   readonly ActionClick = output<string>();
+  /** Where a group's open dropdown stands, by the group's id, and null once it closes (`GlassDropdown.openRect`): so a
+   *  page keeps its floating layers clear of an open list (Drill Sentences lane OO2, item 4). */
+  readonly PageRect = output<{ Group: string; Rect: { Left: number; Top: number; Right: number } | null }>();
 
   protected readonly JssSource = GlassActionBarJss;
   protected readonly _NoActions: readonly GlassAction[] = [];

@@ -9,6 +9,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
@@ -102,6 +103,22 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
    *  Null keeps the menu's own width (`Jwift_GlassDropdown_Open`). The panel still opens anchored at its pill's
    *  right edge, and takes no more than the room left of that edge (`_fitToRoom`). */
   readonly openWidth = input<number | null>(null);
+
+  /** The lowest the open panel's bottom may reach, in the canvas's px, or null for the screen's own room (Drill Sentences
+   *  lane OO2, item 4: a round 19 blind desktop tester's problems list ran down over the selection bar under it). The
+   *  page says where the next floating layer begins; `_fitToRoom` caps the panel above it, still never under the
+   *  three-row floor, and caps again whenever it moves while the panel is open. */
+  readonly openBottomLimit = input<number | null>(null);
+
+  /** Where the open panel stands, as `_fitToRoom` measures it each time it writes (its top, its anchored right edge and
+   *  its left edge at its open width), and null once it closes: so the page can keep its own floating layers clear of
+   *  it (lane OO2, item 4). */
+  readonly openRect = output<{ Left: number; Top: number; Right: number } | null>();
+  private _openRectKey = '';
+  private readonly _bottomLimitEffect = effect(() => {
+    this.openBottomLimit();
+    if (untracked(() => this._open())) untracked(() => this._fitToRoom());
+  });
 
   /** Drive the panel open or closed from outside, as the ordinary Angular input/output pair so
    *  `[(open)]` binds. **`null` is UNCONTROLLED and is the default**, which is every consumer that
@@ -262,17 +279,32 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     if (!el) return;
     // Concentric with the screen's corner: the outer radius less the panel's own.
     const gap = this._jss.VarPoints('JwiftScreenRadius') - this._jss.VarPoints('JwiftDropdownRadius');
-    const room = el.getBoundingClientRect().height - this.Node.Y - this._bottomInset() - gap;
+    const limit = this.openBottomLimit();
+    const screen = el.getBoundingClientRect().height - this.Node.Y - this._bottomInset() - gap;
+    const room = limit === null ? screen : Math.min(screen, limit - this.Node.Y);
     const cap = `${Math.round(Math.max(room, PANEL_FLOOR))}px`;
     // Rounded, and written only on a CHANGE. `SetStyleOverride` re-fires `JivHost`'s effect, which
     // re-applies the whole resolved class bag; this runs on every frame of the 600ms growth track, so
     // an unguarded write would post three dozen identical `apply` ops per open and fight the height
     // spring with sub-pixel dust while it flies.
     const width = this._openWidthFor(this.Node.X + this.Node.Width - gap);
+    this._reportOpenRect(width);
     if (this._cap === cap && this._width === width) return;
     this._cap = cap;
     this._width = width;
     this.SetStyleOverride(width ? { MaxHeight: cap, Width: width } : { MaxHeight: cap });
+  }
+
+  /** `openRect`, emitted only when it changes: the panel's top, its right edge (anchored `Right: 0` on its slot, so it
+   *  never moves while the panel grows) and its left at the open width (`width`, else the menu's own as measured). */
+  private _reportOpenRect(width: string | null): void {
+    const right = Math.round(this.Node.X + this.Node.Width);
+    const left = width ? right - parseFloat(width) : Math.round(this.Node.X);
+    const rect = { Left: left, Top: Math.round(this.Node.Y), Right: right };
+    const key = `${rect.Left},${rect.Top},${rect.Right}`;
+    if (key === this._openRectKey) return;
+    this._openRectKey = key;
+    this.openRect.emit(rect);
   }
 
   /** The last ceiling written, so a re-measure that lands on the same number costs nothing. */
@@ -352,6 +384,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     // which `ResolveBound` reads as Infinity), so this says no ceiling rather than hoping for one.
     this._cap = null;
     this.SetStyleOverride({ MaxHeight: 'none' });
+    if (this._openRectKey) { this._openRectKey = ''; this.openRect.emit(null); }
     // The open width is the open panel's alone: the closed pill takes its own (`Jwift_GlassDropdown_Closed`) back.
     if (this._width !== null) { this._width = null; this.ClearStyleOverride('Width'); }
     this._holdTopLayerWhileClosing();
