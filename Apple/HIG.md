@@ -76,6 +76,9 @@ How each layer is actually built (the filter, its laws and values) is `LiquidGla
 - Dark Mode: contrast at least 4.5:1, aim for 7:1 for custom text.
 - Minimum contrast by size and weight (HIG Accessibility): "Up to 17 pts | All | 4.5:1", "18 pts | All | 3:1", "All | Bold | 3:1". "If your app supports dark mode, make sure to check the minimum contrast in both light and dark appearances."
 - System colors, dark: Red 255 66 69, Orange 255 146 48, Yellow 255 214 0, Green 48 209 88, Mint 0 218 195, Teal 0 210 224, Cyan 60 211 254, Blue 0 145 255, Indigo 109 124 255, Purple 219 52 242, Pink 255 55 95, Brown 183 138 102. Grays: gray 142 142 147, gray2 99 99 102, gray3 72 72 74, gray4 58 58 60, gray5 44 44 46, gray6 28 28 30. Labels have four levels (label, secondary, tertiary, quaternary), separators one; Dark Mode has base and elevated backgrounds.
+- System colors, light (same HIG Color table, light column): Red 255 56 60, Orange 255 141 40, Yellow 255 204 0, Green 52 199 89, Mint 0 200 179, Teal 0 195 208, Cyan 0 192 232, Blue 0 136 255, Indigo 97 85 245, Purple 203 48 224, Pink 255 45 85, Brown 172 127 94. [C]
+- Label opacity steps (secondary/tertiary/quaternary/quinary, standard and vibrant catalogs, light and dark) are not HIG prose — the exact CoreUI-catalog RGBA for each rung is decompiled in `Sizing.md` section 4 and `Evidence.md` 1a; those values are the source of truth over any rough "60% / 30% / 16%" opacity percentage quoted secondhand. They corroborate those rough percentages closely (secondary ≈0.60, tertiary ≈0.30, quaternary ≈0.16–0.18). [C] Sizing.md 4 supersedes
+- Separators: two kinds, `separator` (lets background show through, the row hairline) and `opaqueSeparator` (fully opaque, used over a varying background such as media). Not in the decompiled CoreUI catalogs read so far; measured UIKit default (not HIG-published): dark `separator` rgba(84,84,88,0.60), light roughly 29% black. The hairline is one device pixel, not a CSS 1px line scaled up. [I] measured, flagged as such since HIG publishes no separator color
 - Stale on macOS: HIG Color says "General > Accent color settings" and HIG Dark Mode "the graphite accent color in General settings", which is pre-Ventura. macOS 26 has it at Appearance > Color (`Apps.md` 6.3). [C] both sides
 
 ## 3. Shapes [C] session 356, `ConcentricRectangle`, `UICornerConfiguration`
@@ -100,7 +103,20 @@ How each layer is actually built (the filter, its laws and values) is `LiquidGla
 
 ## 4. Buttons [C] HIG Buttons, session 323
 
-- Hit region "at least 44x44 pt" (visionOS 60x60).
+- Hit region "at least 44x44 pt" (visionOS 60x60). Full published table (HIG Accessibility, control size, default / minimum, confirmed by two independent fetches):
+
+| Platform | Default | Minimum |
+|---|---|---|
+| iOS, iPadOS | 44×44pt | 28×28pt |
+| macOS | 28×28pt | 20×20pt |
+| tvOS | 66×66pt | 56×56pt |
+| visionOS | 60×60pt | 28×28pt |
+| watchOS | 44×44pt | 28×28pt |
+
+  So 44pt is the iOS/iPadOS default tap target, not its floor (the floor is 28pt, same as the macOS/pointer default); 20pt is the macOS pointer absolute floor. A hit region is not a drawn size: Apple draws 28 and 34pt buttons (`Sizing.md` section 3) inside a 44pt region.
+- Spacing around controls (HIG Accessibility, also repeated on Pointing Devices): about 12pt of padding around elements with a bezel, about 24pt around elements without one. Use this for inter-control spacing when nothing more specific is given.
+- Enlarging text: support at least 200% (iOS/iPadOS/macOS/visionOS) or 140% (watchOS) via the system's own text-size control, not a custom in-app slider capped lower.
+- Layout placement (HIG Layout, no page-specific section elsewhere in this file): place the most important items near the top and leading edge; content should reflow (e.g. stack vertically) at larger Dynamic Type sizes rather than clip or truncate (section 15 has the Dynamic Type numbers); on macOS, avoid placing critical controls at the very bottom edge of a window (people commonly drag windows so the bottom runs off-screen). [C]
 - "Bordered buttons now have a capsule shape by default." iOS: capsule at every size. macOS: mini, small and medium "retain a rounded-rectangle shape, which preserves horizontal density"; large and the new extra large are capsules. Sizes: mini, small, regular, large, extraLarge. "Most controls on macOS are slightly taller."
 - Styles: `glass` and `glassProminent` (the material tinted with the accent). UIKit `.glass()`, `.prominentGlass()`, `.clearGlass()`, `.prominentClearGlass()`.
 - Always include a press state. Use style, not size, to mark the preferred option. Roles: normal, primary (accent), cancel, destructive (system red; never primary).
@@ -110,6 +126,8 @@ How each layer is actually built (the filter, its laws and values) is `LiquidGla
 ## 5. Menus [C] HIG Menus (updated June 8, 2026, "Updated guidance for menu item icons"), Context menus, Pull-down buttons, session 356, 323, 284
 
 - Layouts (iOS, iPadOS): **small**, a row of four unlabeled icons above the list; **medium**, a row of three icons with short labels; **large**, the default, all items in a list. Items beyond the top row render as full rows.
+- A **pull-down button** presents commands/actions related to the button itself (e.g. an Add button's menu of things to add); after choosing, the button's own action runs and the menu closes — its face does not persist a selection. A **pop-up button** is for mutually exclusive choices (not commands): its face always shows the currently chosen value, closer to a `<select>`. [C] HIG Pull-down buttons, Pop-up buttons
+- A pull-down menu wants at least about 3 genuinely related items to justify opening it at all; below that, prefer discrete buttons. Include a menu title only if it meaningfully adds context. [C] HIG Pull-down buttons
 - Icons sit on the leading edge "and are now used on macOS too". "Use the symbol once to introduce the group, and let text do the rest" for closely related actions.
 - "**Use menu item icons sparingly and with purpose.** Icons allow people to find menu items more quickly, and help clarify what selecting an item does. Use an icon to highlight the most common actions and key features of your app, file system locations, connected devices, visual concepts like rotating or flipping an image, and user-generated content like folders and documents. **Don't display an icon if you can't find one that clearly represents the menu item.**"
 - "**Apply a uniform visual treatment across menu items in the same group.** For visual consistency and balance, **provide icons for all menu items in a group, or none of them**."
@@ -168,7 +186,7 @@ What first-party sidebars actually show is `Apps.md` section 3.
 - Detents: **large** (fully expanded) and **medium** (about half); custom heights allowed. "In an iPhone app, consider supporting the **medium detent** to allow progressive disclosure of the sheet's content." "**Include a grabber in a resizable sheet.** A grabber shows people that they can drag the sheet to resize it; they can also **tap it to cycle through the detents**." "**Support swiping to dismiss a sheet.**" With unsaved changes, confirm with an action sheet.
 - Buttons, iOS and iPadOS single view: Cancel on the leading edge of the top toolbar, Done on the trailing. Multi-step: on the first step Cancel leads and Done trails in an inactive state. The Back button "**isn't intended to dismiss a sheet**."
 - iPadOS: "**Prefer using the page or form sheet presentation styles**," each centering content on a dimmed background at a default size.
-- macOS: a card over its parent, which dims; "**let people interact with other app windows without first dismissing a sheet**," and use a **panel** instead "if people need to repeatedly provide input and observe results" (find and replace).
+- macOS: a card over its parent, which dims; "**let people interact with other app windows without first dismissing a sheet**," and use a **panel** instead "if people need to repeatedly provide input and observe results" (find and replace). Apple's own description of the shape, with no radius number given: "a cardlike view with rounded corners that floats on top of its parent window." [C] HIG Sheets; the actual radius is decompiled in `Sheets.md` section 2 (iPhone) and section 6 (the 32pt macOS form-sheet constant)
 - Liquid Glass (session 323, 284): "an increased corner radius"; half sheets "are inset from the edge of the display", their bottom corners "nesting in the curved edges of the display"; at full height the glass "becomes opaque and anchoring to the edge of the screen". A sheet can morph out of its button (zoom transition with the toolbar item as source).
 
 ## 10. Popovers, action sheets, alerts [C] HIG Popovers, Action sheets, Alerts, session 323
@@ -176,6 +194,8 @@ What first-party sidebars actually show is `Apps.md` section 3.
 - Popovers: only in regular width; the arrow points at the source; one at a time; nothing on top of a popover except an alert.
 - Action sheets "spring from the action itself" on iPhone too; anchored sheets have no Cancel button because tapping elsewhere cancels. Destructive choices at the top.
 - Alerts: title, optional message, up to three buttons; default on the trailing side; Cancel leading; "typography... now bolder and left-aligned" in alerts and onboarding. visionOS accessory view: 154 pt tall, 16 pt radius.
+- Destructive (red) alert styling applies only to an action people didn't deliberately choose: a confirmation alert for an action the user already explicitly initiated (e.g. a second "Empty Trash?" after clicking Empty Trash) should not additionally use red styling, since red is reserved for alerts that pop up as a side-consequence/interruption, not as confirmation of an action taken head-on. Cancel must never be styled as the default/tinted button. [I] AppleSpec reading of HIG Alerts; not a verbatim quote
+- "Avoid displaying alerts for common, undoable actions, even when they're destructive" — e.g. don't alert every time someone deletes one email if Undo is available. [C] HIG Alerts
 
 ## 11. Lists, forms and settings [C]
 
@@ -206,11 +226,13 @@ Row heights and section corners measured on the HIG's own figures are `Apps.md` 
 
 Search field sizes are `Sizing.md` section 5.
 
-## 14. Sliders, toggles, segmented controls [C] HIG Sliders, Toggles, Segmented controls, session 284
+## 14. Sliders, toggles, segmented controls, pickers, steppers [C] HIG Sliders, Toggles, Segmented controls, Pickers, Steppers, session 284
 
-- Slider thumb becomes glass on touch; tick marks with `step` or a `ticks` closure; a `neutralValue` anchors the fill away from the leading end; a thumbless style reads as a progress bar during playback.
+- Slider thumb becomes glass on touch; tick marks with `step` or a `ticks` closure; a `neutralValue` anchors the fill away from the leading end; a thumbless style reads as a progress bar during playback. The track's filled portion (minimum value to the thumb) is the primary live-feedback mechanism.
 - Switch and segmented control knobs take glass during interaction. Switches are "updated slightly" in size (session 284 names UISwitch); the sizes themselves are unpublished (`Sizing.md` section 6).
-- Segmented controls: equal widths; about five segments on iPhone, five to seven wide; text or images, not both.
+- Segmented controls: equal widths; about five segments on iPhone, five to seven wide; text or images, not both. Three behavior modes: exclusive single-selection (the common case), multi-selection (each segment toggles independently), momentary (acts like a button press, no persisted highlight).
+- Pickers: use for medium-to-long lists; a pull-down button for short lists; a full list/table for very large datasets. Keep values in a predictable order (e.g. alphabetical) so a hidden value's wheel position is guessable. "Avoid switching views to show a picker" — show it in-context (inline, at the bottom of the current view, or in a popover), not as a navigation push. Date-picker styles on iOS/iPadOS: Compact (a button opening a modal calendar/wheel editor), Inline (wheels or a calendar grid shown directly in the layout), Wheels (classic scrolling wheel, also accepts keyboard entry), Automatic (system picks per context). For minute selection, consider coarser increments (e.g. 15-minute steps).
+- Steppers: a two-segment (minus | plus) control that never itself displays the current value — it sits beside a label/field that shows the value it changes. Best for small/incremental adjustments; pair with direct text entry when the plausible range is large. Mac: Shift-click for a 10× larger increment. Press-and-hold auto-repeats and accelerates (`UIStepper` default) — one-tap-per-step with no repeat is missing standard behavior.
 
 ## 15. Typography [C] HIG Typography (change log December 16, 2025: "Added emphasized weights to the Dynamic Type style specifications for each platform"), read from the DocC JSON 2026-09-24
 
@@ -260,6 +282,10 @@ macOS, a different scale rather than a shrunken one:
 
 SF Pro tracking at text sizes (1/1000 em): 13 pt -6, 15 pt -16, 17 pt -26, 20 pt -23, 22 pt -12, 24 pt +3, 28 pt +14, 34 pt +12. SF Symbols use equivalent weights to the system font.
 
+Fuller per-point-size tracking, converted to absolute pt (same HIG Typography page, finer-grained read; 1/1000em values above agree at every shared rung, e.g. 17pt: -0.026em × 17 = -0.44pt ≈ -0.43 below): 11pt **+0.06**, 12pt **0**, 13pt **−0.08**, 14pt **−0.15**, 15pt **−0.23**, 16pt **−0.31**, 17pt **−0.43**, 20pt **−0.45**, 22pt **−0.26**, 24pt **+0.07**, 28pt **+0.38**, 34pt **+0.40**. Tracking goes negative through the body/UI mid-range and swings positive again at large display sizes — a single constant `letter-spacing` (or CSS `normal`) across all sizes will visibly mismatch at both small captions and large titles. [C]
+
+**Font family rules.** SF Pro is the system font on iOS/iPadOS/macOS; apps "can also use New York" (a serif) for editorial contexts. **SF Pro Rounded** is a distinct optical variant (not a weight), used to coordinate with rounded/soft UI shapes and playful contexts — a deliberate stylistic choice, not the default; most system chrome uses SF Pro (non-rounded). Rounded's tracking is always positive (e.g. **+0.37 at 17pt**, vs. SF Pro's −0.43 at the same size) — Rounded text should read visibly more open/loose than non-rounded at the same size, not just differently shaped. SF Pro automatically switches between **SF Pro Text** (small sizes, wider/looser spacing) and **SF Pro Display** (large sizes, tighter spacing) at a 20pt threshold; `-apple-system`/`system-ui` CSS font stacks perform this swap automatically on Apple platforms. [C] HIG Typography
+
 Dynamic Type:
 - "Make sure your app's layout adapts to all font sizes."
 - "Consider adjusting your layout at large font sizes. When font size increases in a horizontally constrained context, inline items (like glyphs and timestamps) and container boundaries can crowd text and cause truncation or overlapping. To improve readability, consider using a **stacked layout** where text appears above secondary items. Multicolumn text can also be less readable at large sizes... **Reduce the number of columns when the font size increases.**"
@@ -270,7 +296,9 @@ Dynamic Type:
 
 Truncation: UIKit and TextKit `NSLineBreakMode.byTruncatingTail`, with any `numberOfLines`, packs the last laid-out line to the width and the ellipsis replaces its tail, at a character rather than a word, so an iOS two-line label's second line reaches the edge. [C] API behavior; CSS `text-overflow: ellipsis` does the same on one line, and `-webkit-line-clamp` (ellipsis on the last visible line box) has no native Apple equivalent. [I]
 
-## 16. Icons [C] HIG Icons, App icons
+## 16. Icons [C] HIG Icons, App icons, SF Symbols
+
+**SF Symbols: scales, weights, rendering modes.** Three scales — Small, Medium (default), Large — sized relative to the cap-height of the adjacent SF text: Small's circle touches both cap-height and baseline (most compact), Medium extends slightly above/below those lines (used almost everywhere in system UI), Large gives the most emphasis. Nine symbol weights, ultralight to black, map 1:1 to the nine SF font weights specifically so a symbol can match the *same* weight as an adjacent label (a Semibold headline sits next to a Semibold-weight symbol, not a default-weight one) — rendering every glyph at a fixed default weight regardless of neighboring text is a common mismatch. Four rendering modes: Monochrome (one flat color across every layer — the default for UI chrome), Hierarchical (one hue, each layer at a different opacity for depth), Palette (two or more explicit colors, one per layer), Multicolor (the symbol's own intrinsic colors, e.g. a status dot). Most toolbar/tab-bar/list glyphs in system apps are Monochrome, tinted by the current tint/vibrancy color. [C] HIG SF Symbols
 
 Standard action glyphs, as SF Symbol names: Cut `scissors`, Copy `document.on.document`, Paste `document.on.clipboard`, Done `checkmark`, Cancel or Close `xmark`, Delete `trash`, Undo `arrow.uturn.backward`, Redo `arrow.uturn.forward`, Compose `square.and.pencil`, Duplicate `plus.square.on.square`, Rename `pencil`, Move to `folder`, Attach `paperclip`, Add `plus`, More `ellipsis`, Select `checkmark.circle`, Search `magnifyingglass`, Filter `line.3.horizontal.decrease`, Share `square.and.arrow.up`, Print `printer`, Account `person.crop.circle`, Like `hand.thumbsup`, Dislike `hand.thumbsdown`.
 
@@ -341,4 +369,55 @@ What Apple does not publish, and what we take instead [I]:
 - **How long before an indicator appears.** Only "more than a moment or two"; we wait 1 s.
 - **Rotating messages.** In order, not shuffled, so a long wait shows each before any repeats ("so much time that you need to repeat it"), 2.5 s apiece.
 - **Blocking or not.** "Let people do other things" rules out a modal whenever anything else on the screen works; the indicator stands where the content will appear.
+
+## 22. Context menus [C] HIG Context menus
+
+- Trigger: touch-and-hold / pinch-and-hold (iOS/iPadOS/visionOS); Control-click or secondary click (macOS/trackpad). A context menu is a shortcut to a small number of task-relevant actions, not a replacement for discoverability: "Always make context menu items available in the main interface, too" — nothing may live only inside a context menu.
+- No keyboard-shortcut hint text is ever shown next to an item (redundant for a gesture-triggered menu, unlike a menu-bar menu).
+- A context-menu preview (a graphical preview of the target) animates smoothly as it emerges from the content, and its clip path must match the underlying content's own shape (e.g. rounded corners) so corners don't visibly change shape mid-animation.
+- Unavailable items are hidden (not dimmed) in a context menu — the opposite convention from a regular menu — with one named exception: macOS keeps Cut/Copy/Paste visible-but-dimmed even when unavailable.
+- Size discipline: a small number of items, about three groups as a reasonable ceiling (matching the toolbar-group guidance in section 6); one submenu level maximum.
+- iOS/iPadOS should offer either a context menu or an edit menu for a given piece of content, never both on the same content at once.
+
+## 23. Pointer hover effects (iPad and Mac) [C] HIG Pointing devices
+
+- iPadOS has three named content effects: **Highlight** — a translucent, rounded-rectangle background with gentle parallax, applied by default to bar buttons, tab bars, segmented controls and edit menus (small, flat, transparent-background controls). **Lift** — highlight's parallax plus elevation: the element scales up slightly, gains a shadow and a specular highlight, as if physically lifted toward the pointer; applied by default to app icons and Control Center buttons (small, opaque/iconic controls). **Hover** — a generic, more customizable effect (custom scale/tint/shadow) that does not change the system pointer's own shape, used for larger elements where Highlight/Lift would be too strong.
+- Highlight and Lift both include magnetic snap onto the target shape once the pointer is close enough; Hover has no magnetism.
+- macOS does not use these content effects at all — instead 16 standard pointer (cursor) shapes communicate state (arrow, I-beam, pointing hand for links, open/closed hand for pan/drag, crosshair, directional resize cursors, "operation not allowed," etc.).
+- The 12pt (bezeled) / 24pt (unbezeled) spacing from section 4 is called out specifically on the Pointing Devices page too, not only Accessibility.
+
+## 24. Keyboard conventions [C] HIG Keyboards, Alerts, Undo and redo
+
+- Command is the primary/preferred modifier for custom shortcuts; Shift is the natural secondary; Option is reserved for rarer/advanced features; Control should be avoided as an app-defined shortcut modifier (reserved for system-level functions). Written modifier order: Control, Option, Shift, Command (⌃⌥⇧⌘ — the physical left-to-right key order).
+- Standard shortcuts must not be repurposed: ⌘Q quit, ⌘S save, ⌘Z undo, ⇧⌘Z redo, ⌘C/⌘V/⌘X copy/paste/cut.
+- **Esc** (or **⌘.**) cancels the current action/process and dismisses an open alert; **Return/Enter** activates an alert's default (highlighted) button. **Tab** moves focus forward through controls, **Shift-Tab** moves it backward.
+- Full Keyboard Access: all controls, menus and system features must be reachable and activatable using only the keyboard on iOS, iPadOS, macOS and visionOS — no interactive control should be a pointer/touch-only dead end.
+- Undo/redo: ⌘Z / ⇧⌘Z on Mac; a document-based app's Undo menu-item label should describe the specific action ("Undo Typing," "Undo Bold"), not a bare generic "Undo."
+- Space-bar-for-play/pause in media apps (Music, Podcasts, QuickTime) is a long-standing observed convention, not a documented HIG rule.
+
+## 25. Motion [C] HIG Motion, session 219/323; SwiftUI `Animation` API
+
+- Principles (no numeric targets on the Motion page itself): animation should be purposeful, brief and precise, not decorative; never force someone to wait through a non-skippable animation before they can act; follow realistic/expected physical behavior (a panel that slides down to reveal itself dismisses by sliding back up the same way, not a different axis); let people cancel/interrupt an in-progress animation with a new gesture; target a smooth, consistent frame rate — Apple's own general framing is 30–60fps reads as smooth.
+- Touch vs. trackpad/pointer emphasis: Liquid Glass responds with more emphasis (bigger glow, more pronounced shimmer/bounce) under direct finger touch than under a trackpad pointer, where the same interaction is more subdued.
+- **SwiftUI's public `Animation` curve defaults** (API-level, distinct from the UIKit control-specific springs decompiled in `LiquidGlass.md` section 11 and `Sizing.md` — these are the general-purpose curves an app picks for its own motion): default `.spring()` = response 0.5s, dampingFraction 0.825 (slightly underdamped, quick limited settling); `.smooth` = 0.5s duration, bounce 0 (critically damped, no overshoot); `.snappy` = 0.5s duration, bounce 0.15 (slight overshoot, quick); `.bouncy` = 0.5s duration, bounce 0.3 (visible overshoot); `.interactiveSpring` = duration 0.15s, blendDuration 0.25s (for direct-manipulation/drag-follow, much snappier, meant to feel glued to the input). Pick by intent: a direct-manipulation drag/resize uses something close to `.interactiveSpring`; a settling/arriving transition (a sheet reaching its detent, a menu finishing opening) suits `.spring()` or `.smooth`; only secondary, non-load-bearing "delightful" moments should use `.bouncy`. [C] SwiftUI `Animation` framework docs — not HIG prose, and distinct from any single control's own decompiled spring
+- **Reduce Motion** (accessibility setting): reduces/removes automatic or repetitive motion (parallax, continuous zoom/scale loops, peripheral motion); tightens springs so they settle with little to no visible bounce; prefers animation directly, 1:1 driven by the user's own gesture over motion that keeps playing after the gesture ends; avoids animating along the z/depth axis (replace a fly-toward/away-from-camera transition with a plain cross-fade); and — the specific, checkable rule — avoids animating *into or out of* a blur: under Reduce Motion, Liquid Glass's own blur/refraction intensity should resolve immediately rather than visibly ramping its radius up or down. Enabling Increase Contrast also forces Reduce Transparency on (and locks it in Settings). [C] HIG section 1.4 above gives the short form; this is the fuller, checkable version
+
+## 26. Feedback: transient notices, toasts, undo [C] HIG Feedback
+
+Apple's HIG never uses the words "toast" or "HUD" — a load-bearing negative finding: a generic dark rounded-rect banner that slides in announcing "Copied to clipboard" and self-dismisses on a timer is not an Apple-HIG-documented pattern. Apple's stated feedback patterns instead:
+1. Inline status feedback near what it describes — Apple's own example, Mail shows sync/sending status directly in its own toolbar/status area, not a separate floating banner. "When status feedback is available near the items it describes, people get important information without having to take action or leave their current context."
+2. Quietly inserting new content into the current view (a newly arrived item simply appears in a list in place).
+3. Reserving alerts for genuinely critical, actionable information, not routine confirmations.
+4. Confirming significant actions sparingly — only when significant enough that people wouldn't otherwise assume success (Apple's own example: Apple Pay).
+5. The nearest first-party analog to a "toast with an undo action" is Mail's **Undo Send**: a small button at the bottom of the screen for a short fixed window after sending — deliberately narrow in scope (one specific action, one app-level feature), not a general-purpose notification primitive reused for arbitrary messages.
+6. Warn only before unexpected, irreversible data loss, not before routine/expected/reversible actions.
+7. Explain failures in place — "When a command can't be carried out, say why" (Apple's own example: Maps explaining it can't route between the same start and end location) — shown inline, not via a detached toast.
+
+Progress indicators (section 21 above has the full detail): never switch a single operation back and forth between a determinate bar and an indeterminate spinner mid-operation.
+
+## 27. Launching, and empty/error states [C] HIG Launching; [I] synthesized for empty/error states, no single HIG page titled this
+
+- "Launch instantly" — people don't want to wait more than a couple of seconds. iOS/iPadOS/tvOS require a launch screen; macOS/visionOS/watchOS do not. A launch screen's sole job is to look like the app's first real screen already loaded: "Design a launch screen that's nearly identical to the first screen of your app... Avoid including text on your launch screen... Don't advertise" — no logo/branding moment, no splash dressed up as a launch screen. On restart, restore the user's previous state/scroll position/selection rather than making them re-navigate from zero.
+- Onboarding is separate from launching and happens only after launch completes; it is explicitly optional/secondary. If used: brief, fun, skippable; Apple prefers context-specific tips delivered during real use over one long upfront tutorial, and teaching through interactivity over passive instructional screens. A skipped tutorial must not reappear automatically on a later launch — keep it reachable from Help/Settings/Account instead.
+- Empty and error states (no single HIG page covers this; synthesized from Feedback plus general HIG practice around failure explanation): when a list/view legitimately has nothing yet, show a brief, specific reason why and, where applicable, the action that would fill it — not a bare blank canvas and not an over-designed illustration disproportionate to the app's visual restraint. When an operation fails, say specifically why (Apple's own Maps example) rather than a generic "Something went wrong." [I]
 
