@@ -375,10 +375,10 @@ export class GlassActionBar implements OnDestroy {
     return null;
   });
 
-  // Geometry — in sync with Jwift_GlassDropdown_Closed (40pt cells, `CELL_PT`, 4pt gap,
-  // 4pt pad) and Jwift_GlassActionBar (10pt inter-pill gap).
+  // Geometry — in sync with Jwift_GlassDropdown_Closed (44pt cells, `CELL_PT`, 4pt gap,
+  // 2pt pad) and Jwift_GlassActionBar (10pt inter-pill gap).
   private static readonly _GapPt     =  4;
-  private static readonly _PadPt     =  4;
+  private static readonly _PadPt     =  2;
   private static readonly _PillGapPt = 10;
   private static readonly _ToolbarPadPt = 10;
   private static readonly _HysteresisPt = 8;

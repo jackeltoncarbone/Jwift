@@ -37,7 +37,7 @@ Jwift_GlassActionGlyph_Warn {
 }
 
 // The disclosure chevron beside a single-cell expandable pill's glyph (the "menu button" tell — View and
-// any future group that always opens a menu). Sits beside the glyph inside the same 40pt cell; small and
+// any future group that always opens a menu). Sits beside the glyph inside the same 44pt cell; small and
 // soft so it reads as an accessory to the glyph, not a second action.
 Jwift_GlassDropdownCellChevron {
   FontFamily: JwiftIcons
@@ -72,7 +72,7 @@ Jwift_GlassActionTitle {
 
 // A cell's count (`GlassAction.Badge`): how many problems the warnings cell stands for, on its top
 // trailing corner, so the glyph reads as "3 problems" before it is pressed (Drill Sentences lane X2, item
-// 7). Placed inside the 40pt cell, never outside it, so the pill's own glass never clips it. The badge
+// 7). Placed inside the 44pt cell, never outside it, so the pill's own glass never clips it. The badge
 // and its count fade with their cell and never by their own presence (Opacity: 1, lane AA1, item 5: a
 // badge and its count each fading on top of the cell's own fade showed a blank amber dot).
 Jwift_GlassActionBadge {

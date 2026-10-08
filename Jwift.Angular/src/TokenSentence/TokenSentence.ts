@@ -218,6 +218,9 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   readonly FontSizePt = input(16);
   readonly LineHeightPt = input(23);
   readonly Tabular = input(false);
+  /** The least a tappable word's hit stands wide, pt (`SentenceLayoutOptions.MinHitWidth`; Drill Sentences lane WW2,
+   *  item 3). 0 leaves every hit its share of the gaps beside it. */
+  readonly MinHitWidthPt = input(0);
   /** Drill Sentences lane PP2, item 5: 'Rest' while the sentence's row is neither selected nor hovered, when only the
    *  values, the who and the move word wear an underline, faintly, until the row is hovered (`UnderlineOf`); 'Full'
    *  (the default, every caller that never asks) underlines every tappable word at full strength. */
@@ -306,6 +309,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       FontSize: this.FontSizePt(),
       Measure: this._measure,
       ShowAdd: this.ShowAdd(),
+      MinHitWidth: this.MinHitWidthPt(),
     });
   });
   /** How tall the words stand, laid out, pt: known the moment they change, ahead of the box the engine springs to it

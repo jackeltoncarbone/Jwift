@@ -169,8 +169,8 @@ export class NumberField implements OnInit {
   // need, so there is nothing a second component call would add besides its own (redundant) value text.
   protected readonly _atMin = computed(() => this.Value() <= this.Min());
   protected readonly _atMax = computed(() => this.Value() >= this.Max());
-  protected readonly _MinusClass = computed(() => this._atMin() ? 'Jwift_StepperBtn_Disabled' : 'Jwift_StepperBtn');
-  protected readonly _PlusClass = computed(() => this._atMax() ? 'Jwift_StepperBtn_Disabled' : 'Jwift_StepperBtn');
+  protected readonly _MinusClass = computed(() => `${this._atMin() ? 'Jwift_StepperBtn_Disabled' : 'Jwift_StepperBtn'} Jwift_NumberFieldStep`);
+  protected readonly _PlusClass = computed(() => `${this._atMax() ? 'Jwift_StepperBtn_Disabled' : 'Jwift_StepperBtn'} Jwift_NumberFieldStep`);
 
   protected _bump(delta: number): void {
     if (delta < 0 && this._atMin()) return;
