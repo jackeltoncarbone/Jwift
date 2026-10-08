@@ -80,3 +80,41 @@ export function PillWidth(cells: readonly TitledCell[], titles: boolean, gap: nu
   for (const cell of cells) sum += CellWidth(cell, titles);
   return 2 * pad + sum + (cells.length - 1) * gap;
 }
+
+// ── A tip clear of the page's own chrome (Drill Sentences lane RR1, item 3) ──────────────────────────────────
+// A round 22 blind desktop tester rested on Undo, and "Undo the last edit" stood over the drill page's selection bar,
+// the one thing under the toolbar the tip must never hide.
+
+/** A box on screen, px. */
+export interface TipBox {
+  readonly Left: number;
+  readonly Top: number;
+  readonly Right: number;
+  readonly Bottom: number;
+}
+
+/** How much of its cell a tip moved sideways still stands over, at the least, px at one point a pt: so it still reads as
+ *  that cell's. */
+export const TIP_CELL_OVERLAP_PT = 12;
+/** The air a tip moved clear of a box keeps from it, pt. */
+export const TIP_AVOID_GAP_PT = 6;
+
+/**
+ * How far to move a tip sideways, px, so it clears `avoid` (Drill Sentences lane RR1, item 3): 0 when it already does (or
+ * there is nothing to avoid), the shorter of the moves that put it just beside the box, left or right, else null when no
+ * spot along its band is clear. A move keeps the tip inside `bounds` and still over `cell` by `overlap` at the least, so
+ * it points at the cell it names; a tip with no such spot is not shown.
+ */
+export function TipShift(
+  tip: TipBox, cell: { readonly Left: number; readonly Right: number }, avoid: TipBox | null,
+  bounds: { readonly Left: number; readonly Right: number }, gap: number, overlap: number,
+): number | null {
+  const covers = (dx: number): boolean => !!avoid && tip.Left + dx < avoid.Right && tip.Right + dx > avoid.Left
+    && tip.Top < avoid.Bottom && tip.Bottom > avoid.Top;
+  if (!covers(0)) return 0;
+  const fits = (dx: number): boolean => tip.Left + dx >= bounds.Left && tip.Right + dx <= bounds.Right
+    && Math.min(tip.Right + dx, cell.Right) - Math.max(tip.Left + dx, cell.Left) >= Math.min(overlap, cell.Right - cell.Left);
+  const moves = [avoid!.Right + gap - tip.Left, avoid!.Left - gap - tip.Right].filter((dx) => fits(dx) && !covers(dx));
+  if (!moves.length) return null;
+  return moves.reduce((a, b) => (Math.abs(b) < Math.abs(a) ? b : a));
+}
