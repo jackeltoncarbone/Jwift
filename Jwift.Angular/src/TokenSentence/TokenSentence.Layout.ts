@@ -17,6 +17,36 @@
 export type SentenceTokenKind =
   | 'Text' | 'Quiet' | 'Word' | 'Value' | 'Who' | 'Placeholder' | 'Mirror' | 'Problem' | 'Link' | 'Badge';
 
+/** A token's underline while its sentence is at rest (`TokenSentence.Emphasis` 'Rest'): faint, the same as at full
+ *  strength, or none. */
+export type RestUnderline = 'Faint' | 'Keep' | 'None';
+
+/**
+ * Drill Sentences lane PP2, item 5 (a round 20 blind desktop tester: nearly every word was underlined, so nothing stood
+ * out). Apple's text links are quiet until they matter. A sentence at rest (`Emphasis` 'Rest': its row neither
+ * selected nor hovered) underlines only what a director changes, the values, the who and the move word, and faintly
+ * (`Jwift_TokenSentenceUnderline_Faint`, `@AccentInkLineFaint`); a link in quiet text, the grey filler the editor pads
+ * a line with, none at all; a problem keeps its own. Hovering the row, or selecting it (`Emphasis` 'Full'), brings
+ * every underline to full strength. Connector words and separators ("then", "·") never wear one, at rest or not. The
+ * first-run glow is a pill of its own and keeps glowing either way.
+ */
+export const REST_UNDERLINE: Record<SentenceTokenKind, RestUnderline> = {
+  Text: 'None', Quiet: 'None', Word: 'Faint', Value: 'Faint', Who: 'Faint', Placeholder: 'Faint',
+  Mirror: 'None', Problem: 'Keep', Link: 'None', Badge: 'None',
+};
+
+/** The underline a `kind` of token wears, its full strength paint `line` (null: none at all), by the sentence's
+ *  `emphasis`: the paint and the class that carries it (a faint line's paint is its class's,
+ *  `Jwift_TokenSentenceUnderline_Faint`, so its row's hover brightens it), or null for none. */
+export function UnderlineOf(
+  kind: SentenceTokenKind, line: string | null, emphasis: 'Full' | 'Rest',
+): { Paint: string | null; Class: string } | null {
+  if (!line) return null;
+  const rest = REST_UNDERLINE[kind];
+  if (emphasis === 'Full' || rest === 'Keep') return { Paint: line, Class: 'Jwift_TokenSentenceUnderline' };
+  return rest === 'Faint' ? { Paint: null, Class: 'Jwift_TokenSentenceUnderline Jwift_TokenSentenceUnderline_Faint' } : null;
+}
+
 export interface SentenceToken {
   readonly Key: string;
   readonly Text: string;

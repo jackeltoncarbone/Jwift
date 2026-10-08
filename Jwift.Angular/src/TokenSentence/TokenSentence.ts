@@ -29,6 +29,7 @@ import {
   PillRectOf,
   SameWords,
   TextPieceKeys,
+  UnderlineOf,
   type PieceLanding,
   type SentenceHit,
   type SentenceLayoutResult,
@@ -40,6 +41,7 @@ export type { SentenceToken, SentenceTokenKind };
 
 interface _KindStyle { readonly Ink: string; readonly Weight: number; readonly Underline: string | null; }
 
+/** Every kind's ink, weight and full strength underline; at rest the underline is `UnderlineOf`'s (lane PP2, item 5). */
 const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
   Text:        { Ink: '@Ink',     Weight: 400, Underline: null },
   Quiet:       { Ink: '@InkSoft', Weight: 400, Underline: null },
@@ -156,7 +158,7 @@ const ADD_KEY = '\u0000add';
       <jiv [class]="piece.Class" [childLayout]="piece.Layout" />
     }
     @for (u of _underlines(); track u.Key) {
-      <jiv class="Jwift_TokenSentenceUnderline" [style]="u.Style" [childLayout]="u.Layout" />
+      <jiv [class]="u.Class" [style]="u.Style" [childLayout]="u.Layout" />
     }
     @for (t of _textPieces(); track t.Key) {
       @if (t.Tappable) {
@@ -212,6 +214,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   readonly FontSizePt = input(16);
   readonly LineHeightPt = input(23);
   readonly Tabular = input(false);
+  /** Drill Sentences lane PP2, item 5: 'Rest' while the sentence's row is neither selected nor hovered, when only the
+   *  values, the who and the move word wear an underline, faintly, until the row is hovered (`UnderlineOf`); 'Full'
+   *  (the default, every caller that never asks) underlines every tappable word at full strength. */
+  readonly Emphasis = input<'Full' | 'Rest'>('Full');
 
   readonly TokenTap = output<{ Key: string; Anchor: PopoverRect }>();
   readonly AddTap = output<{ Anchor: PopoverRect }>();
@@ -390,11 +396,12 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     const fs = this.FontSizePt();
     const lh = this.LineHeightPt();
     const landed = this._landedKeys().Pieces;
-    const out: { Key: string; Style: Record<string, unknown>; Layout: Record<string, unknown> }[] = [];
+    const emphasis = this.Emphasis();
+    const out: { Key: string; Class: string; Style: Record<string, unknown>; Layout: Record<string, unknown> }[] = [];
     for (const [pieceIndex, piece] of layout.Pieces.entries()) {
       const token = tokens[piece.TokenIndex];
       if (!token) continue;
-      const underline = KIND_STYLE[token.Kind].Underline;
+      const underline = UnderlineOf(token.Kind, KIND_STYLE[token.Kind].Underline, emphasis);
       if (!underline) continue;
       const s = state.get(token.Key);
       if (s?.Open) continue; // the pill says "active" instead.
@@ -402,8 +409,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       // also ATOMS, so `token.Key` alone is enough, and dropping `:Row` stops a reflow elsewhere in the
       // sentence from remounting (and refading) an underline whose own token never changed.
       out.push({
-        Key: landed[pieceIndex],
-        Style: { Background: underline },
+        // Lane PP2, item 5: a faint line is its own node, so its class's paint is never left under a full one's style.
+        Key: underline.Paint ? landed[pieceIndex] : `${landed[pieceIndex]}:faint`,
+        Class: underline.Class,
+        Style: underline.Paint ? { Background: underline.Paint } : {},
         Layout: _rect(piece.X, piece.Y + lh / 2 + 0.36 * fs + 4, piece.Width, 1),
       });
     }
