@@ -92,6 +92,15 @@ export interface PopoverPlacement {
   readonly Down: boolean;
   /** Opened beside the anchor's column (`PopoverPlacementInput.Beside`), level with the anchor. */
   readonly Side?: boolean;
+  /**
+   * Drill Sentences lane AB1, item 2 (HIG Popovers, `Apple.Review.Checklist.md` #53: "every popover... has a
+   * visible arrow/pointer aimed at the control that revealed it"). Where the arrow's tip belongs, local to the
+   * panel's own box, on the edge it points from: an X from the panel's left on its top edge (`Down`) or bottom
+   * edge (not `Down`), a Y from the panel's top on its left edge (`Side`). `null` for a panel that needs none —
+   * its own glass grown from the anchor (`Over`; see `ANCHOR_GAP`'s own comment: it already reads as the
+   * control, nothing left to point back at). `arrowAt`'s own doc has the clamp that keeps it off the corner.
+   */
+  readonly Arrow: number | null;
 }
 
 /** The box an open panel's rows are laid out in: its placement, at its own width, as tall as its content up
@@ -119,6 +128,21 @@ const MIN_HEIGHT = 44;
 const LEVEL_MARGIN = 32;
 
 const Clamp = (v: number, min: number, max: number): number => Math.max(min, Math.min(max, v));
+
+/** How far an arrow's tip stays clear of the panel's own rounded corner, each side, px: generous enough for the
+ *  house menu/popover chain's own 32pt corner (`@JwiftDropdownRadius`) and a small pointer's own width, since this
+ *  module has no reading of the panel's actual `Radius` (`Popover.Radius`) — that is a style, decided later, by
+ *  the component that draws the arrow this places. */
+const ARROW_INSET = 20;
+
+/** Where a pointing panel's arrow lands (`PopoverPlacement.Arrow`), local to the panel's own box on its pointing
+ *  edge: `anchorCenter` (the anchor's own middle, on the axis that edge runs along) less the panel's `origin` on
+ *  that same axis, kept off the rounded corners (`ARROW_INSET`) — never past the panel's own middle, for a panel
+ *  too narrow or short for both insets to fit side by side. */
+const ArrowAt = (anchorCenter: number, origin: number, length: number): number => {
+  const half = length / 2;
+  return Clamp(anchorCenter - origin, Math.min(ARROW_INSET, half), Math.max(half, length - ARROW_INSET));
+};
 
 /** How much more room under `anchor` a panel `h` tall needs than `region` leaves there, px, its gap included: 0 when
  *  it fits below (Drill Sentences lane UU3, item 7: a panel opened in a phone's sheet asks its host for that room first,
@@ -201,7 +225,7 @@ export function PlacePopover(input: PopoverPlacementInput): PopoverPlacement {
   const y = down
     ? Math.max(aBottom + ANCHOR_GAP, regionTop)
     : Math.min(aTop - ANCHOR_GAP - h, regionBottom - h);
-  return { X: x, Y: y, MaxHeight: h, Down: down };
+  return { X: x, Y: y, MaxHeight: h, Down: down, Arrow: ArrowAt(aCenterX, x, W) };
 }
 
 /** A panel whose host is making room under its anchor (`MakingRoom`, lane XX2, item 4): below it whatever the room left
@@ -212,7 +236,7 @@ function placeBelow(input: PopoverPlacementInput): PopoverPlacement {
   const leading = a.X + W <= r.X + r.Width ? a.X : a.X + a.Width - W;
   const x = Clamp(input.Over ? leading : a.X + a.Width / 2 - W / 2, r.X, r.X + r.Width - W);
   const y = Math.max(input.Over ? a.Y : a.Y + a.Height + ANCHOR_GAP, r.Y);
-  return { X: x, Y: y, MaxHeight: H, Down: true };
+  return { X: x, Y: y, MaxHeight: H, Down: true, Arrow: input.Over ? null : ArrowAt(a.X + a.Width / 2, x, W) };
 }
 
 /**
@@ -242,7 +266,8 @@ function placeOver(input: PopoverPlacementInput): PopoverPlacement {
   const y = Clamp(down ? a.Y : a.Y + a.Height - h, r.Y, regionBottom - h);
   const leading = a.X + W <= r.X + r.Width ? a.X : a.X + a.Width - W;
   const x = Clamp(hold ? hold.X : leading, r.X, r.X + r.Width - W);
-  return { X: x, Y: y, MaxHeight: h, Down: down };
+  // Over's own glass grows from the anchor it covers — no separate arrow (`ANCHOR_GAP`'s own comment).
+  return { X: x, Y: y, MaxHeight: h, Down: down, Arrow: null };
 }
 
 /** The panel beside the anchor's column (lane EE2, item 4), or null when the whole panel does not fit to the
@@ -256,7 +281,8 @@ function placeBeside(input: PopoverPlacementInput, column: number): PopoverPlace
   const h = scrolls ? Math.max(MIN_HEIGHT, Math.min(H, r.Height)) : H;
   // Its top as far above the word's middle as the panel's corner, so its first row stands level with the word.
   const y = Clamp(a.Y + a.Height / 2 - LEVEL_MARGIN, r.Y, r.Y + r.Height - h);
-  return besideAt(x, clearOf(input, x, y, h), h);
+  const top = clearOf(input, x, y, h);
+  return besideAt(x, top, h, ArrowAt(a.Y + a.Height / 2, top, h));
 }
 
 /** How much of `avoid` a panel at `x`, `y`, `w` by `h` covers, in px squared. */
@@ -293,9 +319,10 @@ function clearOf(input: PopoverPlacementInput, x: number, y: number, h: number):
   return best;
 }
 
-/** A beside panel at `x`, `y`, `h` tall. */
-function besideAt(x: number, y: number, h: number): PopoverPlacement {
-  return { X: x, Y: y, MaxHeight: h, Down: true, Side: true };
+/** A beside panel at `x`, `y`, `h` tall, its arrow (lane AB1, item 2) on its own left edge, `arrow` down from its
+ *  top — `besideAt`'s every caller already has the anchor's own middle on that axis, `ArrowAt`'s own `origin`. */
+function besideAt(x: number, y: number, h: number, arrow: number): PopoverPlacement {
+  return { X: x, Y: y, MaxHeight: h, Down: true, Side: true, Arrow: arrow };
 }
 
 /** A held beside panel: same leading edge, same top relative to the anchor's top (so it rides a scroll and
@@ -306,7 +333,8 @@ function holdBeside(input: PopoverPlacementInput, hold: PopoverHold): PopoverPla
   const y = Clamp(a.Y + hold.TopFromAnchor, r.Y, r.Y + r.Height - MIN_HEIGHT);
   const room = r.Y + r.Height - y;
   const scrolls = input.Scrolls ?? true;
-  return besideAt(x, y, scrolls ? Math.max(MIN_HEIGHT, Math.min(H, room)) : H);
+  const h = scrolls ? Math.max(MIN_HEIGHT, Math.min(H, room)) : H;
+  return besideAt(x, y, h, ArrowAt(a.Y + a.Height / 2, y, h));
 }
 
 /** A held frame (`PopoverHold`): same side, same leading edge (clamped back inside the region if the page
@@ -341,5 +369,5 @@ function holdPopover(input: PopoverPlacementInput, hold: PopoverHold): PopoverPl
     y = Math.min(Math.max(aTop + hold.TopFromAnchor, r.Y), floor - MIN_HEIGHT);
     room = floor - y;
   }
-  return { X: x, Y: y, MaxHeight: room, Down: down };
+  return { X: x, Y: y, MaxHeight: room, Down: down, Arrow: ArrowAt(a.X + a.Width / 2, x, W) };
 }
