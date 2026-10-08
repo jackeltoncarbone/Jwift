@@ -179,8 +179,9 @@ Jwift_GlassDropdownCell_Ellipsis : Jwift_GlassDropdownCell {
 // Direction/Justify/Align re-stated explicitly: when the resolver swaps
 // from _Closed to _Open it rebuilds Layout from defaults, so anything not
 // declared on _Open falls back to default (Direction: Row), not the base.
-// The open menu is the same glass at a menu's size (later base wins).
-Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
+// The open menu is the pill's own glass grown to a menu (the class swap springs its Width and Height, above), worn as
+// the one panel material every menu and panel takes (JwiftPanelGlass, Jwift.Glass.jss; later base wins).
+Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftPanelGlass {
   // A VERY SLIGHT FLEX, HELD RATHER THAN CHASED. Jack: "shouldn't an open dropdown have a very slight
   // flex?" So the panel takes Auto -- which sizes itself into the Large class at a menu's dimensions and
   // calms its own lift and glow accordingly, the mechanism Glass.Jss.md 3a names -- and holds a fraction of
@@ -191,8 +192,7 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftGlass {
   FlexStretch: 0
   FlexHold: 0.3
   @Spring FlexHold { Stiffness: 900, Damping: 60, Mass: 1 }
-  // The open menu is UIKit's platter, outside the header's pocket: Automatic frost, where the closed pill takes None.
-  GlassFrost: Automatic
+  // UIKit's platter sits outside the header's pocket, so the panel's own frost replaces the closed pill's None.
   Position: Placed
   Top: 0pt
   Right: 0pt
@@ -287,12 +287,12 @@ Jwift_GlassDropdown_OpenBelow {
 // :Active was also declared TWICE -- a second block already held these resting values, so someone had
 // started this fix and left both declarations standing, with merge order deciding which won. One now.
 Jwift_GlassDropdown_Open:Hover {
-  Background: @GlassTint
+  Background: @PanelGlass
   BackdropFilter: None
   RimStrength: @JwiftRimStrength
 }
 Jwift_GlassDropdown_Open:Active {
-  Background: @GlassTint
+  Background: @PanelGlass
   BackdropFilter: None
   RimStrength: @JwiftRimStrength
 }

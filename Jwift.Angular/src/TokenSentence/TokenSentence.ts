@@ -13,7 +13,7 @@ import {
   viewChildren,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { Jaui, Jext, Jiv } from 'jaui-angular';
+import { Jaui, Jext, Jiv, JSS_REGISTRY } from 'jaui-angular';
 import { ComposeFontFamily, TabularFamilyStack } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { Icon } from '../Icon/Icon';
@@ -233,6 +233,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
 
   private readonly _canvasRef = inject(Jaui, { optional: true });
   private readonly _doc = inject(DOCUMENT);
+  private readonly _jss = inject(JSS_REGISTRY);
 
   private readonly _hoveredKey = signal<string | null>(null);
   private readonly _pressedKey = signal<string | null>(null);
@@ -585,6 +586,12 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     this._rectUnwatch?.();
     this.Node.WatchRect(false);
     this._detachOnDestroy();
+  }
+
+  /** The corner of the highlight `AnchorOf` gives, canvas px, or null for the "+" add button, a capsule: the corner a
+   *  word's menu grows out of (`Popover.OriginRadius`). */
+  PillRadiusOf(key: string): number | null {
+    return key === '+' ? null : this._jss.VarPoints('JwiftTokenPillRadius');
   }
 
   /** The pill a Popover should anchor to — canvas px, absolute. */

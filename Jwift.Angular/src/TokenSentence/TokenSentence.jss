@@ -12,9 +12,11 @@ Jwift_TokenSentence {
 // A tappable token's pill — rendered only while its state is not at rest, so mount/unmount carries
 // the Presence fade. Hover and press are LIFTS (WashLaw), never paint; Open is the one state that
 // paints a flat tint, because it marks a token whose control is actually showing.
+// The highlight's corner, read by `TokenSentence.PillRadiusOf` too: the corner a word's menu grows out of.
+@JwiftTokenPillRadius: 7pt
 Jwift_TokenSentencePill {
   Position: Placed
-  BorderRadius: 7pt
+  BorderRadius: @JwiftTokenPillRadius
   PointerEvents: None
 }
 Jwift_TokenSentencePill_Hover {

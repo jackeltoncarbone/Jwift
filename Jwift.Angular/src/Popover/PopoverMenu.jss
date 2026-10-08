@@ -4,6 +4,15 @@
 // (Jwift_GlassDropdownIndicator*), borrowed via JwiftStyleLoader.Ensure so there is one sliding pill
 // in the app, not two.
 
+// A PAGE CROSS FADES INSIDE THE ONE GLASS (Drill Sentences lane WW1, item 3). Every part of a page fades in as it
+// mounts and out as it goes: on the open, the rows come up as the glass grows out of its control; on a submenu (Face,
+// March, "Join another line…") the old page's rows fade where they stood as the new page's fade in over them, while the
+// same glass springs to the new page's height (Popover.jss). Never a second panel.
+Jwift_PopoverMenuPageFade {
+  Opacity: Presence
+  @Spring Presence { Stiffness: 246.7, Damping: 31.4, Mass: 1 }
+}
+
 Jwift_PopoverMenuScroll {
   Overflow: Scroll
   Direction: Column
@@ -11,7 +20,7 @@ Jwift_PopoverMenuScroll {
   Align: Stretch
 }
 
-Jwift_PopoverMenuHeader {
+Jwift_PopoverMenuHeader : Jwift_PopoverMenuPageFade {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 500
@@ -21,7 +30,7 @@ Jwift_PopoverMenuHeader {
 
 // The back row of a pushed page: a step heavier than an ordinary row, in the accent, so "you are
 // inside a submenu" reads at a glance. Same 44pt pill as every other row.
-Jwift_PopoverMenuBack {
+Jwift_PopoverMenuBack : Jwift_PopoverMenuPageFade {
   Direction: Row
   Justify: Start
   Align: Center
@@ -51,7 +60,7 @@ Jwift_PopoverMenuBackLabel {
 // the panel sizes itself to its widest row, PopoverMenu.ts's own ContentWidth, up to the Popover's
 // MaxWidth; a label past that wraps rather than being cut off). The vertical padding only shows once a
 // row is taller than its 44pt floor.
-Jwift_PopoverMenuItem {
+Jwift_PopoverMenuItem : Jwift_PopoverMenuPageFade {
   Direction: Row
   Justify: Start
   Align: Center
@@ -64,7 +73,7 @@ Jwift_PopoverMenuItem {
   UserSelect: None
 }
 Jwift_PopoverMenuItem_Disabled : Jwift_PopoverMenuItem {
-  Opacity: @JwiftDisabledOpacity
+  Opacity: @JwiftDisabledOpacity * Presence
   Cursor: Default
 }
 
@@ -122,13 +131,13 @@ Jwift_PopoverMenuChevron {
   FlexShrink: 0
 }
 
-Jwift_PopoverMenuSeparator {
+Jwift_PopoverMenuSeparator : Jwift_PopoverMenuPageFade {
   Height: 1pt
   Background: @Line
   Margin: 5pt 14pt
 }
 
-Jwift_PopoverMenuNote {
+Jwift_PopoverMenuNote : Jwift_PopoverMenuPageFade {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 400

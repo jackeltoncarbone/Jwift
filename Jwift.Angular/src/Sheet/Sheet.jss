@@ -83,28 +83,18 @@ Jwift_SheetCard_Grows : Jwift_SheetCard {
 Jwift_SheetCard_Inspector : Jwift_SheetCard {
   PanClaim: None
 }
-// Jack's experiment (2026-09-28), a large panel's own frost: a big sheet is not a small pill, and Apple's own
-// large materials read with a heavier frost than the Automatic ceiling a control or a card keeps (regular
-// glass ramps 1.33 to 4 pt by span, Core/Glass.Pipeline.ts `GlassBlurRadius`; measured 11.6 px at 3x = ~3.9 pt
-// on large glass, Jaui Core/Glass.Jss.md). Doubled, through the existing custom blur lane (`GlassBlur`) rather
-// than a new mechanism, and never touching `GlassFrost` itself or any control, card or the tab bar: those keep
-// Automatic. A switch, sheets only, default on; `0 * <pt>` resolves to `0pt`, which `GlassBlurRadius` reads the
-// same as an unauthored `GlassBlur` (falls back to Automatic) -- one line reverts the experiment.
-@JwiftSheetHeavyFrost: 1
-@JwiftSheetHeavyFrostBlur: 8pt
-
 // Glass at every height (Jack's departure, 2026-09-28, from Apple's opaque background above half way to full
 // height [C]): the card's own material never turns into a flat gray plate; `Sheet.ts`'s `Jwift_SheetFace`
-// carries the "gradually becoming opaque" read instead, over glass that stays glass. The sheet's subvariant
-// drops the outer refraction and the edge bleed's reach and keeps the drop shadow (Apple/Sheets.md) [C].
-Jwift_SheetGlass : JwiftGlass {
+// carries the "gradually becoming opaque" read instead, over glass that stays glass. The material is the one
+// every panel and menu wears (JwiftPanelGlass, Jwift.Glass.jss: its tint, and the heavier frost a large panel
+// reads with past the Automatic ceiling a control keeps). The sheet's subvariant drops the outer refraction and
+// the edge bleed's reach and keeps the drop shadow (Apple/Sheets.md) [C].
+Jwift_SheetGlass : JwiftPanelGlass {
   GlassOuterRefraction: None
   GlassBleed: None
-  GlassBlur: @JwiftSheetHeavyFrost * @JwiftSheetHeavyFrostBlur
 }
 // The form sheet in regular width floats as glass at every size: regular glass, no subvariant [C].
-Jwift_SheetGlass_Form : JwiftGlass {
-  GlassBlur: @JwiftSheetHeavyFrost * @JwiftSheetHeavyFrostBlur
+Jwift_SheetGlass_Form : JwiftPanelGlass {
 }
 // Solid, for the one surface that is deliberately not glass: the inspector column (Pages' and Keynote's own
 // solid trailing pane), never the edge-attached or form sheet card.
@@ -262,8 +252,9 @@ Jwift_SheetGrabber_Hidden : Jwift_SheetGrabber {
 }
 
 // THE DISCARD ASK: dismissing a sheet with unsaved changes asks first. iOS 26 presents the action sheet from the
-// control that raised it, as a menu under the X: Apple's menu platter, 250 pt wide, 32 pt corners [C].
-Jwift_SheetAsk : JwiftGlass {
+// control that raised it, as a menu under the X: Apple's menu platter, 250 pt wide, 32 pt corners [C], in the one
+// panel material every menu wears.
+Jwift_SheetAsk : JwiftPanelGlass {
   Layer: 4
   Position: Placed
   Top: @JwiftSheetBarInset + 50pt

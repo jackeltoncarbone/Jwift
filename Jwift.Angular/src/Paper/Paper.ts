@@ -23,7 +23,7 @@ import { PaperRadius } from './Paper.Geometry';
 export const JWIFT_PAPER_GEOMETRY = new InjectionToken<Signal<{ Radius: number; Padding: number }>>('JWIFT_PAPER_GEOMETRY');
 
 /**
- * `<paper>`: the house island/sheet surface — a thick, mostly-opaque glass with a fog veil standing in
+ * `<paper>`: a panel of the one panel glass (`JwiftPanelGlass`) with a fog veil standing in
  * for a soft shadow onto the field under it. A `JivHost` frame: no clip, no fill of its own, so
  * anything placed inside projects onto the surface drawn beneath it.
  *

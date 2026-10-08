@@ -12,8 +12,9 @@
  *
  * Lane CC1 answered the same slide for a menu's rows only (`RowIndicator.HasRowAt`, `PopoverTargetRect`).
  * This answers it for every child: the subtree snaps onto the placement the panel opens with, so from the
- * first placed frame each control is hit where it is drawn. The panel still grows in from its arrow
- * (`VisualScale` on Presence, which a press never reads), the way an iOS popover grows in place.
+ * first placed frame each control is hit where it is drawn. A menu's glass still grows out of its anchor
+ * (`Morph/GlassMorph.ts`): its own box springs from the anchor (`MorphFrom`, which outranks the snap) while the rows
+ * inside it stand at their places.
  *
  * The flag goes back once the panel's own watched rect stands on the placement: the worker has solved that
  * frame, so content that moves later (a menu pushing a page, a row's highlight sliding) springs as before.

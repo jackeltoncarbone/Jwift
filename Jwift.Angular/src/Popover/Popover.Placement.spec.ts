@@ -99,7 +99,6 @@ describe('a held panel stands still while the sentence it points at reflows (lan
     const covered = PlacePopover({ Anchor: grown, Region: desktop, ...wheel, PrevDown: true, Hold: hold });
     expect(covered).toMatchObject({ X: opened.X, Y: opened.Y });
     expect(covered.Y).toBeLessThan(grown.Y + grown.Height); // the new line sits under the panel, as on iOS.
-    expect(covered.ArrowVisible).toBe(false); // no arrow pointing into the words it covers.
   });
 
   it('a panel above its sentence holds the same way', () => {
@@ -232,23 +231,21 @@ describe('PlacePopover opens beside the column its word sits in, clear of the se
   const word: PopoverRect = { X: 40, Y: 300, Width: 70, Height: 22 };
   const words = { Anchor: word, Region: desktop, W: 250, H: 120, PrevDown: null };
 
-  it('to the right of the column, its arrow on its left edge pointing back at the word', () => {
+  it('to the right of the column, level with the word', () => {
     const p = PlacePopover({ ...words, Beside: column });
     expect(p.Side).toBe(true);
     expect(p.X).toBeGreaterThanOrEqual(column);
     expect(p.X + 250).toBeLessThanOrEqual(desktop.X + desktop.Width);
-    expect(p.ArrowY).toBeCloseTo(word.Y + word.Height / 2, 5);
-    expect(p.ArrowVisible).toBe(true);
     expect(p.Y).toBeLessThanOrEqual(word.Y);
     expect(p.Y + p.MaxHeight).toBeGreaterThanOrEqual(word.Y + word.Height);
   });
 
-  it('a word low in the list keeps its whole panel on screen, its arrow still at the word', () => {
+  it('a word low in the list keeps its whole panel on screen, still level with the word', () => {
     const low: PopoverRect = { ...word, Y: 860 };
     const p = PlacePopover({ ...words, Anchor: low, Beside: column });
     expect(p.Y + p.MaxHeight).toBeLessThanOrEqual(desktop.Y + desktop.Height);
-    expect(p.ArrowY).toBeGreaterThanOrEqual(low.Y);
-    expect(p.ArrowY).toBeLessThanOrEqual(low.Y + low.Height);
+    expect(p.Y).toBeLessThanOrEqual(low.Y + low.Height / 2);
+    expect(p.Y + p.MaxHeight).toBeGreaterThanOrEqual(low.Y + low.Height / 2);
   });
 
   it('above or below the word as ever where the panel does not fit beside the column', () => {
@@ -279,15 +276,15 @@ describe('PlacePopover beside its column keeps clear of what it is told to avoid
   const covers = (p: { X: number; Y: number; MaxHeight: number }, r: PopoverRect): boolean =>
     p.X < r.X + r.Width && r.X < p.X + 250 && p.Y < r.Y + r.Height && r.Y < p.Y + p.MaxHeight;
 
-  it('a squad just below the word: the panel rises over the column, its arrow still on the word', () => {
+  it('a squad just below the word: the panel rises over the column, still level with the word', () => {
     const squad: PopoverRect = { X: 470, Y: 470, Width: 60, Height: 30 };
     expect(covers(PlacePopover(wheel), squad)).toBe(true);
     const p = PlacePopover({ ...wheel, Avoid: [squad] });
     expect(p.Side).toBe(true);
     expect(covers(p, squad)).toBe(false);
     expect(p.Y + p.MaxHeight).toBeLessThanOrEqual(squad.Y);
-    expect(p.ArrowY).toBeCloseTo(word.Y + word.Height / 2, 5);
-    expect(p.ArrowVisible).toBe(true);
+    expect(p.Y + 32).toBeLessThanOrEqual(word.Y + word.Height / 2);
+    expect(p.Y + p.MaxHeight - 32).toBeGreaterThanOrEqual(word.Y + word.Height / 2);
   });
 
   it('a squad above the word: the panel keeps hanging down from it, the side away from the squad', () => {
@@ -309,7 +306,7 @@ describe('PlacePopover beside its column keeps clear of what it is told to avoid
 describe('ShortfallBelow: what a panel lacks under its word, for its host to make room', () => {
   const region: PopoverRect = { X: 8, Y: 70, Width: 386, Height: 754 };
 
-  it('the room under the word, its arrow included, less the panel\'s height', () => {
+  it('the room under the word, its gap included, less the panel\'s height', () => {
     // 402x874 at Medium: the word's band ends at 700, a 225px wheel needs 225 + 12 under it.
     const word: PopoverRect = { X: 120, Y: 664, Width: 60, Height: 36 };
     expect(ShortfallBelow(word, region, 225)).toBe(225 - (824 - (700 + 12)));

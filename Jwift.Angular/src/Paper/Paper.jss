@@ -1,5 +1,4 @@
-// PAPER: the house island/sheet material — a thick, mostly-opaque glass surface laid OVER the field,
-// with a fog veil (a `FogProgressiveBlur` box ramp, clear at every edge) standing in for a soft drop
+// PAPER: a panel of the one panel glass laid OVER the field, with a fog veil (a `FogProgressiveBlur` box ramp, clear at every edge) standing in for a soft drop
 // shadow onto the realistic field under it. Radius and padding are per-instance (Paper.ts computes them
 // and writes BorderRadius through `[style]`); everything that never varies lives here.
 
@@ -24,9 +23,11 @@ Jwift_PaperFog {
   PointerEvents: None
 }
 
-// The paper surface itself: the house thick-glass material (also used by Popover). Squircle, never a
-// circular round — Jiv's own corner shape, not an approximation.
-Jwift_PaperSurface : JwiftSolidGlass {
+// The paper surface itself: the one panel material (JwiftPanelGlass, Jwift.Glass.jss), its tint, frost, rim and
+// shadow the glass's own, so a panel laid on paper reads as the same glass as every other panel beside it (Drill
+// Sentences lane WW1, item 1: paper's own near opaque @Paper under a 26pt blur and a shadow of its own was one of
+// the drill editor's four materials). Squircle, never a circular round — Jiv's own corner shape.
+Jwift_PaperSurface : JwiftPanelGlass {
   Position: Placed
   Top: 0pt
   Left: 0pt
@@ -34,9 +35,4 @@ Jwift_PaperSurface : JwiftSolidGlass {
   Height: 100%
   PointerEvents: None
   CornerShape: Squircle
-  BackdropFilter: Blur(26pt) Saturate(1.5)
-  Background: @Paper
-  ShadowColor: rgba(0, 0, 0, 0.16)
-  ShadowBlur: 40pt
-  ShadowOffsetY: 10pt
 }

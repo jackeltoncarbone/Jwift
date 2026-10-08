@@ -131,16 +131,15 @@ Jwift_GlassActionTip_Hidden {
   Opacity: 0
   @Transition Opacity { Duration: 0ms }
 }
-Jwift_GlassActionTipPill {
+// The tip's pill is the one panel material (JwiftPanelGlass), as every surface that floats over the page is, rather
+// than an opaque @Panel plate with a hairline of its own (Drill Sentences lane WW1, item 1).
+Jwift_GlassActionTipPill : JwiftPanelGlass {
   MinHeight: 26pt
   MaxWidth: 100%
   Padding: 5pt 10pt
   BorderRadius: 8pt
   Direction: Row
   Align: Center
-  Background: @Panel
-  BorderWidth: 1pt
-  BorderColor: @Line
   PointerEvents: None
   Opacity: 1
 }

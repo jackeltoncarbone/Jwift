@@ -57,8 +57,11 @@ describe('the large detent is Glass, with a white/black face and no @Sheet fill'
     expect(COMPONENT).toContain('const a = SheetFaceAlpha(this._percentFull());');
   });
 
-  it('a heavier frost, if it applies at all, rides the sheet-only glass classes alone, never the tab bar or a control', () => {
-    expect(block(SHEET, 'Jwift_SheetGlass')).toMatch(/GlassBlur: @JwiftSheetHeavyFrost/);
-    expect(block(SHEET, 'Jwift_SheetGlass_Form')).toMatch(/GlassBlur: @JwiftSheetHeavyFrost/);
+  it('the card is the one panel glass every panel and menu wears, stating none of its optics (lane WW1, item 1)', () => {
+    expect(SHEET).toMatch(/^Jwift_SheetGlass : JwiftPanelGlass \{/m);
+    expect(SHEET).toMatch(/^Jwift_SheetGlass_Form : JwiftPanelGlass \{/m);
+    for (const cls of ['Jwift_SheetGlass', 'Jwift_SheetGlass_Form']) {
+      expect(block(SHEET, cls)).not.toMatch(/^\s*(Background|GlassBlur|GlassFrost):/m);
+    }
   });
 });

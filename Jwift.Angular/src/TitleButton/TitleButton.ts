@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, output, viewChild } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
+import type { GlassMorphRect } from '../Morph/GlassMorph';
 import TitleButtonJss from './TitleButton.jss';
 
 /**
@@ -18,7 +19,7 @@ import TitleButtonJss from './TitleButton.jss';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <jyle [source]="Jss" />
-    <jiv class="Jwift_TitleButton" (click)="titleClick.emit()">
+    <jiv #title class="Jwift_TitleButton" (click)="titleClick.emit()">
       <jext class="Jwift_ToolbarTitle Jwift_TitleButtonLabel" [text]="text()" />
       <icon class="Jwift_TitleButtonChevron" Name="chevron.down" />
     </jiv>
@@ -30,4 +31,15 @@ export class TitleButton {
 
   readonly text = input.required<string>();
   readonly titleClick = output<void>();
+
+  private readonly _title = viewChild<Jiv>('title');
+  /** Its rect is read live as the menu it opens grows out of it (`Anchor`). */
+  private readonly _watch = effect(() => { this._title()?.Node.WatchRect(true); });
+
+  /** The title's own rect, canvas px, live: the menu a title opens grows out of it and collapses back into it
+   *  (`Popover`, Drill Sentences lane WW1, item 3). Null before it is laid out. */
+  readonly Anchor = (): GlassMorphRect | null => {
+    const n = this._title()?.Node;
+    return n && n.Width > 0 ? { X: n.X, Y: n.Y, Width: n.Width, Height: n.Height } : null;
+  };
 }

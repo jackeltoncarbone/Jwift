@@ -155,6 +155,30 @@ JwiftClearGlass : JwiftGlass {
   Glass: Clear
 }
 
+// ── JwiftPanelGlass ─────────────────────────────────────────────────
+// THE ONE PANEL MATERIAL. Every panel, bar, sheet, menu, popover and notice wears this and states none of its
+// optics: the same tint, frost, rim and shadow on every one of them, on a phone and a desktop alike. A control (a
+// glass button, a chip, a closed pill) stays JwiftGlass, Apple's bare regular glass at a control's size.
+//
+// Jack, reviewing the drill editor: "panels that are so not transparent that they appear gray on the phone, but they
+// look fine on desktop. And I see inconsistencies in tint between panels now." Five surfaces had each picked a tint
+// seed: the list panel 0.55 of the theme's grey, the phone's sheet, the menus and the toasts 0.78, the selection bar
+// 0.9, the player none, the pinned heading 0.55 over a 30pt frost. A tint seed at alpha a replaces a of the lensed
+// field with a near constant grey (Jaui Jiv.Panel.frag, `.tint(color)`), so at 0.78 and 0.9 nothing of the field was
+// left and the panel read as a flat grey plate. The seed is now the theme's one `@PanelGlass` (Theme.Tokens.ts), the
+// list panel's own, the one Jack saw the field through.
+//
+// The frost is the panel blur, past Apple's 4pt ceiling for large glass: a field's yard lines and a sentence's words
+// under a panel read as blurred colour, never as lines or words (Drill Sentences lane OO2, item 1). Apple's menus are
+// the same regular glass as its panels (Jaui Core/Glass.Jss.md, Menu), so there is no second variant.
+@JwiftPanelGlassBlur: 10pt
+JwiftPanelGlass : JwiftGlass {
+  Background: @PanelGlass
+  // Outside every scroll pocket, as UIKit's platter and its sheets are: the frost is the panel's wherever it opens.
+  GlassFrost: Automatic
+  GlassBlur: @JwiftPanelGlassBlur
+}
+
 // ── JwiftSolidGlass ─────────────────────────────────────────────────
 // A SOLID content surface (a card, a row, a tile) that carries the glass rim over its own content: not glass,
 // an opaque slab whose edge is lit the way glass's is. The consumer owns Background, BorderRadius and size.

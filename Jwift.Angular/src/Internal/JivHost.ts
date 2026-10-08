@@ -111,6 +111,13 @@ export abstract class JivHost {
     this._styleOverride.set(next);
   }
 
+  /** `SetStyleOverride`, applied at once rather than on the host's next effect: for a style that must reach the
+   *  worker in the same batch as an op made beside it (a menu's shown state with its `MorphFrom`, `Popover`). */
+  protected SetStyleOverrideNow(patch: Record<string, unknown>): void {
+    this.SetStyleOverride(patch);
+    this._apply();
+  }
+
   /** Clear a single Style override key (e.g. when an `[image]` input goes
    *  back to null / undefined). */
   protected ClearStyleOverride(key: string): void {
