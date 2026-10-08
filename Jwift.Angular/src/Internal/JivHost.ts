@@ -27,6 +27,9 @@ import {
   type PointerPayload,
 } from 'jaui';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
+import { FocusRingGeometryOf, ParsePt } from './FocusRing.Geometry';
+import { IsActivationKey, IsEscapeKey } from './FocusKeys';
+import FocusRingJss from './FocusRing.jss';
 
 /**
  * Ambient glass tint — an optional accent fill (a colour string, or null) every Jwift glass component
@@ -132,6 +135,18 @@ export abstract class JivHost {
   private readonly _disabled: WritableSignal<boolean | undefined> = signal(undefined);
   protected SetDisabled(disabled: boolean): void { this._disabled.set(disabled); }
 
+  // ── Keyboard focus (HIG Full Keyboard Access) ───────────────────────
+  /** Whether THIS host currently shows Apple's focus ring: true only while its own host element holds
+   *  real DOM focus AND the browser's own `:focus-visible` heuristic says that focus came from the
+   *  keyboard, not a pointer or touch press — exactly blind round 27's finding ("the ring shows only
+   *  for keyboard focus, never on a mouse click or tap"). Driven by the native `focus`/`blur` listeners
+   *  below; nothing else writes it. */
+  private readonly _focusVisible: WritableSignal<boolean> = signal(false);
+  /** The ring Jiv itself, created the first time this host becomes focusable (`_syncFocusRing`); kept
+   *  (hidden) rather than torn down between focus/blur so a control that is tabbed to repeatedly
+   *  doesn't pay a create op every time. */
+  private _focusRing: JivHandle | null = null;
+
   /** Subclass setter for runtime TextStyle overrides (e.g. an accent Color on a
    *  glyph/label). Same untracked-read + re-fire contract as SetStyleOverride. */
   protected SetTextStyleOverride(patch: Record<string, unknown>): void {
@@ -165,6 +180,7 @@ export abstract class JivHost {
   constructor(sourceId: string, source: string, initialClassName: string, className: () => string) {
     this._className = className;
     this._loader.Ensure(this._registry, sourceId, source);
+    this._loader.Ensure(this._registry, 'FocusRing', FocusRingJss);
 
     if (!this._canvas) {
       throw new Error('[Jwift] component must be inside a <jaui>');
@@ -201,12 +217,36 @@ export abstract class JivHost {
       OnPanClaim: (e) => this._host.nativeElement.dispatchEvent(_clonePointerEvent('panclaim', e)),
     });
 
+    // Tab/Shift-Tab traversal itself needs no wiring here: `_apply` gives a focusable host a real
+    // `tabIndex`, in real DOM document order (`_reorderToDomPosition` already keeps that order in sync
+    // with the canvas), so the browser's own native Tab walks every Jwift control exactly like any
+    // other focusable element — the gap blind round 27 found was never Tab order, only the missing
+    // ring. What a native `focus` doesn't give for free is APPLE'S RING ("never on a mouse click or
+    // tap"): `:focus-visible` is the browser's own, spec'd, cross-tested answer to "did this focus
+    // come from the keyboard", so it is read directly rather than re-derived from Jaui's own
+    // still-Phase-0 `FocusManager.Modality`.
+    const host = this._host.nativeElement;
+    host.addEventListener('focus', () => this._focusVisible.set(host.matches(':focus-visible')));
+    host.addEventListener('blur', () => this._focusVisible.set(false));
+    host.addEventListener('keydown', (e: KeyboardEvent) => {
+      // Only this element's own keydown — not one bubbled up from a nested REAL focusable (TextInput's
+      // own `<jinput>`, say), which already answers Space/Enter/Escape its own way.
+      if (e.target !== host) return;
+      if (IsActivationKey(e.key)) {
+        e.preventDefault(); // Space must not also page-scroll.
+        host.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      } else if (IsEscapeKey(e.key)) {
+        host.blur();
+      }
+    });
+
     effect(() => {
       this._registry.Version();
       this._className();
       this._styleOverride();
       this._textStyleOverride();
       this._disabled();
+      this._focusVisible();
       this._apply();
     });
 
@@ -279,8 +319,62 @@ export abstract class JivHost {
   }
 
   private _apply(): void {
-    this.Node.Apply(this._buildOpts(this._className()));
+    const opts = this._buildOpts(this._className());
+    // Full Keyboard Access floor: a host is a real Tab stop exactly when its JSS class resolved
+    // `Interactive: true` and it isn't `Disabled` — the SAME two facts that already gate a pointer
+    // press (`ElementProps.Interactive`, `States.Disabled`), read back off the very opts this apply is
+    // about to send, so a control's keyboard reach can never drift from its pointer reach.
+    const focusable = opts.ElementProps?.Interactive === true && opts.States?.['Disabled'] !== true;
+    this._host.nativeElement.tabIndex = focusable ? 0 : -1;
+    this.Node.Apply(opts);
+    this._syncFocusRing(focusable, opts.Style?.['BorderRadius']);
     StampProbeHost(this._host.nativeElement, this.Node.Id, this._className());
+  }
+
+  /** Shows or hides this host's focus ring, creating it the first time this host becomes focusable.
+   *  `controlRadius` is this host's own just-resolved `Style.BorderRadius` (`_apply`, above) — read
+   *  back rather than re-resolved, so the ring can never see a different radius than the control it
+   *  rings actually painted this pass. */
+  private _syncFocusRing(focusable: boolean, controlRadius: unknown): void {
+    if (!focusable) {
+      this._focusRing?.Apply({ ElementProps: { Visible: false } });
+      return;
+    }
+    if (!this._focusRing) this._focusRing = this._createFocusRing(controlRadius);
+    this._focusRing.Apply({ ElementProps: { Visible: this._focusVisible() } });
+  }
+
+  /** Allocates the ring Jiv: a bordered, hit-less sibling-in-the-tree that tracks this host's own rect
+   *  via `Position: Attach`/`AttachMode: Fill` (Jaui's anchor-positioning — Layout.Types.ts) at a
+   *  NEGATIVE inset, which turns the normally-inward "fill the target minus the inset" math outward
+   *  instead; `FocusRingGeometryOf` works out that inset and the concentric radius together
+   *  (`FocusRing.Geometry.ts`). Hidden on creation — `_syncFocusRing` shows it the moment this host is
+   *  both focusable and actually focus-visible. */
+  private _createFocusRing(controlRadius: unknown): JivHandle {
+    const bridge = this._canvas!.Bridge;
+    const ring = new JivHandle(bridge, bridge.AllocateId());
+    const resolved = this._registry.Resolve('Jwift_FocusRing');
+    const geometry = FocusRingGeometryOf(ParsePt(controlRadius));
+    bridge.Enqueue({
+      K: 'create',
+      Id: ring.Id,
+      Opts: {
+        Style: {
+          ...resolved?.Style,
+          ...(geometry.RadiusPt === null ? {} : { BorderRadius: `${geometry.RadiusPt}pt` }),
+        } as Record<string, unknown>,
+        ChildLayout: {
+          Position: 'Attach',
+          AttachTo: this.Node.Id,
+          AttachMode: 'Fill',
+          AttachInset: `${geometry.AttachInsetPt}pt`,
+        },
+        ElementProps: { Visible: false, Interactive: false, PointerEvents: 'None' },
+        Classes: ['Jwift_FocusRing'],
+      },
+    });
+    this.Node.AddChild(ring);
+    return ring;
   }
 
   private _buildOpts(className: string): JivApplyOpts {
