@@ -99,6 +99,12 @@ rgb' = toRGB(Y', Cb', Cr') * (1 - Fill.a) + Fill.rgb        (Fill premultiplied)
 | regular dark | 0.6 | 0.2 | 1.0 | black 0.4 | Y → 0.24 Y + 0.12, chroma × 0.60 |
 | clear (light and dark identical) | 1.15 | 0.075 | 1.06 | none | Y → 1.075 Y + 0.075, chroma × 1.06 |
 
+**What the two lines do to a backdrop.** [C arithmetic on the rows above; I where marked]
+- Dark, Y → 0.24 Y + 0.12, has its fixed point at 0.12 / 0.76 = 0.158: it lifts only a backdrop darker than that (black to 0.12) and darkens everything brighter, toward the fixed point. Light, Y → 0.318 Y + 0.70, has its fixed point past white (1.03), so it lifts every backdrop, black to 0.70.
+- The regular faces are the same at every size; nothing in `glassBackground` reads the shape's position, and the bleed's weight is saturated through the whole interior (`sat(1 - d)` with `d < 0`), so over an even backdrop a large glass is one tone from its top to its bottom outside the rim band and the bezel.
+- With the edge bleed and the holding tone (3.4, 3.6) over a mid backdrop of luma 0.32 (a sunlit field), large dark glass lands at about 0.18 and large light glass at about 0.80, which is L* 19 and L* 82: as far from black as the light one is from white. That is the symmetry the eye reads as "dark glass and light glass". [I] (Jaui `Core/Glass.Pipeline.ts`, `GlassBodyOf`)
+- A face fitted to glass 64 pt and under carries that glass's adaptive switch (below): over bright content Apple's thin bars flip toward the light face, so a single dark line fitted across them comes out steeper and lifted (Jaui's, Y → 0.40 Y + 0.176, fixed point 0.294). Worn by large glass, which never adapts, it lifts every dark-theme backdrop. [I] (Jaui `Core/Glass.md`; `Evidence.md` 1.1)
+
 Thin glass (`tracksLuma = 1`) animates these toward backdrop-adaptive values over about 1 to 8 s. The line is S ≤ 64 [C: DesignLibrary `GlassMaterialProvider.updateState` keeps the adaptive state while min(w, h) ≤ 64]; Jaui holds its adaptive face at 56 until the brightness drive is read from source, so the 62 pt tab bar keeps its settled face. Settled light-appearance values seen: checkerboard 0.35 / 0.95 / fill 0.50; photo 0.319 / 0.919 / 0.516; light solid 0.819 / 1.03 / 0.266; dark thin capsule over dark solid 0.1 / 0.45 / black 0.25. [C] values, [I] the interpolation law.
 
 **The adaptive drive, from source (iOS 26.1).** The drive does not interpolate: it switches between the light and dark appearance, with hysteresis.
