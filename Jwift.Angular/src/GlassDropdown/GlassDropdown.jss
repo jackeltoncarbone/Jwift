@@ -41,13 +41,15 @@ Jwift_GlassDropdown : JwiftGlass {
 // Closed state sizes to its projected content so consumers can grow the
 // pill into a multi-cell button group (e.g. the chrome's [points][cart]
 // [avatar] cluster) without having to stamp another glass surface.
-// Padding 4pt + Gap 4pt matches the iOS reference: 3 × 40pt cells inside
-// a 48pt-tall pill.
+// Padding 2pt + Gap 4pt: 44pt cells inside a 48pt-tall pill. Drill Sentences lane WW2, item 3 (Jack: "Apple has a
+// minimum ... for the button groups"): a cell is the target, so it is Apple's 44pt touch default, its 4pt gaps keep
+// neighbours' hit areas apart, and its corner (22) is the pill's (24) less the 2pt inset, concentric. The cells were
+// 40pt at a 4pt inset, under the 44pt a finger's undo and redo need.
 Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
   Direction: Row
   Justify: Center
   Align: Center
-  Padding: 4pt
+  Padding: 2pt
   Gap: 4pt
   // Width: MaxContent — sum of all cells + gaps + padding (intended
   // pill behavior: actions + ellipsis + avatar in a row). MinContent on
@@ -70,7 +72,7 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
   Top: 0pt
 }
 
-// Closed-state cell — flat 40pt round hit-target inside a closed dropdown.
+// Closed-state cell — flat 44pt round hit-target inside a closed dropdown.
 // No own glass material (the wrapping dropdown owns the glass), so it takes the plain
 // JwiftPress: a fill, no second material on top of the pill's. A cell in
 // a group and a button on its own are the same control at two densities, and JwiftPress
@@ -79,8 +81,8 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
 // is the open/close trigger (e.g. ellipsis). One canonical class — drill, picture,
 // page-chrome all share it.
 Jwift_GlassDropdownCell : JwiftPress {
-  Width: 40pt
-  Height: 40pt
+  Width: 44pt
+  Height: 44pt
   BorderRadius: 999pt
   Direction: Row
   Justify: Center

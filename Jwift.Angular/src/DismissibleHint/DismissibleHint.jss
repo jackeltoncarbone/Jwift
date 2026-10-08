@@ -4,13 +4,15 @@
 // foot, so this sheet only states the capsule's own shape. Self-contained (no `: JwiftGlass`): this sheet
 // registers via a plain `<jyle>`, not JivHost, so the library's global glass base is not guaranteed
 // registered first.
+// Its corner is the 44pt dismiss's (22) plus the 10pt it stands in (Drill Sentences lane WW2, item 2: at 24pt the round
+// dismiss stood rounder than the corner around it). One line is a true capsule, 64pt tall.
 Jwift_DismissibleHint {
   Direction: Row
   Justify: Start
   Align: Center
   Gap: 10pt
   Padding: 10pt 10pt 10pt 14pt
-  BorderRadius: 24pt
+  BorderRadius: 32pt
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
 }
 Jwift_DismissibleHintGlyph {

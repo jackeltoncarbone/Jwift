@@ -411,3 +411,33 @@ describe('LandPieces: a change of words lands at once, no word ever drawn over a
     expect(ts).toMatch(/LandPieces\(this\._landings, spots, changed\)/);
   });
 });
+
+/**
+ * Drill Sentences lane WW2, item 3 (Jack: "small touch targets"): a narrow word ("P", a mirror mark) reaches Apple's least
+ * across (`MinHitWidth`, the app's 28pt for a finger and 20pt for a pointer), taking the room it lacks from the gaps beside
+ * it and a free row end, never over a neighbour's own ink; and the "+" stops where it meets the word before it.
+ */
+describe('LayoutSentence — a narrow word reaches the least across, and no two hits overlap (lane WW2, item 3)', () => {
+  const tokens: readonly SentenceToken[] = [
+    { Key: 'who', Text: 'P', Kind: 'Who' },
+    { Key: 'dot', Text: ' · ', Kind: 'Text' },
+    { Key: 'move', Text: 'mark time', Kind: 'Word' },
+  ];
+  it('0, the default, leaves the split as it was; 28 widens "P" from its free end', () => {
+    const plain = LayoutSentence(tokens, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: measure, ShowAdd: false });
+    const wide = LayoutSentence(tokens, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: measure, ShowAdd: false, MinHitWidth: 28 });
+    const p = (r: typeof plain) => r.Hits.find((h) => h.TokenIndex === 0)!;
+    expect(p(plain).Width).toBeLessThan(28);
+    expect(p(wide).Width).toBeGreaterThanOrEqual(28);
+    // It takes the gap up to the "·", and never its ink.
+    const dot = wide.Pieces.find((piece) => piece.Text === '·')!;
+    expect(p(wide).X + p(wide).Width).toBeGreaterThanOrEqual(p(plain).X + p(plain).Width);
+    expect(p(wide).X + p(wide).Width).toBeLessThanOrEqual(dot.X + 1e-6);
+  });
+
+  it('the "+" reaches toward the last word only as far as the two meet', () => {
+    const laid = LayoutSentence(tokens, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: measure, ShowAdd: true });
+    const last = laid.Hits.find((h) => h.TokenIndex === 2)!;
+    expect(laid.Add!.Hit.X).toBeGreaterThanOrEqual(last.X + last.Width - 1e-6);
+  });
+});

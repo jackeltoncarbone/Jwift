@@ -43,8 +43,8 @@ Jwift_GlassActionGroupSlot {
 //     GlassDropdown.jss) silently dropped here — geometry must be
 //     declared verbatim in this file rather than inherited.
 Jwift_GlassDropdownCell_AvatarPeer {
-  Width: 40pt
-  Height: 40pt
+  Width: 44pt
+  Height: 44pt
   BorderRadius: 999pt
   Direction: Row
   Justify: Center
@@ -80,4 +80,4 @@ Jwift_GlassDropdownCell_Avatar_OnTop {
 }
 
 // The sink's monogram belongs to `<avatar Size="Fill">` now, at 40% of the cell rather than a fixed 12pt
-// on a cell that is 40pt or 48pt depending on what else is inline with it.
+// on a cell that is 44pt or 48pt depending on what else is inline with it.

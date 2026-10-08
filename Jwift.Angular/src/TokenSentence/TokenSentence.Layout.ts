@@ -89,6 +89,10 @@ export interface SentenceLayoutOptions {
    *  pure layout file never imports icon data itself. */
   readonly Measure: (text: string, weight: number, icon?: string) => number;
   readonly ShowAdd: boolean;
+  /** The least a tappable token's hit stands wide, pt (Drill Sentences lane WW2, item 3: Apple's least for an inline
+   *  control, 28pt for a finger and 20pt for a pointer). A word narrower than this takes the room it lacks from the gaps
+   *  beside it, never past a neighbour's own ink. 0, the default, leaves every hit its gap split. */
+  readonly MinHitWidth?: number;
 }
 
 export interface SentencePiece {
@@ -414,19 +418,20 @@ export function LayoutSentence(
   // share of the gaps either side made it the target a click on the name found. A mirror mark is hit only on its own
   // glyph across the row (`Tight`): the names beside it reach to its edges, so the space around it is theirs, and the
   // mark takes no more than its own box and the touch target's height.
-  interface _RowEntry { readonly Left: number; readonly Right: number; readonly Tight: boolean; }
+  interface _RowEntry { readonly Left: number; readonly Right: number; readonly Tight: boolean; readonly Tappable: boolean; }
   const rowEntries = new Map<number, _RowEntry[]>();
-  const pushRowEntry = (row: number, left: number, right: number, tight = false): void => {
+  const pushRowEntry = (row: number, left: number, right: number, tight = false, tappable = false): void => {
     const list = rowEntries.get(row);
-    if (list) list.push({ Left: left, Right: right, Tight: tight });
-    else rowEntries.set(row, [{ Left: left, Right: right, Tight: tight }]);
+    if (list) list.push({ Left: left, Right: right, Tight: tight, Tappable: tappable });
+    else rowEntries.set(row, [{ Left: left, Right: right, Tight: tight, Tappable: tappable }]);
   };
   // An icon token (the mirror mark) carries empty text but real width: it is visible content, so it is a
   // neighbour like any word, never mistaken for the whitespace the rule above leaves out.
   const isBlank = (piece: SentencePiece): boolean => piece.Text.trim() === '' && !tokens[piece.TokenIndex]?.Icon;
   for (const piece of pieces) {
     if (isBlank(piece)) continue; // a pure-whitespace piece is never its own neighbour — see above.
-    pushRowEntry(piece.Row, piece.X, piece.X + piece.Width, tokens[piece.TokenIndex]?.Kind === 'Mirror');
+    const kind = tokens[piece.TokenIndex]?.Kind;
+    pushRowEntry(piece.Row, piece.X, piece.X + piece.Width, kind === 'Mirror', !!kind && IsTappable(kind));
   }
   if (add) pushRowEntry(add.Row, add.X, add.X + add.Width);
   for (const list of rowEntries.values()) list.sort((a, b) => a.Left - b.Left);
@@ -436,6 +441,29 @@ export function LayoutSentence(
   const PILL_GAP_THRESHOLD = PILL_PAD_X * 2; // below this natural gap, two default-padded pills would already touch or cross.
   const PILL_HAIRLINE = 0.5; // shaved off EACH touching pill edge — a visible ~1px seam, never a silent overlap into a neighbour's own glyph.
   const TOUCH_HALF_HEIGHT = 22; // half of the 44pt touch-target floor.
+  const minHit = opts.MinHitWidth ?? 0;
+
+  // Drill Sentences lane WW2, item 3 (Jack: "small touch targets"; a "P" or a mirror mark's hit was its own glyph and a
+  // couple of points of gap): where two neighbours meet. Each side's edge is the split above; then a tappable entry
+  // narrower than `minHit` reaches toward its least about its own center, as far as the neighbour's ink and no further,
+  // the neighbour giving way; where both reach, they meet halfway between their wants. One rule for both sides of a gap,
+  // so two hits never overlap.
+  const wantRight = (e: _RowEntry): number => (e.Tappable && e.Right - e.Left < minHit ? (e.Left + e.Right) / 2 + minHit / 2 : -Infinity);
+  const wantLeft = (e: _RowEntry): number => (e.Tappable && e.Right - e.Left < minHit ? (e.Left + e.Right) / 2 - minHit / 2 : Infinity);
+  const meet = (a: _RowEntry, b: _RowEntry): { readonly ARight: number; readonly BLeft: number } => {
+    let aRight = a.Tight ? a.Right : b.Tight ? b.Left : (a.Right + b.Left) / 2;
+    let bLeft = b.Tight ? b.Left : a.Tight ? a.Right : (a.Right + b.Left) / 2;
+    const aWant = wantRight(a);
+    const bWant = wantLeft(b);
+    aRight = Math.max(aRight, Math.min(aWant, b.Left));
+    bLeft = Math.min(bLeft, Math.max(bWant, a.Right));
+    if (aRight > bLeft) {
+      if (aWant > -Infinity && bWant < Infinity) aRight = bLeft = Math.min(b.Left, Math.max(a.Right, (aWant + bWant) / 2));
+      else if (aWant > -Infinity) bLeft = aRight;
+      else aRight = bLeft;
+    }
+    return { ARight: aRight, BLeft: bLeft };
+  };
 
   // Drill Sentences lane X3, item 4 (phone, first-time tester): a tap on the word "then" opened the
   // "left flank" menu right after it. The Voronoi split above already stops a tappable word's own hit at
@@ -451,12 +479,14 @@ export function LayoutSentence(
     const prev = selfIdx > 0 ? rowList[selfIdx - 1] : null;
     const next = selfIdx >= 0 && selfIdx < rowList.length - 1 ? rowList[selfIdx + 1] : null;
 
-    const tight = selfIdx >= 0 && rowList[selfIdx].Tight;
-    // Lane UU3, item 5: a tight mark keeps to its own glyph beside a neighbour, and the neighbour reaches its edge.
-    const hitLeft = !prev ? piece.X - FREE_PAD_X - PILL_PAD_X : tight ? piece.X : prev.Tight ? prev.Right : (prev.Right + piece.X) / 2;
-    const hitRight = !next
-      ? piece.X + piece.Width + FREE_PAD_X + PILL_PAD_X
-      : tight ? piece.X + piece.Width : next.Tight ? next.Left : (piece.X + piece.Width + next.Left) / 2;
+    const self = selfIdx >= 0 ? rowList[selfIdx] : { Left: piece.X, Right: piece.X + piece.Width, Tight: false, Tappable: false };
+    // Lane UU3, item 5: a tight mark keeps to its own glyph beside a neighbour, and the neighbour reaches its edge (`meet`).
+    let hitLeft = !prev ? Math.min(piece.X - FREE_PAD_X - PILL_PAD_X, wantLeft(self)) : meet(prev, self).BLeft;
+    let hitRight = !next ? Math.max(piece.X + piece.Width + FREE_PAD_X + PILL_PAD_X, wantRight(self)) : meet(self, next).ARight;
+    // Lane WW2, item 3: a narrow word at a row's free end ("P · mark time") takes what its neighbour could not give it from
+    // that free side, where nothing else stands.
+    if (self.Tappable && !prev) hitLeft = Math.min(hitLeft, hitRight - minHit);
+    if (self.Tappable && !next) hitRight = Math.max(hitRight, hitLeft + minHit);
 
     const centerY = piece.Y + LineHeight / 2;
     const hasPrevRow = piece.Row > 0;
@@ -497,6 +527,17 @@ export function LayoutSentence(
       if (gap < PILL_GAP_THRESHOLD) rightPad = gap / 2 - PILL_HAIRLINE;
     }
     pillPads.push({ TokenIndex: piece.TokenIndex, LeftPad: leftPad, RightPad: rightPad });
+  }
+
+  // Lane WW2, item 3 (the conformance spec found the "+"'s reach over the last word's own hit, and over the line above's):
+  // the "+" reaches toward the word before it only as far as the two meet (`meet`), as every neighbour's does, and no
+  // higher than its own line's top where a line stands above it, as a word's.
+  if (add) {
+    const rowList = rowEntries.get(add.Row) ?? [];
+    const at = rowList.findIndex((e) => e.Left === add!.X && e.Right === add!.X + add!.Width);
+    const left = at > 0 ? Math.max(add.Hit.X, meet(rowList[at - 1], rowList[at]).BLeft) : add.Hit.X;
+    const top = add.Row > 0 ? Math.max(add.Hit.Y, add.Row * LineHeight) : add.Hit.Y;
+    add = { ...add, Hit: { X: left, Y: top, Width: add.Hit.X + add.Hit.Width - left, Height: add.Hit.Y + add.Hit.Height - top } };
   }
 
   return { Pieces: pieces, Hits: hits, Fillers: fillers, PillPads: pillPads, Add: add, Height: height };

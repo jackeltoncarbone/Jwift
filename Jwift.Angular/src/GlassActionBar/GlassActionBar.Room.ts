@@ -35,8 +35,8 @@ export function BarRoom(o: BarRoomInput): number {
 // lays the bar out from these widths, never from a measurement, so the cell is sized to the same number
 // (its own `Width`) and the two can never disagree.
 
-/** A bare cell: the house 40pt circle (`Jwift_GlassDropdownCell`). */
-export const CELL_PT = 40;
+/** A bare cell: the house 44pt circle (`Jwift_GlassDropdownCell`), Apple's touch default. */
+export const CELL_PT = 44;
 /** The name's size (`Jwift_GlassActionTitle`). */
 export const TITLE_FONT_PT = 13;
 /** A titled cell's own insets and gaps: lead to the glyph, the glyph, glyph to name, name to the trailing

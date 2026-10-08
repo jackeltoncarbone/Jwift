@@ -35,7 +35,7 @@ describe('a titled cell wears its name beside its glyph while there is room', ()
     expect(ShowsTitle({ Label: ' ', Titled: true }, true)).toBe(false);
   });
 
-  it('a bare cell is the 40pt circle; a titled one grows by its name, and a disclosure chevron\'s room', () => {
+  it('a bare cell is the 44pt circle; a titled one grows by its name, and a disclosure chevron\'s room', () => {
     expect(CellWidth(cast, false)).toBe(CELL_PT);
     expect(CellWidth(undo, true)).toBe(CELL_PT);
     expect(CellWidth(cast, true)).toBeGreaterThan(CELL_PT + TitleWidth('Cast') - 1);

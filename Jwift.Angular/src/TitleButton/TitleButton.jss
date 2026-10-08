@@ -1,5 +1,7 @@
 // A tappable toolbar title. The label reuses `Jwift_ToolbarTitle` (Toolbar.jss: 15pt semibold, iOS 26's
 // navigation-title scrolled state — [C] measured), so a title-button reads exactly like a plain title.
+// Drill Sentences lane WW2, item 3: the title opens a menu, so its hit is Apple's 44pt touch default however short its
+// line, centered in the toolbar's row; it was its words' own height.
 Jwift_TitleButton {
   Direction: Row
   Justify: Start
@@ -7,6 +9,7 @@ Jwift_TitleButton {
   Gap: 5pt
   FlexShrink: 1
   Overflow: Hidden
+  MinHeight: 44pt
   Padding: 0pt 2pt
   Interactive: true
   Cursor: Pointer

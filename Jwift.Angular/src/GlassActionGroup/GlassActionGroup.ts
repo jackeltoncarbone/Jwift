@@ -105,7 +105,7 @@ export interface GlassAction {
  *
  * Auto-shrink reads the ancestor toolbar's solved width on each rAF tick,
  * subtracts the leading-wrapper width + paddings, and divides the slack by
- * 40pt cell + 4pt gap (matching `Jwift_GlassDropdownCell` / `_Closed`
+ * 44pt cell + 4pt gap (matching `Jwift_GlassDropdownCell` / `_Closed`
  * geometry). Same approach `<tab-bar>` uses for its expand-flip threshold.
  */
 @Component({
@@ -306,11 +306,11 @@ export class GlassActionGroup implements OnDestroy {
 
   @ViewChild('dd') private _Dd?: GlassDropdown;
 
-  // Geometry constants — kept in sync with `Jwift_GlassDropdownCell` (40pt
-  // square cells) and `Jwift_GlassDropdown_Closed` (4pt padding, 4pt gap).
-  private static readonly _CellPt        = 40;
+  // Geometry constants — kept in sync with `Jwift_GlassDropdownCell` (44pt
+  // square cells) and `Jwift_GlassDropdown_Closed` (2pt padding, 4pt gap).
+  private static readonly _CellPt        = 44;
   private static readonly _CellGapPt     =  4;
-  private static readonly _ClosedPadPt   =  4;
+  private static readonly _ClosedPadPt   =  2;
 
   private readonly _MaxInlineFit = signal<number>(Number.MAX_SAFE_INTEGER);
 
