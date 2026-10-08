@@ -5,6 +5,7 @@ What Apple does, and nothing else. No Jaui, no JSS, none of our values: those li
 Every fact carries a status:
 - **[C]** read from Apple's code or shader IR, or from a live layer dump, with the file, function or symbol.
 - **[I]** measured from Apple's own frames or inferred, with the frame or the method.
+- **[P]** Apple's own published words (HIG, WWDC), given only where they add something beyond the [C] material above — section 13. A [C] value always wins over a [P] one; [P] is never load-bearing on its own in this file.
 
 Platforms: iOS 26.1 (build 23B85) decompiled QuartzCore, DesignLibrary and UIKitCore; macOS 26.4 and 26.5 live layer dumps; the macOS 27 metallib IR. iOS and macOS run one engine: DesignLibrary's `GlassMaterialProvider` builds one `glassBackground` CAFilter, and QuartzCore runs it in the window server. The iOS 26.1 recipe carries the same light and dark constants the macOS dumps show. [C]
 
@@ -394,6 +395,13 @@ Two peaks at opposite corners (68 top left, 58 bottom right) with the sides betw
 **Lens.** In the first 2 to 3 CSS px inside the outline the glass shows what lies outside the panel: the App Store bar's top edge over the icon reads a dark band of 30 where the body is 70 (the sample lands above the icon, in black); its bottom edge a bright 96 band (the icon pulled down into the rim); the Collections pill's left edge a 10 CSS px band of 16 where the body is 109 (the black photo margin outside the pill). Past that band the interior is pulled toward the edge by about 5 CSS px, flat within about 12 CSS px; at the App Store bar's end cap the orange icon appears 16 device px closer to the edge than it is. This is the two-sided shift of section 3.1.
 
 **Shadow.** Nothing shows below the Photos bar over black. Over content the shadow rises over text and falls over a flat light ground, and follows text scrolling underneath; the backdrop decides, not the theme (section 1 of `HIG.md` quotes Apple on this).
+
+## 13. Published framing, where it conflicts with the decompile [P]
+
+Apple's own published words (HIG Materials, WWDC25 219/356) say things that read as if no exact numbers exist for parts of this file's recipe. Where a [C] fact above gives the exact value, it wins; the published framing is recorded here only where it adds something (why Apple frames it this way, or what a web reimplementation without this file would have to approximate instead).
+
+- **Shadow.** Apple's own words: the shadow "increases the opacity of its shadow when it is over text" and "lowers the opacity of its shadow when it is over a solid light background," computed per-frame by the system compositor rather than a fixed CSS-style drop-shadow — read naively, this sounds like there is no fixed number to target. Section 3.5 above is the decompiled recipe that produces that content-aware behavior (`ShadowOffset` (0, 8pt), `ShadowRadius` 24, `ShadowAmount = min(0.625 S, 75)`, `ShadowHeight = 0.4 S`, `ShadowOpacity = 0.5 - 0.25u` regular / 0 clear): it is not a single flat shadow, it is a formula in the shape's own size S and the sampled backdrop, which is exactly what makes it read as content-aware without needing a per-frame special case. The decompiled formula wins over the "no exact numbers" framing. [P] HIG Materials; WWDC25 219
+- **Blur.** Apple publishes no blur radius, sigma or opacity curve for Regular glass on the HIG Materials page itself; a web implementation without decompiled access is left to approximate with `backdrop-filter: blur(20–30px) saturate(1.2–1.8)` as a visual match only, not an Apple constant. Section 3.2 above (`BlurRadius = 1.3333 + 2.6667 u` pt regular, 1.0 pt clear, read as texels per `log2` mip LOD) is the decompiled value that supersedes any such approximation once this file is available. [P] HIG Materials
 
 ## Sources
 

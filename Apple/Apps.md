@@ -173,6 +173,11 @@ Apple publishes no HIG page on comments or document management; these are the Pa
 
 UIKit's `readableContentGuide` (developer.apple.com/documentation/uikit/uiview/readablecontentguide) is the app-side line length. Measured on iPad landscape at the default text size: 672 pt wide, inset 176 pt from each edge; 560 pt at the smallest text size and 896 pt at the largest standard size (useyourloaf.com/blog/readable-content-guides, which measured it). On a phone the guide is the layout margins. The large title sits on the same guide as the text. [I]
 
+## 11a. Selection modes (Photos, Freeform/Keynote) [C] Apple Support documentation, first-party, non-HIG (no HIG page is titled "selection modes")
+
+- **Photos "Select" mode.** Entering Select mode puts the grid into a persistent multi-select state: tapping a thumbnail adds a small checkmark/selected-ring indicator directly on that thumbnail (rather than opening it), and the bottom toolbar swaps from its normal single-item actions to a set of batch actions (Share, Delete, Add to Album, etc.) scoped to the current selection; a "Show Selected" option filters the grid to only the selected items before a destructive batch action.
+- **Freeform/Keynote object selection.** A selected object shows white square handles at each corner and the midpoint of each edge of its bounding box. Dragging an edge handle resizes freely along that one axis; dragging a corner handle resizes proportionally (preserving aspect ratio); holding Cmd while dragging a handle rotates the object instead of resizing it.
+
 ## 11. Other apps, March 2026 research [I] (secondary research across ten apps; method not recorded, unverified against the decompile)
 
 - Weather: full-screen animated gradient backgrounds that respond to conditions; vertically stacked frosted info cards reordered by conditions (rain puts precipitation first); hourly forecast scrolls horizontally in its card; 10-day forecast with colored temperature bars.
