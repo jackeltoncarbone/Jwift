@@ -2,9 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   InjectionToken,
+  Injector,
   OnDestroy,
   OnInit,
+  afterNextRender,
   computed,
+  contentChildren,
   effect,
   forwardRef,
   inject,
@@ -16,11 +19,12 @@ import type { JivHandle } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { CanvasPress } from '../Internal/CanvasPress';
 import { Follow } from '../Internal/CanvasFollow';
+import { IsPressClaimed } from '../Internal/PressClaim';
 import { SWIPE_GROUP, SwipeGroup } from '../Swipe/SwipeController';
 import { JWIFT_PAPER_GEOMETRY } from '../Paper/Paper';
 import { RowRadius } from '../Paper/Paper.Geometry';
 import {
-  AutoscrollVelocity, Shifts, Target,
+  AutoscrollVelocity, DomOrdered, IsMove, ItemHolding, LIFT_IDLE_MS, LiftIdle, LiftStart, Shifts, Target, TOUCH_HOLD_MS,
   type SortableEntry, type SortableEntryKind,
 } from './Sortable.Logic';
 import SortableListJss from './SortableList.jss';
@@ -32,7 +36,12 @@ export interface SortableEntryHandle {
   readonly Kind: SortableEntryKind;
   readonly SectionId: string | null;
   readonly Node: JivHandle;
+  /** The element its bridged pointer events are dispatched on, whose place in the document is its place in the
+   *  list (`DomOrdered`). */
+  readonly HostElement: HTMLElement;
   IsSectionOpen?(): boolean;
+  /** Moves its canvas node to where its element now stands among its siblings (`JivHost.SyncDomPosition`). */
+  SyncDomPosition(): void;
   SetShift(y: number | null, tracking: boolean): void;
   SetLifted(lifted: boolean): void;
   SetDropTarget?(over: boolean): void;
@@ -45,8 +54,9 @@ export interface SortableReorder {
 }
 
 export const SORTABLE_LIST = new InjectionToken<SortableList>('SORTABLE_LIST');
+/** Provided by every `sortable-row` and `sortable-section`, so the list's content query sees its entries move. */
+export const SORTABLE_ENTRY = new InjectionToken<SortableEntryHandle>('SORTABLE_ENTRY');
 
-const TOUCH_HOLD_MS = 380;
 const TOUCH_SLOP_PX = 8;
 const MOUSE_LIFT_PX = 6;
 
@@ -110,7 +120,6 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
   private _holdTimer: ReturnType<typeof setTimeout> | null = null;
   private _pressStart: { X: number; Y: number; PointerId: number; PointerType: string } | null = null;
   private _lifted: SortableEntryHandle | null = null;
-  private _unfollow: (() => void) | null = null;
   private _autoscrollRaf: number | null = null;
   private _lastFingerY = 0;
   private _dropTargetSection: SortableEntryHandle | null = null;
@@ -132,6 +141,8 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
   }
   ngOnDestroy(): void {
     this._cancelPress();
+    this._endLift?.();
+    if (this._autoscrollRaf !== null) cancelAnimationFrame(this._autoscrollRaf);
     this._parentList?.UnregisterChildList(this);
     this.Node.WatchRect(false);
     this._detachOnDestroy();
@@ -142,10 +153,26 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
   RegisterChildList(list: SortableList): void { this._childLists.add(list); }
   UnregisterChildList(list: SortableList): void { this._childLists.delete(list); }
 
-  /** `Entries` in DOM/registration order — Angular constructs them top-to-bottom within one CD pass,
-   *  so `Set` insertion order already matches the template's. */
+  /** `Entries` in document order (`DomOrdered`, Drill Sentences lane PP1, item 1b). Registration order matched the
+   *  template only until the first drop: Angular's `@for` keeps a moved row and moves its element, so after one
+   *  reorder the next lift read its origin, its targets and the index it reported off the old order. */
   private _orderedEntries(): SortableEntryHandle[] {
-    return Array.from(this._entries);
+    return DomOrdered(Array.from(this._entries), (e) => e.HostElement);
+  }
+
+  /** Every entry this list's own content holds, in the order the template renders them now: a reorder (a drop, an
+   *  undo of one, a menu's Move up) moves them, and each move is carried onto the canvas once it has rendered
+   *  (lane PP1, item 1b: the canvas kept a dropped row in its old slot, drawn over its new neighbor). */
+  private readonly _entryQuery = contentChildren(SORTABLE_ENTRY, { descendants: true });
+  private readonly _injector = inject(Injector);
+  private readonly _syncCanvasOrder = effect(() => {
+    this._entryQuery();
+    this._syncOnceRendered();
+  });
+
+  /** Once the next render has moved whatever elements it moves, every entry's canvas node follows its element. */
+  private _syncOnceRendered(): void {
+    afterNextRender(() => { for (const entry of this._orderedEntries()) entry.SyncDomPosition(); }, { injector: this._injector });
   }
 
   private _entryRects(): SortableEntry[] {
@@ -166,9 +193,10 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
     return null;
   }
 
-  private _insideChildList(canvasX: number, canvasY: number): boolean {
+  /** Whether `target` sits in a nested list, whose own entries answer the press. */
+  private _insideChildList(target: Node): boolean {
     for (const child of this._childLists) {
-      if (this._pointInNode(canvasX, canvasY, child.Node)) return true;
+      if (child.HostElement.contains(target)) return true;
     }
     return false;
   }
@@ -177,15 +205,23 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
     if (this._pressStart || this._lifted) return;
     const canvas = this._canvasRef?.Canvas;
     const [x, y] = CanvasPress.ToNode(canvas, e.clientX, e.clientY);
-    if (!this._pointInNode(x, y, this.Node)) return;
-    if (this._insideChildList(x, y)) return;
-    const entry = this._entryAt(x, y);
+    const target = e.target instanceof Node ? e.target : null;
+    // Drill Sentences lane PP1, item 1: the press is read off the element it landed on (`ItemHolding`). The rects
+    // this used to hit test are a worker snapshot that can stand a scroll behind, which lifted 7a for a finger on 5a.
+    if (target && this._insideChildList(target)) return;
+    if (!target && !this._pointInNode(x, y, this.Node)) return;
+    const entry = target ? ItemHolding(this._orderedEntries(), (en) => en.HostElement, target) : this._entryAt(x, y);
     if (!entry) return;
+    // Lane PP1, item 1d: a finger on a word opens the word's control on release, and never lifts the row.
+    const start = LiftStart(e.pointerType, IsPressClaimed(e));
+    if (start === 'None') return;
 
     this._pressStart = { X: e.clientX, Y: e.clientY, PointerId: e.pointerId, PointerType: e.pointerType };
+    // Each entry holds its own rect lease for life (`ngOnInit`); one something else let go of is taken again here,
+    // and never released by the list, which would end the entry's own.
     for (const en of this._orderedEntries()) en.Node.WatchRect(true);
 
-    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+    if (start === 'Hold') {
       this._holdTimer = setTimeout(() => {
         this._holdTimer = null;
         if (this._pressStart) this._lift(entry, this._pressStart.X, this._pressStart.Y, this._pressStart);
@@ -232,7 +268,6 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
   private _cancelPress(): void {
     if (this._holdTimer !== null) { clearTimeout(this._holdTimer); this._holdTimer = null; }
     this._earlyUnbind?.(); this._earlyUnbind = null;
-    if (!this._lifted) for (const en of this._orderedEntries()) en.Node.WatchRect(false);
     this._pressStart = null;
   }
 
@@ -261,7 +296,9 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
     const recompute = (): void => {
       entry.SetShift(this._lastFingerY - originY - entry.Node.Y, true);
       const t = Target(this._entryRects(), entry.Id(), this._lastFingerY);
-      const targetIndex = Math.min(t.Index, order.length - 1);
+      // Lane PP1, item 1b: the tail (`order.length`) is a slot of its own, after the last row; clamped to the last
+      // row's index it read as "before the last row", one place short.
+      const targetIndex = t.Index;
       this._updateDropTarget(order, t.IntoSection);
       if (targetIndex === state.Target) return;
       state.Target = targetIndex;
@@ -274,18 +311,43 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
 
     this._lastFingerY = startCanvasY;
     this._startAutoscroll(recompute);
-    this._unfollow = Follow(canvasEl, {
+    // Drill Sentences lane PP1, item 1a (a round 20 blind phone tester: a lift whose release never arrived left every
+    // other row hidden after the finger was gone). A lift always ends: on its release or cancel, when the page loses
+    // the pointer (the window blurs or hides), or `LIFT_IDLE_MS` without a move, the list put back as it stood.
+    let lastMoveAt = performance.now();
+    const settle = (dropAt: number): void => {
+      if (this._lifted !== entry) return;
+      this._endLift?.();
+      this._drop(entry, order, originIndex, dropAt);
+    };
+    const unfollow = Follow(canvasEl, {
       ClientX: clientX, ClientY: clientY, PointerType: start.PointerType, PointerId: start.PointerId,
     }, {
       Move: (mx, my) => {
+        lastMoveAt = performance.now();
         const [, canvasY] = CanvasPress.ToNode(this._canvasRef?.Canvas, mx, my);
         this._lastFingerY = canvasY;
         recompute();
       },
-      End: () => { this._drop(entry, order, originIndex, state.Target); },
-      Cancel: () => { this._drop(entry, order, originIndex, originIndex); },
+      End: () => settle(state.Target),
+      Cancel: () => settle(originIndex),
     });
+    const lost = (): void => settle(originIndex);
+    const hidden = (): void => { if (document.visibilityState === 'hidden') lost(); };
+    const idle = setInterval(() => { if (LiftIdle(lastMoveAt, performance.now())) lost(); }, LIFT_IDLE_MS / 4);
+    window.addEventListener('blur', lost);
+    document.addEventListener('visibilitychange', hidden);
+    this._endLift = () => {
+      this._endLift = null;
+      unfollow();
+      clearInterval(idle);
+      window.removeEventListener('blur', lost);
+      document.removeEventListener('visibilitychange', hidden);
+    };
   }
+
+  /** Lets go of everything the lift standing now listens to (`_lift`), or null when nothing is lifted. */
+  private _endLift: (() => void) | null = null;
 
   /** Autoscroll runs every frame while lifted, independent of pointer events, so a finger held still
    *  near the scroller's edge keeps scrolling — applying a scroll changes layout, so the target is
@@ -315,14 +377,15 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
   }
 
   private _drop(entry: SortableEntryHandle, order: readonly SortableEntryHandle[], originIndex: number, targetIndex: number): void {
-    this._unfollow = null;
     if (this._autoscrollRaf !== null) { cancelAnimationFrame(this._autoscrollRaf); this._autoscrollRaf = null; }
     this._updateDropTarget(order, null);
 
-    const moved = targetIndex !== originIndex;
+    const moved = IsMove(originIndex, targetIndex);
     // Spring the lifted entry toward its slot first (250ms), then snap every entry's layout in one
     // tick so the slot offset (new layout - old layout) already equals the translate — no visual jump.
+    // Lane PP1, item 1a: a drop that moves nothing puts every entry back as it stood at once.
     entry.SetShift(0, false);
+    if (!moved) for (const o of order) if (o !== entry) o.SetShift(null, false);
     setTimeout(() => {
       for (const o of order) o.SetShift(null, true);
       entry.SetLifted(false);
@@ -332,13 +395,14 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
         } else {
           this.Reorder.emit({ Key: entry.Id(), Section: entry.SectionId, Index: targetIndex });
         }
+        // The consumer's edit moves the row's element in the render it schedules; the canvas follows it there.
+        this._syncOnceRendered();
       }
       requestAnimationFrame(() => { for (const o of order) o.SetShift(null, false); });
     }, 250);
 
     this._swallowNextClick = true;
     this._lifted = null;
-    for (const en of order) en.Node.WatchRect(false);
     this._pressStart = null;
   }
 

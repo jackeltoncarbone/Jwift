@@ -124,6 +124,13 @@ Jwift_GlassActionTip {
   Align: Start
   PointerEvents: None
 }
+// Drill Sentences lane PP1, item 3 (a round 20 blind desktop tester pressed Undo, and "Undo the last edit" stood over the
+// selection bar for about a second while the page rebuilt): a tip a press, a key or a notice quiets goes at once, never
+// fading out. The tip stays mounted and only its paint goes, so no leave fade is left to run late on a busy page.
+Jwift_GlassActionTip_Hidden {
+  Opacity: 0
+  @Transition Opacity { Duration: 0ms }
+}
 Jwift_GlassActionTipPill {
   MinHeight: 26pt
   MaxWidth: 100%

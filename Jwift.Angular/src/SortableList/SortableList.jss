@@ -90,7 +90,12 @@ Jwift_SortableRow_InSection {
 
 // r = 0.25 -> Stiffness 632, Damping 50 (FlexMovement.TuneSpring): the lift grows into place.
 // Layer 60: "Carry" (Design/Layers.ts -- Jwift cannot import it, so the rung is named here instead).
-Jwift_SortableRow_Lifted {
+// Drill Sentences lane PP1, item 1a: the paper material itself (Paper.jss's own fill, frost and rim), worn in the
+// row's own slot. It used to borrow Jwift_PaperSurface, a backdrop panel placed over its parent's whole box, which
+// pulled the lifted row out of the flow and over every other row.
+Jwift_SortableRow_Lifted : JwiftSolidGlass {
+  Background: @Paper
+  BackdropFilter: Blur(26pt) Saturate(1.5)
   Layer: 60
   VisualScale: 1.03
   ShadowColor: rgba(0, 0, 0, 0.28)

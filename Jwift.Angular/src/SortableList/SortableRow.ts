@@ -11,14 +11,12 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { Jaui, Jiv, JSS_REGISTRY } from 'jaui-angular';
+import { Jaui, Jiv } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
-import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
-import PaperJss from '../Paper/Paper.jss';
 import { SwipeStrip } from '../Swipe/SwipeStrip';
 import { SWIPE_GROUP, SwipeController, type SwipeControllerHost } from '../Swipe/SwipeController';
 import { RestingOpenWidth, type SwipeAction } from '../Swipe/Swipe.Logic';
-import { SORTABLE_LIST, type SortableEntryHandle } from './SortableList';
+import { SORTABLE_ENTRY, SORTABLE_LIST, type SortableEntryHandle } from './SortableList';
 import { SortableSection } from './SortableSection';
 import SortableListJss from './SortableList.jss';
 
@@ -42,7 +40,10 @@ import SortableListJss from './SortableList.jss';
   `,
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [{ provide: Jiv, useExisting: forwardRef(() => SortableRow) }],
+  providers: [
+    { provide: Jiv, useExisting: forwardRef(() => SortableRow) },
+    { provide: SORTABLE_ENTRY, useExisting: forwardRef(() => SortableRow) },
+  ],
   host: { '(panclaim)': '_onPanClaim($event)', '(click)': '_onClick($event)' },
 })
 export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableEntryHandle {
@@ -66,8 +67,6 @@ export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableE
   private readonly _section = inject(SortableSection, { optional: true });
   private readonly _canvasRef = inject(Jaui, { optional: true });
   private readonly _swipeGroup = inject(SWIPE_GROUP, { optional: true });
-  private readonly _jss = inject(JSS_REGISTRY);
-  private readonly _styleLoader = inject(JwiftStyleLoader);
 
   readonly Id = computed(() => this.Key());
   readonly Kind = 'Row' as const;
@@ -110,15 +109,18 @@ export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableE
       const parts = ['Jwift_SortableRow'];
       if (this._section) parts.push('Jwift_SortableRow_InSection');
       if (this.Selected()) parts.push('Jwift_SortableRow_Selected');
-      if (this._lifted()) parts.push('Jwift_SortableRow_Lifted', 'Jwift_PaperSurface', 'Jwift_SortableEntry_Tracking');
+      // Drill Sentences lane PP1, item 1a (a round 20 blind phone tester's lift hid every other row): the lifted row
+      // wore `Jwift_PaperSurface` for its material, and that class is a backdrop panel, placed at its parent's
+      // top-left at 100% of its size, so the row left the flow and covered the whole list. The lifted class carries
+      // the paper material itself, in the row's own slot.
+      if (this._lifted()) parts.push('Jwift_SortableRow_Lifted', 'Jwift_SortableEntry_Tracking');
       else parts.push(this._tracking() ? 'Jwift_SortableEntry_Tracking' : 'Jwift_SortableEntry_Shift');
       return parts.join(' ');
     });
-    this._styleLoader.Ensure(this._jss, 'Paper', PaperJss);
     effect(() => this.SetStyleOverride({ VisualTranslate: this._translate() }));
     const list = this._list;
-    // Squircle, never a circular round — Jiv's own corner shape, the same convention Paper (this row's
-    // own loaded material) and every other thick house surface states explicitly rather than leaves to
+    // Squircle, never a circular round — Jiv's own corner shape, the same convention Paper (whose material
+    // this row wears while lifted) and every other thick house surface states explicitly rather than leaves to
     // whatever a plain rounded rect defaults to. Live feedback: a selected row's own GoldWash had square
     // corners; EffectiveRadius alone was not the whole gap.
     if (list) effect(() => this.SetStyleOverride({ BorderRadius: `${list.EffectiveRadius()}pt`, CornerShape: 'Squircle' }));

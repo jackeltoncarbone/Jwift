@@ -19,6 +19,7 @@ import { JivHost } from '../Internal/JivHost';
 import { Icon } from '../Icon/Icon';
 import { IconData } from '../Icon/Icon.Data';
 import { CanvasPress } from '../Internal/CanvasPress';
+import { ClaimPress } from '../Internal/PressClaim';
 import type { PopoverRect } from '../Popover/Popover.Placement';
 import TokenSentenceJss from './TokenSentence.jss';
 import {
@@ -609,6 +610,9 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     this._downSeen = true;
     this._pressedAt = key !== null ? { X: this.Node.X, Y: this.Node.Y } : null;
     if (key !== null) this._watchPress(e);
+    // Drill Sentences lane PP1, item 1d: a press on a word is the word's, which opens its control on release; a list
+    // around this sentence never lifts its row from it (`SortableList`, `LiftStart`).
+    if (key !== null) ClaimPress(e);
   }
 
   /** Where this sentence stood when its word was pressed, while the press lasts (`_onMoved`). */

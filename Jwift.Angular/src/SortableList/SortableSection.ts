@@ -13,7 +13,7 @@ import {
 import { Jext, Jiv } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
 import { Icon } from '../Icon/Icon';
-import { SORTABLE_LIST, type SortableEntryHandle } from './SortableList';
+import { SORTABLE_ENTRY, SORTABLE_LIST, type SortableEntryHandle } from './SortableList';
 import SortableListJss from './SortableList.jss';
 
 /**
@@ -37,7 +37,10 @@ import SortableListJss from './SortableList.jss';
   `,
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [{ provide: Jiv, useExisting: forwardRef(() => SortableSection) }],
+  providers: [
+    { provide: Jiv, useExisting: forwardRef(() => SortableSection) },
+    { provide: SORTABLE_ENTRY, useExisting: forwardRef(() => SortableSection) },
+  ],
 })
 export class SortableSection extends JivHost implements OnInit, OnDestroy, SortableEntryHandle {
   readonly Key = input.required<string>();

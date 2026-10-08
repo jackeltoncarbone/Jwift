@@ -231,6 +231,18 @@ export abstract class JivHost {
    *  "Add squads · Shape" in one state and "Shape · Add squads" in another). This copy counted the connected
    *  siblings ahead of ours and used the count as an index into Children, which also held siblings whose
    *  element was gone, so a glass button returning from "…" landed short of its slot. */
+  /** Moves this node among its canvas siblings to where its host element now stands in the document (Drill Sentences
+   *  lane PP1, item 1b). Attach orders a node once; Angular's `@for` then MOVES a kept row's element when its list
+   *  reorders, and nothing told the canvas, so a dropped row kept its old slot under the new order. A list that
+   *  reorders its own rows calls this on each once the move has rendered (`SortableList`). A no-op in order. */
+  SyncDomPosition(): void {
+    const parentNode = this.Node.Parent;
+    if (parentNode) this._reorderToDomPosition(parentNode);
+  }
+
+  /** This component's own host element, the one its bridged pointer events are dispatched on. */
+  get HostElement(): HTMLElement { return this._host.nativeElement; }
+
   private _reorderToDomPosition(parentNode: JivHandle): void {
     const siblings = parentNode.Children;
     const current = siblings.indexOf(this.Node);

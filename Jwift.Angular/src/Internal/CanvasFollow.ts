@@ -89,13 +89,17 @@ export function Follow(canvasEl: HTMLElement, start: CanvasFollowStart, h: Canva
     const t = byId(e.touches);
     if (t) h.Move(t.clientX, t.clientY);
   };
+  // Drill Sentences lane PP1, item 1a (a round 20 blind phone tester long pressed a row, lifted it, and let go
+  // without moving): the touch is locked on its first move, so a release before any move matched no touch and
+  // the follow never ended, every other row left hidden. The touch ending is resolved the same way a first move
+  // resolves it (`EndingTouch`).
   const onTouchEnd = (e: TouchEvent): void => {
-    if (byId(e.changedTouches) === null) return;
+    if (EndingTouch(touchId, e.changedTouches, e.touches.length, start) === null) return;
     unbind();
     h.End();
   };
   const onTouchCancel = (e: TouchEvent): void => {
-    if (byId(e.changedTouches) === null) return;
+    if (EndingTouch(touchId, e.changedTouches, e.touches.length, start) === null) return;
     unbind();
     h.Cancel();
   };
@@ -112,4 +116,32 @@ export function Follow(canvasEl: HTMLElement, start: CanvasFollowStart, h: Canva
     canvasEl.removeEventListener('touchcancel', onTouchCancel);
   };
   return unbind;
+}
+
+/** How far from the press a touch ending before the follow's first move may be and still be its own, px. */
+const ENDING_TOUCH_SLOP_PX = 24;
+
+/** A touch as `EndingTouch` reads it: the fields of the DOM's `Touch` it uses. */
+export interface FollowTouch { readonly identifier: number; readonly clientX: number; readonly clientY: number }
+
+/**
+ * The touch among `changed` that ends a follow, or null when the touches that ended are not its (lane PP1, item 1a).
+ * Once the follow has locked its touch (`touchId`, on its first move) only that one ends it; before any move, the
+ * touch nearest the press ends it, and so does the last finger leaving the screen (`remaining` 0), whichever it was.
+ */
+export function EndingTouch(
+  touchId: number | null, changed: ArrayLike<FollowTouch>, remaining: number, start: { readonly ClientX: number; readonly ClientY: number },
+): FollowTouch | null {
+  if (touchId !== null) {
+    for (let i = 0; i < changed.length; i++) if (changed[i].identifier === touchId) return changed[i];
+    return null;
+  }
+  let best: FollowTouch | null = null;
+  let bestDist = Infinity;
+  for (let i = 0; i < changed.length; i++) {
+    const t = changed[i];
+    const dist = (t.clientX - start.ClientX) ** 2 + (t.clientY - start.ClientY) ** 2;
+    if (dist < bestDist) { bestDist = dist; best = t; }
+  }
+  return best && (remaining === 0 || bestDist <= ENDING_TOUCH_SLOP_PX ** 2) ? best : null;
 }

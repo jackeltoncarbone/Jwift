@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
   untracked,
@@ -212,13 +213,13 @@ export interface ActionGroup {
         [CollaboratorAvatarUrls]="CollaboratorAvatarUrls()"
         [ShowEllipsis]="false"
         (ActionClick)="ActionClick.emit($event)" />
-      @if (_TipLayout(); as tip) {
-        <jiv class="Jwift_GlassActionTip" [childLayout]="tip.Layout">
-          <jiv class="Jwift_GlassActionTipPill">
-            <jext class="Jwift_GlassActionTipText" [text]="tip.Label" />
-          </jiv>
+      <!-- Drill Sentences lane PP1, item 3: always mounted, hidden at once (Jwift_GlassActionTip_Hidden) rather than
+           unmounted, whose fade out stood over the selection bar for a second while an undo rebuilt the page. -->
+      <jiv [class]="_TipLayout() ? 'Jwift_GlassActionTip' : 'Jwift_GlassActionTip Jwift_GlassActionTip_Hidden'" [childLayout]="_TipLast().Layout">
+        <jiv class="Jwift_GlassActionTipPill">
+          <jext #tipText class="Jwift_GlassActionTipText" [text]="_TipLast().Label" />
         </jiv>
-      }
+      </jiv>
     </jiv>
   `,
   styles: [':host { display: contents; }'],
@@ -286,6 +287,16 @@ export class GlassActionBar implements OnDestroy {
   private readonly _quietTipsEffect = effect(() => {
     this.QuietTips();
     untracked(() => this._Tip.Quiet());
+  });
+  /** The tip last shown, kept while it is hidden so the hidden tip never moves or rewords on its way out (lane PP1,
+   *  item 3). Before any tip has shown, an empty one at the bar's own corner. */
+  protected readonly _TipLast = linkedSignal<{ Label: string; Layout: Partial<ChildLayout> } | null, { Label: string; Layout: Partial<ChildLayout> }>({
+    source: () => this._TipLayout(),
+    computation: (tip, previous) => tip ?? previous?.value ?? { Label: '', Layout: { Position: 'Placed', Left: '0pt', Top: '0pt', Width: `${GlassActionBar._TipWidthPt}pt` } },
+  });
+  private readonly _tipTexts = viewChildren<Jext>('tipText');
+  private readonly _snapTipTexts = effect(() => {
+    for (const text of this._tipTexts()) text.Node.SnapText = true;
   });
   /** The tip's own box: wide enough for any one cell's name, centred under its cell (the bar lays its
    *  pills out with the same geometry the collapse solver below already models, so a cell's centre is a
