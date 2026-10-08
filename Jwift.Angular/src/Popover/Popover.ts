@@ -551,7 +551,18 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (!anchor) return;
     const placed = this._placement();
     if (placed) {
-      this._openSnap.ReleaseOn(this.Node, placed);
+      // Drill Sentences lane YY3b, items 1-3 (desktop: the count picker opened as an empty glass box with a
+      // lone "−"; phone: the − and Done did not respond to the first tap; list rows overlapped while a
+      // control was open or closing). `Hold`'s own first call, below, walks whatever stands under this
+      // popover AT THAT INSTANT — the moment its placement first lands. A picker's heavier content
+      // (`NumberField`'s own wheel rows, built off an `@for` over a computed) can still be mounting a frame
+      // or two later, after that one walk already ran: a row born AFTER it is born at `SnapLayout`'s own
+      // default (unsnapped, animated), missed the hold entirely, and sprang in from wherever ITS OWN first
+      // layout happened to land it — the empty box, the stray "−" nothing else beside it, the row briefly
+      // overlapping its neighbour. `Hold` is a safe, idempotent tree-walk (`Popover.OpenSnap.ts`'s own doc
+      // comment) — re-running it every frame the panel is still waiting to be released catches whatever
+      // joined the subtree since the last one, at no cost once nothing new has.
+      if (!this._openSnap.ReleaseOn(this.Node, placed)) this._openSnap.Hold(this.Node);
       this._stepOpen(placed);
     }
     // Drill Sentences lane V2, item 3: "the phrase dropdown's row positions shift between opens, so the

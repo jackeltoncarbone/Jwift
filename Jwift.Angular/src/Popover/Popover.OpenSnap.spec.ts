@@ -94,6 +94,30 @@ describe('OpenSnap: a popover\'s controls are hit where they are drawn from the 
     expect(all(panel).some((n) => n.SnapLayout)).toBe(false);
   });
 
+  // Drill Sentences lane YY3b, items 1-3 (desktop: the count picker opened as an empty glass box with a
+  // lone "−"; phone: the − and Done did not respond to the first tap; list rows overlapped while a control
+  // was open or closing). `Hold`'s one call, the instant the panel's own FIRST placement lands, walks
+  // whatever is under `this.Node` AT THAT MOMENT — but a picker's own rows (`NumberField`'s `@for` of wheel
+  // rows, Angular's own change detection) can still be mounting a frame or two later, after that one walk
+  // already ran: a row born AFTER it is born at `SnapLayout`'s own default (`false`, animated), missing the
+  // hold entirely, and springs in from wherever its own first layout happened to put it — the empty box,
+  // the stray "−", the overlap, every one of them a node `Hold`'s single walk never saw.
+  it('a node that joins the subtree after the first Hold is still caught by a later one, before it is released', () => {
+    const minus = box('minus', 10, 60, 44, 44);
+    const panel = box('panel', 0, 0, 250, 180, [box('row', 10, 40, 230, 120, [minus])]);
+    const snap = new OpenSnap();
+    snap.Hold(panel); // the first placement: only "minus" exists yet.
+    expect(minus.SnapLayout).toBe(true);
+    // A heavier row mounts a frame later (NumberField's own wheel items, built off an async-ish computed) —
+    // appended to the already-live tree, the same way Angular attaches a late `@for` child.
+    const row = panel.Children[0];
+    const lateWheel = box('wheel', 60, 40, 130, 120);
+    row.Children.push(lateWheel);
+    expect(lateWheel.SnapLayout).toBe(false); // born at the default: unsnapped, about to animate in wrong.
+    snap.Hold(panel); // called again, every frame, while still holding (`Popover.ts`'s own `_place`).
+    expect(lateWheel.SnapLayout).toBe(true);
+  });
+
   it('leaves a node that snaps on its own account (a row highlight landing) snapping', () => {
     const own = box('indicator', 0, 0, 10, 10);
     own.SnapLayout = true;

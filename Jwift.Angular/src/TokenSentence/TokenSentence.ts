@@ -10,6 +10,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChildren,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
@@ -28,6 +29,7 @@ import {
   LayoutSentence,
   PillRectOf,
   SameWords,
+  SFProTracking,
   TextPieceKeys,
   UnderlineOf,
   type PieceLanding,
@@ -113,6 +115,15 @@ const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
  * 16pt body size (17/16 = 1.0625), which was probably eyeballing the exact same thing.
  */
 const ICON_TOKEN_SCALE = 1490 / 1394;
+
+/** The sentence's own base family stack (Drill Sentences lane YY3b, item 10): San Francisco first on an
+ *  Apple device, Inter everywhere else — `-apple-system`/`BlinkMacSystemFont` ahead of the web font, exactly
+ *  the one shape `ComposeFontFamily`'s own `_GENERIC_FAMILIES` fix (`Text.Measure.ts`) makes possible without
+ *  silently dropping `Inter`. The ONE literal both `_measure` (this thread's pre-layout wrap) and
+ *  `_textPieces` (the piece the engine actually paints) compose from, so the two can never name a different
+ *  stack the way the "1ain" bug's own root cause once let them (this file's own long-standing doc comment,
+ *  just below). */
+const SENTENCE_FONT_STACK = '-apple-system, BlinkMacSystemFont, Inter';
 
 /** A fresh canvas 2D context per page-font generation, mirroring Jinput's `_watchPageFonts`/`_fontGen`
  *  — moved whenever the page may have gained a face, so a word measured before its font landed is
@@ -298,7 +309,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       return this._measureCtx.measureText(glyph).width;
     }
     const size = this.FontSizePt() + _pageFontEpoch() * 1e-4;
-    const base = this.Tabular() ? TabularFamilyStack('Inter, system-ui, sans-serif') : 'Inter, system-ui, sans-serif';
+    const base = this.Tabular() ? TabularFamilyStack(SENTENCE_FONT_STACK) : SENTENCE_FONT_STACK;
     this._measureCtx.font = `${weight} ${size}px ${ComposeFontFamily(base)}`;
     return this._measureCtx.measureText(text).width;
   };
@@ -306,6 +317,35 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   /** `Node.Width`, watched live. `Infinity` before the first rect arrives, so the first layout pass
    *  (before anything can be measured against a real width) never wraps spuriously. */
   private readonly _wrapWidth = signal(Infinity);
+
+  /**
+   * Drill Sentences lane YY3b, item 4 (a round 26 blind phone tester, shot 08: the peek row read "forward16
+   * counts" and "thenmarch forward" — the mirror peek's own quiet prose, never the main sentence beside it,
+   * which was already spaced right in the same screenshot). Root cause: the peek's `<token-sentence>` is a
+   * FRESH mount every time a tap opens it (`@if (Peek(); as peek)`, `EditorLine.ts`), so it goes through the
+   * SAME first layout pass as any other instance — `_wrapWidth` still `Infinity` here, everything measured
+   * onto one long unwrapped row — and only gets its real width a frame later, off `OnRectSnapshot`/`OnRect`
+   * below. `SnapLayout` defaults to `false` (`Element.ts`), so an ordinary reflow SPRINGS a reused piece
+   * from its old box to its new one rather than cutting over — exactly right for a real width change (a
+   * sheet smoothly resizing, `LandPieces`'s own doc comment: "a sheet resized... slides its pieces"), wrong
+   * for resolving a GUESS that was never meant to be seen: the piece nearest the far end of that first,
+   * much-too-wide row travels hundreds of px down onto a wrapped line while its neighbour barely moves, and
+   * a screenshot caught mid-spring shows them still overlapping — the exact "glued words" bug class this
+   * file already fixed once for a change of WORDS (`LandPieces`, above), now hitting the one case that
+   * fix never covered: a change of WIDTH on the very first layout, before anything was ever shown. The main
+   * sentence never shows it because its row already stands measured by the time anyone looks at it; the
+   * peek is looked at the instant it exists. `_snapFirstLayout`, set once by `_setWrapWidth` the first time
+   * a real width lands, tells `_snapWords` below to snap every piece's OWN layout too, that one time, so the
+   * correct wrap is what the peek shows from its very first visible frame — never a guess it then slides
+   * away from under the reader.
+   */
+  private _wrapMeasured = false;
+  private _snapFirstLayout = false;
+
+  private _setWrapWidth(width: number): void {
+    if (!this._wrapMeasured) { this._wrapMeasured = true; this._snapFirstLayout = true; }
+    this._wrapWidth.set(width);
+  }
 
   protected readonly _layout = computed<SentenceLayoutResult>(() => {
     _pageFontEpoch();
@@ -341,10 +381,25 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     const keyed = (key: string): string => `${key}@${this._landings.get(key)?.Generation ?? 0}`;
     return { Pieces: keys.map(keyed), Add: keyed(ADD_KEY) };
   });
-  /** Every word lands at once when it changes in place, rather than cross fading over itself (`SnapText`). */
+  /** Every word lands at once when it changes in place, rather than cross fading over itself (`SnapText`).
+   *  Also re-runs on every relayout (`_layout()`, read for that alone) so the first real width's relayout
+   *  — `_snapFirstLayout`, above — can snap every piece's own POSITION too, the one time a reflow is
+   *  resolving a never-shown guess rather than a real visual change worth sliding through. `SnapLayout` is
+   *  a standing flag, not a one-shot command (`Element.ts`), so it goes back to its own default right after
+   *  this one commit — a later, real reflow (the words changing, an actual resize) still slides as designed. */
   private readonly _words = viewChildren(Jext);
   private readonly _snapWords = effect(() => {
-    for (const word of this._words()) word.Node.SnapText = true;
+    this._layout();
+    const snapLayout = this._snapFirstLayout;
+    const words = this._words();
+    for (const word of words) {
+      word.Node.SnapText = true;
+      if (snapLayout) word.Node.SnapLayout = true;
+    }
+    if (snapLayout) {
+      untracked(() => { this._snapFirstLayout = false; });
+      queueMicrotask(() => { for (const word of words) word.Node.SnapLayout = false; });
+    }
   });
 
   private readonly _state = computed<ReadonlyMap<string, _PieceState>>(() => {
@@ -491,7 +546,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       // (`Icon.ts`'s own `IconData[name.toLowerCase()]`), so this pure-text piece list stays the single
       // place that knows how a sentence token becomes pixels.
       let pieceText = piece.Text;
-      let fontFamily = 'Inter, system-ui, sans-serif';
+      let fontFamily = SENTENCE_FONT_STACK;
       let pieceSize = fs;
       let fontVariantNumeric: 'Normal' | 'TabularNums' = this.Tabular() ? 'TabularNums' : 'Normal';
       if (token.Icon) {
@@ -527,6 +582,11 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
           LineHeight: `${lh / pieceSize}`,
           Color: level ? 'rgb(255, 255, 255)' : ink,
           FontVariantNumeric: fontVariantNumeric,
+          // Drill Sentences lane YY3b, item 10: SF Pro's own per-size tracking (`SFProTracking`,
+          // `TokenSentence.Layout.ts`, Apple's HIG Typography table) -- negative through the body/UI mid
+          // range, positive again at a small caption or a large display size. An icon glyph (`token.Icon`)
+          // carries none: a symbol's own advance is not kerned against a reading of text the way a letter is.
+          LetterSpacing: token.Icon ? '0pt' : `${SFProTracking(pieceSize)}pt`,
           // Jack, live (round 12): a bold atom's own ink can run past its measured advance width right
           // at a wrapped row's own edge -- the whole reason this piece's own box (below) is wider than
           // its content. That overflow room only ever stays invisible, harmless dead space (every
@@ -578,7 +638,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     this._attachOnInit();
     _watchPageFonts();
     this.Node.WatchRect(true);
-    this.Node.SetHit({ OnRectSnapshot: (box) => { if (box.Width > 0) this._wrapWidth.set(box.Width); } });
+    this.Node.SetHit({ OnRectSnapshot: (box) => { if (box.Width > 0) this._setWrapWidth(box.Width); } });
     // Jack, live: a row whose own flex sibling has a fixed size decided AFTER this one's first layout
     // pass (`DrillLineRow`'s own `#rmore` button, a sibling of the sentence, not a child it could measure
     // itself) kept wrapping at that FIRST pass's own too-wide guess forever -- `SetHit`'s own
@@ -588,7 +648,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     // this just keeps `_wrapWidth` tracking THAT, the same `Node.OnRect` pattern the rail's own track
     // width already uses (EditorPlayer.ts) for the identical reason.
     this._rectUnwatch = this.Node.OnRect(() => {
-      if (this.Node.Width > 0) this._wrapWidth.set(this.Node.Width);
+      if (this.Node.Width > 0) this._setWrapWidth(this.Node.Width);
       this._onMoved();
     });
   }

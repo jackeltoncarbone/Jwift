@@ -66,7 +66,9 @@ const _measure = (text: string, sizePt: number, weight: number): number => {
   if (!text || typeof document === 'undefined') return 0;
   _measureCtx ??= document.createElement('canvas').getContext('2d');
   if (!_measureCtx) return 0;
-  _measureCtx.font = `${weight} ${sizePt}px ${ComposeFontFamily('Inter, system-ui, sans-serif')}`;
+  // Drill Sentences lane YY3b, item 10: San Francisco first on an Apple device, Inter everywhere else — the
+  // same stack `PopoverMenu.jss`'s own rows are styled with, and `TokenSentence`'s own `SENTENCE_FONT_STACK`.
+  _measureCtx.font = `${weight} ${sizePt}px ${ComposeFontFamily('-apple-system, BlinkMacSystemFont, Inter')}`;
   return _measureCtx.measureText(text).width;
 };
 

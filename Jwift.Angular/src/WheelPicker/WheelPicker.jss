@@ -86,7 +86,7 @@ Jwift_WheelItem {
 // Default text rendering for the convenience `label` path (a row that
 // projects its own canvas content ignores this).
 Jwift_WheelItemLabel : JwiftLabelVibrancy {
-  FontFamily: Inter, system-ui, sans-serif
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 19pt
   FontWeight: 500
   TextAlign: Center

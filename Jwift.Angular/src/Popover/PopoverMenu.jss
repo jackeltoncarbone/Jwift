@@ -21,7 +21,7 @@ Jwift_PopoverMenuScroll {
 }
 
 Jwift_PopoverMenuHeader : Jwift_PopoverMenuPageFade, JwiftSecondaryLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 13pt
   FontWeight: 500
   Padding: 10pt 14pt 4pt 14pt
@@ -48,7 +48,7 @@ Jwift_PopoverMenuBackGlyph {
   Color: @GoldInk
 }
 Jwift_PopoverMenuBackLabel {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 17pt
   FontWeight: 600
   Color: @GoldInk
@@ -102,17 +102,17 @@ Jwift_PopoverMenuLabelCol {
   MinWidth: 0pt
 }
 Jwift_PopoverMenuLabel : JwiftLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 17pt
   FontWeight: 400
 }
 Jwift_PopoverMenuCaption : JwiftSecondaryLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 13pt
   FontWeight: 400
 }
 Jwift_PopoverMenuDetail : JwiftSecondaryLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 15pt
   FontWeight: 400
   MaxLines: 1
@@ -132,7 +132,7 @@ Jwift_PopoverMenuSeparator : Jwift_PopoverMenuPageFade {
 }
 
 Jwift_PopoverMenuNote : Jwift_PopoverMenuPageFade, JwiftSecondaryLabelVibrancy {
-  FontFamily: Inter
+  FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 15pt
   FontWeight: 400
   Padding: 10pt 14pt 8pt 14pt
