@@ -174,39 +174,41 @@ interface PanSample { readonly Y: number; readonly T: number }
       <jiv sheetBody [class]="BodyClass()" [layout]="BodyLayout()" [childLayout]="PageLayout()">
         <ng-content></ng-content>
       </jiv>
-      <jiv class="Jwift_SheetBar">
-        @if (navigationDepth() > 0) {
-          <glass-button size="bar" (click)="AttemptBack()">
-            <icon class="Jwift_SheetBarGlyph" Name="chevron.left" />
-          </glass-button>
-        } @else if (Inspector()) {
-          <jiv class="Jwift_SheetBarSpacer" />
-        } @else {
-          <glass-button size="bar" (click)="AttemptDismiss()">
-            <icon class="Jwift_SheetBarGlyph" Name="xmark" />
-          </glass-button>
-        }
-        <jiv class="Jwift_SheetTitleBox">
-          @if (sheetTitle()) {
-            <jext class="Jwift_SheetTitle" [text]="sheetTitle()" />
+      @if (!alert()) {
+        <jiv class="Jwift_SheetBar">
+          @if (navigationDepth() > 0) {
+            <glass-button size="bar" (click)="AttemptBack()">
+              <icon class="Jwift_SheetBarGlyph" Name="chevron.left" />
+            </glass-button>
+          } @else if (Inspector()) {
+            <jiv class="Jwift_SheetBarSpacer" />
+          } @else {
+            <glass-button size="bar" (click)="AttemptDismiss()">
+              <icon class="Jwift_SheetBarGlyph" Name="xmark" />
+            </glass-button>
+          }
+          <jiv class="Jwift_SheetTitleBox">
+            @if (sheetTitle()) {
+              <jext class="Jwift_SheetTitle" [text]="sheetTitle()" />
+            }
+          </jiv>
+          @if (confirmable()) {
+            <glass-button size="bar" variant="prominent" [disabled]="confirmDisabled()" (click)="confirm.emit()">
+              <icon class="Jwift_SheetBarGlyph JwiftProminentInk" Name="checkmark" />
+            </glass-button>
+          } @else if (barActionLabel(); as label) {
+            <glass-button size="bar" shape="pill" variant="prominent" [disabled]="barActionDisabled()" (click)="barActionPress.emit()">
+              <jext class="Jwift_SheetBarActionLabel" [text]="label" />
+            </glass-button>
+          } @else if (barAction(); as glyph) {
+            <glass-button size="bar" (click)="barActionPress.emit()">
+              <icon class="Jwift_SheetBarGlyph" [Name]="glyph" />
+            </glass-button>
+          } @else {
+            <jiv class="Jwift_SheetBarSpacer" />
           }
         </jiv>
-        @if (confirmable()) {
-          <glass-button size="bar" variant="prominent" [disabled]="confirmDisabled()" (click)="confirm.emit()">
-            <icon class="Jwift_SheetBarGlyph JwiftProminentInk" Name="checkmark" />
-          </glass-button>
-        } @else if (barActionLabel(); as label) {
-          <glass-button size="bar" shape="pill" variant="prominent" [disabled]="barActionDisabled()" (click)="barActionPress.emit()">
-            <jext class="Jwift_SheetBarActionLabel" [text]="label" />
-          </glass-button>
-        } @else if (barAction(); as glyph) {
-          <glass-button size="bar" (click)="barActionPress.emit()">
-            <icon class="Jwift_SheetBarGlyph" [Name]="glyph" />
-          </glass-button>
-        } @else {
-          <jiv class="Jwift_SheetBarSpacer" />
-        }
-      </jiv>
+      }
       @if (ShowsGrabber()) {
         <jiv class="Jwift_SheetGrabberHit" (click)="OnGrabberTap()">
           <jiv [class]="Covered() ? 'Jwift_SheetGrabber_Hidden' : 'Jwift_SheetGrabber'" />
@@ -237,6 +239,11 @@ interface PanSample { readonly Y: number; readonly T: number }
 export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   /** The inline title, centered on the bar. An untitled sheet still has its X. */
   readonly sheetTitle = input<string>('');
+  /** Apple's alert, asked in a sheet (Drill Sentences lane LL1, item 5; a round 16 blind phone tester's "Replace
+   *  11a's steps with 10a's?" read "Replace 11a's steps with 10...", under an X beside its own Cancel): no bar, so
+   *  no X and no one line title. The owner states its question in the body, whole, and its Cancel and its action
+   *  are the only answers; a tap on the dim and Escape still cancel. */
+  readonly alert = input<boolean>(false);
   /** Where the sheet can rest, Apple's `detents`. More than one makes it resizable, with a grabber. */
   readonly detents = input<readonly SheetDetent[]>(['content']);
   /** Apple's `largestUndimmedDetentIdentifier`: at this detent and below, nothing is dimmed and the page behind
@@ -578,7 +585,9 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
 
   readonly BodyLayout = computed(() => {
     const side = this._contentInset();
-    return { Padding: `${this._barHeight()}px ${side}px ${r1(this._footerInset())}px ${side}px` };
+    // An alert has no bar to clear: its question starts the side inset down, concentric with the top corners.
+    const top = this.alert() ? side : this._barHeight();
+    return { Padding: `${top}px ${side}px ${r1(this._footerInset())}px ${side}px` };
   });
 
   // A footer that bleeds to the card's edges (a recessed commit bar) reaches the bottom by this, the top sheet's.
