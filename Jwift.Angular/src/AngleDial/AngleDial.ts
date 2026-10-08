@@ -48,7 +48,7 @@ const DOTS = [-180, -135, -90, -45, 0, 45, 90, 135] as const;
         @if (Caption()) { <jext class="Jwift_AngleDialCaption" [text]="Caption() ?? ''" /> }
       </jiv>
     </jiv>
-    <stepper [value]="Value()" [min]="-180" [max]="180" [step]="1" (valueChange)="_onStepper($event)" />
+    <stepper [value]="Value()" [min]="-180" [max]="180" [step]="1" [coarse]="Coarse()" [hideValue]="true" (valueChange)="_onStepper($event)" />
   `,
   styles: [':host { display: contents; }'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,6 +60,9 @@ export class AngleDial extends JivHost implements OnInit, OnDestroy {
   readonly Caption = input<string | null>(null);
   readonly Label = input('');
   readonly StepperLabels = input<{ Minus: string; Plus: string } | null>(null);
+  /** The house `<stepper>`'s own `coarse` — Apple's 44pt touch floor for its two segments, read from the
+   *  caller (Jwift has no pointer sense of its own). */
+  readonly Coarse = input(false);
 
   /** Emitted continuously (whole degrees) while dragging. */
   readonly ValueChange = output<number>();

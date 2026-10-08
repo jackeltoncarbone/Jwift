@@ -56,25 +56,17 @@ Jwift_NumberFieldSegLabel_On : Jwift_NumberFieldSegLabel {
   FontWeight: 600
 }
 
-// Item 2 (Drill Sentences lane V2): the minus/plus steppers flank the wheel rather than sitting below it
-// as their own separate control — one row, the wheel taking whatever width the two 30pt buttons leave.
-// Drill Sentences lane WW2 (Jack: "small touch targets", the count wheel's buttons among them): the − and + beside the
-// wheel are Apple's 44pt touch default (`Jwift_NumberFieldStep`), standing at the popover's own inset, so a round button's
-// corner (22) is the popover's (32) less its 10pt padding.
-Jwift_NumberFieldWheelRow {
-  Direction: Row
-  Justify: Center
+// The follow-up to Drill Sentences lane ZZ3, item 1 (a round of live verification: the wheel flanked by
+// two loose glass circles read "weird", where Apple's own numeric wheel stands its stepper BELOW it, one
+// capsule, never flanking): the wheel's own row, full width, and the house `<stepper>` centered under it.
+Jwift_NumberFieldWheelCol {
+  Direction: Column
   Align: Center
-  Gap: 4pt
+  Gap: 12pt
   Width: 100%
 }
-Jwift_NumberFieldStep {
-  Width: 44pt
-  Height: 44pt
-  FlexShrink: 0
-}
 Jwift_NumberFieldWheel {
-  FlexGrow: 1
+  Width: 100%
   MinWidth: 0
 }
 

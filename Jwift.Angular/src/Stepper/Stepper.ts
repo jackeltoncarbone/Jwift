@@ -4,9 +4,11 @@ import { Icon } from '../Icon/Icon';
 import StepperJss from './Stepper.jss';
 
 /**
- * `<stepper>` — minus / value / plus, UIStepper's shape. Sizes are HOUSE: Apple's UIStepper geometry is
- * not in the Sizing.md restore (see the header note in Stepper.jss), so this promotes the row the app had
- * already converged on to the standard.
+ * `<stepper>` — Apple's own UIStepper shape: one two-segment capsule, minus and plus, a hairline the
+ * one seam between them. `hideValue` (true for the stepper beside a wheel or under a dial, which already
+ * show the number themselves) drops the value a standalone stepper otherwise reads between the segments,
+ * each then a pair of dividers rather than one. `coarse` is the caller's own pointer read — Jwift carries
+ * no sense of its own of which the app's `UiState.Coarse` is.
  *
  *   <stepper [value]="Count()" [min]="2" [step]="2" (valueChange)="Count.set($event)" />
  */
@@ -21,7 +23,11 @@ import StepperJss from './Stepper.jss';
       <jiv [class]="_MinusClass()" (click)="_bump(-step())">
         <icon class="Jwift_StepperGlyph" Name="minus" />
       </jiv>
-      <jext class="Jwift_StepperValue" [text]="value() + ''" />
+      <jiv class="Jwift_StepperDivider" />
+      @if (!hideValue()) {
+        <jext class="Jwift_StepperValue" [text]="value() + ''" />
+        <jiv class="Jwift_StepperDivider" />
+      }
       <jiv [class]="_PlusClass()" (click)="_bump(step())">
         <icon class="Jwift_StepperGlyph" Name="plus" />
       </jiv>
@@ -37,13 +43,24 @@ export class Stepper {
   readonly max = input<number | null>(null);
   readonly step = input<number>(1);
   readonly disabled = input<boolean>(false);
+  /** True beside a wheel or under a dial (`NumberField`'s own Wheel mode, `AngleDial`): the value already
+   *  shows there, so this stays a bare two-segment capsule. */
+  readonly hideValue = input(false);
+  /** Apple's 44pt touch floor for each segment, read from the caller (Jwift has no pointer sense of its
+   *  own); the house's 30pt otherwise. */
+  readonly coarse = input(false);
 
   readonly valueChange = output<number>();
 
-  protected readonly _MinusClass = computed(() =>
-    this.disabled() || this._atMin() ? 'Jwift_StepperBtn_Disabled' : 'Jwift_StepperBtn');
-  protected readonly _PlusClass = computed(() =>
-    this.disabled() || this._atMax() ? 'Jwift_StepperBtn_Disabled' : 'Jwift_StepperBtn');
+  protected readonly _MinusClass = computed(() => this._segClass(this.disabled() || this._atMin()));
+  protected readonly _PlusClass = computed(() => this._segClass(this.disabled() || this._atMax()));
+
+  private _segClass(disabled: boolean): string {
+    let cls = 'Jwift_StepperSeg';
+    if (this.coarse()) cls += ' Jwift_StepperSeg_Coarse';
+    if (disabled) cls += ' Jwift_StepperSeg_Disabled';
+    return cls;
+  }
 
   private readonly _atMin = computed(() => {
     const min = this.min();

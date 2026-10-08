@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output } from '@angular/core';
 import { JSS_REGISTRY, Jext, Jiv, Jyle } from 'jaui-angular';
-import { Icon } from '../Icon/Icon';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 import { Stepper } from '../Stepper/Stepper';
 import StepperJss from '../Stepper/Stepper.jss';
@@ -44,7 +43,7 @@ const _defaultFormat: NumberFieldFormat = (v) => ({ Main: String(v) });
 @Component({
   selector: 'number-field',
   standalone: true,
-  imports: [Jiv, Jext, Jyle, Icon, WheelPicker, WheelItem, Stepper],
+  imports: [Jiv, Jext, Jyle, WheelPicker, WheelItem, Stepper],
   template: `
     <jyle [source]="Jss" />
     <jiv class="Jwift_NumberField" semantics="Label" [label]="_FullLabel()">
@@ -64,14 +63,11 @@ const _defaultFormat: NumberFieldFormat = (v) => ({ Main: String(v) });
     @if (Mode() === 'Wheel') {
       <!-- Item 2 (Drill Sentences lane V2, two first-time testers): "the tester overshot twice with the
            mouse wheel" -- scrolling always costs at least one whole row, so a one-off exact change (24
-           counts, not 23 or 25) had no precise path at all. These flank the wheel with the house stepper's
-           own minus/plus buttons (Jwift_StepperBtn/Jwift_StepperGlyph, Stepper.jss) rather than a
-           second, bespoke pair, so an exact change is always one unambiguous tap away without ever
-           touching the wheel. -->
-      <jiv class="Jwift_NumberFieldWheelRow">
-        <jiv [class]="_MinusClass()" (click)="_bump(-Step())">
-          <icon class="Jwift_StepperGlyph" Name="minus" />
-        </jiv>
+           counts, not 23 or 25) had no precise path at all. The follow-up to Drill Sentences lane ZZ3,
+           item 1 (a round of live verification: the wheel flanked by two loose glass circles read
+           "weird"): the house stepper sits under the wheel now, Apple's own two-segment capsule,
+           its own value hidden since the wheel already shows it. -->
+      <jiv class="Jwift_NumberFieldWheelCol">
         <wheel-picker class="Jwift_NumberFieldWheel" [itemHeight]="34" [selectedValue]="Value()" (valueChange)="_onWheel($event)">
           @for (row of _rows(); track row.Value) {
             <wheel-item [value]="row.Value">
@@ -91,12 +87,10 @@ const _defaultFormat: NumberFieldFormat = (v) => ({ Main: String(v) });
             </wheel-item>
           }
         </wheel-picker>
-        <jiv [class]="_PlusClass()" (click)="_bump(Step())">
-          <icon class="Jwift_StepperGlyph" Name="plus" />
-        </jiv>
+        <stepper [value]="Value()" [min]="Min()" [max]="Max()" [step]="Step()" [coarse]="Coarse()" [hideValue]="true" (valueChange)="ValueChange.emit($event)" />
       </jiv>
     } @else {
-      <stepper [value]="Value()" [min]="Min()" [max]="Max()" [step]="Step()" (valueChange)="ValueChange.emit($event)" />
+      <stepper [value]="Value()" [min]="Min()" [max]="Max()" [step]="Step()" [coarse]="Coarse()" (valueChange)="ValueChange.emit($event)" />
     }
     @if (Foot()) {
       <jext class="Jwift_NumberFieldFoot" [text]="Foot() ?? ''" />
@@ -132,6 +126,9 @@ export class NumberField implements OnInit {
   readonly Mode = input<NumberFieldMode>('Wheel');
   /** The accessibility name; the frame's full label is this plus the current formatted value. */
   readonly Label = input('');
+  /** The house `<stepper>`'s own `coarse` — Apple's 44pt touch floor for its two segments, read from the
+   *  caller (Jwift has no pointer sense of its own). */
+  readonly Coarse = input(false);
 
   readonly ValueChange = output<number>();
   readonly UnitChange = output<string>();
@@ -162,20 +159,5 @@ export class NumberField implements OnInit {
 
   protected _pickUnit(key: string): void {
     if (key !== this.Unit()) this.UnitChange.emit(key);
-  }
-
-  // ── The minus/plus steppers beside the wheel (item 2) — Stepper.ts's own `_bump`, reused here rather
-  // than re-wrapped: NumberField already holds Value/Min/Max/Step, the same inputs a `<stepper>` would
-  // need, so there is nothing a second component call would add besides its own (redundant) value text.
-  protected readonly _atMin = computed(() => this.Value() <= this.Min());
-  protected readonly _atMax = computed(() => this.Value() >= this.Max());
-  protected readonly _MinusClass = computed(() => `${this._atMin() ? 'Jwift_StepperBtn_Disabled' : 'Jwift_StepperBtn'} Jwift_NumberFieldStep`);
-  protected readonly _PlusClass = computed(() => `${this._atMax() ? 'Jwift_StepperBtn_Disabled' : 'Jwift_StepperBtn'} Jwift_NumberFieldStep`);
-
-  protected _bump(delta: number): void {
-    if (delta < 0 && this._atMin()) return;
-    if (delta > 0 && this._atMax()) return;
-    const next = Math.max(this.Min(), Math.min(this.Max(), this.Value() + delta));
-    this.ValueChange.emit(next);
   }
 }
