@@ -10,3 +10,11 @@
  */
 export const IsEscapeKey = (e: { readonly key?: string; readonly code?: string }): boolean =>
   e.key === 'Escape' || e.key === 'Esc' || e.code === 'Escape';
+
+/**
+ * Space and Return both activate a focused control (HIG Keyboard conventions, section 24) — same
+ * "read what the key means, not a number" contract as `IsEscapeKey`, above, so a synthesized
+ * activation (DevTools protocol, assistive tech) that carries `key` with no `code` still reads.
+ */
+export const IsActivationKey = (e: { readonly key?: string; readonly code?: string }): boolean =>
+  e.key === ' ' || e.key === 'Enter' || e.key === 'Spacebar' || e.code === 'Space' || e.code === 'Enter';

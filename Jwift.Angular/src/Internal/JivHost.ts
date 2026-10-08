@@ -27,8 +27,9 @@ import {
   type PointerPayload,
 } from 'jaui';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
+import { FocusableBoxStyle } from './FocusableBox';
 import { FocusRingGeometryOf, ParsePt } from './FocusRing.Geometry';
-import { IsActivationKey, IsEscapeKey } from './FocusKeys';
+import { IsActivationKey, IsEscapeKey } from './Keys';
 import FocusRingJss from './FocusRing.jss';
 
 /**
@@ -232,10 +233,10 @@ export abstract class JivHost {
       // Only this element's own keydown — not one bubbled up from a nested REAL focusable (TextInput's
       // own `<jinput>`, say), which already answers Space/Enter/Escape its own way.
       if (e.target !== host) return;
-      if (IsActivationKey(e.key)) {
+      if (IsActivationKey(e)) {
         e.preventDefault(); // Space must not also page-scroll.
         host.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      } else if (IsEscapeKey(e.key)) {
+      } else if (IsEscapeKey(e)) {
         host.blur();
       }
     });
@@ -326,9 +327,34 @@ export abstract class JivHost {
     // about to send, so a control's keyboard reach can never drift from its pointer reach.
     const focusable = opts.ElementProps?.Interactive === true && opts.States?.['Disabled'] !== true;
     this._host.nativeElement.tabIndex = focusable ? 0 : -1;
+    this._syncFocusableBox(focusable);
     this.Node.Apply(opts);
     this._syncFocusRing(focusable, opts.Style?.['BorderRadius']);
     StampProbeHost(this._host.nativeElement, this.Node.Id, this._className());
+  }
+
+  /**
+   * Gives a focusable host a REAL rendered box, so it actually joins native sequential focus
+   * navigation -- `FocusableBoxStyle` (pure, `FocusableBox.ts`) is the decision; this is only where it
+   * lands. Set as an inline style, which outranks the component's own `:host` rule in the cascade
+   * without touching that rule -- a non-focusable host is left exactly as its own JSS/CSS authored it.
+   */
+  private _syncFocusableBox(focusable: boolean): void {
+    const style = this._host.nativeElement.style;
+    const box = FocusableBoxStyle(focusable);
+    if (box) {
+      style.display = box.display;
+      style.position = box.position;
+      style.width = box.width;
+      style.height = box.height;
+      style.overflow = box.overflow;
+    } else {
+      style.removeProperty('display');
+      style.removeProperty('position');
+      style.removeProperty('width');
+      style.removeProperty('height');
+      style.removeProperty('overflow');
+    }
   }
 
   /** Shows or hides this host's focus ring, creating it the first time this host becomes focusable.
