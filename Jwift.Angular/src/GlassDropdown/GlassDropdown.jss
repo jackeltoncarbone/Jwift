@@ -142,6 +142,13 @@ Jwift_GlassDropdownCell_Avatar : Jwift_GlassDropdownCell {
 Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGlass {
   Padding: 0pt
 }
+
+// A pill holding a warning (`GlassActionBar._PillVariant`): the same glass, tinted warm with the theme's quiet
+// caution wash, so a page's problems read apart from the quiet pills beside them (Drill Sentences lane NN2, item 7:
+// a round 18 blind desktop tester read Cast, Library, Camera and "10 problems" as four equal pills).
+Jwift_GlassDropdown_ClosedWarn : Jwift_GlassDropdown_Closed {
+  Background: @WarningWash
+}
 Jwift_GlassDropdownCell_Avatar_Fill : Jwift_GlassDropdownCell_Avatar {
   Width: 48pt
   Height: 48pt

@@ -93,10 +93,33 @@ export interface ActionGroup {
                flow steady (no sibling reflow) and the open menu anchors to this
                slot, popping under its own pill rather than the bar's corner. -->
           <jiv class="Jwift_GlassActionBarSlot" [childLayout]="_PillSlot(gp.Cells)">
+          <!-- Drill Sentences lane NN2, item 6: a pill whose list opens below it stays in the bar while the list is open,
+               its cell pressed; a press on it closes the list (GlassDropdown counts its slot as its own). -->
+          @if (gp.Group.OpenBelow && gd.IsOpen()) {
+            <jiv [class]="_PillClass(gp.Cells)">
+              @for (a of gp.Cells; track a.Id) {
+                <jiv [class]="_CellClass(a, true)" [childLayout]="_CellLayout(a)" semantics="Button" [label]="a.Label ?? null"
+                     (click)="_OnOpenCell($event, gd)" (pointermove)="_Tip.Over(a.Id, $event)">
+                  <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
+                  @if (_ShowsTitle(a)) {
+                    <jext #cellText class="Jwift_GlassActionTitle" [text]="a.Label ?? ''" />
+                  }
+                  @if (a.Disclosure) {
+                    <icon class="Jwift_GlassDropdownCellChevron" Name="chevron.up" />
+                  }
+                  @if (a.Badge && !_ShowsTitle(a)) {
+                    <jiv class="Jwift_GlassActionBadge">
+                      <jext #cellText class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
+                    </jiv>
+                  }
+                </jiv>
+              }
+            </jiv>
+          }
           <glass-dropdown #gd
             [defaultPage]="_GroupDefaultPage(gp.Group)"
             [canOpen]="_GroupCanOpen(gp.Group)"
-            [openBelow]="!!gp.Group.OpenBelow" [openWidth]="gp.Group.PageWidth ?? null">
+            [openBelow]="!!gp.Group.OpenBelow" [openWidth]="gp.Group.PageWidth ?? null" [closedVariant]="_PillVariant(gp.Cells)">
             @if (!gd.IsOpen()) {
               @for (a of gp.Cells; track a.Id) {
                 @if (a.Spinner) {
@@ -150,7 +173,7 @@ export interface ActionGroup {
           </glass-dropdown>
           </jiv>
         } @else {
-          <jiv class="Jwift_GlassDropdown_Closed">
+          <jiv [class]="_PillClass(gp.Cells)">
             @for (a of gp.Cells; track a.Id) {
               @if (a.Spinner) {
                 <jiv class="Jwift_GlassDropdownCell">
@@ -425,12 +448,24 @@ export class GlassActionBar implements OnDestroy {
     return this._OpenItemsFor(gp, page).some((item) => !!item.Toggle && !!item.Active);
   }
 
-  protected _CellClass(a: GlassAction): string {
+  /** `pressed`: the cell of a pill whose list is open below it, which reads as held down while it is. */
+  protected _CellClass(a: GlassAction, pressed = false): string {
     const classes = ['Jwift_GlassDropdownCell'];
     if (this._ShowsTitle(a)) classes.push('Jwift_GlassDropdownCell_Titled');
-    if (a.Active) classes.push('Jwift_GlassDropdownCell_Active');
+    if (a.Active || pressed) classes.push('Jwift_GlassDropdownCell_Active');
     if (a.Disabled) classes.push('Jwift_GlassDropdownCell_Disabled');
     return classes.join(' ');
+  }
+
+  /** A pill holding a warning cell (`GlassAction.Tint`) takes a warm glass, so a page's problems stand apart from the
+   *  quiet glass of every other pill (Drill Sentences lane NN2, item 7: a round 18 blind desktop tester read Cast,
+   *  Library, Camera and "10 problems" as four equal pills). Null for a quiet pill. */
+  protected _PillVariant(cells: readonly GlassAction[]): string | null {
+    return cells.some((a) => a.Tint === 'warn') ? 'Jwift_GlassDropdown_ClosedWarn' : null;
+  }
+  protected _PillClass(cells: readonly GlassAction[]): string {
+    const variant = this._PillVariant(cells);
+    return variant ? `Jwift_GlassDropdown_Closed ${variant}` : 'Jwift_GlassDropdown_Closed';
   }
 
   protected _GlyphClass(a: GlassAction): string {
@@ -460,6 +495,16 @@ export class GlassActionBar implements OnDestroy {
     if (a.Disabled) return;
     if (a.Page) { gd.Open(a.Page); return; }
     this.ActionClick.emit(a.Id);
+  }
+
+  /** A press on the pill standing over its open list (`ActionGroup.OpenBelow`): the list closes, as a second press on
+   *  any disclosure does. Drill Sentences lane NN2, item 6 (a round 18 blind desktop tester, 26-problems.png: the
+   *  toolbar's "10 problems" went while its list was open below it, so nothing said what the list was, or how to put
+   *  it away). The closed cells live inside the dropdown's glass, which moves down to be the list, so the slot above
+   *  stood empty; this pill stands there instead, its cell pressed. */
+  protected _OnOpenCell(event: MouseEvent, gd: GlassDropdown): void {
+    event.stopPropagation();
+    gd.Close();
   }
 
   protected _OnItemClick(item: GlassAction, gd: GlassDropdown): void {

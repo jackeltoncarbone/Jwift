@@ -167,6 +167,11 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
         const py = e.clientY - rect.top;
         const n = this.Node;
         if (px >= n.X && px < n.X + n.Width && py >= n.Y && py < n.Y + n.Height) return;
+        // Drill Sentences lane NN2, item 6: opened below, the slot it left holds its pill (`GlassActionBar`), pressed,
+        // whose own press closes the list; a press there is the dropdown's own, never an outside one that would close
+        // it first and let the click land on the closed cell beneath, opening it again.
+        const slot = this.openBelow() ? n.Parent : null;
+        if (slot && px >= slot.X && px < slot.X + slot.Width && py >= slot.Y && py < slot.Y + slot.Height) return;
       }
       // Drill Sentences lane CC1, item 5: the open grows the panel's box for 280ms around rows already at
       // their final places, so a row picked mid open is a press on the menu, not outside it.
@@ -220,6 +225,8 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   Open(page: string | null = null): void {
     if (!this._open()) this._entryPage = page;
     if (page !== null) this._page.set(page);
+    // Opened below, a press on the slot above is the dropdown's own (`onDocDown`), so its rect is read.
+    if (this.openBelow()) this.Node.Parent?.WatchRect?.(true);
     this._releaseTopLayer();
     this._open.set(true);
     this._fitToRoom();
