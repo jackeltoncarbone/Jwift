@@ -91,8 +91,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   /** The word/control the popover points at, in canvas px — a fixed rect, or a function read every
    *  placement frame so the popover follows its anchor across a scroll. */
   readonly Anchor = input.required<PopoverRect | (() => PopoverRect | null)>();
-  /** The box the panel must stay inside. `null` (the default) is the canvas, inset 8pt plus the
-   *  device's safe areas plus `TopInset`, and below the page's top band (`JWIFT_POPOVER_TOP_BAND`). */
+  /** The box the panel must stay inside. `null` (the default) is the canvas, inset 8pt above and concentric with the
+   *  screen's corners below and beside (`_resolveRegion`), plus the device's safe areas plus `TopInset`, and below the
+   *  page's top band (`JWIFT_POPOVER_TOP_BAND`). */
   readonly Region = input<PopoverRect | null>(null);
   /** Extra clearance from the region's own top — e.g. a floating header the popover must clear. */
   readonly TopInset = input(0);
@@ -106,6 +107,11 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   /** The origin's corner radius in canvas px (`GlassMorphStart`): a word's highlight. Null (the default) is a
    *  capsule, the shape of every glass control and pill a menu opens from. */
   readonly OriginRadius = input<number | null>(null);
+  /** The panel's own corner in canvas px, or null (the default) for the house menu's (`@JwiftDropdownRadius`). A menu
+   *  grown over a control that stands in its container's corner takes the container's concentric corner there, the
+   *  control's own, so its corner nests in the container's rather than overhanging it (Drill Sentences lane XX3, item 2:
+   *  the selection bar's "…" menu, 18-selmore.png). */
+  readonly Radius = input<number | null>(null);
   /** The glass control the menu grows out of (a glass button, a title): while the menu stands open its glass IS the
    *  control's, so the control is not drawn beside it, and it is drawn again as the menu collapses back into it
    *  (Drill Sentences lane WW1, item 3). A press where it stood closes the menu, as a press on it would. Null for an
@@ -436,12 +442,13 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
       const origin = this._resolveOrigin();
       this._hideSource();
       if (!origin || GlassMotionFor(this.PassThrough(), PrefersReducedMotion(this._doc)) === 'Fade') {
+        this._settleRadius();
         this._shown.set('Fade');
         return;
       }
       const start = GlassMorphStart(origin, this.OriginRadius());
       const end = GlassMorphEnd({ X: p.X, Y: p.Y, Width: this._width(), Height: this._placedHeight }, p.MaxHeight,
-        this._jss.VarPoints('JwiftDropdownRadius'));
+        this.Radius() ?? this._jss.VarPoints('JwiftDropdownRadius'));
       this._growing = { End: { X: end.X, Y: end.Y, Width: end.Width }, Frames: 0 };
       // The box springs from the anchor (Jaui's `MorphFrom`), and the shown class and the anchor's corner go in the
       // same batch, so the glass is never drawn at its placement before it grows.
@@ -460,7 +467,14 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const started = Math.abs(n.X - growing.End.X) > 0.5 || Math.abs(n.Y - growing.End.Y) > 0.5 || Math.abs(n.Width - growing.End.Width) > 0.5;
     if (!started && growing.Frames < 8) return;
     this._growing = null;
-    this.ClearStyleOverride('BorderRadius');
+    this._settleRadius();
+  }
+
+  /** The panel's corner once it stands open: its own (`Radius`), else the house menu's from its sheet. */
+  private _settleRadius(): void {
+    const radius = this.Radius();
+    if (radius === null) this.ClearStyleOverride('BorderRadius');
+    else this.SetStyleOverride({ BorderRadius: `${radius}px` });
   }
 
   private _startTracking(): void {
@@ -490,17 +504,26 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   }
 
   /** A menu that is its control's own glass (`Source`) stands over the control, wherever it is, so it covers its own
-   *  toolbar's band (the show's title) rather than keeping below it as a panel opened from elsewhere does. */
+   *  toolbar's band (the show's title) rather than keeping below it as a panel opened from elsewhere does.
+   *
+   *  CONCENTRIC WITH THE SCREEN'S CORNERS AND A SHEET'S (Drill Sentences lane XX3, item 2; a round 25 blind phone tester's
+   *  March submenu ran its bottom edge along the sheet's, into the sheet's rounded corner, 11-march.png). The panel kept
+   *  8pt from the screen, exactly where a bottom sheet's own edge stands (`@JwiftSheetInset`), so a panel opened low in a
+   *  sheet lay flush with it. Below and beside it now keeps the house dropdown's margin (`GlassDropdown`'s `_fitToRoom`):
+   *  the screen's corner less the panel's, so its corner shares the screen's centre, and a sheet's too (the sheet's
+   *  corner is the screen's less its own inset). A menu grown over its control stands where the control does, inside
+   *  whatever holds the control, and keeps the plain 8pt. */
   private _resolveRegion(canvasWidth: number, canvasHeight: number, over: boolean): PopoverRect {
     const custom = this.Region();
     if (custom) return custom;
     const gap = 8;
+    const edge = over ? gap : this._jss.VarPoints('JwiftScreenRadius') - this._jss.VarPoints('JwiftDropdownRadius');
     const top = gap + this._envVar('SafeTop') + Math.max(this.TopInset(), over ? 0 : this._topBand?.() ?? 0);
-    const bottom = gap + this._envVar('SafeBottom');
+    const bottom = edge + this._envVar('SafeBottom');
     return {
-      X: gap,
+      X: edge,
       Y: top,
-      Width: Math.max(0, canvasWidth - 2 * gap),
+      Width: Math.max(0, canvasWidth - 2 * edge),
       Height: Math.max(0, canvasHeight - top - bottom),
     };
   }
