@@ -152,6 +152,23 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private readonly _placement = signal<PopoverPlacement | null>(null);
   /** Whether the last placement may cap the panel: only while content that scrolls is mounted. */
   private readonly _capped = signal(false);
+
+  /**
+   * Drill Sentences lane AB1, item 2 (HIG Popovers, `Apple.Review.Checklist.md` #53: every popover has a visible
+   * arrow aimed at the control that revealed it). The placement's own `Arrow` (`Popover.Placement.ts`), published
+   * so a consumer that needs a real pointer drawn (the arrow itself is a style this component does not yet own —
+   * `Jwift_Popover`'s `Overflow: Hidden` clips anything this box would grow past its own edge) can place one
+   * alongside this panel, outside its clip, from `ArrowAt`, `Down` and `Side` together: the panel's own `X`/`Y`
+   * plus `ArrowAt` locates the tip in the same canvas coordinates the panel itself is placed in; `Down` says
+   * whether that edge is the panel's top (`true`) or bottom; `Side` whether it is the left edge instead. Null
+   * while unplaced, or for a panel that is its anchor's own glass, grown in place (`Over`) — nothing to point at,
+   * the same reading `ANCHOR_GAP`'s own comment already gives that case. */
+  readonly ArrowAt = computed<number | null>(() => this._placement()?.Arrow ?? null);
+  /** Companion to `ArrowAt`: which of the panel's own edges the arrow sits on — its top when `true`, its
+   *  bottom when `false` and not `Side`. Defaults to `true` (the common case) while unplaced. */
+  readonly Down = computed<boolean>(() => this._placement()?.Down ?? true);
+  /** Companion to `ArrowAt`: the arrow sits on the panel's own left edge, not its top/bottom (`Beside`). */
+  readonly Side = computed<boolean>(() => this._placement()?.Side ?? false);
   /** Published through `JWIFT_POPOVER_ROOM`. */
   readonly _room = computed(() => {
     const p = this._placement();

@@ -361,11 +361,17 @@ describe('RoomWaitStep: the room under a word is made once the panel fits below 
   it('while the room is made the panel stands below its word, whole and uncapped, whatever the room left this frame', () => {
     const rising = { ...atMedium, Y: 640 };
     const p = PlacePopover({ Anchor: rising, Region: region, W: 250, H: wheel, PrevDown: null, Scrolls: true, MakingRoom: true });
-    expect(p).toEqual({ X: rising.X + rising.Width / 2 - 125 < region.X ? region.X : rising.X + rising.Width / 2 - 125, Y: 640 + 68 + 12, MaxHeight: wheel, Down: true });
-    // A menu that is its control's glass grows down from the control's own top.
+    expect(p).toEqual({
+      X: rising.X + rising.Width / 2 - 125 < region.X ? region.X : rising.X + rising.Width / 2 - 125, Y: 640 + 68 + 12, MaxHeight: wheel, Down: true,
+      // The arrow still points at the word's own middle, local to the panel (lane AB1, item 2): 24 + 45 (its centre) − 8
+      // (the panel's clamped left) = 61.
+      Arrow: 61,
+    });
+    // A menu that is its control's glass grows down from the control's own top, and needs no arrow of its own.
     const over = PlacePopover({ Anchor: rising, Region: region, W: 250, H: wheel, PrevDown: null, MakingRoom: true, Over: true });
     expect(over.Y).toBe(640);
     expect(over.Down).toBe(true);
+    expect(over.Arrow).toBeNull();
   });
 
   /**
@@ -471,4 +477,76 @@ describe('PlacePopover over its control (Over)', () => {
     const more: PopoverRect = { X: 340, Y: 700, Width: 36, Height: 36 };
     expect(ShortfallBelow(more, region, 300, true)).toBe(300 - (824 - 700));
   });
+
+  it('a chip\'s own menu (Over) needs no arrow: it already reads as the control, grown', () => {
+    const chip: PopoverRect = { X: 620, Y: 818, Width: 92, Height: 44 };
+    const p = PlacePopover({ Anchor: chip, Region: desktop, W: 270, H: 286, PrevDown: null, Over: true });
+    expect(p.Arrow).toBeNull();
+  });
 });
+
+/**
+ * Drill Sentences lane AB1, item 2 (HIG Popovers, `Apple.Review.Checklist.md` #53: every popover has a visible
+ * arrow aimed at the control that revealed it). `PlacePopover`'s own `Arrow`: where that pointer's tip belongs,
+ * local to the panel's own box, on the edge it points from — never on a panel that is its anchor's own glass,
+ * grown in place (`Over`, covered above).
+ */
+describe('PlacePopover.Arrow: the pointer aimed at the anchor that opened the panel', () => {
+  const desktop: PopoverRect = { X: 8, Y: 8, Width: 1424, Height: 884 };
+
+  it('below the anchor: the panel\'s top is its pointing edge, the arrow at the anchor\'s own centre', () => {
+    // Centered under the anchor with room on every side, so X itself is never clamped: the arrow lands at
+    // exactly the panel's own half-width, the anchor's centre and the panel's centre being the same point.
+    const anchor: PopoverRect = { X: 200, Y: 200, Width: 40, Height: 20 };
+    const p = PlacePopover({ Anchor: anchor, Region: desktop, W: 250, H: 120, PrevDown: null });
+    expect(p.Down).toBe(true);
+    expect(p.Arrow).toBe(125); // W / 2
+  });
+
+  it('above the anchor: same rule, the panel\'s bottom its pointing edge', () => {
+    const anchor: PopoverRect = { X: 200, Y: 860, Width: 40, Height: 20 };
+    const p = PlacePopover({ Anchor: anchor, Region: desktop, W: 250, H: 120, PrevDown: null });
+    expect(p.Down).toBe(false);
+    expect(p.Arrow).toBe(125);
+  });
+
+  it('an anchor near the region\'s edge: the arrow stays clear of the panel\'s own rounded corner', () => {
+    // The panel's X is clamped to the region's own left (its natural centred X would run off screen); the
+    // anchor's centre, 10px into the clamped panel, is too close to the corner, so the arrow holds at the inset.
+    const anchor: PopoverRect = { X: 8, Y: 200, Width: 20, Height: 20 };
+    const p = PlacePopover({ Anchor: anchor, Region: desktop, W: 250, H: 120, PrevDown: null });
+    expect(p.X).toBe(desktop.X);
+    expect(p.Arrow).toBe(20);
+  });
+
+  it('beside its column: the arrow is on the panel\'s own left edge, level with the anchor', () => {
+    const column = 448;
+    const word: PopoverRect = { X: 40, Y: 300, Width: 70, Height: 22 };
+    const p = PlacePopover({ Anchor: word, Region: desktop, W: 250, H: 120, PrevDown: null, Beside: column });
+    expect(p.Side).toBe(true);
+    expect(p.Arrow).not.toBeNull();
+    // Clear of both rounded corners, and (barring an `Avoid` push) level with the anchor's own middle.
+    expect(p.Arrow!).toBeGreaterThanOrEqual(20);
+    expect(p.Arrow!).toBeLessThanOrEqual(p.MaxHeight - 20);
+    expect(p.Y + p.Arrow!).toBeCloseTo(word.Y + word.Height / 2, 5);
+  });
+
+  it('a held panel recomputes its arrow against the anchor\'s new position, same as its box does', () => {
+    const band: PopoverRect = { X: 300, Y: 200, Width: 70, Height: 69 };
+    const opened = PlacePopover({ Anchor: band, Region: desktop, W: 250, H: 120, Scrolls: false, PrevDown: null });
+    const hold = { Down: opened.Down, X: opened.X, TopFromAnchor: opened.Y - band.Y };
+    const reflowed: PopoverRect = { X: 262, Y: 200, Width: 62, Height: 46 };
+    const held = PlacePopover({ Anchor: reflowed, Region: desktop, W: 250, H: 120, Scrolls: false, PrevDown: true, Hold: hold });
+    expect(held.X).toBe(opened.X); // the box itself holds still (lane BB2, item 2's own rule) …
+    expect(held.Arrow).toBe(ArrowAtForTest(reflowed.X + reflowed.Width / 2, held.X, 250)); // … the arrow still tracks the word.
+  });
+});
+
+/** `ArrowAt`'s own formula, independent of `Popover.Placement.ts`'s import boundary (it is not exported — the
+ *  module keeps it private, same as `Clamp`), so this file's own held-panel test above can state what it expects
+ *  without re-deriving the clamp inline. Kept in lockstep with `ARROW_INSET` (20) by the first two tests above,
+ *  which pin both the unclamped and the clamped case against literal numbers. */
+function ArrowAtForTest(anchorCenter: number, origin: number, length: number): number {
+  const inset = 20, half = length / 2;
+  return Math.max(Math.min(inset, half), Math.min(Math.max(half, length - inset), anchorCenter - origin));
+}
