@@ -134,6 +134,8 @@ Jwift_ToggleKnob_Pressed : Jwift_ToggleKnob {
   // A WASH, not a scrim: the pressed knob: a quiet fill over the track, so it takes the quiet lift.
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
   Glass: Clear
+  // A lens refracts what it sits on, its track and the glass under that (Jaui Core/Glass.Plate.ts).
+  GlassReads: Surface
   Thickness: 2.5
   Refraction: 1
   // Grows for real rather than by VisualScale, so the rim re-renders as a hairline instead of magnifying

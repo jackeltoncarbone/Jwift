@@ -177,13 +177,13 @@ interface PanSample { readonly Y: number; readonly T: number }
       @if (!alert()) {
         <jiv class="Jwift_SheetBar">
           @if (navigationDepth() > 0) {
-            <glass-button size="bar" (click)="AttemptBack()">
+            <glass-button size="bar" Class="Jwift_SheetBarButton" (click)="AttemptBack()">
               <icon class="Jwift_SheetBarGlyph" Name="chevron.left" />
             </glass-button>
           } @else if (Inspector()) {
             <jiv class="Jwift_SheetBarSpacer" />
           } @else {
-            <glass-button size="bar" (click)="AttemptDismiss()">
+            <glass-button size="bar" Class="Jwift_SheetBarButton" (click)="AttemptDismiss()">
               <icon class="Jwift_SheetBarGlyph" Name="xmark" />
             </glass-button>
           }
@@ -201,7 +201,7 @@ interface PanSample { readonly Y: number; readonly T: number }
               <jext class="Jwift_SheetBarActionLabel" [text]="label" />
             </glass-button>
           } @else if (barAction(); as glyph) {
-            <glass-button size="bar" (click)="barActionPress.emit()">
+            <glass-button size="bar" Class="Jwift_SheetBarButton" (click)="barActionPress.emit()">
               <icon class="Jwift_SheetBarGlyph" [Name]="glyph" />
             </glass-button>
           } @else {

@@ -174,6 +174,23 @@ Jwift_SheetBar {
   Padding: @JwiftSheetBarInset @JwiftSheetBarInset 0pt @JwiftSheetBarInset
   PointerEvents: None
 }
+// THE BAR'S OWN BUTTONS ARE GLASS (Drill Sentences lane WW1). Every other glass control inside glass is a fill
+// (Jwift.Glass.jss, `JwiftGlass:InGlass`), but a sheet's bar is its own toolbar layer over the sheet's content, and iOS
+// 26 draws its X, its back chevron and its glyph action as glass there. So these stay glass inside the sheet, with the
+// glass press, and read what they sit on (`GlassReads: Surface`), the sheet's glass under them, as a toolbar's buttons
+// over a sheet do, never the field under the sheet.
+Jwift_SheetBarButton {
+  GlassReads: Surface
+}
+Jwift_SheetBarButton:InGlass {
+  Glass: Regular
+  RimWidth: @JwiftRimWidth
+  RimStrength: @JwiftRimStrength
+  BackdropFilter: Vibrancy(0)
+}
+Jwift_SheetBarButton:(InGlass && Active) {
+  BackdropFilter: Vibrancy(0)
+}
 // The xmark and the checkmark: label ink, about 16.5 pt of ink in the 44 pt circle [I].
 Jwift_SheetBarGlyph : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
