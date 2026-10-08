@@ -121,5 +121,9 @@
   "shift": { "Pack": "Framework7", "Glyph": "shift" },
   "backward.end.fill": { "Pack": "Framework7", "Glyph": "backward_end_fill" },
   "forward.end.fill": { "Pack": "Framework7", "Glyph": "forward_end_fill" },
-  "arrow.counterclockwise": { "Pack": "Framework7", "Glyph": "arrow_counterclockwise" }
+  "arrow.counterclockwise": { "Pack": "Framework7", "Glyph": "arrow_counterclockwise" },
+  "rectangle": { "Pack": "Framework7", "Glyph": "rectangle" },
+  "scribble": { "Pack": "Framework7", "Glyph": "scribble" },
+  "moon": { "Pack": "Framework7", "Glyph": "moon" },
+  "circle": { "Pack": "Framework7", "Glyph": "circle" }
 }
