@@ -60,6 +60,14 @@ Jwift_TokenSentenceUnderline {
   @Transition Opacity { Duration: 0ms }
 }
 
+// Drill Sentences lane PP2, item 5 (a round 20 blind desktop tester: nearly every word underlined, nothing stood out): a
+// sentence at rest underlines its values, its who and its move word faintly (TokenSentence.ts's UnderlineOf), and its
+// row's hover brings them to full strength, the hover reveal the "+" already uses.
+Jwift_TokenSentenceUnderline_Faint {
+  Background: @AccentInkLineFaint
+  @If (Ancestor(Jwift_HoverGroup):Hover) { Background: @AccentInkLine }
+}
+
 // Every word of the sentence. Drill Sentences lane BB2, item 4 (blind testers: "outs8 counts" after a
 // grouping, "theright face" after an undo): a word the sentence no longer has used to fade out where it
 // stood for the presence spring's ~400ms, under the words now standing there. It goes at once; a word that
