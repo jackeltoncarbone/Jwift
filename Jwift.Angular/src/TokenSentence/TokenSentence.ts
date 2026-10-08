@@ -209,6 +209,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
    *  ANCESTOR hover too (`Ancestor(Jwift_HoverGroup):Hover`), the generic half of item 8 every caller
    *  gets for free by wrapping its own row in a `Jwift_HoverGroup` class. */
   readonly AddVisible = input(true);
+  /** How a "+" `AddVisible` leaves out rests: `Hidden`, nothing to see (a touch screen's rows), or `Faint`, a quiet
+   *  "+" that says there is one to press (Drill Sentences lane QQ2, item 5: a round 21 blind desktop tester hovered a
+   *  row and found no "+"; a desktop row's "+" rests faint and shows whole on the row the mouse is over). */
+  readonly AddRest = input<'Hidden' | 'Faint'>('Hidden');
   /** BCP-47; reserved for a future per-language measurement/shaping hook. */
   readonly Language = input<string | null>(null);
   readonly FontSizePt = input(16);
@@ -536,7 +540,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     // out from under a control the director is actively using.
     const visible = this.AddVisible() || open;
     const cls = open ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Open'
-      : !visible ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Faded'
+      : !visible ? (this.AddRest() === 'Faint' ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Faint' : 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Faded')
         : hover ? 'Jwift_TokenSentenceAdd Jwift_TokenSentenceAdd_Hover'
           : 'Jwift_TokenSentenceAdd';
     return [{ Key: this._landedKeys().Add, Class: cls, Layout: _rect(add.X, add.Y, add.Width, add.Height) }];

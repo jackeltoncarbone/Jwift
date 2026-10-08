@@ -126,6 +126,12 @@ Jwift_TokenSentenceAdd_Faded {
   // The hover reveal still eases in (the "+" class above lands its own exit at once).
   @Transition Opacity { Duration: 200ms }
 }
+// Drill Sentences lane QQ2, item 5: a caller's `AddRest: Faint` leaves the "+" it does not show whole drawn quietly, so a
+// desktop row says it has one before the mouse comes to it; the caller shows it whole on the hovered row (`AddVisible`).
+Jwift_TokenSentenceAdd_Faint {
+  Opacity: 0.3
+  @Transition Opacity { Duration: 200ms }
+}
 Jwift_TokenSentenceAddGlyph {
   FontFamily: JwiftIcons
   FontSize: 17pt

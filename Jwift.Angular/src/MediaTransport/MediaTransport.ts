@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, effect, input, output, viewChild } from '@angular/core';
 import { Jiv, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
 import MediaTransportJss from './MediaTransport.jss';
@@ -38,7 +38,8 @@ export type MediaTransportSkip = 'Seek' | 'Track';
         <jiv [class]="BtnPrimaryClass()" [attr.aria-label]="PrimaryLabel()" (click)="playPause.emit()">
           <icon [class]="GlyphPrimaryClass()" [Name]="PrimaryGlyph()" />
         </jiv>
-        <jiv [class]="BtnClass()" [disabled]="skipForwardDisabled()" [attr.aria-label]="skipForwardLabel()" (click)="_skipForward()">
+        <jiv #skipForwardEl [class]="BtnClass()" [disabled]="skipForwardDisabled()" [attr.aria-label]="skipForwardLabel()"
+             (click)="_skipForward()" (pointermove)="skipForwardHover.emit($event)">
           <icon [class]="GlyphClass()" [Name]="SkipForwardGlyph()" />
         </jiv>
       </jiv>
@@ -90,6 +91,22 @@ export class MediaTransport {
 
   protected _skipForward(): void {
     if (!this.skipForwardDisabled()) this.skipForward.emit();
+  }
+
+  /** The pointer over skip forward, enabled or not: a caller that tips it (Drill Sentences lane QQ2, item 6, "Last
+   *  phrase" over a dimmed ⏭) reads the move here, since a dimmed button takes no press but still has the pointer. */
+  readonly skipForwardHover = output<PointerEvent>();
+  private readonly _skipForwardEl = viewChild<Jiv>('skipForwardEl');
+  private readonly _watchSkipForward = effect((onCleanup) => {
+    const node = this._skipForwardEl()?.Node;
+    if (!node) return;
+    node.WatchRect(true);
+    onCleanup(() => node.WatchRect(false));
+  });
+  /** Skip forward's own box in canvas px, live, for a tip anchored to it; null before it is laid out. */
+  SkipForwardRect(): { X: number; Y: number; Width: number; Height: number } | null {
+    const node = this._skipForwardEl()?.Node;
+    return node && node.Width > 0 ? { X: node.X, Y: node.Y, Width: node.Width, Height: node.Height } : null;
   }
 
   private readonly _compact = computed(() => this.size() === 'compact');

@@ -34,6 +34,11 @@ export type { PopoverRect };
  *  before the first placement runs. */
 export const JWIFT_POPOVER_ROOM = new InjectionToken<Signal<number>>('JWIFT_POPOVER_ROOM');
 
+/** How far a page's own top chrome reaches below the device's safe top, in canvas px (a toolbar's row), read on every
+ *  placement. Every popover under the provider keeps its panel below that band, as it keeps clear of the canvas edge,
+ *  so no panel covers the toolbar's controls (Drill Sentences lane QQ2, item 3: the who chooser hid Undo). */
+export const JWIFT_POPOVER_TOP_BAND = new InjectionToken<() => number>('JWIFT_POPOVER_TOP_BAND');
+
 /** What closed the popover — the swipe-dismiss / tap-outside distinction a consumer's own "closes on
  *  the same word, doesn't reopen" guard needs (lane E's job; see LaneC.md risk 10). */
 export interface PopoverClosed {
@@ -87,7 +92,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
    *  placement frame so the popover follows its anchor across a scroll. */
   readonly Anchor = input.required<PopoverRect | (() => PopoverRect | null)>();
   /** The box the panel must stay inside. `null` (the default) is the canvas, inset 8pt plus the
-   *  device's safe areas plus `TopInset`. */
+   *  device's safe areas plus `TopInset`, and below the page's top band (`JWIFT_POPOVER_TOP_BAND`). */
   readonly Region = input<PopoverRect | null>(null);
   /** Extra clearance from the region's own top — e.g. a floating header the popover must clear. */
   readonly TopInset = input(0);
@@ -115,6 +120,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private readonly _canvasRef = inject(Jaui, { optional: true });
   private readonly _doc = inject(DOCUMENT);
   private readonly _styleLoader = inject(JwiftStyleLoader);
+  private readonly _topBand = inject(JWIFT_POPOVER_TOP_BAND, { optional: true });
 
   private readonly _placement = signal<PopoverPlacement | null>(null);
   /** Whether the last placement may cap the panel: only while content that scrolls is mounted. */
@@ -342,7 +348,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const custom = this.Region();
     if (custom) return custom;
     const gap = 8;
-    const top = gap + this._envVar('SafeTop') + this.TopInset();
+    const top = gap + this._envVar('SafeTop') + Math.max(this.TopInset(), this._topBand?.() ?? 0);
     const bottom = gap + this._envVar('SafeBottom');
     return {
       X: gap,
