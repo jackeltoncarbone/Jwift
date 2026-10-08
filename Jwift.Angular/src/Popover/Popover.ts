@@ -314,8 +314,14 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     // child out of its parent at once (`Layout.Intrinsic.ts`), so this `Height: MinContent` panel collapsed to its
     // own padding and faded out as an empty sliver of glass. It leaves at the height it was drawn, its rows fading
     // in place inside it.
+    //
+    // Drill Sentences lane TT1, item 3 (a round 23 blind desktop tester picked "standfast" from a "+" menu, and an empty
+    // frame of the panel stood over the field for about a second): the rows went first, and the panel's glass went on
+    // fading out at its own spring's pace, an empty pane for most of it. A menu that closes goes at once, as an Apple
+    // menu does on a pick: the panel and everything in it leave invisible, together, and the node goes once its
+    // Presence settles.
     const drawn = this.Node.Height;
-    this._detachOnDestroy(drawn > 0 ? { Height: `${drawn}px` } : undefined);
+    this._detachOnDestroy({ ...(drawn > 0 ? { Height: `${drawn}px` } : {}), Opacity: '0' });
   }
 
   private _startTracking(): void {
