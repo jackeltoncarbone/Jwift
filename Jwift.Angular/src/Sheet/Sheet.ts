@@ -23,6 +23,7 @@ import { Icon } from '../Icon/Icon';
 import { JivHost } from '../Internal/JivHost';
 import { IsEscapeKey } from '../Internal/Keys';
 import { JWIFT_MATERIAL, type JwiftMaterial } from '../Internal/Material';
+import { PrefersReducedMotion } from '../Morph/GlassMorph';
 import SheetJss from './Sheet.jss';
 import {
   BottomRadius,
@@ -289,6 +290,18 @@ export class Sheet extends JivHost implements OnInit, AfterViewInit, OnDestroy {
   private readonly _doc = inject(DOCUMENT);
   private readonly _stack = inject(SheetStack);
   private readonly _card = viewChild.required<Jiv>('card');
+  /** Drill Sentences lane YY3b, item 12: the card's own position/size (`CardLayout`, its `@Spring X/Y/Width/
+   *  Height/BorderRadius`, `Sheet.jss`) is the sheet's whole detent motion — rising to Large, settling at
+   *  Medium, dropping on dismiss. A reader with Reduce Motion on gets every detent change AT ONCE instead of
+   *  sprung through, the same "tightens springs so they settle with little to no visible bounce" rule
+   *  `GlassMorph.ts`'s own `PrefersReducedMotion` already answers for a popover's open/close. Re-checked on
+   *  every layout (not just once, at mount) the same way `TokenSentence.ts`'s own first-layout snap is, so a
+   *  reader who changes the OS setting mid-session is caught on the sheet's very next move, not left riding
+   *  whatever was true when the sheet first opened. */
+  private readonly _snapCardForReducedMotion = effect(() => {
+    this.CardLayout();
+    this._card().Node.SnapLayout = PrefersReducedMotion(this._doc);
+  });
 
   private _body: Jiv | null = null;
   /** What the sheet's fields report typing into. */
