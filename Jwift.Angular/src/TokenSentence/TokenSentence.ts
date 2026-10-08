@@ -39,12 +39,18 @@ import {
 
 export type { SentenceToken, SentenceTokenKind };
 
-interface _KindStyle { readonly Ink: string; readonly Weight: number; readonly Underline: string | null; }
+/** A label's level on glass (Jwift.Glass.jss's vibrancy scale): its ink is the level's, over whatever glass it sits on. */
+type _LabelLevel = 'JwiftLabelVibrancy' | 'JwiftSecondaryLabelVibrancy';
 
-/** Every kind's ink, weight and full strength underline; at rest the underline is `UnderlineOf`'s (lane PP2, item 5). */
+interface _KindStyle { readonly Ink: string | _LabelLevel; readonly Weight: number; readonly Underline: string | null; }
+
+/** Every kind's ink, weight and full strength underline; at rest the underline is `UnderlineOf`'s (lane PP2, item 5).
+ *  Drill Sentences lane WW1: a word's ink is Apple's label level, a quiet word's the secondary level, from the one
+ *  vibrancy scale every label on glass takes, so "32 counts" reads the same on the sheet, in a menu and in a toast. A
+ *  role's ink (the gold of a playing step or an open control, a problem's red) stands as a colour. */
 const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
-  Text:        { Ink: '@Ink',     Weight: 400, Underline: null },
-  Quiet:       { Ink: '@InkSoft', Weight: 400, Underline: null },
+  Text:        { Ink: 'JwiftLabelVibrancy',     Weight: 400, Underline: null },
+  Quiet:       { Ink: 'JwiftSecondaryLabelVibrancy', Weight: 400, Underline: null },
   // Drill Sentences lane W2, item 6 (a persistent, quiet editability cue): the first-run hint only ever
   // glows once; after that, a neutral `@Line` hairline was the ONLY remaining signal that a word is
   // tappable, and it reads identically to a stray rule drawn for any other reason. Every TAPPABLE kind's
@@ -53,7 +59,7 @@ const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
   // `Problem` keeps its own `@Danger` underline below -- that one is a different signal (something here
   // needs fixing), not "this is editable", and must not be diluted into the same quiet accent as everything
   // else.
-  Word:        { Ink: '@Ink',     Weight: 400, Underline: '@AccentInkLine' },
+  Word:        { Ink: 'JwiftLabelVibrancy',     Weight: 400, Underline: '@AccentInkLine' },
   // Drill Sentences U1, item 5 (two first-time testers): "16 counts" is already ONE atom end to end — the
   // app's own `CountsText`/`lengthToken` (Render.ts) bake the number and its unit word into a single
   // token, and `TokenSentence.Layout.ts`'s own `_buildUnits` never splits a tappable kind, so the hit rect
@@ -63,28 +69,28 @@ const KIND_STYLE: Record<SentenceTokenKind, _KindStyle> = {
   // Value half ("forward" in "march forward") had the identical gap. Underlined now, matching Word --
   // the whole visible run (number AND unit, or verb AND value) reads as one continuous tappable phrase,
   // never half of it looking like inert text.
-  Value:       { Ink: '@Ink',     Weight: 600, Underline: '@AccentInkLine' },
+  Value:       { Ink: 'JwiftLabelVibrancy',     Weight: 600, Underline: '@AccentInkLine' },
   // Who ("1a", a squad name) is exactly as tappable as a move word — it opens WhoChooser — and carried
   // the identical gap Value did before item 5: bold ink, no underline, nothing that reads as "tap me"
   // once the one-time glow has passed. Same fix, same reasoning.
-  Who:         { Ink: '@Ink',     Weight: 700, Underline: '@AccentInkLine' },
+  Who:         { Ink: 'JwiftLabelVibrancy',     Weight: 700, Underline: '@AccentInkLine' },
   // A word still waiting on the director's input ("along a path", no path drawn yet): the soft ink of a
   // placeholder, Apple's secondary label, bold enough to stand out, with the accent underline every tappable
   // word wears. Drill Sentences lane HH2, item 7 (a round 12 blind tester: at the end of a playback "along a
   // path" stayed gold): it used to stand in gold, the very ink the playing step's words wear (`NowGroup`), so
   // a placeholder in the last step read as the highlight left behind once the playback stopped. Gold ink on a
   // sentence word means one thing now: the step playing, or the word whose control is open.
-  Placeholder: { Ink: '@InkSoft', Weight: 600, Underline: '@AccentInkLine' },
+  Placeholder: { Ink: 'JwiftSecondaryLabelVibrancy', Weight: 600, Underline: '@AccentInkLine' },
   // The mirror pair's own icon (Render.ts's `Icon: 'arrow.left.and.right'`) tints the SAME as the "who"
   // tokens either side of it, not the softer ink the bare glyph used to carry -- the pair reads as one
   // unit, "1a ⇄ 1b", not an accent between two names.
-  Mirror:      { Ink: '@Ink',     Weight: 600, Underline: null },
+  Mirror:      { Ink: 'JwiftLabelVibrancy',     Weight: 600, Underline: null },
   Problem:     { Ink: '@Danger',  Weight: 700, Underline: '@Danger' },
   // Drill Sentences lane X3, item 6: a quiet tappable word inside otherwise quiet text (a caption's own
   // "5 problems"). It keeps the caption's soft ink and regular weight, so the caption still reads as a
   // caption, and wears the same accent underline every other tappable word does, so it reads as one.
-  Link:        { Ink: '@InkSoft', Weight: 400, Underline: '@AccentInkLine' },
-  Badge:       { Ink: '@InkSoft', Weight: 600, Underline: null },
+  Link:        { Ink: 'JwiftSecondaryLabelVibrancy', Weight: 400, Underline: '@AccentInkLine' },
+  Badge:       { Ink: 'JwiftSecondaryLabelVibrancy', Weight: 600, Underline: null },
 };
 
 /**
@@ -162,10 +168,10 @@ const ADD_KEY = '\u0000add';
     }
     @for (t of _textPieces(); track t.Key) {
       @if (t.Tappable) {
-        <jext class="Jwift_TokenSentenceWord Jwift_TokenSentenceTextHit" [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout"
+        <jext [class]="t.Class + ' Jwift_TokenSentenceTextHit'" [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout"
               semantics="Button" [label]="t.Label" (click)="_onMirrorActivate(t.TokenKey)" />
       } @else {
-        <jext class="Jwift_TokenSentenceWord" [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout" />
+        <jext [class]="t.Class" [text]="t.Text" [textStyle]="t.TextStyle" [childLayout]="t.Layout" />
       }
     }
     @for (add of _add(); track add.Key) {
@@ -439,7 +445,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     const fs = this.FontSizePt();
     const lh = this.LineHeightPt();
     const out: {
-      Key: string; Text: string; TextStyle: Record<string, unknown>; Layout: Record<string, unknown>;
+      Key: string; Class: string; Text: string; TextStyle: Record<string, unknown>; Layout: Record<string, unknown>;
       Tappable: boolean; TokenKey: string; Label: string;
     }[] = [];
     // Round 14, live (phone): words blanked out for a frame or more while dragging the sheet between
@@ -476,8 +482,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       const s = state.get(token.Key);
       const tappable = IsTappable(token.Kind);
       const inNowGroup = token.Group !== null && token.Group !== undefined && token.Group === nowGroup;
-      let ink = style.Ink;
+      let ink: string = style.Ink;
       if (tappable && (s?.Open || inNowGroup) && token.Kind !== 'Problem') ink = '@GoldInk';
+      // A label level is a class whose white ink its vibrancy carries; a role's ink is a colour.
+      const level = ink.startsWith('Jwift') ? ink : null;
       // An icon token (today, only the mirror pair's "⇄") draws a JwiftIcons glyph instead of the piece's
       // own text -- resolved here, at paint time, same as `<icon>` itself resolves a name
       // (`Icon.ts`'s own `IconData[name.toLowerCase()]`), so this pure-text piece list stays the single
@@ -496,6 +504,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       }
       out.push({
         Key: keys[pieceIndex],
+        Class: level ? `Jwift_TokenSentenceWord ${level}` : 'Jwift_TokenSentenceWord',
         Text: pieceText,
         TextStyle: {
           // Base stack only -- Jaui's own ApplyTextStyle (Text.Measure.ts) extends this with the CJK
@@ -516,7 +525,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
           // ratio below draws the identical line box (`lh` pt, the glyph still centered in it) at a raster
           // one line tall.
           LineHeight: `${lh / pieceSize}`,
-          Color: ink,
+          Color: level ? 'rgb(255, 255, 255)' : ink,
           FontVariantNumeric: fontVariantNumeric,
           // Jack, live (round 12): a bold atom's own ink can run past its measured advance width right
           // at a wrapped row's own edge -- the whole reason this piece's own box (below) is wider than

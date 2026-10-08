@@ -406,7 +406,9 @@ describe('LandPieces: a change of words lands at once, no word ever drawn over a
       expect(block, cls).toMatch(/Opacity:\s*Presence \* \(1 - Exiting\)/);
       expect(block, cls).toMatch(/@Transition Opacity \{ Duration: 0ms/);
     }
-    expect((ts.match(/<jext class="[^"]*Jwift_TokenSentenceWord/g) ?? []).length).toBe(2);
+    // Lane WW1: both words wear the word class, with their label level, through `t.Class`.
+    expect((ts.match(/<jext \[class\]="t\.Class[^"]*"/g) ?? []).length).toBe(2);
+    expect(ts).toContain("Class: level ? `Jwift_TokenSentenceWord ${level}` : 'Jwift_TokenSentenceWord',");
     expect(ts).toContain('word.Node.SnapText = true');
     expect(ts).toMatch(/LandPieces\(this\._landings, spots, changed\)/);
   });

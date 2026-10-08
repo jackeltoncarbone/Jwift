@@ -90,7 +90,7 @@ describe('the popover wears it', () => {
 
   it('a submenu\'s page cross fades inside the same glass', () => {
     for (const cls of ['Jwift_PopoverMenuItem', 'Jwift_PopoverMenuBack', 'Jwift_PopoverMenuHeader', 'Jwift_PopoverMenuSeparator', 'Jwift_PopoverMenuNote']) {
-      expect(MENU_JSS, cls).toMatch(new RegExp(`^${cls} : Jwift_PopoverMenuPageFade \\{`, 'm'));
+      expect(MENU_JSS, cls).toMatch(new RegExp(`^${cls} : Jwift_PopoverMenuPageFade(, \\w+)? \\{`, 'm'));
     }
     expect(MENU_JSS).toMatch(/^Jwift_PopoverMenuPageFade \{\n  Opacity: Presence\n/m);
   });

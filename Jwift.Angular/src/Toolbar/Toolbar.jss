@@ -77,21 +77,19 @@ Jwift_ToolbarTrailing {
 // for back buttons. Consumer toolbars apply this directly so they don't
 // have to re-declare the icon font / size / color per page.
 
-Jwift_ToolbarBackGlyph {
+Jwift_ToolbarBackGlyph : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 14pt
   FontWeight: 600
-  Color: @Ink
   TextAlign: Center
 }
 
 // Toolbar title text. 15pt semibold matches the iOS 26 navigation-title
 // scrolled state. Consumers can override per page via their own JSS.
-Jwift_ToolbarTitle {
+Jwift_ToolbarTitle : JwiftLabelVibrancy {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 600
-  Color: @Ink
   LetterSpacing: -0.05pt
   // `Start` is a CSS logical keyword, not a JSS TextAlign — it was dropped and
   // the title fell back to the default, Left. Same result, stated legally.

@@ -352,11 +352,10 @@ Jwift_GlassDropdownItem_Disabled : Jwift_GlassDropdownItem {
 // `FlexShrink: 0` a row short on space (every problem row routinely is, before the label-wrap fix above)
 // shrinks EVERY flexible child to make room, icon included -- `Jwift_GlassDropdownItemCheck`, this
 // column's own sibling, already carries the same `FlexShrink: 0` this one was missing.
-Jwift_GlassDropdownItemIcon {
+Jwift_GlassDropdownItemIcon : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 17pt
   FontWeight: 400
-  Color: @Ink
   TextAlign: Center
   Width: 40pt
   FlexShrink: 0
@@ -383,11 +382,10 @@ Jwift_GlassDropdownItemIcon {
 // Held by `ShowStudio.App/src/Design/MenuInk.Conformance.spec.ts`: menu rows uniform, confirm plate red.
 // A toggle's state, as UIMenu draws `.on`: a checkmark leading the row, in the label's ink, a step bolder.
 // A row that is off keeps the column empty so every row's glyph and label stay on one line.
-Jwift_GlassDropdownItemCheck {
+Jwift_GlassDropdownItemCheck : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 15pt
   FontWeight: 700
-  Color: @Ink
   TextAlign: Center
   Width: 16pt
   FlexShrink: 0
@@ -397,7 +395,6 @@ Jwift_GlassDropdownItemCheck_Off : Jwift_GlassDropdownItemCheck {
 }
 
 Jwift_GlassDropdownItemIcon_Destructive : Jwift_GlassDropdownItemIcon {
-  Color: @Ink
 }
 
 // Fed by `[image]`, which is Cover-fit: the sugar in Jaui's Jiv.ts writes
@@ -416,11 +413,10 @@ Jwift_GlassDropdownItemImage {
 // convention). `FlexGrow: 1` claims the row's own remaining width after the fixed icon/check columns
 // (their own `FlexShrink: 0`, above) instead of asking for its full intrinsic (one-line) width and
 // forcing every sibling to shrink around it.
-Jwift_GlassDropdownItemLabel {
+Jwift_GlassDropdownItemLabel : JwiftLabelVibrancy {
   FontFamily: Inter
   FontSize: 17pt
   FontWeight: 400
-  Color: @Ink
   LetterSpacing: 0pt
   TextAlign: Left
   MaxLines: 2
@@ -438,7 +434,6 @@ Jwift_GlassDropdownItemLabel_Back : Jwift_GlassDropdownItemLabel {
 }
 
 Jwift_GlassDropdownItemLabel_Destructive : Jwift_GlassDropdownItemLabel {
-  Color: @Ink
 }
 
 // A section title in a menu, as UIKit's `_UIContextMenuHeaderView` draws it (Apple/Sizing.md section 4):

@@ -67,11 +67,10 @@ Jwift_ContextMenuItem_Disabled:Hover {
   Background: rgba(0, 0, 0, 0)
 }
 
-Jwift_ContextMenuItemLabel {
+Jwift_ContextMenuItemLabel : JwiftLabelVibrancy {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 500
-  Color: @Ink
   FlexGrow: 1
   FlexShrink: 1
   MinWidth: 0pt
@@ -95,7 +94,6 @@ Jwift_ContextMenuItemLabel {
 //
 // Held by `ShowStudio.App/src/Design/MenuInk.Conformance.spec.ts`: menu rows uniform, confirm plate red.
 Jwift_ContextMenuItemLabel_Destructive : Jwift_ContextMenuItemLabel {
-  Color: @Ink
 }
 
 Jwift_ContextMenuItemIcon : JwiftSecondaryLabelVibrancy {

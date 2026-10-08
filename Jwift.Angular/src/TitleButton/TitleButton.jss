@@ -27,11 +27,10 @@ Jwift_TitleButtonLabel {
   MinWidth: 0
 }
 
-Jwift_TitleButtonChevron {
+Jwift_TitleButtonChevron : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 9pt
   FontWeight: 700
-  Color: @InkSoft
   TextAlign: Center
   FlexShrink: 0
 }

@@ -91,11 +91,10 @@ Jwift_MediaTransportBtnPrimary_Compact {
   BorderRadius: 22pt
 }
 
-Jwift_MediaTransportGlyph {
+Jwift_MediaTransportGlyph : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 28pt
   FontWeight: 500
-  Color: @Ink
 }
 Jwift_MediaTransportGlyph_Compact {
   FontSize: 20pt
@@ -107,11 +106,10 @@ Jwift_MediaTransportGlyph_Compact {
 // it is the only FontWeight:900 anywhere in the icon system (every other icon in the app, including this
 // same class's own side glyphs, sits at 400-500). Matched to the side glyphs' own 500 -- the emphasis the
 // spec wants ("larger, about 28pt glyph") already comes from FontSize alone, which this keeps.
-Jwift_MediaTransportGlyphPrimary {
+Jwift_MediaTransportGlyphPrimary : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 32pt
   FontWeight: 500
-  Color: @Ink
 }
 Jwift_MediaTransportGlyphPrimary_Compact {
   FontSize: 28pt

@@ -175,11 +175,10 @@ Jwift_SheetBar {
   PointerEvents: None
 }
 // The xmark and the checkmark: label ink, about 16.5 pt of ink in the 44 pt circle [I].
-Jwift_SheetBarGlyph {
+Jwift_SheetBarGlyph : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 17pt
   FontWeight: 400
-  Color: @Ink
   TextAlign: Center
 }
 Jwift_SheetBarSpacer {
@@ -200,13 +199,12 @@ Jwift_SheetTitleBox {
   Align: Stretch
 }
 // The inline title: 17 pt semibold [I], one line, truncated between the buttons.
-Jwift_SheetTitle {
+Jwift_SheetTitle : JwiftLabelVibrancy {
   UserSelect: None
   FontFamily: Inter
   FontSize: 17pt
   FontWeight: 600
   LetterSpacing: -0.2pt
-  Color: @Ink
   TextAlign: Center
   MaxLines: 1
   TextOverflow: Ellipsis
@@ -276,14 +274,15 @@ Jwift_SheetAskRow : JwiftPress {
   Interactive: true
   Cursor: Pointer
 }
-Jwift_SheetAskLabel {
+Jwift_SheetAskLabel : JwiftLabelVibrancy {
   UserSelect: None
   FontFamily: Inter
   FontSize: 17pt
   FontWeight: 400
-  Color: @Ink
   MaxLines: 1
 }
 Jwift_SheetAskLabel_Destructive : Jwift_SheetAskLabel {
   Color: @Danger
+  // A role ink, so no vibrancy over it: the base label level is vibrancy (Jwift.Glass.jss).
+  TextFilter: None
 }

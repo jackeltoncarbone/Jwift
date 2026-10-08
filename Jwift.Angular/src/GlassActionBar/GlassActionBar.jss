@@ -39,11 +39,10 @@ Jwift_GlassActionGlyph_Warn {
 // The disclosure chevron beside a single-cell expandable pill's glyph (the "menu button" tell — View and
 // any future group that always opens a menu). Sits beside the glyph inside the same 44pt cell; small and
 // soft so it reads as an accessory to the glyph, not a second action.
-Jwift_GlassDropdownCellChevron {
+Jwift_GlassDropdownCellChevron : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 10pt
   FontWeight: 700
-  Color: @Ink
   Opacity: 0.6
   TextAlign: Center
 }
@@ -59,13 +58,12 @@ Jwift_GlassDropdownCell_Titled {
 }
 // The name itself: the toolbar's own ink, a size under the title, one line. Opacity: 1, so it fades with its
 // cell and never a step behind it (Jwift_GlassActionGlyph's own note).
-Jwift_GlassActionTitle {
+Jwift_GlassActionTitle : JwiftLabelVibrancy {
   UserSelect: None
   PointerEvents: None
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 600
-  Color: @Ink
   MaxLines: 1
   Opacity: 1
 }
@@ -143,14 +141,13 @@ Jwift_GlassActionTipPill : JwiftPanelGlass {
   PointerEvents: None
   Opacity: 1
 }
-Jwift_GlassActionTipText {
+Jwift_GlassActionTipText : JwiftLabelVibrancy {
   UserSelect: None
   PointerEvents: None
   FontFamily: Inter
   FontSize: 12pt
   FontWeight: 500
   LineHeight: 1.3
-  Color: @Ink
   TextAlign: Center
   MaxLines: 2
   FlexShrink: 1

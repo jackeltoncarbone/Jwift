@@ -8,11 +8,10 @@ Jwift_NumberField {
   Width: 100%
 }
 
-Jwift_NumberFieldHeader {
+Jwift_NumberFieldHeader : JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 500
-  Color: @InkSoft
   Padding: 10pt 14pt 4pt 14pt
   MaxLines: 1
 }
@@ -47,11 +46,10 @@ Jwift_NumberFieldSegItem_On : Jwift_NumberFieldSegItem {
   ShadowBlur: 8pt
   ShadowOffsetY: 3pt
 }
-Jwift_NumberFieldSegLabel {
+Jwift_NumberFieldSegLabel : JwiftLabelVibrancy {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 500
-  Color: @Ink
   MaxLines: 1
 }
 Jwift_NumberFieldSegLabel_On : Jwift_NumberFieldSegLabel {
@@ -104,11 +102,10 @@ Jwift_NumberFieldTag {
   BorderRadius: 9pt
   Padding: 2pt 7pt
 }
-Jwift_NumberFieldMain {
+Jwift_NumberFieldMain : JwiftLabelVibrancy {
   FontFamily: Inter
   FontSize: 22pt
   FontWeight: 500
-  Color: @Ink
   TextAlign: Center
   MinWidth: 44pt
 }
@@ -118,21 +115,21 @@ Jwift_NumberFieldSubCell {
   Justify: Start
   Align: Center
 }
-Jwift_NumberFieldSub {
+Jwift_NumberFieldSub : JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 400
-  Color: @InkSoft
 }
 Jwift_NumberFieldSub_Over {
   Color: @Danger
+  // A role ink, so no vibrancy over it: the base label level is vibrancy (Jwift.Glass.jss).
+  TextFilter: None
 }
 
-Jwift_NumberFieldFoot {
+Jwift_NumberFieldFoot : JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 400
-  Color: @InkSoft
   TextAlign: Center
   Padding: 4pt 14pt 10pt 14pt
   Width: 100%

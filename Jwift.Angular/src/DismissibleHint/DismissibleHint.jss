@@ -21,12 +21,11 @@ Jwift_DismissibleHintGlyph {
   Color: @GoldInk
   FlexShrink: 0
 }
-Jwift_DismissibleHintLabel {
+Jwift_DismissibleHintLabel : JwiftLabelVibrancy {
   UserSelect: None
   FontFamily: Inter
   FontSize: 14pt
   FontWeight: 600
-  Color: @Ink
   FlexGrow: 1
   FlexShrink: 1
   Overflow: Hidden
@@ -53,9 +52,8 @@ Jwift_DismissibleHintDrop {
   AlignSelf: Center
   FlexShrink: 0
 }
-Jwift_DismissibleHintDropGlyph {
+Jwift_DismissibleHintDropGlyph : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 13pt
   FontWeight: 700
-  Color: @InkSoft
 }

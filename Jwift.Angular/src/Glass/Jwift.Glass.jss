@@ -28,7 +28,14 @@
 //                                                                 (Jaui Core/Glass.md, content vibrancy)
 //   secondary label  141 / 0.6             36 / 0.6               (235, 235, 245) / (60, 60, 67) at 0.6
 //   tertiary label   70 / 0.3              18 / 0.3               (235, 235, 245) / (60, 60, 67) at 0.3
+//   quaternary label 37 / 0.16             11 / 0.18              (235, 235, 245) at 0.16 / (60, 60, 67) at 0.18
 //   separator        33 / 0.13             -2 / 0.11              macOS widget and menu separators [I]
+//
+// ONE SCALE FOR EVERY LABEL ON GLASS (Drill Sentences lane WW1). A label on a panel, a menu, a toast or a bar names its
+// level by extending one of the classes below and states no ink of its own: a white or grey of its own reads differently
+// on every glass it lands on, where a level reads the same over the one panel glass (JwiftPanelGlass) everywhere. A
+// role's ink (gold, a problem's red, a prominent face's) stands as a colour and states `TextFilter: None`.
+// ShowStudio.App's Design/PanelGlass.Conformance.spec.ts holds the editor's labels and Jwift's surfaces to it.
 @JwiftVibrancyLabel: 242 * @Dark
 @JwiftVibrancyLabelCover: 0.95 * @Dark + 1 * @Light
 @JwiftVibrancySecondaryLabelDark: 141
@@ -36,6 +43,8 @@
 @JwiftVibrancySecondaryLabelCover: 0.6
 @JwiftVibrancyTertiaryLabel: 70 * @Dark + 18 * @Light
 @JwiftVibrancyTertiaryLabelCover: 0.3
+@JwiftVibrancyQuaternaryLabel: 37 * @Dark + 11 * @Light
+@JwiftVibrancyQuaternaryLabelCover: 0.16 * @Dark + 0.18 * @Light
 @JwiftVibrancySeparator: 33 * @Dark - 2 * @Light
 @JwiftVibrancySeparatorCover: 0.13 * @Dark + 0.11 * @Light
 // The levels as classes, one per Apple level, so every vibrant label and separator names its level once.
@@ -57,6 +66,10 @@ JwiftSecondaryLabelVibrancyOnArt {
 JwiftTertiaryLabelVibrancy {
   Color: rgb(255, 255, 255)
   TextFilter: Vibrancy(@JwiftVibrancyTertiaryLabel, @JwiftVibrancyTertiaryLabelCover)
+}
+JwiftQuaternaryLabelVibrancy {
+  Color: rgb(255, 255, 255)
+  TextFilter: Vibrancy(@JwiftVibrancyQuaternaryLabel, @JwiftVibrancyQuaternaryLabelCover)
 }
 // UIKit's isEnabled = false: the control stays in place, dimmed, and inert. Bind the jiv's [disabled] (Jaui's
 // reserved Disabled state stops pointer dispatch, hover and press) and add JwiftControl beside its own class.
@@ -89,9 +102,11 @@ JwiftSeparatorVibrancy {
 //   fill             dark +30 (the selected Liquid Glass tab)             light -20
 //   secondary fill   dark +18 (the three resting sites, 16.7 / 18 / 19.7) light -12
 //   tertiary fill    half the secondary: a field at rest
+//   quaternary fill  half the tertiary, iOS's 0.18 against its tertiary 0.24 and secondary 0.32 rounded to halves
 @JwiftVibrancyFill: 30 * @Dark - 20 * @Light
 @JwiftVibrancySecondaryFill: 18 * @Dark - 12 * @Light
 @JwiftVibrancyTertiaryFill: 0.5 * @JwiftVibrancySecondaryFill
+@JwiftVibrancyQuaternaryFill: 0.5 * @JwiftVibrancyTertiaryFill
 // The PRESS is DERIVED, not measured: Apple publishes no press. It is @PressFill's alpha x (255 - ground)
 // on the app's grounds (dark 26, light 15): 0.22 x 229 = 50.4 and 0.12 x 240 = 28.8. Kept apart from the
 // fill so a press reads a clear step past a selection.

@@ -20,11 +20,10 @@ Jwift_PopoverMenuScroll {
   Align: Stretch
 }
 
-Jwift_PopoverMenuHeader : Jwift_PopoverMenuPageFade {
+Jwift_PopoverMenuHeader : Jwift_PopoverMenuPageFade, JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 500
-  Color: @InkSoft
   Padding: 10pt 14pt 4pt 14pt
 }
 
@@ -89,11 +88,10 @@ Jwift_PopoverMenuCheck {
   Justify: Center
   Align: Center
 }
-Jwift_PopoverMenuCheckGlyph {
+Jwift_PopoverMenuCheckGlyph : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 16pt
   FontWeight: 700
-  Color: @Ink
 }
 
 Jwift_PopoverMenuLabelCol {
@@ -103,31 +101,27 @@ Jwift_PopoverMenuLabelCol {
   FlexGrow: 1
   MinWidth: 0pt
 }
-Jwift_PopoverMenuLabel {
+Jwift_PopoverMenuLabel : JwiftLabelVibrancy {
   FontFamily: Inter
   FontSize: 17pt
   FontWeight: 400
-  Color: @Ink
 }
-Jwift_PopoverMenuCaption {
+Jwift_PopoverMenuCaption : JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 400
-  Color: @InkSoft
 }
-Jwift_PopoverMenuDetail {
+Jwift_PopoverMenuDetail : JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 400
-  Color: @InkSoft
   MaxLines: 1
   FlexShrink: 0
 }
-Jwift_PopoverMenuChevron {
+Jwift_PopoverMenuChevron : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 14pt
   FontWeight: 400
-  Color: @InkSoft
   FlexShrink: 0
 }
 
@@ -137,10 +131,9 @@ Jwift_PopoverMenuSeparator : Jwift_PopoverMenuPageFade {
   Margin: 5pt 14pt
 }
 
-Jwift_PopoverMenuNote : Jwift_PopoverMenuPageFade {
+Jwift_PopoverMenuNote : Jwift_PopoverMenuPageFade, JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 400
-  Color: @InkSoft
   Padding: 10pt 14pt 8pt 14pt
 }

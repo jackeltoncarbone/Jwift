@@ -29,26 +29,23 @@ Jwift_SortableSectionHeader {
 Jwift_SortableSectionHeader_Drop {
   Background: @GoldWash
 }
-Jwift_SortableSectionHeaderGlyph {
+Jwift_SortableSectionHeaderGlyph : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 14pt
   FontWeight: 400
-  Color: @InkSoft
   Width: 16pt
   TextAlign: Center
 }
-Jwift_SortableSectionHeaderTitle {
+Jwift_SortableSectionHeaderTitle : JwiftLabelVibrancy {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 600
-  Color: @Ink
   FlexGrow: 1
 }
-Jwift_SortableSectionHeaderCount {
+Jwift_SortableSectionHeaderCount : JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 15pt
   FontWeight: 400
-  Color: @InkSoft
   FontVariantNumeric: TabularNums
 }
 
