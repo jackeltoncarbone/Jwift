@@ -89,9 +89,12 @@ Jwift_SheetCard_Inspector : Jwift_SheetCard {
 // Glass at every height (Jack's departure, 2026-09-28, from Apple's opaque background above half way to full
 // height [C]): the card's own material never turns into a flat gray plate; `Sheet.ts`'s `Jwift_SheetFace`
 // carries the "gradually becoming opaque" read instead, over glass that stays glass. The material is the one
-// every panel and menu wears (JwiftPanelGlass, Jwift.Glass.jss: its tint, and the heavier frost a large panel
-// reads with past the Automatic ceiling a control keeps). The sheet's subvariant drops the outer refraction and
-// the edge bleed's reach and keeps the drop shadow (Apple/Sheets.md) [C].
+// every panel and menu wears (JwiftPanelGlass, Jwift.Glass.jss), which is Apple's bare regular glass stated
+// nowhere else: a sheet is simply large, and Apple's own size laws (LiquidGlass.md 2, 3.2, 3.5) already make
+// large glass thicker and its shadow deeper on their own account, the mechanism a big panel reads as one by,
+// not a tint or an extra frost authored on top of it (Drill Sentences lane ZZ1; ShowStudio.Documentation
+// AppleConformance.md). The sheet's subvariant drops the outer refraction and the edge bleed's reach and keeps
+// the drop shadow (Apple/Sheets.md) [C].
 Jwift_SheetGlass : JwiftPanelGlass {
   GlassOuterRefraction: None
   GlassBleed: None

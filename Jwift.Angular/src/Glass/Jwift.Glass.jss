@@ -197,27 +197,30 @@ JwiftClearGlass : JwiftGlass {
 }
 
 // ── JwiftPanelGlass ─────────────────────────────────────────────────
-// THE ONE PANEL MATERIAL. Every panel, bar, sheet, menu, popover and notice wears this and states none of its
-// optics: the same tint, frost, rim and shadow on every one of them, on a phone and a desktop alike. A control (a
-// glass button, a chip, a closed pill) stays JwiftGlass, Apple's bare regular glass at a control's size.
+// THE ONE PANEL MATERIAL, AND IT IS APPLE'S (Drill Sentences lane ZZ1). Every panel, bar, sheet, menu, popover
+// and notice wears this, and it states nothing of its own: the same bare regular glass the toolbar wears, sized
+// by its own S, nothing more. A control (a glass button, a chip, a closed pill) is already JwiftGlass at a
+// control's size; a panel is JwiftGlass at a panel's size, and that is the whole difference.
 //
-// Jack, reviewing the drill editor: "panels that are so not transparent that they appear gray on the phone, but they
-// look fine on desktop. And I see inconsistencies in tint between panels now." Five surfaces had each picked a tint
-// seed: the list panel 0.55 of the theme's grey, the phone's sheet, the menus and the toasts 0.78, the selection bar
-// 0.9, the player none, the pinned heading 0.55 over a 30pt frost. A tint seed at alpha a replaces a of the lensed
-// field with a near constant grey (Jaui Jiv.Panel.frag, `.tint(color)`), so at 0.78 and 0.9 nothing of the field was
-// left and the panel read as a flat grey plate. The seed is now the theme's one `@PanelGlass` (Theme.Tokens.ts), the
-// list panel's own, the one Jack saw the field through.
+// THE PRIOR LANE'S FIX WAS THE WRONG FIX. Lane WW1 (and OO2's heavier frost after it) answered "panels read
+// inconsistent, and a field's lines show through" by layering a tint seed (`@PanelGlass`, 0.55 to 0.9 alpha
+// across five surfaces) and a flat 10pt blur over Apple's model: `GlassFrost: Automatic` plus `GlassBlur:
+// 10pt` past Apple's 4pt ceiling for large glass flattened the lens, the rim, the edge bleed and the vibrancy
+// into a tinted frosted slab, on every panel, the player, the phone sheet, menus, popovers, toasts, the
+// selection bar, chips, the hint card, tooltips and the confirm alert. The owner, looking at the toolbar beside
+// all of it: "The toolbar glass looks correct and everything else doesn't. The toolbar ones have Fresnel and
+// all the other glass effects... and the other ones are not even consistent with that." The toolbar never wore
+// this class; it wears plain `JwiftGlass`, which is why it alone looked right.
 //
-// The frost is the panel blur, past Apple's 4pt ceiling for large glass: a field's yard lines and a sentence's words
-// under a panel read as blurred colour, never as lines or words (Drill Sentences lane OO2, item 1). Apple's menus are
-// the same regular glass as its panels (Jaui Core/Glass.Jss.md, Menu), so there is no second variant.
-@JwiftPanelGlassBlur: 10pt
+// Apple's actual answer to "a big panel must stay legible over anything behind it" is already in
+// `LiquidGlass.md`'s size laws: `GlassBlur: Auto` already ramps 1.33 to 4pt by `u` (bigger glass, a little more
+// blur, same as the toolbar at its own size); the face matrix, the holding tone, the edge bleed and the adaptive
+// shadow (3.3 to 3.6) do the legibility work Apple built the material to do. None of that needs a second,
+// authored layer on top, and a panel sized larger than the toolbar already reads thicker and more legible than
+// the toolbar does, from the same unaltered pipeline — which is the whole point: every chrome surface now
+// resolves to the SAME glass parameters as the toolbar for its size, with no override anywhere
+// (`PanelGlass.Conformance.spec.ts`).
 JwiftPanelGlass : JwiftGlass {
-  Background: @PanelGlass
-  // Outside every scroll pocket, as UIKit's platter and its sheets are: the frost is the panel's wherever it opens.
-  GlassFrost: Automatic
-  GlassBlur: @JwiftPanelGlassBlur
 }
 // A panel within a panel (a list's pinned heading) is no control: it is the container's own glass, read from the same
 // plate under every glass, so it reads as the container itself rather than as a second layer.

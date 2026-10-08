@@ -288,13 +288,16 @@ Jwift_GlassDropdown_OpenBelow {
 //
 // :Active was also declared TWICE -- a second block already held these resting values, so someone had
 // started this fix and left both declarations standing, with merge order deciding which won. One now.
+// Drill Sentences lane ZZ1: the RESTING Background these cancel back to is JwiftPanelGlass's own now --
+// Apple's bare glass, no tint seed (JwiftPanelGlass no longer authors one) -- so what these restate moved
+// with it, from the retired `@PanelGlass` seed to the same transparent fill JwiftGlass itself rests at.
 Jwift_GlassDropdown_Open:Hover {
-  Background: @PanelGlass
+  Background: rgba(0, 0, 0, 0)
   BackdropFilter: None
   RimStrength: @JwiftRimStrength
 }
 Jwift_GlassDropdown_Open:Active {
-  Background: @PanelGlass
+  Background: rgba(0, 0, 0, 0)
   BackdropFilter: None
   RimStrength: @JwiftRimStrength
 }
