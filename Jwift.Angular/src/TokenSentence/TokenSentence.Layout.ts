@@ -462,12 +462,24 @@ export function LayoutSentence(
   // share of the gaps either side made it the target a click on the name found. A mirror mark is hit only on its own
   // glyph across the row (`Tight`): the names beside it reach to its edges, so the space around it is theirs, and the
   // mark takes no more than its own box and the touch target's height.
-  interface _RowEntry { readonly Left: number; readonly Right: number; readonly Tight: boolean; readonly Tappable: boolean; }
+  interface _RowEntry {
+    readonly Left: number; readonly Right: number; readonly Tight: boolean; readonly Tappable: boolean;
+    /** The "+" itself (Drill Sentences lane AE1, item 1: a round 29 blind phone tester's tap on "+" opened the LAST
+     *  WORD's own control instead — a short final token, e.g. "...8", directly against "+"). Every OTHER entry's
+     *  `wantLeft`/`wantRight` deficit assumes a narrow neighbour can top itself up for free from a blank trailing
+     *  margin once it is the row's own freeEnd (`hitOf`'s own `!next` branch) — true for an ordinary last WORD,
+     *  false for "+": its own hit is a fixed pad around a fixed glyph, never re-padded from outside this function,
+     *  so treating it as "wants nothing, give the neighbour everything" handed a short last word the "+"'s whole
+     *  pad, down to its bare glyph. `IsAdd` instead keeps this one gap at the plain midpoint of the two DRAWN edges
+     *  (`meet`'s own early return below) regardless of either side's deficit — a tap on or nearer the "+" glyph
+     *  resolves to "+", a tap on or nearer the word resolves to the word, the one rule the fix is written against. */
+    readonly IsAdd: boolean;
+  }
   const rowEntries = new Map<number, _RowEntry[]>();
-  const pushRowEntry = (row: number, left: number, right: number, tight = false, tappable = false): void => {
+  const pushRowEntry = (row: number, left: number, right: number, tight = false, tappable = false, isAdd = false): void => {
     const list = rowEntries.get(row);
-    if (list) list.push({ Left: left, Right: right, Tight: tight, Tappable: tappable });
-    else rowEntries.set(row, [{ Left: left, Right: right, Tight: tight, Tappable: tappable }]);
+    if (list) list.push({ Left: left, Right: right, Tight: tight, Tappable: tappable, IsAdd: isAdd });
+    else rowEntries.set(row, [{ Left: left, Right: right, Tight: tight, Tappable: tappable, IsAdd: isAdd }]);
   };
   // An icon token (the mirror mark) carries empty text but real width: it is visible content, so it is a
   // neighbour like any word, never mistaken for the whitespace the rule above leaves out.
@@ -477,7 +489,7 @@ export function LayoutSentence(
     const kind = tokens[piece.TokenIndex]?.Kind;
     pushRowEntry(piece.Row, piece.X, piece.X + piece.Width, kind === 'Mirror', !!kind && IsTappable(kind));
   }
-  if (add) pushRowEntry(add.Row, add.X, add.X + add.Width);
+  if (add) pushRowEntry(add.Row, add.X, add.X + add.Width, false, false, true);
   // Lane XX2, item 3: a row's first and last entries stand at its free ends, where a narrow word takes its least.
   const freeStart = new Set<_RowEntry>();
   const freeEnd = new Set<_RowEntry>();
@@ -505,6 +517,10 @@ export function LayoutSentence(
   const meet = (a: _RowEntry, b: _RowEntry): { readonly ARight: number; readonly BLeft: number } => {
     let aRight = a.Tight ? a.Right : b.Tight ? b.Left : (a.Right + b.Left) / 2;
     let bLeft = b.Tight ? b.Left : a.Tight ? a.Right : (a.Right + b.Left) / 2;
+    // The "+" gap never grows past the plain midpoint either way (`IsAdd`'s own doc comment, `_RowEntry`): a
+    // neighbour's own deficit is real everywhere else, but not here, since the freeEnd clause below would
+    // otherwise read the "+" as having no want of its own and hand it the whole gap on either demand.
+    if (a.IsAdd || b.IsAdd) return { ARight: aRight, BLeft: bLeft };
     const aWant = freeStart.has(a) ? -Infinity : wantRight(a);
     const bWant = freeEnd.has(b) ? Infinity : wantLeft(b);
     aRight = Math.max(aRight, Math.min(aWant, b.Left));
@@ -531,7 +547,7 @@ export function LayoutSentence(
     const prev = selfIdx > 0 ? rowList[selfIdx - 1] : null;
     const next = selfIdx >= 0 && selfIdx < rowList.length - 1 ? rowList[selfIdx + 1] : null;
 
-    const self = selfIdx >= 0 ? rowList[selfIdx] : { Left: piece.X, Right: piece.X + piece.Width, Tight: false, Tappable: false };
+    const self = selfIdx >= 0 ? rowList[selfIdx] : { Left: piece.X, Right: piece.X + piece.Width, Tight: false, Tappable: false, IsAdd: false };
     // Lane UU3, item 5: a tight mark keeps to its own glyph beside a neighbour, and the neighbour reaches its edge (`meet`).
     let hitLeft = !prev ? Math.min(piece.X - FREE_PAD_X - PILL_PAD_X, wantLeft(self)) : meet(prev, self).BLeft;
     let hitRight = !next ? Math.max(piece.X + piece.Width + FREE_PAD_X + PILL_PAD_X, wantRight(self)) : meet(self, next).ARight;

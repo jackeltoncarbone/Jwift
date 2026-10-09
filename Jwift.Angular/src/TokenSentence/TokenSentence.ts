@@ -251,13 +251,16 @@ const ADD_KEY = '\u0000add';
 export class TokenSentence extends JivHost implements OnInit, OnDestroy {
   readonly Tokens = input<readonly SentenceToken[]>([]);
   readonly OpenKey = input<string | null>(null);
-  /** Drill Sentences U1, item 9 (a gentle first-run hint): the one token this sentence highlights as a
-   *  soft accent-wash pill — `_visiblePills`' own `Jwift_TokenSentencePill_Glow` class below, distinct
-   *  from `OpenKey`'s solid gold (that one means "its control is actually open"; this one means "look
-   *  here"). The PULSE itself (on, off, on, off) is the CALLER's own job, not this component's — it just
-   *  renders whatever `GlowKey` says RIGHT NOW; a caller wanting "pulse twice" toggles this input between
-   *  the target key and `null` on a timer (`EditorLine.ts`'s own `_glowPulseKey`), the same way any other
-   *  input here drives an animated style through nothing more than a changing value. */
+  /** Drill Sentences U1, item 9 (a gentle first-run hint): the one token this sentence points at as the hint's
+   *  target. Drill Sentences lane AE1, item 3 (blind testers, both devices: "mark time" wore a solid gold chip
+   *  while every other editable word was underlined, "same affordance, two looks") — this no longer paints a
+   *  pill of its own: `_underlines` below brings the glowing token's own underline to FULL strength instead,
+   *  the SAME underline every other word wears, never a second visual language for "look here." `OpenKey`'s
+   *  solid gold pill is unrelated and unchanged — that one means "its control is actually open," this one
+   *  means only "look here." The PULSE itself (on, off, on, off) is the CALLER's own job, not this
+   *  component's — it just renders whatever `GlowKey` says RIGHT NOW; a caller wanting "pulse twice" toggles
+   *  this input between the target key and `null` on a timer (`EditorLine.ts`'s own `_glowPulseKey`), the
+   *  same way any other input here drives an animated style through nothing more than a changing value. */
   readonly GlowKey = input<string | null>(null);
   readonly NowGroup = input<number | null>(null);
   readonly ShowAdd = input(false);
@@ -493,7 +496,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       }
       if (!IsTappable(token.Kind)) continue;
       const s = state.get(token.Key);
-      if (!s || !(s.Hover || s.Press || s.Open || s.Glow)) continue;
+      // Drill Sentences lane AE1, item 3: Glow no longer earns a pill of its own here — a REAL interaction
+      // state still does (the control is open, mid-press, or merely hovered); the hint's own "look here" is
+      // `_underlines`' job now, the same underline every word wears, brought to full strength.
+      if (!s || !(s.Hover || s.Press || s.Open)) continue;
       // Drill Sentences lane W2, item 1: a hairline gap between two tappable atoms that sit (almost)
       // touching — ja/zh glue a move's verb straight to its value with no space token between them —
       // so this pill never visually bleeds into the neighbour's own glyph. `layout.PillPads` (pure,
@@ -501,14 +507,10 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       // left/right edge can actually keep without crossing that neighbour's own half of the gap.
       const pad = layout.PillPads.find((p) => p.TokenIndex === piece.TokenIndex);
       const pill = PillRectOf(piece, this.FontSizePt(), this.LineHeightPt(), pad?.LeftPad, pad?.RightPad);
-      // Item 9: Glow is the lowest-priority, passive "look here" cue — any REAL interaction state (the
-      // control is open, mid-press, or merely hovered) always wins over it, same as it would mid-gesture
-      // on the very token the hint is pointing at.
       const cls = s.Open
         ? (token.Kind === 'Problem' ? 'Jwift_TokenSentencePill Jwift_TokenSentencePill_OpenProblem' : 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Open')
         : s.Press ? 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Press'
-          : s.Hover ? 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Hover'
-            : 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Glow';
+          : 'Jwift_TokenSentencePill Jwift_TokenSentencePill_Hover';
       // Item 6: no `:Row` here either — a tappable token is also an ATOM (one piece), so `token.Key` alone
       // already names it, and the same reflow-reorders-row remount this file's other two keys just lost
       // would otherwise flicker the hover/press/open/glow pill off a token nobody touched.
@@ -529,9 +531,13 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     for (const [pieceIndex, piece] of layout.Pieces.entries()) {
       const token = tokens[piece.TokenIndex];
       if (!token) continue;
-      const underline = UnderlineOf(token.Kind, KIND_STYLE[token.Kind].Underline, emphasis);
-      if (!underline) continue;
       const s = state.get(token.Key);
+      // Drill Sentences lane AE1, item 3 (blind testers, both devices: "mark time" wore a solid gold chip
+      // while every other editable word was underlined, "same affordance, two looks"). The first-run hint's
+      // glow is no longer a pill of its own (`_visiblePills`, above) — the glowing token's own underline
+      // goes to FULL strength instead, the SAME underline every other word wears, never a second look.
+      const underline = UnderlineOf(token.Kind, KIND_STYLE[token.Kind].Underline, s?.Glow ? 'Full' : emphasis);
+      if (!underline) continue;
       if (s?.Open) continue; // the pill says "active" instead.
       // Item 6: same fix as `_visiblePills`/`TextPieceKeys` — Underline tokens (Word/Value/Problem) are
       // also ATOMS, so `token.Key` alone is enough, and dropping `:Row` stops a reflow elsewhere in the

@@ -31,18 +31,12 @@ Jwift_TokenSentencePill_Open {
 Jwift_TokenSentencePill_OpenProblem {
   Background: @DangerWash
 }
-// Drill Sentences U1, item 9 (a gentle first-run hint): "one editable word... glows softly (a subtle
-// accent wash, pulsing gently twice)". A caller drives the pulse itself by toggling `GlowKey` between the
-// target key and null on a timer (TokenSentence.ts's own doc comment) — this pill only ever MOUNTS while
-// Glow is true, so each on/off leg rides the SAME Presence mount/unmount fade every other state-driven
-// pill here already gets (this file's own top comment: "rendered only while its state is not at rest"),
-// no separate keyframe animation needed. Live fix: an EXTRA Opacity on top of @GoldWash (already the
-// house's own "quiet accent tint" — Design/BrandFill.Conformance.spec.ts's own doc comment, distinct
-// from the stronger @GoldWashStrong) diluted it to the point of being invisible. Plain @GoldWash, same
-// as the Open pill above, is already the soft strength this item asks for.
-Jwift_TokenSentencePill_Glow {
-  Background: @GoldWash
-}
+// Drill Sentences U1, item 9 (a gentle first-run hint) used to paint the target word as its own pill here
+// (`Jwift_TokenSentencePill_Glow`, `Background: @GoldWash`) -- retired, Drill Sentences lane AE1, item 3
+// (blind testers, both devices: "mark time" wore a solid gold chip while every other editable word was
+// underlined, "same affordance, two looks"). The hint now brings that word's own UNDERLINE to full
+// strength instead (`TokenSentence.ts`'s own `_underlines`), the same underline every other word wears,
+// never a second visual language for "look here."
 
 // The badge pill — Kind: Badge's permanent small chip (not state-driven; it is always drawn).
 Jwift_TokenSentenceBadgePill {
