@@ -27,9 +27,11 @@ Jwift_TitleButtonLabel {
   MinWidth: 0
 }
 
+// Drill Sentences lane TK1 (the token sweep): 9pt had no Apple token at all (TOKENS.md); @CaptionSmall is the
+// nearest, the macOS Caption1/Footnote rung already correct 7 other places in this kit, Δ1.
 Jwift_TitleButtonChevron : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
-  FontSize: 9pt
+  FontSize: @CaptionSmall
   FontWeight: 700
   TextAlign: Center
   FlexShrink: 0

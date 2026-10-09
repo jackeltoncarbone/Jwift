@@ -29,11 +29,13 @@ Jwift_PopoverMenuHeader : Jwift_PopoverMenuPageFade, JwiftSecondaryLabelVibrancy
 
 // The back row of a pushed page: a step heavier than an ordinary row, in the accent, so "you are
 // inside a submenu" reads at a glance. Same 44pt pill as every other row.
+// Drill Sentences lane TK1 (the token sweep): Gap was a bare 10pt, off the 4pt grid (TOKENS.md) — @Gap8 is
+// the icon-to-label gap this row and Jwift_PopoverMenuItem (below) both actually want.
 Jwift_PopoverMenuBack : Jwift_PopoverMenuPageFade {
   Direction: Row
   Justify: Start
   Align: Center
-  Gap: 10pt
+  Gap: @Gap8
   Padding: 0pt 14pt
   Height: 44pt
   BorderRadius: 22pt
@@ -63,7 +65,7 @@ Jwift_PopoverMenuItem : Jwift_PopoverMenuPageFade {
   Direction: Row
   Justify: Start
   Align: Center
-  Gap: 10pt
+  Gap: @Gap8
   Padding: 8pt 14pt
   MinHeight: 44pt
   BorderRadius: 22pt
@@ -131,9 +133,11 @@ Jwift_PopoverMenuDetail : JwiftSecondaryLabelVibrancy {
   MaxLines: 1
   FlexShrink: 0
 }
+// Drill Sentences lane TK1 (the token sweep): 14pt had no Apple token; Sizing.md section 4 states the
+// menu's own trailing chevron/decoration as Subhead, 15pt — @TextSubhead.
 Jwift_PopoverMenuChevron : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
-  FontSize: 14pt
+  FontSize: @TextSubhead
   FontWeight: 400
   FlexShrink: 0
 }

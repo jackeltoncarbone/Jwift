@@ -14,11 +14,14 @@ Jwift_SortableSection {
   Align: Stretch
 }
 
+// Drill Sentences lane TK1 (the token sweep): Gap was a bare 10pt, off the 4pt grid and a near-duplicate of
+// @Gap8/@Gap12 with no shared name (TOKENS.md) — @Gap12 reads the row's icon, title and count as one
+// generously-spaced group.
 Jwift_SortableSectionHeader {
   Direction: Row
   Justify: Start
   Align: Center
-  Gap: 10pt
+  Gap: @Gap12
   MinHeight: 44pt
   Padding: 0pt 14pt
   Interactive: true
@@ -29,9 +32,12 @@ Jwift_SortableSectionHeader {
 Jwift_SortableSectionHeader_Drop {
   Background: @GoldWash
 }
+// 14pt had no Apple token (TOKENS.md); bumped to @TextSubhead (15), matching the title beside it
+// (Jwift_SortableSectionHeaderTitle, below) the way every other icon-beside-label pair in this kit
+// sizes its glyph to its label's own FontSize (GlassDropdownItemIcon's own comment states the rule).
 Jwift_SortableSectionHeaderGlyph : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
-  FontSize: 14pt
+  FontSize: @TextSubhead
   FontWeight: 400
   Width: 16pt
   TextAlign: Center

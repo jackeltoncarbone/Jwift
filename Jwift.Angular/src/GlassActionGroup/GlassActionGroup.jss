@@ -3,15 +3,21 @@
 // Jwift_GlassDropdownCell_Ellipsis / Jwift_GlassDropdownCell_Avatar
 // children. This sheet defines the canonical glyph used inside an
 // inline-action cell so consumers don't roll their own size/color per
-// page. 14pt 700-weight matches the toolbar back-button glyph baseline
+// page. @TextSubhead 700-weight matches the toolbar back-button glyph baseline
 // (Jwift_ToolbarBackGlyph) so cells across the chrome read as one set.
+//
+// Drill Sentences lane TK1 (the token sweep): this and its two matched siblings, Jwift_GlassActionGlyph_Warn
+// (GlassActionBar.jss) and Jwift_ToolbarBackGlyph (Toolbar.jss), all shared the bare 14pt literal this
+// comment names as deliberate — no Apple token sits at 14 (TOKENS.md), so all three move together to
+// @TextSubhead (15) rather than only the one TOKENS.md's table happened to cite, which would have
+// desynced the warn/plain twins of the very same cell glyph.
 
 // Opacity: 1 (Drill Sentences lane AA1, item 5): a glyph fades with its cell, never by its own presence.
 // Opacity multiplies down the tree, so a glyph also fading by itself ran a step behind its cell, a blank
 // cell for a moment on the way in and out.
 Jwift_GlassActionGlyph {
   FontFamily: JwiftIcons
-  FontSize: 14pt
+  FontSize: @TextSubhead
   FontWeight: 700
   Color: @Ink
   TextAlign: Center

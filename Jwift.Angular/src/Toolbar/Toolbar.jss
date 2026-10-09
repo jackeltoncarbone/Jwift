@@ -77,9 +77,12 @@ Jwift_ToolbarTrailing {
 // for back buttons. Consumer toolbars apply this directly so they don't
 // have to re-declare the icon font / size / color per page.
 
+// Drill Sentences lane TK1 (the token sweep): 14pt had no Apple token (TOKENS.md); @TextSubhead (15),
+// kept in sync with its two matched siblings, Jwift_GlassActionGlyph (GlassActionGroup.jss) and
+// Jwift_GlassActionGlyph_Warn (GlassActionBar.jss) — see GlassActionGroup.jss's own comment.
 Jwift_ToolbarBackGlyph : JwiftLabelVibrancy {
   FontFamily: JwiftIcons
-  FontSize: 14pt
+  FontSize: @TextSubhead
   FontWeight: 600
   TextAlign: Center
 }

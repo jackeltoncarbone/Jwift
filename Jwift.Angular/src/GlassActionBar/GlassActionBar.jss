@@ -2,11 +2,13 @@
 // glass pills (one per ActionGroup) followed by the sink pill (avatar + the
 // single overflow menu). No glass of its own; each child pill owns its glass.
 // Gap matches the inter-pill spacing used in the mock.
+// Drill Sentences lane TK1 (the token sweep): Gap was a bare 10pt, off the 4pt grid (TOKENS.md) — @Gap12
+// between distinct glass pill groups, a step more generous than the icon-to-label @Gap8 inside one.
 Jwift_GlassActionBar {
   Direction: Row
   Justify: End
   Align: Center
-  Gap: 10pt
+  Gap: @Gap12
   Width: MaxContent
   Height: MaxContent
 }
@@ -39,9 +41,12 @@ Jwift_GlassActionCellSlot {
 // Declared in full (not inherited) since cross-file JSS inheritance is dropped.
 // Opacity: 1 for the same reason as Jwift_GlassActionGlyph's own (Drill Sentences lane AA1, item 5: the
 // warning glyph went blank for a moment while its cell faded in).
+// Drill Sentences lane TK1 (the token sweep): 14pt had no Apple token (TOKENS.md); @TextSubhead (15),
+// matched below in Jwift_GlassActionGlyph (GlassActionGroup.jss) so the warn and plain twins of the
+// same cell glyph stay the same size.
 Jwift_GlassActionGlyph_Warn {
   FontFamily: JwiftIcons
-  FontSize: 14pt
+  FontSize: @TextSubhead
   FontWeight: 700
   Color: @Warning
   TextAlign: Center
@@ -153,13 +158,15 @@ Jwift_GlassActionTipPill : JwiftPanelGlass {
   PointerEvents: None
   Opacity: 1
 }
+// Drill Sentences lane TK1 (the token sweep): LineHeight was a hand-tuned 1.3, NEAR but not exactly
+// Apple's own Caption1 12/16 leading (TOKENS.md) — @LeadRatioCaption1 (1.333) is that ratio exactly.
 Jwift_GlassActionTipText : JwiftLabelVibrancy {
   UserSelect: None
   PointerEvents: None
   FontFamily: Inter
-  FontSize: 12pt
+  FontSize: @TextCaption1
   FontWeight: 500
-  LineHeight: 1.3
+  LineHeight: @LeadRatioCaption1
   TextAlign: Center
   MaxLines: 2
   FlexShrink: 1
