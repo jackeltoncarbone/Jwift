@@ -36,8 +36,10 @@ Jwift_SwipeAction_Danger {
 Jwift_SwipeAction_Neutral {
   BackdropFilter: Vibrancy(@JwiftVibrancyFill)
 }
+// A swipe action is a solid plate (not glass), so it wears the solid accent pair, never the prominent glass's seed,
+// whose on-tint ink is white and is tuned to the tinted body rather than a flat fill (Drill Sentences lane GL6).
 Jwift_SwipeAction_Accent {
-  Background: @Prominent
+  Background: @ProminentSolid
 }
 
 Jwift_SwipeActionGlyph {
@@ -51,7 +53,7 @@ Jwift_SwipeActionGlyph_OnDanger : Jwift_SwipeActionGlyph {
   Color: @OnDanger
 }
 Jwift_SwipeActionGlyph_OnProminent : Jwift_SwipeActionGlyph {
-  Color: @OnProminent
+  Color: @OnProminentSolid
 }
 
 Jwift_SwipeActionLabel {
@@ -65,5 +67,5 @@ Jwift_SwipeActionLabel_OnDanger : Jwift_SwipeActionLabel {
   Color: @OnDanger
 }
 Jwift_SwipeActionLabel_OnProminent : Jwift_SwipeActionLabel {
-  Color: @OnProminent
+  Color: @OnProminentSolid
 }

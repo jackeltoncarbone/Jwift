@@ -19,8 +19,8 @@ export type GlassButtonShape = 'round' | 'pill' | 'square';
  * `glass` — the default, and what almost every button is. Liquid glass with no fill of its own, so
  * it takes its colour from whatever it floats over and is therefore always right.
  *
- * `prominent` — the ONE action that is the point of the screen, drawn with the app's accent on its
- * face under the glass rim, as Apple draws a prominent button. A screen gets one. Two prominent
+ * `prominent` — the ONE action that is the point of the screen: Apple's `.glassProminent`, the same
+ * glass tinted with the app's accent (`JwiftProminent`, `GlassTint: @Prominent`). A screen gets one. Two prominent
  * buttons on one screen is neither of them being prominent.
  *
  * `danger` — a DESTRUCTIVE action, which Apple draws as a red LABEL on the ordinary control: HIG
@@ -75,7 +75,7 @@ const VARIANT_STEM: Record<GlassButtonVariant, string> = {
  *
  * Shapes: `round` (default, 48×48 circle), `pill` (auto + pad), `square`. Sizes: `regular`, `small`
  * (28 pt, for a control living inside a list row), `bar` (44 pt).
- * Variants: `glass` (default — today's liquid glass), `prominent` (the inverted solid), `danger` (the
+ * Variants: `glass` (default — today's liquid glass), `prominent` (the accent-tinted glass), `danger` (the
  * same glass under a red label), `danger-prominent` (the filled red confirm) and `plain` (a text button:
  * label only, no plate — apply `Jwift_GlassBtnPlainLabel` to the projected `<jext>` for the accent ink).
  */
@@ -105,16 +105,16 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
    * derived from artwork — so the override is here, once, routed through the style channel and
    * paired with the tinted press (`JwiftPressTint` grades the button's own paint rather than laying
    * a white veil over it, which is what washes a coloured pill out). What the APP does is neutral
-   * glass by default and the inverted solid for its one prominent action, and
+   * glass by default and the accent-tinted glass for its one prominent action, and
    * `ShowStudio.App/src/Design/BrandFill.Conformance.spec.ts` is what keeps it to that: it fails a
    * brand-coloured fill in an app sheet while leaving this input alone.
    *
    * Pass any colour or theme token (`'@Gold'`, `'rgb(255, 182, 0)'`). Null paints no fill. It is the
    * per-button twin of the ambient `JWIFT_GLASS_TINT` scope (`JivHost._useGlassTint`) and writes the
-   * same two override keys, so a button should take its colour from one of the two, not both. On
-   * `variant="prominent"` or `"danger-prominent"` the tint sets the RESTING plate only — the hover and
-   * press steps still come from that variant's own ladder, which is another reason the app leaves this
-   * alone.
+   * same override keys, so a button should take its colour from one of the two, not both. On glass
+   * (`glass`, `prominent`) it is the glass's tint seed, `GlassTint`, Apple's `.tint(color)`; on
+   * `"danger-prominent"` it sets the RESTING plate only — the hover and press steps still come from that
+   * variant's own ladder, which is another reason the app leaves this alone.
    */
   readonly tint = input<string | null>(null);
   /** Greys the button out and blocks every hit (no click, and no hover/active glass bloom). The pill
@@ -140,8 +140,9 @@ export class GlassButton extends JivHost implements OnInit, OnDestroy {
     // whichever shape and variant class is active rather than racing it.
     effect(() => {
       const tint = this.tint();
-      if (tint) this.SetStyleOverride({ Background: tint, Tint: '0' });
-      else { this.ClearStyleOverride('Background'); this.ClearStyleOverride('Tint'); }
+      // On glass the colour is the tint seed (`GlassTint`, Apple's `.tint(color)`); on a plate it is the fill.
+      if (tint) this.SetStyleOverride({ Background: tint, GlassTint: tint, Tint: '0' });
+      else { this.ClearStyleOverride('Background'); this.ClearStyleOverride('GlassTint'); this.ClearStyleOverride('Tint'); }
     });
     // Disabled = dimmed + inert. The dim rides the style-override channel so it layers over whichever shape
     // class is active; the inert half is Jaui's Disabled state, which stops every press, click and pointer event

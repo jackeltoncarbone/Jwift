@@ -179,7 +179,21 @@ On iOS 26.1 the glassBackground shader has no dispersion: its uniforms carry no 
 
 ## 4. Tint (`.tint(color)`) [C]
 
-The glass filter does not change. A layer with `CASDFGradientEffect` (white α 1 at d = -1 and 0, α 0 at d = +10, bezier 0.609, 0.007, 0.471, 0.991) carries a backdrop-aware vibrantColorMatrix whose rows are affine in backdrop luma L. Orange: R = 0.4 L + 0.6, G = 0.263 L + 0.321, B = 0. Blue: R = 0.046 L - 0.007, G = 0.244 L + 0.274, B = 0.370 L + 0.630. At L = 1 the result is the seed exactly: `tint = mix(darkShade, seed, L)`, darkShade the matrix at L = 0. A general law for an arbitrary seed: [I]
+The glass filter does not change. A layer with `CASDFGradientEffect` (white α 1 at d = -1 and 0, α 0 at d = +10, bezier 0.609, 0.007, 0.471, 0.991) carries a backdrop-aware vibrantColorMatrix whose rows are affine in backdrop luma L. Orange: R = 0.4 L + 0.6, G = 0.263 L + 0.321, B = 0. Blue: R = 0.046 L - 0.007, G = 0.244 L + 0.274, B = 0.370 L + 0.630. At L = 1 the result is the seed exactly: `tint = mix(darkShade, seed, L)`, darkShade the matrix at L = 0. L is the luma of the pixel under the tint layer, which is the finished glassBackground (face, bleed, holding tone), so the tint replaces the glass's colour and keeps only its lightness; the rim (5) and the press glows (9) lie over it. [C] the layer order (1); [I] that L is read from that finished pixel, as every vibrantColorMatrix reads its destination (5.2).
+
+The seeds those rows end at are systemOrange light (1, 0.584, 0) and systemBlue dark (0.039, 0.518, 1). [C arithmetic on the rows]
+
+A general law for an arbitrary seed [I]: `darkShade = ycc(seed, Y × 0.58, chroma × 0.63)`, the seed's BT.709 luma scaled by 0.58 and its chroma by 0.63 (QuartzCore's `set_ycc_composite` form, 3.3, with White 0.58, Black 0, Saturation 0.63). Least squares over both decompiled rows, six channels:
+- Orange: (0.598, 0.338, -0.028) against Apple's (0.600, 0.321, 0).
+- Blue: (0.005, 0.304, 0.606) against Apple's (-0.007, 0.274, 0.630).
+- That is 5.4 levels rms and 7.8 at most.
+- A plain scale of the seed (× 0.597) fits worse: 6.6 rms, 9.0 at most.
+- The macOS 27 SwiftUI fit (luma × 0.35, chroma × 1.10, coral) misses orange's green by 38 levels.
+
+Worked for Show Studio's gold [I] (Jaui `Core/Glass.Pipeline.ts`, `GlassTintShadeOf`):
+- Dark seed (185, 130, 28): dark shade (110, 75, 11).
+- Light seed (153, 108, 23): dark shade (91, 62, 9).
+- The prominent body's numbers over dark, mid and light backdrops are in Jaui `Core/Glass.md`, Tint.
 
 ## 5. The highlight (the rim): `CASDFKeyFillHighlightEffect` + `vibrantColorMatrix`
 

@@ -47,11 +47,11 @@ Jwift_GlassBtn_Square : Jwift_GlassBtn {
 }
 
 // ── The prominent variant ───────────────────────────────────────────
-// `variant="prominent"`: the ONE action a screen leads with, drawn as the inverted white (or black)
-// glass defined once in JwiftProminent — the same lens, blur and rim as any other glass control, tinted
-// by the foreground colour instead of the backdrop, with a brighter fresnel so it reads as the one
-// control the screen leads with. The three shapes below carry the same geometry as their glass twins,
-// so a screen can promote a button without moving it a single point.
+// `variant="prominent"`: the ONE action a screen leads with, Apple's `.glassProminent`, defined once in
+// JwiftProminent — the same lens, blur, rim and flex as any other glass control, with Apple's tint layer
+// seeded by the app's accent (`GlassTint: @Prominent`; Jwift/Apple/LiquidGlass.md 4), so it is the accent
+// in the glass's own light and shade, never a flat plate. The three shapes below carry the same geometry
+// as their glass twins, so a screen can promote a button without moving it a single point.
 //
 // `glass` stays the default, which is why these are separate classes rather than a change to
 // Jwift_GlassBtn: every button that exists today keeps exactly the look it has.

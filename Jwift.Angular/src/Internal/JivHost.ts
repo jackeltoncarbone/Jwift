@@ -164,13 +164,13 @@ export abstract class JivHost {
    *  a themed ancestor scope (providing JWIFT_GLASS_TINT) then blends its accent into this surface's
    *  background; no provided tint leaves the authored glass untouched. An accented control owns its colour,
    *  so the accent also zeroes the glass body's neutral Tint: the accent is never pulled to black or white.
-   *  Background and Tint only, so it composes with other style overrides (e.g. a disabled Opacity).
+   *  Background, GlassTint (the seed, on glass) and Tint only, so it composes with other style overrides (e.g. a disabled Opacity).
    *  Containers that should stay neutral simply don't call this. */
   protected _useGlassTint(): void {
     effect(() => {
       const tint = this._glassTintToken ? this._glassTintToken() : null;
-      if (tint) { this.SetStyleOverride({ Background: tint, Tint: '0' }); }
-      else { this.ClearStyleOverride('Background'); this.ClearStyleOverride('Tint'); }
+      if (tint) { this.SetStyleOverride({ Background: tint, GlassTint: tint, Tint: '0' }); }
+      else { this.ClearStyleOverride('Background'); this.ClearStyleOverride('GlassTint'); this.ClearStyleOverride('Tint'); }
     });
   }
 

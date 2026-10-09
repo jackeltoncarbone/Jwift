@@ -635,26 +635,33 @@ JwiftPressTint:Active {
 }
 
 // ── JwiftProminent ──────────────────────────────────────────────────
-// THE ONE PROMINENT ACTION ON A SCREEN: the app's accent on its face, as Apple draws a prominent button
-// (`@Prominent` / `@OnProminent`, theme tokens, so nothing here is a literal).
+// THE ONE PROMINENT ACTION ON A SCREEN: Apple's `.glassProminent`, the regular glass TINTED with the app's
+// accent (Jwift/Apple/LiquidGlass.md 4; HIG.md: "the material tinted with the accent"; Drill Sentences lane GL6).
+// The same glass every control wears (the lens, the blur, the rim with its two lit corners, the edge bleed, the
+// flex), with Apple's tint layer over it: `GlassTint: @Prominent` is the seed, and the body is
+// `mix(darkShade, seed, L)`, L the glass's own lightness. So it is saturated but alive: over dark content it takes
+// the gold's darker shade, over light content the seed itself, never a flat card (Jaui Core/Glass.md, Tint).
 //
-// A SOLID FACE UNDER THE GLASS RIM, not see-through glass. Glass tints toward a third of its seed over a
-// dark ground (Jaui Core/Glass.md, Tint), which would turn the accent brown on a black page, while Apple
-// brightens a foreground color in Dark Mode; the face holds its own light. The rim is lit harder than
-// ordinary glass, and the press is the glass press.
-JwiftProminent : JwiftSolidGlass, JwiftPressGlass {
-  Background: @Prominent
-  RimStrength: 3
-  RimWidth: 1.5pt
+// `@Prominent` is the seed per theme and `@OnProminent` is Apple's on-tint ink, white: the seed is chosen so that
+// white clears 4.5:1 on the tinted body over any backdrop, in both themes (App/src/Design/ProminentGlass.Render.spec.ts).
+// No seed steps on hover or press: Apple's press is the flex and its glows (section 9), and the hover is the
+// glass's own (JwiftPress), both over the tint.
+JwiftProminent : JwiftGlass, JwiftPressGlass {
+  GlassTint: @Prominent
   @Transition Background { Duration: 140ms }
 }
 
-JwiftProminent:Hover {
-  Background: @ProminentHover
+// Apple's prominent action keeps its glass inside glass: the sheet's blue checkmark and a capsule's lead are tinted
+// glass on glass, the one exception to "no glass on glass" (JwiftGlass:InGlass), so the material, the rim and the
+// glass press come back here. A filter merges by function, so the fill's vibrancy is zeroed, not "None"d.
+JwiftProminent:InGlass {
+  Glass: Regular
+  RimWidth: @JwiftRimWidth
+  RimStrength: @JwiftRimStrength
+  BackdropFilter: Vibrancy(0)
 }
-
-JwiftProminent:Active {
-  Background: @ProminentPress
+JwiftProminent:(InGlass && Active) {
+  BackdropFilter: Vibrancy(0)
 }
 
 // Present but not available: it keeps its footprint and stops taking taps, rather than vanishing and
