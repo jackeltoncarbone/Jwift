@@ -31,15 +31,6 @@ Jwift_DismissibleHintLabel : JwiftLabelVibrancy {
   Overflow: Hidden
   MaxLines: 1
 }
-// Drill Sentences U1, item 9 live fix: the DismissibleHint's own `[Wrap]` input swaps this class in for
-// a caller whose own text is a full sentence rather than a short label. 3 lines is generous for one
-// sentence in a 280pt-wide popover (this house's own convention for "more than one line" is always a
-// stated number — Design/Prompt/Prompt.jss's own MaxLines:10 for free text, Sheet.jss's MaxLines:8 — never
-// an "unlimited" sentinel, which this engine's own JSS grammar has no literal syntax for).
-Jwift_DismissibleHintLabel_Wrap {
-  Overflow: Visible
-  MaxLines: 3
-}
 Jwift_DismissibleHintDrop {
   Interactive: true
   Cursor: Pointer
@@ -56,4 +47,33 @@ Jwift_DismissibleHintDropGlyph : JwiftSecondaryLabelVibrancy {
   FontFamily: JwiftIcons
   FontSize: 13pt
   FontWeight: 700
+}
+
+// THE INLINE TIP (`Variant="Inline"`, Drill Sentences lane R35, item 7; the owner, live: "why is the tooltip so thick and
+// not taking up the full thickness of the panel inside the drill editor?"). Apple's TipKit inline tip, a TipView in a
+// list: a rounded rectangle across the list's content width, its corner the caller's (`Corner`, concentric with the row
+// it stands in), never a capsule; 12pt above and below the message and the row's own 12pt beside it; the message in the
+// tip's own Subheadline, regular, secondary, wrapping as it needs (3 lines at most, this house's stated number for more
+// than one line, never an unlimited sentinel the JSS grammar has no syntax for); the close a small secondary glyph at
+// the top trailing corner. Its 44pt hit stands from the tip's top edge, past the 12pt the message stands in, so the
+// glyph centers on the message's first line, and the hit takes no height of the tip's own (its -12pt margins).
+Jwift_DismissibleHint_Inline {
+  Align: Start
+  Gap: @Gap4
+  Padding: @Gap12 0pt @Gap12 @Gap12
+}
+Jwift_DismissibleHintLabel_Inline : JwiftSecondaryLabelVibrancy {
+  FontSize: @TextSubhead
+  FontWeight: 400
+  LineHeight: @LeadRatioSubhead
+  Overflow: Visible
+  MaxLines: 3
+}
+Jwift_DismissibleHintDrop_Inline {
+  AlignSelf: Start
+  Margin: -12pt 0pt -12pt 0pt
+}
+Jwift_DismissibleHintDropGlyph_Inline {
+  FontSize: @TextCaption2
+  FontWeight: 600
 }

@@ -18,7 +18,7 @@ import DismissibleHintJss from './DismissibleHint.jss';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <jyle [source]="Jss" />
-    <jiv class="Jwift_DismissibleHint">
+    <jiv [class]="HintClass()" [style]="HintStyle()">
       @if (glyph()) {
         <icon class="Jwift_DismissibleHintGlyph" [Name]="glyph()" />
       }
@@ -29,8 +29,8 @@ import DismissibleHintJss from './DismissibleHint.jss';
            EditorPlayer.ts's own OnDotDown already closes for every other small glyph drawn over a
            pointerdown-driven surface: stop the press here too, so a tap on the dismiss is only ever the
            dismiss's. -->
-      <jiv class="Jwift_DismissibleHintDrop" [label]="dismissLabel()" (pointerdown)="$event.stopPropagation()" (click)="dismiss.emit()">
-        <icon class="Jwift_DismissibleHintDropGlyph" Name="xmark" />
+      <jiv [class]="DropClass()" [label]="dismissLabel()" (pointerdown)="$event.stopPropagation()" (click)="dismiss.emit()">
+        <icon [class]="DropGlyphClass()" Name="xmark" />
       </jiv>
     </jiv>
   `,
@@ -42,17 +42,25 @@ export class DismissibleHint {
   readonly glyph = input('');
   readonly text = input.required<string>();
   readonly dismissLabel = input('Dismiss');
-  /** Drill Sentences U1, item 9 live fix: every OTHER caller's own text is short BY DESIGN ("Stop
-   *  pinning", "Tap the spot this note is about" — the latter already brushes one line's own width in
-   *  its own dock) — `Jwift_DismissibleHintLabel`'s own `MaxLines: 1`/`Overflow: Hidden` was never wrong
-   *  for THAT text, only for a caller with a genuinely longer sentence (item 9's own first-run hint, in
-   *  a narrow Popover rather than a full-width dock) that needs the SAME capsule to actually wrap
-   *  instead of clipping mid-word. Default `false` — every existing caller keeps today's one-line
-   *  clip-if-it-must-be behaviour untouched. */
-  readonly Wrap = input(false);
+  /** `Capsule` (the default): a floating hint over a scene, one short line in a capsule ("Stop pinning", "Tap the spot
+   *  this note is about"), its label clipped to one line. `Inline` (Drill Sentences lane R35, item 7; the owner, live:
+   *  "why is the tooltip so thick and not taking up the full thickness of the panel"): Apple's TipKit inline tip, a
+   *  TipView in a list. It spans its list's content width, a rounded rectangle whose corner its caller states
+   *  (`Corner`, concentric with the row it stands in), its sentence the tip message's own Subheadline wrapped as it needs,
+   *  and its close a small secondary glyph at the top trailing corner, its 44pt hit kept. */
+  readonly Variant = input<'Capsule' | 'Inline'>('Capsule');
+  /** The `Inline` tip's corner, pt: the caller's, concentric with what holds it. Unread by a capsule. */
+  readonly Corner = input(0);
 
   readonly dismiss = output<void>();
 
+  private readonly _inline = computed(() => this.Variant() === 'Inline');
+  protected readonly HintClass = computed(() => (this._inline() ? 'Jwift_DismissibleHint Jwift_DismissibleHint_Inline' : 'Jwift_DismissibleHint'));
+  protected readonly HintStyle = computed(() => (this._inline() ? { BorderRadius: `${this.Corner()}pt` } : {}));
   protected readonly LabelClass = computed(() =>
-    this.Wrap() ? 'Jwift_DismissibleHintLabel Jwift_DismissibleHintLabel_Wrap' : 'Jwift_DismissibleHintLabel');
+    this._inline() ? 'Jwift_DismissibleHintLabel Jwift_DismissibleHintLabel_Inline' : 'Jwift_DismissibleHintLabel');
+  protected readonly DropClass = computed(() =>
+    this._inline() ? 'Jwift_DismissibleHintDrop Jwift_DismissibleHintDrop_Inline' : 'Jwift_DismissibleHintDrop');
+  protected readonly DropGlyphClass = computed(() =>
+    this._inline() ? 'Jwift_DismissibleHintDropGlyph Jwift_DismissibleHintDropGlyph_Inline' : 'Jwift_DismissibleHintDropGlyph');
 }
