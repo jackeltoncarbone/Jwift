@@ -63,6 +63,27 @@ JwiftSecondaryLabelVibrancyOnArt {
   Color: rgb(255, 255, 255)
   TextFilter: Vibrancy(@JwiftVibrancySecondaryLabelDark, @JwiftVibrancySecondaryLabelCover)
 }
+// THE BARE-CONTENT FLOOR (Drill Sentences lane AD1, item 1; `Design/LiftInk.ts`'s own doctrine, "over bare
+// artwork with no plate under it there is nothing to solve against and near-white remains the only safe
+// answer"). `JwiftSecondaryLabelVibrancyOnArt` above still WEIGHTS ITS OWN COVER past a footer's own grade
+// (`WidgetFoot`'s Blur/Contrast/Saturate/Brightness, `CardGutter.Conformance.spec.ts`) — a plate already
+// doing real work before vibrancy ever applies. A label with NO plate and no glass under it at all (the
+// drill editor's own title, bare over the field scene: a round 18 blind tester, light theme, desktop and
+// phone, read the title and its chevron near-black over the dark field, the chevron nearly invisible, while
+// the adjacent small glass buttons had already flipped to their dark face over that same backdrop) has
+// nothing graded to lean on, so it states its ink flat and opaque — no `TextFilter` sampling a backdrop this
+// class cannot bound, `Color` alone, at HIG.md 2's own ceiling. Still named for its OWN scale (not `OnArt`,
+// Apple's GLASS-content vibrancy levels, which `JwiftSecondaryLabelVibrancyOnArt`'s own graded floor shows
+// are tuned for something already dimmed): `JwiftLabelOnScene`/`JwiftSecondaryLabelOnScene`, read by
+// `TitleButton.ts`'s own `onScene`.
+JwiftLabelOnScene {
+  Color: rgb(255, 255, 255)
+  TextFilter: None
+}
+JwiftSecondaryLabelOnScene {
+  Color: rgb(255, 255, 255)
+  TextFilter: None
+}
 JwiftTertiaryLabelVibrancy {
   Color: rgb(255, 255, 255)
   TextFilter: Vibrancy(@JwiftVibrancyTertiaryLabel, @JwiftVibrancyTertiaryLabelCover)
