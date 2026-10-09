@@ -151,6 +151,32 @@ Jwift_GlassDropdown_ClosedAvatarOnly : Jwift_GlassDropdown_Closed, JwiftPressGla
 Jwift_GlassDropdown_ClosedWarn : Jwift_GlassDropdown_Closed {
   Background: @WarningWash
 }
+
+// A Page-bearing cell sharing ONE glass pill with plain cells beside it (`GlassActionBar`'s `Mixed`
+// groups — Cast, Library and Camera in one pill, only Camera opening a page; Drill Sentences lane AJ2b,
+// blind round 33: opening Camera's menu had turned the WHOLE pill into the menu, Cast and Library
+// vanishing with it). Closed, this is no second glass surface sized to a whole row — just the one cell's
+// own 44pt box, sized by its own slot (`GlassActionBar._CellSlot`) rather than this class's usual
+// multi-cell padding. `Glass: None` is stated outright rather than left to `JwiftGlass:InGlass`
+// (Jwift.Glass.jss) to answer from the tree, so a cell pulled out of its pill by some future caller never
+// grows a ring of its own by accident. Open, it falls through to the ordinary `Jwift_GlassDropdown_Open`
+// panel unchanged — Position:Placed, Layer:Top (this sheet, below), which escapes the pill's own
+// Overflow:Hidden (Jaui's own rule: "Layer: Top escapes every ancestor") — so the menu grows from THIS
+// cell's rect alone, the way iOS 26 morphs a pull-down menu from the one button of a grouped toolbar item
+// that was pressed, never the group (HIG.md "morphs into the overlay"; LiquidGlass.md section 8 unions a
+// group's glass at REST, not what one of its buttons grows into).
+Jwift_GlassDropdown_ClosedCell : Jwift_GlassDropdown_Closed {
+  Padding: 0pt
+  Gap: 0pt
+  MinWidth: 0pt
+  MinHeight: 0pt
+  Width: MaxContent
+  Height: MaxContent
+  Glass: None
+  RimWidth: 0pt
+  RimStrength: 0
+  Background: rgba(255, 255, 255, 0)
+}
 Jwift_GlassDropdownCell_Avatar_Fill : Jwift_GlassDropdownCell_Avatar {
   Width: 48pt
   Height: 48pt

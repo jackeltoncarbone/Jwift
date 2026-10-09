@@ -84,6 +84,12 @@ export interface ActionGroup {
  * sectioned by group label; `Hide` groups vanish. Width is measured from the
  * ancestor toolbar / leading rects each rAF tick (same approach as
  * `GlassActionGroup`).
+ *
+ * A group whose `Pages` cell is the group's ONLY cell opens as the whole pill — the pill's box and the
+ * cell's box are the same box, so the pill growing into a menu IS that cell growing into one. A group
+ * sharing its pill between SEVERAL cells, where one of them carries a `Page` (Cast, Library and Camera,
+ * one glass pill, only Camera opening a menu), morphs just THAT cell out of the pill instead, leaving its
+ * neighbours standing (Drill Sentences lane AJ2b; see `_GroupPills`'s own `Mixed`, below).
  */
 @Component({
   selector: 'glass-action-bar',
@@ -182,6 +188,88 @@ export interface ActionGroup {
               }
             }
           </glass-dropdown>
+          </jiv>
+        } @else if (gp.Mixed) {
+          <!-- Drill Sentences lane AJ2b (blind round 33, 58-full-toolbar-cameramode.png): Cast, Library and
+               Camera share one glass pill (EditorToolbar.ts's own doc comment) but only Camera opens a
+               page, so the PILL is the plain row below, unchanged, and just the Page cell gets its own
+               <glass-dropdown> — closed, sized to just that cell (_CellSlot, Jwift_GlassDropdown_ClosedCell,
+               no glass of its own while it stands inside the shared pill's); open, the ordinary panel,
+               Position:Placed and Layer:Top (GlassDropdown.jss), which escapes the pill's own
+               Overflow:Hidden. So the menu grows from THIS cell's rect alone — iOS 26 morphs a pull-down
+               menu from the one button of a grouped toolbar item that was pressed, the group's other
+               buttons standing fast (HIG.md, LiquidGlass.md section 8: grouped glass unions its shape at
+               REST, never what one of its own buttons grows into). -->
+          <jiv [class]="_PillClass(gp.Cells)">
+            @for (a of gp.Cells; track a.Id) {
+              @if (a.Spinner) {
+                <jiv class="Jwift_GlassDropdownCell">
+                  <jwift-spinner [size]="20" />
+                </jiv>
+              } @else if (a.Page) {
+                <jiv class="Jwift_GlassActionCellSlot" [childLayout]="_CellSlot(a)">
+                <glass-dropdown #cd [closedVariant]="'Jwift_GlassDropdown_ClosedCell'"
+                  [openBelow]="!!gp.Group.OpenBelow" [openWidth]="gp.Group.PageWidth ?? null"
+                  [openBottomLimit]="gp.Group.PageBottomLimit ?? null" (openRect)="PageRect.emit({ Group: gp.Id, Rect: $event })">
+                  @if (!cd.IsOpen()) {
+                    <jiv [class]="_CellClass(a)" [childLayout]="_CellLayout(a)" JwiftFocusable [JwiftFocusableDisabled]="!!a.Disabled" semantics="Button" [label]="a.Label ?? null"
+                         (click)="_OnExpandableCell(a, $event, cd)" (pointermove)="_Tip.Over(a.Id, $event)">
+                      <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
+                      @if (_ShowsTitle(a)) {
+                        <jext #cellText class="Jwift_GlassActionTitle" [text]="a.Label ?? ''" />
+                      }
+                      @if (a.Disclosure) {
+                        <icon class="Jwift_GlassDropdownCellChevron" Name="chevron.down" />
+                      }
+                      @if (a.Badge && !_ShowsTitle(a)) {
+                        <jiv class="Jwift_GlassActionBadge">
+                          <jext #cellText class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
+                        </jiv>
+                      }
+                    </jiv>
+                  } @else {
+                    @for (item of _OpenItemsFor(gp, cd.Page()); track item.Id) {
+                      @if (item.Divider) {
+                        <jiv class="Jwift_GlassDropdownDivider" />
+                      } @else if (item.Header) {
+                        <jext [class]="_ShowCheckColumnIn(gp, cd.Page()) ? 'Jwift_GlassDropdownSectionHeader_Indented' : 'Jwift_GlassDropdownSectionHeader'" [text]="item.Label ?? ''" />
+                      } @else {
+                        <glass-dropdown-item
+                          [disabled]="!!item.Disabled"
+                          [keepOpen]="!!item.KeepOpen || !!item.Page"
+                          (click)="_OnItemClick(item, cd)">
+                          @if (_ShowCheckColumnIn(gp, cd.Page())) {
+                            <icon [class]="item.Toggle && item.Active ? 'Jwift_GlassDropdownItemCheck' : 'Jwift_GlassDropdownItemCheck_Off'" Name="checkmark" />
+                          }
+                          @if (item.Image) {
+                            <jiv class="Jwift_GlassDropdownItemImage" [image]="item.Image" />
+                          } @else if (item.Icon) {
+                            <icon [class]="_ItemIconClass(item)" [Name]="item.Icon" />
+                          }
+                          @if (item.Label) {
+                            <jext [class]="_ItemLabelClass(item)" [text]="item.Label" />
+                          }
+                        </glass-dropdown-item>
+                      }
+                    }
+                  }
+                </glass-dropdown>
+                </jiv>
+              } @else {
+                <jiv [class]="_CellClass(a)" [childLayout]="_CellLayout(a)" JwiftFocusable [JwiftFocusableDisabled]="!!a.Disabled" semantics="Button" [label]="a.Label ?? null"
+                     (click)="_OnCell(a, $event)" (pointermove)="_Tip.Over(a.Id, $event)">
+                  <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
+                  @if (_ShowsTitle(a)) {
+                    <jext #cellText class="Jwift_GlassActionTitle" [text]="a.Label ?? ''" />
+                  }
+                  @if (a.Badge && !_ShowsTitle(a)) {
+                    <jiv class="Jwift_GlassActionBadge">
+                      <jext #cellText class="Jwift_GlassActionBadgeText" [text]="'' + a.Badge" />
+                    </jiv>
+                  }
+                </jiv>
+              }
+            }
           </jiv>
         } @else {
           <jiv [class]="_PillClass(gp.Cells)">
@@ -412,8 +500,19 @@ export class GlassActionBar implements OnDestroy {
     return this.Groups().map((g, i) => {
       const cells = this._cellEligible(g);
       const n = Math.min(cells.length, counts[i] ?? cells.length);
-      const expandable = !!g.Pages && Object.keys(g.Pages).length > 0;
-      return { Id: g.Id, Group: g, Expandable: expandable, Cells: cells.slice(0, n) };
+      const sliced = cells.slice(0, n);
+      const hasPages = !!g.Pages && Object.keys(g.Pages).length > 0;
+      // Drill Sentences lane AJ2b (blind round 33, 58-full-toolbar-cameramode.png): a PILL IS NOT A CELL.
+      // `Expandable` (the whole pill IS the one dropdown, unchanged below) only ever fit a group that is
+      // one cell, where the pill's box and the cell's box are already the same box. A group sharing its
+      // pill between SEVERAL cells (Cast, Library, Camera) where one of them carries a Page used to take
+      // this same branch — the whole pill became the menu, Cast and Library vanishing with it, read as
+      // disconnected from the Camera cell that was pressed. `Mixed` is the template's own branch for that
+      // case now: the pill stays a plain row, and only the Page cell gets its own small dropdown, grown
+      // from its OWN rect (`_CellSlot`, `Jwift_GlassDropdown_ClosedCell`).
+      const expandable = hasPages && sliced.length === 1;
+      const mixed = hasPages && sliced.length > 1;
+      return { Id: g.Id, Group: g, Expandable: expandable, Mixed: mixed, Cells: sliced };
     }).filter(gp => gp.Cells.length > 0);
   });
 
@@ -498,6 +597,14 @@ export class GlassActionBar implements OnDestroy {
   protected _PillSlot(cells: readonly GlassAction[]): Partial<ChildLayout> {
     const w = PillWidth(cells, this._TitlesOn(), GlassActionBar._GapPt, GlassActionBar._PadPt);
     return { Width: w + 'pt', Height: '48pt' };
+  }
+
+  /** Closed-cell footprint (pt) for ONE Page-bearing cell's own reserving slot inside a `Mixed` pill shared
+   *  with plain cells (Drill Sentences lane AJ2b): just that cell's own width (`CellWidth`), 44pt tall like
+   *  every cell in the row (`CELL_PT`) — never the whole pill's `_PillSlot` above. Kept in flow so this
+   *  cell's own dropdown can go Position:Placed on open without reflowing the cells standing beside it. */
+  protected _CellSlot(a: GlassAction): Partial<ChildLayout> {
+    return { Width: `${CellWidth(a, this._TitlesOn())}pt`, Height: `${CELL_PT}pt` };
   }
 
   /** Whether a cell wears its name beside its glyph now. */

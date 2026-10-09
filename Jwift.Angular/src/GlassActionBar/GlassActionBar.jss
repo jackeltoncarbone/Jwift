@@ -22,6 +22,18 @@ Jwift_GlassActionBarSlot {
   Align: Center
 }
 
+// In-flow slot reserving ONE Page-bearing cell's own closed footprint inside a `Mixed` pill shared with
+// plain cells (Cast, Library, Camera in one pill, only Camera's own slot — Drill Sentences lane AJ2b): the
+// same reasoning as the slot above, scoped down to a single cell rather than the whole pill, so that
+// cell's own dropdown can grow Position:Placed without reflowing the cells standing beside it. Overflow
+// stays Visible for the same reason; the popped-open menu is Layer:Top regardless (GlassDropdown.jss) and
+// escapes it either way.
+Jwift_GlassActionCellSlot {
+  Direction: Row
+  Justify: Center
+  Align: Center
+}
+
 // Amber-tinted variant of the inline-cell glyph — for alert cells (warnings,
 // save-failed) so they read against the otherwise-monochrome action set.
 // Declared in full (not inherited) since cross-file JSS inheritance is dropped.
