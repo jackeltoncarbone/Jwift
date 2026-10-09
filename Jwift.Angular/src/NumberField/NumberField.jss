@@ -86,14 +86,16 @@ Jwift_NumberFieldTagCell {
   Justify: End
   Align: Center
 }
+// Drill Sentences lane TK1 (the token sweep): BorderRadius 9pt had no Apple token (@RadiusSegmented, 8,
+// Δ1); Padding's bare 2pt and odd 7pt become @GapHairline and @Gap8 (TOKENS.md).
 Jwift_NumberFieldTag {
   FontFamily: -apple-system, BlinkMacSystemFont, Inter
   FontSize: 11pt
   FontWeight: 700
   Color: @GoldInk
   Background: @GoldWash
-  BorderRadius: 9pt
-  Padding: 2pt 7pt
+  BorderRadius: @RadiusSegmented
+  Padding: @GapHairline @Gap8
 }
 // Regular weight (400), not Medium (Drill Sentences lane ZZ4, item 1: a live check found the wheel's
 // centered row read too heavy against Apple's own UIPickerView / SwiftUI `.wheel`, Sizing.md 12 [I]):

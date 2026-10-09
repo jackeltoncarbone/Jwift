@@ -264,7 +264,7 @@ Jwift_SheetGrabberHit {
   Cursor: Pointer
 }
 Jwift_SheetGrabber {
-  Margin: 5pt 0pt 0pt 0pt
+  Margin: @GrabberOffset 0pt 0pt 0pt
   Width: 36pt
   Height: 5pt
   BorderRadius: 2.5pt

@@ -360,7 +360,7 @@ Jwift_GlassDropdownItem {
   Justify: Start
   Align: Center
   Gap: 0pt
-  Padding: 11pt 18pt 11pt 6pt
+  Padding: @RowPad 18pt @RowPad 6pt
   Width: 100%
   MinHeight: 44pt
   BorderRadius: 22pt

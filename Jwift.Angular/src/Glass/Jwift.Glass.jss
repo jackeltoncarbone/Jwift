@@ -197,20 +197,34 @@ JwiftEditPulse {
 // absolute pt value, so the ratio below IS Apple's absolute pair, expressed the one way this engine
 // can apply it, rather than a tuned-by-eye constant. macOS reads a DIFFERENT scale, not a shrunken
 // one (HIG.md 15); @TextBodyMac etc. are macOS's own rungs for the kit's desktop-density classes.
-@TextLargeTitle: 34pt    @LeadRatioLargeTitle: 1.206   // 41/34
-@TextTitle1: 28pt        @LeadRatioTitle1: 1.214       // 34/28
-@TextTitle2: 22pt        @LeadRatioTitle2: 1.273       // 28/22
-@TextTitle3: 20pt        @LeadRatioTitle3: 1.25        // 25/20
-@TextHeadline: 17pt      @LeadRatioHeadline: 1.294     // 22/17
-@TextBody: 17pt          @LeadRatioBody: 1.294         // 22/17
-@TextCallout: 16pt       @LeadRatioCallout: 1.3125     // 21/16
-@TextSubhead: 15pt       @LeadRatioSubhead: 1.333      // 20/15
-@TextFootnote: 13pt      @LeadRatioFootnote: 1.3846    // 18/13
-@TextCaption1: 12pt      @LeadRatioCaption1: 1.333     // 16/12
-@TextCaption2: 11pt      @LeadRatioCaption2: 1.1818    // 13/11
+// Two vars per rung, each on its OWN line — Theme.Tokens.spec.ts's own var-declaration scan anchors on
+// `^\s*@Name\s*:`, so two declarations sharing one line would hide the second from it.
+@TextLargeTitle: 34pt
+@LeadRatioLargeTitle: 1.206   // 41/34
+@TextTitle1: 28pt
+@LeadRatioTitle1: 1.214       // 34/28
+@TextTitle2: 22pt
+@LeadRatioTitle2: 1.273       // 28/22
+@TextTitle3: 20pt
+@LeadRatioTitle3: 1.25        // 25/20
+@TextHeadline: 17pt
+@LeadRatioHeadline: 1.294     // 22/17
+@TextBody: 17pt
+@LeadRatioBody: 1.294         // 22/17
+@TextCallout: 16pt
+@LeadRatioCallout: 1.3125     // 21/16
+@TextSubhead: 15pt
+@LeadRatioSubhead: 1.333      // 20/15
+@TextFootnote: 13pt
+@LeadRatioFootnote: 1.3846    // 18/13
+@TextCaption1: 12pt
+@LeadRatioCaption1: 1.333     // 16/12
+@TextCaption2: 11pt
+@LeadRatioCaption2: 1.1818    // 13/11
 // macOS's own rungs (HIG.md 15) — named apart from the iOS set above because macOS Body (13/16) is
 // NOT iOS Footnote (13/18) despite sharing a size.
-@TextBodyMac: 13pt       @LeadRatioBodyMac: 1.2308     // 16/13
+@TextBodyMac: 13pt
+@LeadRatioBodyMac: 1.2308     // 16/13
 // Apple's own macOS Caption 1/Footnote rung, reused generically across this kit (TitleButton's chevron,
 // FieldSquadTagTextCompact's quiet variant, and every already-ON 10pt caption elsewhere in Drill.jss and
 // GlassActionBar.jss) as the smallest caption-weight text regardless of platform — collapses the
@@ -231,6 +245,12 @@ JwiftEditPulse {
 @Inset: 16pt             // standard margin (Apps.md:107)
 @BezelPad: 12pt          // HIG.md:117, around a bordered control
 @BorderlessPad: 24pt     // HIG.md:117, around a borderless control
+// Two of Apple's own odd-pt measurements, named rather than repeated as bare literals (Drill Sentences
+// lane TK1, the token sweep): a sheet grabber sits 5pt below the sheet's own top edge (Sheets.md), and a
+// menu/list row's real vertical padding is ~11pt (Sizing.md's row-text arithmetic; already cited by
+// GlassDropdownItem's own comment, "Real padding (Apple's own ~11pt)"), neither a step on the 4pt grid.
+@GrabberOffset: 5pt
+@RowPad: 11pt
 
 // ── CONTROL HEIGHTS AND HIT TARGETS (Sizing.md 3; HIG.md 4) ─────────
 @HeightSmallMini: 28pt

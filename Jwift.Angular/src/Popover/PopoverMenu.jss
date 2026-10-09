@@ -142,10 +142,11 @@ Jwift_PopoverMenuChevron : JwiftSecondaryLabelVibrancy {
   FlexShrink: 0
 }
 
+// Drill Sentences lane TK1 (the token sweep): 5pt was odd (TOKENS.md's even-pt grid); 6pt, the nearest.
 Jwift_PopoverMenuSeparator : Jwift_PopoverMenuPageFade {
   Height: 1pt
   Background: @Line
-  Margin: 5pt 14pt
+  Margin: 6pt 14pt
 }
 
 Jwift_PopoverMenuNote : Jwift_PopoverMenuPageFade, JwiftSecondaryLabelVibrancy {

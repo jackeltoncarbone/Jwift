@@ -94,7 +94,7 @@ Jwift_SortableRow {
   Justify: Start
   Align: Stretch
   Gap: 8pt
-  Padding: 11pt 12pt
+  Padding: @RowPad 12pt
   Interactive: true
   Cursor: Pointer
   @Transition Background { Duration: 140ms }

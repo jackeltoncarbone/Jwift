@@ -2,15 +2,17 @@
 // navigation-title scrolled state — [C] measured), so a title-button reads exactly like a plain title.
 // Drill Sentences lane WW2, item 3: the title opens a menu, so its hit is Apple's 44pt touch default however short its
 // line, centered in the toolbar's row; it was its words' own height.
+// Drill Sentences lane TK1 (the token sweep): Gap was an odd 5pt and Padding's 2pt was bare (TOKENS.md's
+// even-pt grid) — @Gap4 and @GapHairline.
 Jwift_TitleButton {
   Direction: Row
   Justify: Start
   Align: Center
-  Gap: 5pt
+  Gap: @Gap4
   FlexShrink: 1
   Overflow: Hidden
   MinHeight: 44pt
-  Padding: 0pt 2pt
+  Padding: 0pt @GapHairline
   Interactive: true
   Cursor: Pointer
   UserSelect: None

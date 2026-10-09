@@ -148,10 +148,11 @@ Jwift_GlassActionTip_Hidden {
 }
 // The tip's pill is the one panel material (JwiftPanelGlass), as every surface that floats over the page is, rather
 // than an opaque @Panel plate with a hairline of its own (Drill Sentences lane WW1, item 1).
+// Drill Sentences lane TK1 (the token sweep): 5pt was odd (TOKENS.md's even-pt grid); 6pt, the nearest.
 Jwift_GlassActionTipPill : JwiftPanelGlass {
   MinHeight: 26pt
   MaxWidth: 100%
-  Padding: 5pt 10pt
+  Padding: 6pt 10pt
   BorderRadius: 8pt
   Direction: Row
   Align: Center
