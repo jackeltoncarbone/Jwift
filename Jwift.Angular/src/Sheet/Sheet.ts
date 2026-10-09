@@ -65,6 +65,10 @@ export class SheetStack {
     const open = this._open();
     return open.length > 0 ? open[open.length - 1] : null;
   });
+  /** A sheet stands open somewhere, app-wide (Drill Sentences lane AF1, item 1): the one signal a consumer
+   *  that cares only "is a sheet presented" reads, rather than every one of them separately registering
+   *  with something else for that one fact. */
+  readonly HasOpen = computed(() => this._open().length > 0);
   Add(sheet: object): void { this._open.update((open) => [...open, sheet]); }
   Remove(sheet: object): void {
     this._open.update((open) => open.filter((s) => s !== sheet));
