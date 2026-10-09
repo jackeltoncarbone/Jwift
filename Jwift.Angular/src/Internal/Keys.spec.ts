@@ -37,6 +37,16 @@ describe('IsActivationKey: Space and Return, however either arrives', () => {
   it('Return/Enter, by key or by code', () => {
     expect(IsActivationKey({ key: 'Enter', code: 'Enter' })).toBe(true);
     expect(IsActivationKey({ key: 'Unidentified', code: 'Enter' })).toBe(true);
+    expect(IsActivationKey({ key: 'Unidentified', code: 'NumpadEnter' })).toBe(true);
+  });
+
+  // Drill Sentences lane AB2c (blind round 29, desktop: the problems badge showed its ring but Return
+  // never activated it, 29-return-on-badge.png). Traced to the blind-test harness itself:
+  // `cdplib.mjs`'s `keyPress` sends `Input.dispatchKeyEvent` with `key: 'Return'` verbatim — CDP does
+  // not translate that to the DOM spec's own `'Enter'` — the exact class of gap `IsEscapeKey`'s own
+  // "Esc" already covers, now hitting the key macOS itself labels "return".
+  it('"Return" activates too — the blind-test harness\'s own CDP key name for this key, never translated to the DOM spec\'s "Enter"', () => {
+    expect(IsActivationKey({ key: 'Return' })).toBe(true);
   });
 
   it('nothing else activates, including a lookalike or a bare synthesized event with neither field set', () => {

@@ -15,6 +15,16 @@ export const IsEscapeKey = (e: { readonly key?: string; readonly code?: string }
  * Space and Return both activate a focused control (HIG Keyboard conventions, section 24) — same
  * "read what the key means, not a number" contract as `IsEscapeKey`, above, so a synthesized
  * activation (DevTools protocol, assistive tech) that carries `key` with no `code` still reads.
+ *
+ * Drill Sentences lane AB2c (blind round 29, desktop: Return showed the ring on the problems badge but
+ * never activated it, `29-return-on-badge.png`). Traced to the blind-test harness itself
+ * (`cdplib.mjs`'s `keyPress`, `Input.dispatchKeyEvent` with `key: 'Return'`): CDP sends that string
+ * through to the DOM event's `key` verbatim rather than the UI Events spec's own `'Enter'` — the exact
+ * "Esc" vs "Escape" gap `IsEscapeKey` already covers, above, now hitting the OTHER key macOS itself
+ * labels by its own name rather than the spec's. `'Return'` reads as activation for the same reason
+ * `'Esc'` reads as Escape: a real keyboard, an assistive tool, or a test harness is free to say a key's
+ * name its own way, and every listener here reads what a key MEANS, never one spelling of it.
  */
 export const IsActivationKey = (e: { readonly key?: string; readonly code?: string }): boolean =>
-  e.key === ' ' || e.key === 'Enter' || e.key === 'Spacebar' || e.code === 'Space' || e.code === 'Enter';
+  e.key === ' ' || e.key === 'Enter' || e.key === 'Return' || e.key === 'Spacebar'
+  || e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter';
