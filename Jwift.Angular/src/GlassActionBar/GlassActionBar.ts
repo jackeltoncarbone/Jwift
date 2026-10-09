@@ -17,6 +17,7 @@ import {
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { type ChildLayout } from 'jaui';
 import { Icon } from '../Icon/Icon';
+import { JwiftFocusable } from '../Internal/JwiftFocusable';
 import { GlassActionGroup, type GlassAction } from '../GlassActionGroup/GlassActionGroup';
 import { GLASS_ACTION_ACCOUNT } from '../GlassActionGroup/GlassActionAccount';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
@@ -85,7 +86,7 @@ export interface ActionGroup {
 @Component({
   selector: 'glass-action-bar',
   standalone: true,
-  imports: [Jiv, Jext, Jyle, Icon, GlassActionGroup, GlassDropdown, GlassDropdownItem, JwiftSpinner],
+  imports: [Jiv, Jext, Jyle, Icon, GlassActionGroup, GlassDropdown, GlassDropdownItem, JwiftSpinner, JwiftFocusable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <jyle [source]="JssSource" />
@@ -105,7 +106,7 @@ export interface ActionGroup {
           @if (gp.Group.OpenBelow && gd.IsOpen()) {
             <jiv [class]="_PillClass(gp.Cells)">
               @for (a of gp.Cells; track a.Id) {
-                <jiv [class]="_CellClass(a, true)" [childLayout]="_CellLayout(a)" semantics="Button" [label]="a.Label ?? null"
+                <jiv [class]="_CellClass(a, true)" [childLayout]="_CellLayout(a)" JwiftFocusable [JwiftFocusableDisabled]="!!a.Disabled" semantics="Button" [label]="a.Label ?? null"
                      (click)="_OnOpenCell($event, gd)" (pointermove)="_Tip.Over(a.Id, $event)">
                   <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
                   @if (_ShowsTitle(a)) {
@@ -135,7 +136,7 @@ export interface ActionGroup {
                     <jwift-spinner [size]="20" />
                   </jiv>
                 } @else {
-                  <jiv [class]="_CellClass(a)" [childLayout]="_CellLayout(a)" semantics="Button" [label]="a.Label ?? null"
+                  <jiv [class]="_CellClass(a)" [childLayout]="_CellLayout(a)" JwiftFocusable [JwiftFocusableDisabled]="!!a.Disabled" semantics="Button" [label]="a.Label ?? null"
                        (click)="_OnExpandableCell(a, $event, gd)" (pointermove)="_Tip.Over(a.Id, $event)">
                     <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
                     @if (_ShowsTitle(a)) {
@@ -188,7 +189,7 @@ export interface ActionGroup {
                   <jwift-spinner [size]="20" />
                 </jiv>
               } @else {
-                <jiv [class]="_CellClass(a)" [childLayout]="_CellLayout(a)" semantics="Button" [label]="a.Label ?? null"
+                <jiv [class]="_CellClass(a)" [childLayout]="_CellLayout(a)" JwiftFocusable [JwiftFocusableDisabled]="!!a.Disabled" semantics="Button" [label]="a.Label ?? null"
                      (click)="_OnCell(a, $event)" (pointermove)="_Tip.Over(a.Id, $event)">
                   <icon [class]="_GlyphClass(a)" [Name]="a.Icon ?? ''" />
                   @if (_ShowsTitle(a)) {

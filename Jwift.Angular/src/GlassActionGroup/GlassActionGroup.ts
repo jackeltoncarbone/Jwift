@@ -14,6 +14,7 @@ import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { type ChildLayout } from 'jaui';
 import { Avatar } from '../Avatar/Avatar';
 import { Icon } from '../Icon/Icon';
+import { JwiftFocusable } from '../Internal/JwiftFocusable';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
 import { GlassDropdownItem } from '../GlassDropdown/GlassDropdownItem';
 import { JwiftSpinner } from '../Spinner/JwiftSpinner';
@@ -115,7 +116,7 @@ export interface GlassAction {
     Jiv, Jext, Jyle,
     Avatar, Icon,
     GlassDropdown, GlassDropdownItem,
-    JwiftSpinner,
+    JwiftSpinner, JwiftFocusable,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -135,7 +136,8 @@ export interface GlassAction {
               <jwift-spinner [size]="20" />
             </jiv>
           } @else {
-            <jiv [class]="_CellClass(action)" semantics="Button" [label]="action.Label ?? null"
+            <jiv [class]="_CellClass(action)" JwiftFocusable [JwiftFocusableDisabled]="!!action.Disabled"
+                 semantics="Button" [label]="action.Label ?? null"
                  (click)="_OnCellClick(action, $event)">
               <icon class="Jwift_GlassActionGlyph" [Name]="action.Icon ?? ''" />
             </jiv>

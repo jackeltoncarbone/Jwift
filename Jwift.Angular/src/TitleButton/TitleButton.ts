@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, input, output, viewChild } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
+import { JwiftFocusable } from '../Internal/JwiftFocusable';
 import type { GlassMorphRect } from '../Morph/GlassMorph';
 import TitleButtonJss from './TitleButton.jss';
 
@@ -15,11 +16,11 @@ import TitleButtonJss from './TitleButton.jss';
 @Component({
   selector: 'title-button',
   standalone: true,
-  imports: [Jiv, Jext, Jyle, Icon],
+  imports: [Jiv, Jext, Jyle, Icon, JwiftFocusable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <jyle [source]="Jss" />
-    <jiv #title class="Jwift_TitleButton" (click)="titleClick.emit()">
+    <jiv #title class="Jwift_TitleButton" JwiftFocusable semantics="Button" [label]="text()" (click)="titleClick.emit()">
       <jext class="Jwift_ToolbarTitle Jwift_TitleButtonLabel" [text]="text()" />
       <icon class="Jwift_TitleButtonChevron" Name="chevron.down" />
     </jiv>
