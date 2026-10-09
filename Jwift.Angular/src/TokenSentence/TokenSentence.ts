@@ -20,9 +20,19 @@ import { JivHost } from '../Internal/JivHost';
 import { Icon } from '../Icon/Icon';
 import { IconData } from '../Icon/Icon.Data';
 import { CanvasPress } from '../Internal/CanvasPress';
+import { ArrowDirectionOf, IsActivationKey, IsEscapeKey } from '../Internal/Keys';
 import { ClaimPress } from '../Internal/PressClaim';
+import { FocusRingGeometryOf } from '../Internal/FocusRing.Geometry';
 import type { PopoverRect } from '../Popover/Popover.Placement';
 import TokenSentenceJss from './TokenSentence.jss';
+import {
+  CenterXOf,
+  FocusableTokenKeys,
+  FocusRingRectFor,
+  MoveRovingIndex,
+  NearestIndexByCenter,
+  type FocusRect,
+} from './TokenSentence.Focus';
 import {
   IsTappable,
   LandPieces,
@@ -237,6 +247,13 @@ const ADD_KEY = '\u0000add';
       <jiv [class]="add.Class" [childLayout]="add.Layout" semantics="Button" [label]="AddLabel()" (click)="_onAddClick()">
         <icon class="Jwift_TokenSentenceAddGlyph" Name="plus" />
       </jiv>
+    }
+    <!-- Drill Sentences lane AG2: the roving ring itself, ONE token (or the "+") at a time while this
+         sentence holds keyboard focus (_focusRing) — the same Jwift_FocusRing class/stroke every
+         other JivHost's own whole-box ring wears, this one keyed to a token's rect instead of the
+         host's (_focus.SuppressRing, below, stands that whole-box ring down while this one shows). -->
+    @if (_focusRing(); as ring) {
+      <jiv class="Jwift_FocusRing" [style]="ring.Style" [childLayout]="ring.Layout" />
     }
   `,
   styles: [':host { display: contents; }'],
@@ -693,6 +710,198 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     return [{ Key: this._landedKeys().Add, Class: cls, Layout: _rect(add.X, add.Y, add.Width, add.Height) }];
   });
 
+  // ── Drill Sentences lane AG2: roving keyboard focus ─────────────────────────────────────────────
+  // Lane AB2 already made this sentence ONE Tab stop (`TokenSentence.jss`'s own `Interactive: true`);
+  // nothing inside it was ever itself a real DOM focusable, so Tab had nowhere further to go (blind
+  // round 31 desktop, `54_tab10.png`: ten Tabs never reached a sentence's own editable words). This
+  // section is the roving half of a macOS composite control: Left/Right walks a virtual ring across
+  // `_focusableKeys` (`FocusableTokenKeys`, `TokenSentence.Focus.ts`), Return/Space activates whichever
+  // key it is on through the SAME path a click already takes (`_onMirrorActivate`/`_onAddClick`,
+  // below — never a second copy of "resolve an anchor, emit TokenTap/AddTap"), Up/Down hands off to a
+  // neighbouring sentence "keeping the nearest token" (`NearestIndexByCenter`), and Escape collapses
+  // the ring back to this whole sentence rather than leaving it.
+
+  /** Which of `_focusableKeys` the ring is on, or null while nothing is roving — the ring then shows
+   *  (if anything) as the whole-sentence one `FocusController` already draws for every other JivHost.
+   *  Written only by this section's own keyboard handling, never read raw outside it — `_activeIndex`,
+   *  just below, is what the rest of this file reads, so a stale index (the sentence's own words just
+   *  changed count) self-heals to null instead of pointing past the end of a shorter list. */
+  private readonly _rovingIndex = signal<number | null>(null);
+
+  /** The roving ring's own stops, in order (`FocusableTokenKeys`): every tappable token, then the "+"
+   *  when this sentence shows one — the exact same set `_hitAt`/`AnchorOf` already resolve a key
+   *  against, so Tab/Return and a pointer tap can never disagree about what a key names. */
+  private readonly _focusableKeys = computed(() => FocusableTokenKeys(this.Tokens(), !!this._layout().Add));
+
+  /** `_rovingIndex`, clamped against the CURRENT `_focusableKeys` — the self-healing half of the
+   *  doc comment above. */
+  private readonly _activeIndex = computed<number | null>(() => {
+    const i = this._rovingIndex();
+    return i !== null && i < this._focusableKeys().length ? i : null;
+  });
+
+  /** A roving stop's own rect (a tappable token's pill, matching `_visiblePills`' own box exactly, or
+   *  the "+"'s whole box) and the corner the ring should read concentric with — `null` for a key that
+   *  no longer resolves to anything this layout pass actually placed (the words just changed under a
+   *  still-settling index; `_activeIndex` catches the common case, this catches the rest). */
+  private _rectForKey(key: string): { readonly Rect: FocusRect; readonly RadiusPt: number | null } | null {
+    const layout = this._layout();
+    if (key === '+') {
+      const add = layout.Add;
+      // Jwift_TokenSentenceAdd's own BorderRadius (TokenSentence.jss) — PillRadiusOf deliberately
+      // answers null for "+" (its own doc comment: that one names the CORNER A WORD'S MENU grows out
+      // of), so this reads the "+"'s actual drawn corner straight off its own class instead.
+      return add ? { Rect: { X: add.X, Y: add.Y, Width: add.Width, Height: add.Height }, RadiusPt: 13 } : null;
+    }
+    const tokenIndex = this.Tokens().findIndex((t) => t.Key === key);
+    const piece = layout.Pieces.find((p) => p.TokenIndex === tokenIndex);
+    if (!piece) return null;
+    const pad = layout.PillPads.find((p) => p.TokenIndex === tokenIndex);
+    const pill = PillRectOf(piece, this.FontSizePt(), this.LineHeightPt(), pad?.LeftPad, pad?.RightPad);
+    return { Rect: pill, RadiusPt: this.PillRadiusOf(key) };
+  }
+
+  /** The ring's own template entry — null whenever there is nothing to ring (no roving stop) or this
+   *  host is not showing KEYBOARD focus at all (`_focus.FocusVisible`, `FocusController.ts`): a pointer
+   *  tap that lands this sentence's own host focus never roves and never rings, matching every other
+   *  JivHost's own "ring on keyboard focus only" rule exactly, just one token at a time instead of the
+   *  whole box. */
+  protected readonly _focusRing = computed<{ readonly Style: Record<string, unknown>; readonly Layout: Record<string, unknown> } | null>(() => {
+    if (!this._focus.FocusVisible()) return null;
+    const idx = this._activeIndex();
+    if (idx === null) return null;
+    const key = this._focusableKeys()[idx];
+    const at = key === undefined ? null : this._rectForKey(key);
+    if (!at) return null;
+    const ring = FocusRingRectFor(at.Rect);
+    const geometry = FocusRingGeometryOf(at.RadiusPt);
+    return { Style: { BorderRadius: `${geometry.RadiusPt}pt` }, Layout: _rect(ring.X, ring.Y, ring.Width, ring.Height) };
+  });
+
+  /** `_rovingIndex`'s own setter, paired with telling THIS host's `FocusController` whether to stand
+   *  its whole-box ring down — the two must always move together (a roving stop showing its own ring
+   *  with the whole-box ring still drawn underneath it would double-ring the same focus), so this is
+   *  the one place either one ever changes. */
+  private _setRoving(index: number | null): void {
+    this._rovingIndex.set(index);
+    this._focus.SuppressRing(index !== null);
+  }
+
+  /** Called on THIS sentence by a NEIGHBOUR's own Up/Down (`_moveRow`, below) — lands the ring on
+   *  whichever of this sentence's own stops sits nearest `fromAbsoluteCenterX` (page-absolute, since
+   *  two sentences never share the same local origin once either one is indented) and gives this host
+   *  real DOM focus, same "keeping the nearest token" rule a Finder column view's own arrow keys use
+   *  moving between columns. Falls back to plain `focus()` with no stop picked when this row has none
+   *  of its own (a caption-only line) — Left/Right then starts it fresh, same as any other empty case. */
+  protected FocusTokenNearX(fromAbsoluteCenterX: number): void {
+    const keys = this._focusableKeys();
+    if (keys.length === 0) { this.HostElement.focus(); return; }
+    const localX = fromAbsoluteCenterX - this.Node.X;
+    const centers = keys.map((key) => {
+      const at = this._rectForKey(key);
+      return at ? CenterXOf(at.Rect) : 0;
+    });
+    this._setRoving(NearestIndexByCenter(centers, localX));
+    this.HostElement.focus();
+  }
+
+  /** This sentence's own current stop's center, page-absolute (`Node.X` + the stop's own local
+   *  center) — what `_moveRow` hands the neighbour it lands in, and what a sentence with no roving
+   *  stop yet (freshly focused by a plain Tab, never an arrow) falls back to its own midpoint for, so
+   *  Up/Down from a sentence with nothing tappable still hands off a sane column to aim for. */
+  private _currentAbsoluteCenterX(): number {
+    const idx = this._activeIndex();
+    const key = idx === null ? undefined : this._focusableKeys()[idx];
+    const at = key === undefined ? null : this._rectForKey(key);
+    const localX = at ? CenterXOf(at.Rect) : this.Node.Width / 2;
+    return this.Node.X + localX;
+  }
+
+  /** Left/Right: one stop at a time, wrapping at either end (`MoveRovingIndex`). A sentence with
+   *  nothing to rove over (no tappable token, no "+") simply does nothing — there is no second Tab
+   *  stop to fall back to, and the whole-box ring (never suppressed, since `_setRoving` is never
+   *  called) keeps showing exactly as it already did before this section existed. */
+  private _moveRoving(direction: 'Left' | 'Right'): boolean {
+    const count = this._focusableKeys().length;
+    if (count === 0) return false;
+    this._setRoving(MoveRovingIndex(count, this._activeIndex(), direction));
+    return true;
+  }
+
+  /** Up/Down: hand off to the next/previous `<token-sentence>` in real DOM order that is ITSELF a live
+   *  Tab stop (`tabIndex === 0` — `FocusController`'s own decision, never guessed at again here; a
+   *  sentence `FocusController` demoted, e.g. one holding a focusable child of its own, is skipped the
+   *  same way Tab itself would skip it). `_ROVE_OF_HOST`'s own doc comment (bottom of this file)
+   *  explains why this reaches the neighbour by a side-table keyed on its host element rather than any
+   *  Angular DI path — there is none between two sibling rows of a list. `false` when there is no such
+   *  neighbour (the first/last row), so the caller leaves the key's default (page-scroll) alone. */
+  private _moveRow(direction: 'Up' | 'Down'): boolean {
+    const neighbourHost = _adjacentSentenceHost(this._doc, this.HostElement, direction);
+    if (!neighbourHost) return false;
+    const fromX = this._currentAbsoluteCenterX();
+    const neighbour = _ROVE_OF_HOST.get(neighbourHost);
+    if (neighbour) neighbour.FocusTokenNearX(fromX);
+    else neighbourHost.focus();
+    return true;
+  }
+
+  /** Return/Space on whatever the ring is on: THE SAME ACTIVATION PATH a click already takes — a
+   *  tappable token through `_onMirrorActivate` (the mirror/SEO synthetic-click path every assistive
+   *  activation already shares), the "+" through `_onAddClick` — never a second "resolve an anchor,
+   *  emit TokenTap/AddTap" written fresh for the keyboard. Does nothing while nothing is roving (a
+   *  plain Tab landed here and the director hasn't moved the ring yet); `false` lets the keydown
+   *  handler leave FocusController's own generic activation (dispatch a click at the HOST) in place
+   *  for that case, same as before this section existed. */
+  private _activateRoving(): boolean {
+    const idx = this._activeIndex();
+    if (idx === null) return false;
+    const key = this._focusableKeys()[idx];
+    if (key === undefined) return false;
+    if (key === '+') this._onAddClick();
+    else this._onMirrorActivate(key);
+    return true;
+  }
+
+  /**
+   * ONE capture-phase listener for everything this section owns, registered ahead of
+   * `FocusController`'s own bubble-phase one (same host element, same `keydown`) so a key this section
+   * claims — every arrow always, Return/Space/Escape only once a stop is actually roving — never also
+   * reaches that generic handler and double-acts (its own Return/Space would otherwise dispatch a
+   * second, redundant click at the whole host). `stopPropagation` is what wins that race, not
+   * registration order, which Angular's own host-binding setup leaves otherwise unspecified relative
+   * to a plain constructor-time `addEventListener` like `FocusController`'s.
+   */
+  private _wireRovingFocus(): void {
+    const host = this.HostElement;
+    _ROVE_OF_HOST.set(host, this);
+    host.addEventListener('blur', () => this._setRoving(null));
+    host.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.target !== host) return;
+      const arrow = ArrowDirectionOf(e);
+      if (arrow === 'Left' || arrow === 'Right') {
+        if (this._moveRoving(arrow)) { e.preventDefault(); e.stopPropagation(); }
+        return;
+      }
+      if (arrow === 'Up' || arrow === 'Down') {
+        if (this._moveRow(arrow)) { e.preventDefault(); e.stopPropagation(); }
+        return;
+      }
+      if (IsEscapeKey(e) && this._activeIndex() !== null) {
+        // "Escape returns focus to the sentence": the ring collapses from a token back to the whole
+        // row, which is still focused throughout — never a blur. A SECOND Escape, with nothing left
+        // roving, falls through to FocusController's own generic Escape (blur), unchanged.
+        this._setRoving(null);
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      if (IsActivationKey(e) && this._activateRoving()) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+  }
+
   constructor() {
     super('TokenSentence', TokenSentenceJss, 'Jwift_TokenSentence', () => 'Jwift_TokenSentence');
     // Every piece paints Position: Placed (the pills, underlines, text runs, the "+" — `_rect()`'s own
@@ -702,6 +911,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
     // fixed px/pt) collapsed to zero — this is that report, straight off the same LayoutSentence the
     // pieces themselves are placed from, so wrapping to two or three lines grows the row for real.
     effect(() => this.SetStyleOverride({ Height: `${this._layout().Height}pt` }));
+    this._wireRovingFocus();
   }
 
   ngOnInit(): void {
@@ -965,4 +1175,26 @@ const _FILLER = '\u0000filler';
 
 function _rect(x: number, y: number, w: number, h: number): Record<string, unknown> {
   return { Position: 'Placed', Left: `${x}px`, Top: `${y}px`, Width: `${w}px`, Height: `${h}px` };
+}
+
+/** Every live `TokenSentence`, by the host element it owns — the SAME shape `FocusController.ts`'s own
+ *  `_CONTROLLER_OF_HOST` side-table uses, for the identical reason: Up/Down (`_moveRow`) needs to call
+ *  a METHOD on whichever sibling row sits next in the DOM, and there is no Angular DI relationship
+ *  between two sibling rows of a list (each `<drill-editor-line>` mounts its own `<token-sentence>`
+ *  with no reference to the one beside it) — both sides only ever share a real element. */
+const _ROVE_OF_HOST = new WeakMap<HTMLElement, TokenSentence>();
+
+/**
+ * The next/previous `<token-sentence>` in real DOM order that is ITSELF a live Tab stop right now
+ * (`tabIndex === 0`, `FocusController`'s own decision — never re-derived here, so this can never
+ * disagree with what Tab itself would actually land on). Scoped to `doc` (the same `DOCUMENT` token
+ * every other cross-document lookup in this file already reads off `inject(DOCUMENT)`) rather than the
+ * bare global `document`, matching this file's own existing convention; a page with more than one list
+ * of sentences simply walks its OWN document order, exactly as Tab itself would across the whole page.
+ */
+function _adjacentSentenceHost(doc: Document, host: HTMLElement, direction: 'Up' | 'Down'): HTMLElement | null {
+  const rows = Array.from(doc.querySelectorAll<HTMLElement>('token-sentence')).filter((el) => el.tabIndex === 0);
+  const at = rows.indexOf(host);
+  if (at === -1) return null;
+  return (direction === 'Down' ? rows[at + 1] : rows[at - 1]) ?? null;
 }

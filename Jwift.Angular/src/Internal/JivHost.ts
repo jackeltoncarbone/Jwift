@@ -137,8 +137,12 @@ export abstract class JivHost {
   /** Apple's Tab/Shift-Tab/Space/Return/Esc and ring (`FocusController.ts`) — the one implementation
    *  this base class shares with `JwiftFocusable`, the directive version for a plain `<jiv>` a
    *  component template owns directly (a toolbar group's own cells, a title button) rather than
-   *  being JivHost's own host. Constructed below, once `this.Node` and the registry/bridge exist. */
-  private _focus!: FocusController;
+   *  being JivHost's own host. Constructed below, once `this.Node` and the registry/bridge exist.
+   *  `protected`, not `private` — a subclass that is itself a composite control (`TokenSentence`'s
+   *  own roving Left/Right/Up/Down across its tokens, Drill Sentences lane AG2) reads `FocusVisible`
+   *  and calls `SuppressRing` on its OWN host's controller directly, rather than this base class
+   *  growing a bespoke pass-through for the one subclass that needs it. */
+  protected _focus!: FocusController;
 
   /** Subclass setter for runtime TextStyle overrides (e.g. an accent Color on a
    *  glyph/label). Same untracked-read + re-fire contract as SetStyleOverride. */

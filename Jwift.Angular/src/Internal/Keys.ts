@@ -28,3 +28,23 @@ export const IsEscapeKey = (e: { readonly key?: string; readonly code?: string }
 export const IsActivationKey = (e: { readonly key?: string; readonly code?: string }): boolean =>
   e.key === ' ' || e.key === 'Enter' || e.key === 'Return' || e.key === 'Spacebar'
   || e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter';
+
+export type ArrowDirection = 'Left' | 'Right' | 'Up' | 'Down';
+
+/**
+ * Which arrow was pressed, read off `key` alone — the same "read what the key MEANS, never a numeric
+ * code" contract as `IsEscapeKey`/`IsActivationKey` above. `TokenSentence`'s own roving focus (Drill
+ * Sentences lane AG2, blind round 31 desktop: ten Tabs never reached the list's own editable words,
+ * only each row's own single Tab stop) reads every arrow through this one function rather than four
+ * separate `e.key === 'ArrowLeft'` checks scattered through its keydown handler — `null` for every
+ * other key, so a caller can `switch` on the result without a fifth "none of these" branch of its own.
+ */
+export const ArrowDirectionOf = (e: { readonly key?: string }): ArrowDirection | null => {
+  switch (e.key) {
+    case 'ArrowLeft': return 'Left';
+    case 'ArrowRight': return 'Right';
+    case 'ArrowUp': return 'Up';
+    case 'ArrowDown': return 'Down';
+    default: return null;
+  }
+};

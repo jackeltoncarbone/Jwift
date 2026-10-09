@@ -1,3 +1,4 @@
+import { signal, type Signal } from '@angular/core';
 import type { JssRegistry } from 'jaui-angular';
 import { JivHandle, type MainBridge } from 'jaui';
 import { FocusableBoxStyle } from './FocusableBox';
@@ -40,9 +41,19 @@ const _resyncAncestorOf = (host: HTMLElement): void => {
  * once, in the constructor, and kept for the controller's own lifetime.
  */
 export class FocusController {
-  private readonly _focusVisible = { Value: false };
+  private readonly _focusVisible = signal(false);
+  /** Read-only outward face of `_focusVisible` — a plain `Signal`, never `WritableSignal`, so a
+   *  consumer (`TokenSentence`'s own roving ring, Drill Sentences lane AG2) can react to keyboard-vs-
+   *  pointer focus the SAME way this controller itself already tracked it, rather than re-deriving
+   *  `host.matches(':focus-visible')` a second time from scratch. */
+  readonly FocusVisible: Signal<boolean> = this._focusVisible;
   private _ring: JivHandle | null = null;
   private _lastFocusable = false;
+  /** Set by `SuppressRing` (Drill Sentences lane AG2): true while a composite control this host
+   *  belongs to (`TokenSentence`, roving Left/Right across its own tokens) is drawing a MORE SPECIFIC
+   *  ring of its own — the whole-host ring this class would otherwise show stands down rather than
+   *  double-ringing the same focus underneath the token's own. */
+  private _ringSuppressed = false;
   /** `Sync`'s own last three arguments — `Resync` (called FROM a descendant becoming focusable, not
    *  from this host's own reactive effect) has no fresh ones of its own to pass, and must re-run the
    *  SAME decision against the fresh DOM rather than guess at stale ones. */
@@ -56,8 +67,8 @@ export class FocusController {
   ) {
     _CONTROLLER_OF_HOST.set(this._host, this);
     const host = this._host;
-    host.addEventListener('focus', () => { this._focusVisible.Value = host.matches(':focus-visible'); this._applyRingVisibility(); });
-    host.addEventListener('blur', () => { this._focusVisible.Value = false; this._applyRingVisibility(); });
+    host.addEventListener('focus', () => { this._focusVisible.set(host.matches(':focus-visible')); this._applyRingVisibility(); });
+    host.addEventListener('blur', () => { this._focusVisible.set(false); this._applyRingVisibility(); });
     host.addEventListener('keydown', (e: KeyboardEvent) => {
       // Only this element's own keydown — not one bubbled up from a nested REAL focusable (TextInput's
       // own `<jinput>`, say), which already answers Space/Enter/Escape its own way.
@@ -137,7 +148,18 @@ export class FocusController {
   }
 
   private _applyRingVisibility(): void {
-    this._ring?.Apply({ ElementProps: { Visible: this._lastFocusable && this._focusVisible.Value } });
+    this._ring?.Apply({ ElementProps: { Visible: this._lastFocusable && this._focusVisible() && !this._ringSuppressed } });
+  }
+
+  /** Stand this host's own whole-box ring down (`suppressed: true`) while a composite control drawn
+   *  from THIS host's own content (`TokenSentence`'s roving Left/Right/Up/Down across its tokens, Drill
+   *  Sentences lane AG2 — blind round 31 desktop: ten Tabs never reached the list's own words) shows a
+   *  more specific ring of its own; `false` hands the whole-box ring back once nothing more specific is
+   *  focused. A no-op for every OTHER `FocusController` consumer, which never calls this at all and so
+   *  never suppresses its own ring. */
+  SuppressRing(suppressed: boolean): void {
+    this._ringSuppressed = suppressed;
+    this._applyRingVisibility();
   }
 
   /** Allocates the ring Jiv: a bordered, hit-less child that tracks this host's own rect via
