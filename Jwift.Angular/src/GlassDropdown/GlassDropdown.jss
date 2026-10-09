@@ -16,7 +16,9 @@ Jwift_GlassDropdown : JwiftGlass {
   Justify: Start
   Align: Stretch
   Padding: 4pt
-  Gap: 2pt
+  // Drill Sentences lane TK1 (the token sweep): named @GapHairline rather than a bare repeated 2pt
+  // (TOKENS.md) — Apple's own micro-gap, the one step below the 4pt grid.
+  Gap: @GapHairline
 
 
   // Concentric with the 44pt pill rows at the 4pt closed padding; the open
@@ -49,7 +51,7 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
   Direction: Row
   Justify: Center
   Align: Center
-  Padding: 2pt
+  Padding: @GapHairline
   Gap: 4pt
   // Width: MaxContent — sum of all cells + gaps + padding (intended
   // pill behavior: actions + ellipsis + avatar in a row). MinContent on
@@ -437,9 +439,10 @@ Jwift_GlassDropdownItemIcon_Destructive : Jwift_GlassDropdownItemIcon {
 // fill its 22pt box. A dead `FitMode: Contain` line sat here asking for the
 // opposite and never did anything; stating Contain properly needs a fit option
 // on `[image]` in Jaui, which does not exist yet.
+// Drill Sentences lane TK1 (the token sweep): 9pt was off the 4pt grid (TOKENS.md); @Gap8, the nearest.
 Jwift_GlassDropdownItemImage {
   Width: 22pt
-  Margin: 0pt 9pt
+  Margin: 0pt @Gap8
   Height: 22pt
 }
 
@@ -475,11 +478,14 @@ Jwift_GlassDropdownItemLabel_Destructive : Jwift_GlassDropdownItemLabel {
 // Footnote medium, case as written, 12pt above the text and 16pt from its baseline to the rows, lined up
 // with the rows' content. The 6pt row gaps on either side are part of both.
 // Its ink is plain secondaryLabelColor with no compositing filter: the shared secondary level.
+// Drill Sentences lane TK1 (the token sweep): the leading indent was a bespoke 46pt, no token
+// (TOKENS.md) — 48pt, the nearest 4pt-grid value, keeps the same 16pt gap to the indented variant
+// below (now 64pt) that this class's own comment relies on to stay "lined up with the rows' content."
 Jwift_GlassDropdownSectionHeader : JwiftSecondaryLabelVibrancy {
   FontFamily: Inter
   FontSize: 13pt
   FontWeight: 500
-  Padding: 12pt 18pt 16pt 46pt
+  Padding: 12pt 18pt 16pt 48pt
   MaxLines: 1
 }
 
@@ -489,8 +495,10 @@ Jwift_GlassDropdownSectionHeader : JwiftSecondaryLabelVibrancy {
 // aligned regardless of which one is on (Jwift_GlassDropdownItemCheck's own comment). Left where it was, the header
 // stayed at the plain 14pt while its own rows' icons sat 28pt further right — the header no longer "lined up with
 // the rows' content" the way this class's own comment promises. This variant carries the same 28pt so it still does.
+// 64pt: the base header's own 48pt plus the same 16pt the row below carries for its checkmark gutter
+// (Jwift_GlassDropdownItemCheck's own comment), rounded from the old bespoke 62pt onto the 4pt grid.
 Jwift_GlassDropdownSectionHeader_Indented : Jwift_GlassDropdownSectionHeader {
-  Padding: 12pt 18pt 16pt 62pt
+  Padding: 12pt 18pt 16pt 64pt
 }
 
 // Hairline between large sections of a menu. It lives inside the 6pt row

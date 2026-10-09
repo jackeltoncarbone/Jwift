@@ -17,22 +17,25 @@ Jwift_GlassBtn : JwiftGlass, JwiftPressGlass {
   @Transition PointScale { Duration: 140ms }
 }
 
+// Drill Sentences lane TK1 (the token sweep): the large tier was 48pt, NEAR Apple's own 50pt large glass
+// button, Δ2 (TOKENS.md/REFS.md — the count sheet's "Done" measured 47.7pt live, close to but short of
+// Apple's 50). @HeightLarge/@RadiusLarge now state it exactly (height/2 = 25, Apple's own large radius).
 Jwift_GlassBtn_Round : Jwift_GlassBtn {
   Direction: Row
   Justify: Center
   Align: Center
-  Width: 48pt
-  Height: 48pt
-  BorderRadius: 24pt
+  Width: @HeightLarge
+  Height: @HeightLarge
+  BorderRadius: @RadiusLarge
 }
 
 Jwift_GlassBtn_Pill : Jwift_GlassBtn {
   Direction: Row
   Justify: Center
   Align: Center
-  // Min height matches the round/square shapes (48pt) so a labeled pill is
+  // Min height matches the round/square shapes (@HeightLarge) so a labeled pill is
   // never shorter than the standard touch target.
-  MinHeight: 48pt
+  MinHeight: @HeightLarge
   Padding: 0pt 22pt
   BorderRadius: 999pt
 }
@@ -41,8 +44,8 @@ Jwift_GlassBtn_Square : Jwift_GlassBtn {
   Direction: Row
   Justify: Center
   Align: Center
-  Width: 48pt
-  Height: 48pt
+  Width: @HeightLarge
+  Height: @HeightLarge
   BorderRadius: 14pt
 }
 
@@ -65,20 +68,20 @@ Jwift_GlassBtn_Prominent : JwiftProminent {
 }
 
 Jwift_GlassBtn_Prominent_Round : Jwift_GlassBtn_Prominent {
-  Width: 48pt
-  Height: 48pt
-  BorderRadius: 24pt
+  Width: @HeightLarge
+  Height: @HeightLarge
+  BorderRadius: @RadiusLarge
 }
 
 Jwift_GlassBtn_Prominent_Pill : Jwift_GlassBtn_Prominent {
-  MinHeight: 48pt
+  MinHeight: @HeightLarge
   Padding: 0pt 22pt
   BorderRadius: 999pt
 }
 
 Jwift_GlassBtn_Prominent_Square : Jwift_GlassBtn_Prominent {
-  Width: 48pt
-  Height: 48pt
+  Width: @HeightLarge
+  Height: @HeightLarge
   BorderRadius: 14pt
 }
 
@@ -124,20 +127,20 @@ Jwift_GlassBtn_DangerProminent : JwiftDangerProminent {
 }
 
 Jwift_GlassBtn_DangerProminent_Round : Jwift_GlassBtn_DangerProminent {
-  Width: 48pt
-  Height: 48pt
-  BorderRadius: 24pt
+  Width: @HeightLarge
+  Height: @HeightLarge
+  BorderRadius: @RadiusLarge
 }
 
 Jwift_GlassBtn_DangerProminent_Pill : Jwift_GlassBtn_DangerProminent {
-  MinHeight: 48pt
+  MinHeight: @HeightLarge
   Padding: 0pt 22pt
   BorderRadius: 999pt
 }
 
 Jwift_GlassBtn_DangerProminent_Square : Jwift_GlassBtn_DangerProminent {
-  Width: 48pt
-  Height: 48pt
+  Width: @HeightLarge
+  Height: @HeightLarge
   BorderRadius: 14pt
 }
 
@@ -146,7 +149,7 @@ Jwift_GlassBtn_DangerProminent_Square : Jwift_GlassBtn_DangerProminent {
 // (Apple's plain UIButton wears the tint colour and nothing else). Apple gives a plain button no
 // dedicated geometry of its own (Sizing.md section 3 only measures the glass/bordered styles), so this
 // keeps the same three hit-area shapes as `glass` and `prominent` — a plain button never falls under the
-// 44pt/48pt floor, it only drops the plate under the label.
+// 44pt/50pt floor, it only drops the plate under the label.
 Jwift_GlassBtn_Plain {
   Background: transparent
   Interactive: true
@@ -158,15 +161,15 @@ Jwift_GlassBtn_Plain_Round : Jwift_GlassBtn_Plain {
   Direction: Row
   Justify: Center
   Align: Center
-  Width: 48pt
-  Height: 48pt
+  Width: @HeightLarge
+  Height: @HeightLarge
 }
 
 Jwift_GlassBtn_Plain_Pill : Jwift_GlassBtn_Plain {
   Direction: Row
   Justify: Center
   Align: Center
-  MinHeight: 48pt
+  MinHeight: @HeightLarge
   Padding: 0pt 14pt
 }
 
@@ -174,8 +177,8 @@ Jwift_GlassBtn_Plain_Square : Jwift_GlassBtn_Plain {
   Direction: Row
   Justify: Center
   Align: Center
-  Width: 48pt
-  Height: 48pt
+  Width: @HeightLarge
+  Height: @HeightLarge
 }
 
 // The plain button's own label ink, for a call site to apply to its projected `<jext>` — the button
@@ -215,7 +218,7 @@ Jwift_GlassBtnBar_Square {
 // `size="small"`: Apple's small/mini UIButton height, 28pt, with the matching dynamic corner radius, 14
 // (Sizing.md section 3: "height per size | large 50, medium 34, small and mini 28" and "corner radius,
 // dynamic corner style | large 25, medium 17, small and mini 14"). For a button living inside a list row
-// or a dense toolbar, where the 48pt/44pt floor is taller than the row itself.
+// or a dense toolbar, where the 50pt/44pt floor is taller than the row itself.
 Jwift_GlassBtnSmall_Round {
   Width: 28pt
   Height: 28pt

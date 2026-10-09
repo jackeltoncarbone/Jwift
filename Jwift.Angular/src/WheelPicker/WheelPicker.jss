@@ -104,9 +104,11 @@ Jwift_WheelItem {
 // Regular weight (400), not the house's Medium default (Drill Sentences lane ZZ4, item 1, Sizing.md 12
 // [I]): Apple's own wheel rows are never bolded, the centered row included — the roll/fade through
 // VisualScale/Opacity is the only thing that marks it out, exactly as kept above.
+// Drill Sentences lane TK1 (the token sweep): 19pt was NEAR, no Apple token (TOKENS.md); @TextTitle3
+// (20), Δ1 — within Apple's own measured 21-23pt range for a centered wheel row (Sizing.md 12).
 Jwift_WheelItemLabel : JwiftLabelVibrancy {
   FontFamily: -apple-system, BlinkMacSystemFont, Inter
-  FontSize: 19pt
+  FontSize: @TextTitle3
   FontWeight: 400
   TextAlign: Center
 }

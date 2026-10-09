@@ -25,7 +25,8 @@ Jwift_NumberFieldSeg {
   Height: 36pt
   BorderRadius: 18pt
   Margin: 4pt
-  Padding: 2pt
+  // Drill Sentences lane TK1 (the token sweep): named @GapHairline rather than a bare 2pt (TOKENS.md).
+  Padding: @GapHairline
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
 }
 Jwift_NumberFieldSegItem {

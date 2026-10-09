@@ -13,7 +13,9 @@ Jwift_TokenSentence {
 // the Presence fade. Hover and press are LIFTS (WashLaw), never paint; Open is the one state that
 // paints a flat tint, because it marks a token whose control is actually showing.
 // The highlight's corner, read by `TokenSentence.PillRadiusOf` too: the corner a word's menu grows out of.
-@JwiftTokenPillRadius: 7pt
+// Drill Sentences lane TK1 (the token sweep): 7pt had no Apple token at all (TOKENS.md); @RadiusSegmented
+// (8) is the nearest named corner, Δ1.
+@JwiftTokenPillRadius: @RadiusSegmented
 Jwift_TokenSentencePill {
   Position: Placed
   BorderRadius: @JwiftTokenPillRadius
@@ -39,9 +41,10 @@ Jwift_TokenSentencePill_OpenProblem {
 // never a second visual language for "look here."
 
 // The badge pill — Kind: Badge's permanent small chip (not state-driven; it is always drawn).
+// Drill Sentences lane TK1 (the token sweep): 9pt had no Apple token (TOKENS.md); @RadiusSegmented (8), Δ1.
 Jwift_TokenSentenceBadgePill {
   Position: Placed
-  BorderRadius: 9pt
+  BorderRadius: @RadiusSegmented
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
   PointerEvents: None
 }
