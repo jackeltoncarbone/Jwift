@@ -12,8 +12,15 @@
  * The open is a rect spring: the panel is laid out where it opens and its box starts at the origin (Jaui's
  * `MorphFrom`), its content already standing at its place and clipped by the glass as it grows. The close is a visual
  * transform, since a leaving node is no longer laid out: the panel shrinks onto the origin by a scale about its centre
- * and a translate that lands that centre on the origin's, fading as it goes. With reduced motion, or for a passive tip
- * that is no control's menu, both are a plain fade.
+ * and a translate that lands that centre on the origin's, fading as it goes. A passive tip that is no control's menu
+ * is a plain fade instead, both ways — nothing presses it, so there is no control for it to grow from or collapse onto.
+ *
+ * Reduce Motion is retired in this app (Jack: "jss is meant to be beautiful and physical... i will always animate
+ * nicely," `FocusAndMotion.Conformance.spec.ts`), so this never branches on it — a reader's OS preference used to drop
+ * every morph to `GlassMotionFor`'s own `Fade`, which is also how the deterministic-screenshot scripts request pages
+ * (Playwright's `reducedMotion: 'reduce'`), so a word popover — the count wheel, who/mirror, a phrase's "…" — read as
+ * a flat opacity cross-fade with its text bleeding through mid-fade in every blind capture (round 28, finding 1),
+ * never the grow-from-source every other glass already wears.
  */
 
 /** A rect, canvas px. */
@@ -32,13 +39,15 @@ export interface GlassMorphShape extends GlassMorphRect {
 /** How a panel comes and goes: grown out of its origin, or a plain fade. */
 export type GlassMotion = 'Morph' | 'Fade';
 
-/** A menu morphs; a passive tip (nothing to press, no control it belongs to) and a reader who asked for reduced motion
- *  get a plain fade. */
-export function GlassMotionFor(passive: boolean, reducedMotion: boolean): GlassMotion {
-  return passive || reducedMotion ? 'Fade' : 'Morph';
+/** A menu morphs; a passive tip (nothing to press, no control it belongs to) gets a plain fade. No reduced-motion
+ *  branch (this file's own doc comment) — every other reader gets the morph. */
+export function GlassMotionFor(passive: boolean): GlassMotion {
+  return passive ? 'Fade' : 'Morph';
 }
 
-/** Whether the reader asked for reduced motion, from the document's own window. */
+/** Whether the reader asked for reduced motion, from the document's own window. Unrelated to `GlassMotionFor` (this
+ *  file's own doc comment retires that branch) — kept for `Sheet.ts`'s own unrelated use, tightening a sheet's
+ *  detent springs so they settle with little to no visible bounce rather than skipping its morph presentation. */
 export function PrefersReducedMotion(doc: Document): boolean {
   return !!doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 }

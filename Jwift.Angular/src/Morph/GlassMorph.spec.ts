@@ -63,11 +63,15 @@ describe('the close collapses the panel onto the control', () => {
   });
 });
 
-describe('a menu morphs, a tip and a reduced motion reader fade', () => {
-  it('by the panel\'s role and the reader\'s setting', () => {
-    expect(GlassMotionFor(false, false)).toBe('Morph');
-    expect(GlassMotionFor(true, false)).toBe('Fade');
-    expect(GlassMotionFor(false, true)).toBe('Fade');
+describe('a menu morphs, a tip fades, and nothing here branches on reduced motion', () => {
+  it('by the panel\'s role alone', () => {
+    expect(GlassMotionFor(false)).toBe('Morph');
+    expect(GlassMotionFor(true)).toBe('Fade');
+  });
+
+  it('never reads a reduced-motion preference: retired (round 28, finding 1 -- the screenshot scripts\' own ' +
+    '`reducedMotion: \'reduce\'` used to drop every word popover to a flat cross-fade)', () => {
+    expect(GlassMotionFor.length).toBe(1);
   });
 });
 
@@ -75,7 +79,7 @@ describe('the popover wears it', () => {
   it('opens the frame after its first placement, from its origin, in the same batch as the shown class', () => {
     expect(POPOVER).toContain('this.Node.MorphFrom(start);');
     expect(POPOVER).toContain("this.SetStyleOverrideNow({ BorderRadius: `${start.Radius}px` });");
-    expect(POPOVER).toContain("if (!origin || GlassMotionFor(this.PassThrough(), PrefersReducedMotion(this._doc)) === 'Fade') {");
+    expect(POPOVER).toContain("if (!origin || GlassMotionFor(this.PassThrough()) === 'Fade') {");
   });
 
   it('leaves collapsing onto its origin', () => {

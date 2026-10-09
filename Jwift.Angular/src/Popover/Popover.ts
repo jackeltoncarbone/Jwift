@@ -26,7 +26,7 @@ import {
   type PopoverHold, type PopoverPlacement, type PopoverRect,
 } from './Popover.Placement';
 import {
-  GlassCollapseOnto, GlassCollapseStyle, GlassMorphEnd, GlassMorphStart, GlassMotionFor, PrefersReducedMotion, type GlassMotion,
+  GlassCollapseOnto, GlassCollapseStyle, GlassMorphEnd, GlassMorphStart, GlassMotionFor, type GlassMotion,
 } from '../Morph/GlassMorph';
 import { SwallowPress } from './Popover.OutsidePress';
 import { OpenSnap } from './Popover.OpenSnap';
@@ -295,7 +295,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   // ── The open and the close (Drill Sentences lane WW1, item 3) ────────────────────────────────────────
   // The panel is unseen until it is placed, its height measured (a room still being made under it places it below its
   // anchor at once: `MakeRoom`). The frame after its first placement it shows: a menu's glass from the anchor's own rect and corner, springing to its placement
-  // (`Jwift_Popover_Morph`), a passive tip or a reduced motion reader's in place (`Jwift_Popover_Fade`).
+  // (`Jwift_Popover_Morph`), a passive tip fading in place (`Jwift_Popover_Fade`) — no reduced-motion branch
+  // (`GlassMorph.ts`'s own doc comment: Reduce Motion is retired in this app).
   /** How it opened, or null while it is still unseen. */
   private readonly _shown = signal<GlassMotion | null>(null);
   /** Placed and not yet shown: the next placement frame shows it. */
@@ -471,7 +472,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
       this._showPending = false;
       const origin = this._resolveOrigin();
       this._hideSource();
-      if (!origin || GlassMotionFor(this.PassThrough(), PrefersReducedMotion(this._doc)) === 'Fade') {
+      if (!origin || GlassMotionFor(this.PassThrough()) === 'Fade') {
         this._settleRadius();
         this._shown.set('Fade');
         return;
