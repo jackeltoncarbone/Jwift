@@ -19,8 +19,10 @@ import { Jaui, Jext, Jiv, Jyle, JSS_REGISTRY } from 'jaui-angular';
 import { ComposeFontFamily } from 'jaui';
 import { Icon } from '../Icon/Icon';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
+import { IsCoarsePointer, ShowsLeadingMenuColumn } from '../Internal/PointerMedia';
 import { RowIndicator, type RowIndicatorRow } from '../Internal/RowIndicator';
 import { Popover, JWIFT_POPOVER_ROOM } from './Popover';
+import { PopoverMenuHasLeadingMark } from './PopoverMenu.Check';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverMenuJss from './PopoverMenu.jss';
 
@@ -153,13 +155,15 @@ export class PopoverMenuRow implements OnInit, OnDestroy, RowIndicatorRow {
           @default {
             <jiv [popoverMenuRow]="!!item.Disabled" [class]="_RowClass(item)"
                  semantics="Button" [label]="_RowLabel(item)" (click)="_pick(item)">
-              <jiv class="Jwift_PopoverMenuCheck">
-                @if (item.Checked) {
-                  <icon class="Jwift_PopoverMenuCheckGlyph" Name="checkmark" />
-                } @else if (item.Icon) {
-                  <icon class="Jwift_PopoverMenuItemGlyph" [Name]="item.Icon" />
-                }
-              </jiv>
+              @if (_ShowCheckColumn()) {
+                <jiv class="Jwift_PopoverMenuCheck">
+                  @if (item.Checked) {
+                    <icon class="Jwift_PopoverMenuCheckGlyph" Name="checkmark" />
+                  } @else if (item.Icon) {
+                    <icon class="Jwift_PopoverMenuItemGlyph" [Name]="item.Icon" />
+                  }
+                </jiv>
+              }
               <jiv class="Jwift_PopoverMenuLabelCol">
                 <jext class="Jwift_PopoverMenuLabel" [text]="item.Label ?? ''" />
                 @if (item.Caption) { <jext class="Jwift_PopoverMenuCaption" [text]="item.Caption" /> }
@@ -186,6 +190,10 @@ export class PopoverMenu implements OnInit, OnDestroy {
 
   private readonly _canvas = inject(Jaui, { optional: true });
   private readonly _doc = inject(DOCUMENT);
+  // Read once: a reader's pointer kind does not change over one menu's lifetime, the same reasoning
+  // `IsCoarsePointer`'s own doc comment gives for reading it as a (reactive-capable, here just read
+  // once) media query rather than a one-shot UA sniff.
+  private readonly _coarsePointer = IsCoarsePointer(this._doc);
   private readonly _jss = inject(JSS_REGISTRY);
   private readonly _styleLoader = inject(JwiftStyleLoader);
   private readonly _popover = inject(Popover, { optional: true });
@@ -249,6 +257,14 @@ export class PopoverMenu implements OnInit, OnDestroy {
   /** The rows the page shows, read live (`PopoverMenuItem.Submenu`). */
   protected readonly _items = computed(() => this._page().Items());
 
+  /** Whether this page's rows draw the leading mark column at all (Drill Sentences lane AD2's finding:
+   *  the "+" add-step menu reserved it with nothing checked). `PopoverMenuHasLeadingMark` is the page's own
+   *  answer; `ShowsLeadingMenuColumn` folds in the reader's pointer, keeping macOS's own column-always
+   *  convention on a mouse or trackpad. Read by the template (below) and by `_contentWidth` (its own column
+   *  term), so a hidden column never both renders nothing AND reserves its width. */
+  protected readonly _ShowCheckColumn = computed(() =>
+    ShowsLeadingMenuColumn(PopoverMenuHasLeadingMark(this._items()), this._coarsePointer));
+
   // ── Sized to its widest row (Drill Sentences lane Y3, item 5) ─────────────────────────────────────
   // A fixed 250pt panel cut "Move with other squads…" down to "Move with other". The page's own rows are
   // measured with the font they draw in (PopoverMenu.jss: 17pt labels, 15pt details, 13pt headers and
@@ -257,13 +273,17 @@ export class PopoverMenu implements OnInit, OnDestroy {
   // (`Jwift_PopoverMenuLabel` has no line cap). Measured per page, so a pushed submenu fits its own rows.
   private readonly _contentWidth = computed(() => {
     let widest = 0;
+    // The check column's own width PLUS the row gap in front of it — both vanish together when the
+    // column itself goes unrendered (`_ShowCheckColumn`), never one without the other: an unrendered
+    // child leaves no gap in front of the next one either.
+    const checkCol = this._ShowCheckColumn() ? MENU_CHECK + MENU_ROW_GAP : 0;
     for (const item of this._items()) {
       if (item.Kind === 'Header') widest = Math.max(widest, MENU_ROW_PAD * 2 + _measure(item.Label ?? '', 13, 500));
       if (item.Kind !== 'Item') continue;
       const label = Math.max(_measure(item.Label ?? '', 17, 400), _measure(item.Caption ?? '', 13, 400));
       const detail = item.Detail ? MENU_ROW_GAP + _measure(item.Detail, 15, 400) : 0;
       const chevron = item.Submenu ? MENU_ROW_GAP + MENU_CHEVRON : 0;
-      widest = Math.max(widest, MENU_ROW_PAD * 2 + MENU_CHECK + MENU_ROW_GAP + label + detail + chevron);
+      widest = Math.max(widest, MENU_ROW_PAD * 2 + checkCol + label + detail + chevron);
     }
     if (!this._atRoot()) widest = Math.max(widest, MENU_ROW_PAD * 2 + MENU_CHEVRON + MENU_ROW_GAP + _measure(this._page().Title ?? '', 17, 600));
     return widest > 0 ? Math.ceil(widest + MENU_PANEL_PAD * 2 + MENU_MEASURE_SLACK) : null;

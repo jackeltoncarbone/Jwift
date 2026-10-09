@@ -14,9 +14,11 @@ import {
   untracked,
   viewChildren,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { type ChildLayout } from 'jaui';
 import { Icon } from '../Icon/Icon';
+import { IsCoarsePointer, ShowsLeadingMenuColumn } from '../Internal/PointerMedia';
 import { JwiftFocusable } from '../Internal/JwiftFocusable';
 import { GlassActionGroup, type GlassAction } from '../GlassActionGroup/GlassActionGroup';
 import { GLASS_ACTION_ACCOUNT } from '../GlassActionGroup/GlassActionAccount';
@@ -158,13 +160,13 @@ export interface ActionGroup {
                 @if (item.Divider) {
                   <jiv class="Jwift_GlassDropdownDivider" />
                 } @else if (item.Header) {
-                  <jext [class]="_HasStateIn(gp, gd.Page()) ? 'Jwift_GlassDropdownSectionHeader_Indented' : 'Jwift_GlassDropdownSectionHeader'" [text]="item.Label ?? ''" />
+                  <jext [class]="_ShowCheckColumnIn(gp, gd.Page()) ? 'Jwift_GlassDropdownSectionHeader_Indented' : 'Jwift_GlassDropdownSectionHeader'" [text]="item.Label ?? ''" />
                 } @else {
                   <glass-dropdown-item
                     [disabled]="!!item.Disabled"
                     [keepOpen]="!!item.KeepOpen || !!item.Page"
                     (click)="_OnItemClick(item, gd)">
-                    @if (_HasStateIn(gp, gd.Page())) {
+                    @if (_ShowCheckColumnIn(gp, gd.Page())) {
                       <icon [class]="item.Toggle && item.Active ? 'Jwift_GlassDropdownItemCheck' : 'Jwift_GlassDropdownItemCheck_Off'" Name="checkmark" />
                     }
                     @if (item.Image) {
@@ -240,6 +242,10 @@ export class GlassActionBar implements OnDestroy {
 
   /** The ambient account sink, when the host app provides one. */
   private readonly _Account = inject(GLASS_ACTION_ACCOUNT, { optional: true });
+
+  // Read once, same reasoning `GlassActionGroup.ts`'s own `_coarsePointer` gives: a reader's pointer kind
+  // does not change over one menu's lifetime.
+  private readonly _coarsePointer = IsCoarsePointer(inject(DOCUMENT));
 
   /** Explicit rows win; unset inherits the account rows. The bar resolves this
    *  ITSELF rather than leaving it to the sink group, because the rows have to
@@ -504,9 +510,13 @@ export class GlassActionBar implements OnDestroy {
     return this._ShowsTitle(a) ? { Width: `${CellWidth(a, true)}pt` } : undefined;
   }
 
-  /** A menu with any row checked keeps a check column, so its rows line up (as GlassActionGroup does). */
-  protected _HasStateIn(gp: { Group: ActionGroup }, page: string | null): boolean {
-    return this._OpenItemsFor(gp, page).some((item) => !!item.Toggle && !!item.Active);
+  /** Whether this group's open page draws the leading checkmark column at all — the same rule
+   *  `GlassActionGroup._ShowCheckColumn` states once (Drill Sentences lane AD2's finding): some row
+   *  actually checked, or any pointer short of coarse, keeps the column open so the rows line up; a
+   *  coarse pointer with nothing checked gets no column, labels at the menu's own inset. */
+  protected _ShowCheckColumnIn(gp: { Group: ActionGroup }, page: string | null): boolean {
+    const hasState = this._OpenItemsFor(gp, page).some((item) => !!item.Toggle && !!item.Active);
+    return ShowsLeadingMenuColumn(hasState, this._coarsePointer);
   }
 
   /** `pressed`: the cell of a pill whose list is open below it, which reads as held down while it is. */

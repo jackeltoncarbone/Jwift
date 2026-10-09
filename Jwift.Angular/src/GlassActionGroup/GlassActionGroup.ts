@@ -10,10 +10,12 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { type ChildLayout } from 'jaui';
 import { Avatar } from '../Avatar/Avatar';
 import { Icon } from '../Icon/Icon';
+import { IsCoarsePointer, ShowsLeadingMenuColumn } from '../Internal/PointerMedia';
 import { JwiftFocusable } from '../Internal/JwiftFocusable';
 import { GlassDropdown } from '../GlassDropdown/GlassDropdown';
 import { GlassDropdownItem } from '../GlassDropdown/GlassDropdownItem';
@@ -191,13 +193,13 @@ export interface GlassAction {
           @if (item.Divider) {
             <jiv class="Jwift_GlassDropdownDivider" />
           } @else if (item.Header) {
-            <jext [class]="_HasState(pg) ? 'Jwift_GlassDropdownSectionHeader_Indented' : 'Jwift_GlassDropdownSectionHeader'" [text]="item.Label ?? ''" />
+            <jext [class]="_ShowCheckColumn(pg) ? 'Jwift_GlassDropdownSectionHeader_Indented' : 'Jwift_GlassDropdownSectionHeader'" [text]="item.Label ?? ''" />
           } @else {
             <glass-dropdown-item
               [disabled]="!!item.Disabled"
               [keepOpen]="!!item.KeepOpen || !!item.Page"
               (click)="_OnItemClick(item)">
-              @if (_HasState(pg)) {
+              @if (_ShowCheckColumn(pg)) {
                 <icon [class]="item.Toggle && item.Active ? 'Jwift_GlassDropdownItemCheck' : 'Jwift_GlassDropdownItemCheck_Off'" Name="checkmark" />
               }
               @if (item.Image) {
@@ -232,6 +234,10 @@ export class GlassActionGroup implements OnDestroy {
   /** The ambient account sink, when the host app provides one. Optional, so a
    *  group with no provider behaves exactly as it always did. */
   private readonly _Account = inject(GLASS_ACTION_ACCOUNT, { optional: true });
+
+  // Read once, same reasoning `PopoverMenu.ts`'s own `_coarsePointer` gives: a reader's pointer kind does
+  // not change over one menu's lifetime.
+  private readonly _coarsePointer = IsCoarsePointer(inject(DOCUMENT));
 
   /** What the menu actually renders. An explicit `[Menu]` wins; unset inherits
    *  the account rows, and only on a group that draws the avatar to carry them
@@ -374,10 +380,15 @@ export class GlassActionGroup implements OnDestroy {
     return this.Pages()[page] ?? this._Account?.Pages?.()[page] ?? [];
   }
 
-  /** Whether any row on this page is checked. UIMenu then reserves the leading checkmark column on every row so the
-   *  rows stay aligned; with nothing checked there is no column, and icons sit at the menu's own inset. */
-  protected _HasState(page: string | null): boolean {
-    return this._OpenItems(page).some((item) => !!item.Toggle && !!item.Active);
+  /** Whether this page's rows draw the leading checkmark column at all (Drill Sentences lane AD2's finding,
+   *  read against `PopoverMenu`'s own `_ShowCheckColumn` — the two menus now share one rule,
+   *  `ShowsLeadingMenuColumn`, `Internal/PointerMedia.ts`). `hasState` is the page's own answer: some row
+   *  actually checked, UIMenu's reason to reserve the column at all. A coarse pointer (a finger) takes that
+   *  answer as given — nothing checked, no column, labels at the menu's own inset. A fine one (mouse,
+   *  trackpad) ignores it and always keeps the column, macOS's own menu-bar convention. */
+  protected _ShowCheckColumn(page: string | null): boolean {
+    const hasState = this._OpenItems(page).some((item) => !!item.Toggle && !!item.Active);
+    return ShowsLeadingMenuColumn(hasState, this._coarsePointer);
   }
 
   /** The root row that pushes this page, or null on the root and on a page only the avatar opens. */

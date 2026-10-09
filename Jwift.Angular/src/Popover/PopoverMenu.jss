@@ -81,6 +81,11 @@ Jwift_PopoverMenuItem_Disabled : Jwift_PopoverMenuItem {
 // `Color: @Ink` unconditionally, so `Danger` orders a row last and raises a filled confirm without a
 // separate red variant to accidentally reach for.
 
+// Rendered only when `PopoverMenu.ts`'s own `_ShowCheckColumn` says the page earns it — some row actually
+// checked, or iconed (the same column, never both on one row) — on a coarse pointer; a fine one (mouse,
+// trackpad) always gets it, macOS's own menu-bar convention (`Internal/PointerMedia.ts`). Omitted rather
+// than emptied: an unrendered column also drops the row's own leading `Gap` in front of it, so the label
+// sits at the row's plain padding instead of a blank 28pt gutter (Drill Sentences lane AD2's finding).
 Jwift_PopoverMenuCheck {
   Width: 18pt
   FlexShrink: 0
