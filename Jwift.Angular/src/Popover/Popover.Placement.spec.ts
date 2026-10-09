@@ -319,7 +319,7 @@ describe('ShortfallBelow: what a panel lacks under its word, for its host to mak
   it('a panel asks before its first placement, rides its anchor while the room opens, and asks again for a taller held page', () => {
     const popover = readFileSync(new URL('./Popover.ts', import.meta.url), 'utf-8');
     expect(popover).toContain('if (short > 0.5 && maker(short, anchor)) {');
-    expect(popover).toContain('const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h, over), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });');
+    expect(popover).toContain('const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h, over, this._pointingNow), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });');
     expect(popover).toContain('} else if (this._hold?.Down && !this._hold.Side && h > this._roomHeight + 0.5) {');
   });
 });

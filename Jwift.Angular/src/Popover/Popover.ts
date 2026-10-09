@@ -25,10 +25,12 @@ import {
   PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, RoomWaitStep, ShortfallBelow,
   type PopoverHold, type PopoverPlacement, type PopoverRect,
 } from './Popover.Placement';
+import { PopoverArrowRect, PopoverGlassArrow } from './Popover.Arrow';
 import {
   GlassCollapseOnto, GlassCollapseStyle, GlassMorphEnd, GlassMorphStart, GlassMotionFor, type GlassMotion,
 } from '../Morph/GlassMorph';
 import { SwallowPress } from './Popover.OutsidePress';
+import { IsRegularWidth } from '../Sheet/Sheet.Geometry';
 import { OpenSnap } from './Popover.OpenSnap';
 
 export type { PopoverRect };
@@ -155,14 +157,12 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
 
   /**
    * Drill Sentences lane AB1, item 2 (HIG Popovers, `Apple.Review.Checklist.md` #53: every popover has a visible
-   * arrow aimed at the control that revealed it). The placement's own `Arrow` (`Popover.Placement.ts`), published
-   * so a consumer that needs a real pointer drawn (the arrow itself is a style this component does not yet own —
-   * `Jwift_Popover`'s `Overflow: Hidden` clips anything this box would grow past its own edge) can place one
-   * alongside this panel, outside its clip, from `ArrowAt`, `Down` and `Side` together: the panel's own `X`/`Y`
-   * plus `ArrowAt` locates the tip in the same canvas coordinates the panel itself is placed in; `Down` says
-   * whether that edge is the panel's top (`true`) or bottom; `Side` whether it is the left edge instead. Null
-   * while unplaced, or for a panel that is its anchor's own glass, grown in place (`Over`) — nothing to point at,
-   * the same reading `ANCHOR_GAP`'s own comment already gives that case. */
+   * arrow aimed at the control that revealed it). The placement's own `Arrow` (`Popover.Placement.ts`): the panel's
+   * own `X`/`Y` plus `ArrowAt` locates the tip on the edge `Down` and `Side` name. Null while unplaced, or for a panel
+   * that is its anchor's own glass, grown in place (`Over`).
+   *
+   * Drill Sentences lane GL4: the panel's glass draws that arrow itself at regular width (`Pointing`), one outline with
+   * its body (Jaui's `GlassArrow`; `Popover.Arrow.ts`), so its lens, rim and shadows follow it. */
   readonly ArrowAt = computed<number | null>(() => this._placement()?.Arrow ?? null);
   /** Companion to `ArrowAt`: which of the panel's own edges the arrow sits on — its top when `true`, its
    *  bottom when `false` and not `Side`. Defaults to `true` (the common case) while unplaced. */
@@ -247,7 +247,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (this._placement() === null && !this._roomAsked) {
       this._roomAsked = true;
       this._roomHeight = h;
-      const short = ShortfallBelow(anchor, region, h, over);
+      const short = ShortfallBelow(anchor, region, h, over, this._pointingNow);
       if (short > 0.5 && maker(short, anchor)) {
         this._roomWait = { Since: now, StillSince: now, At: at };
       }
@@ -262,11 +262,14 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     if (wait.At !== at) { wait.At = at; wait.StillSince = now; }
     // Made only once the panel fits below the word where the word has come to rest (`RoomWaitStep`), never on a word that
     // paused before the room was made.
-    const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h, over), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });
+    const step = RoomWaitStep({ Shortfall: ShortfallBelow(anchor, region, h, over, this._pointingNow), StillFor: now - wait.StillSince, Elapsed: now - wait.Since });
     if (step === 'Rising') return true;
     this._roomWait = null;
     return false;
   }
+
+  /** `_pointing` as the current placement frame read it, for the room asked of the host (`ShortfallBelow`). */
+  private _pointingNow = false;
 
   /** Set once the content starts changing in place (`HoldPlacement`), and kept for the rest of the open. */
   private _hold: PopoverHold | null = null;
@@ -320,6 +323,12 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private _placedHeight = 0;
   private _placeKey = '';
 
+  /** Whether the panel points with its glass's arrow (Drill Sentences lane GL4): at regular width (`IsRegularWidth`), and
+   *  never for a menu grown over its control (`Over`). Compact width shows no arrow, as a popover there is a sheet. */
+  private _pointing(canvasWidth: number, canvasHeight: number, over: boolean): boolean {
+    return !over && IsRegularWidth(canvasWidth, canvasHeight);
+  }
+
   constructor() {
     super('Popover', PopoverJss, 'Jwift_Popover', () => {
       if (this._closing) return 'Jwift_Popover_Closing';
@@ -339,6 +348,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         patch['Top'] = `${p.Y}px`;
         patch['Left'] = `${p.X}px`;
       }
+      // Drill Sentences lane GL4: a pointing panel's glass draws its arrow toward the anchor (`Popover.Arrow.ts`).
+      const capped = this._capped();
+      Object.assign(patch, PopoverGlassArrow(p, this._width(), p ? (capped ? Math.min(p.MaxHeight, this._placedHeight) : this._placedHeight) : 0));
       this.SetStyleOverride(patch);
       // Only a panel whose content scrolls is ever capped (`_naturalHeight`'s own comment above).
       if (p && this._capped()) this.SetStyleOverride({ MaxHeight: `${p.MaxHeight}px` });
@@ -364,6 +376,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         // the panel grows in is judged against the box its rows are laid out in (`PopoverTargetRect`) too.
         const p = this._placement();
         if (p && PointInRect(px, py, PopoverTargetRect(p, this._width(), this._placedHeight))) return;
+        // Lane GL4: the glass's arrow is the panel too, so a press on it is no outside press.
+        const arrow = p ? PopoverArrowRect(p, PopoverTargetRect(p, this._width(), this._placedHeight).Height) : null;
+        if (arrow && PointInRect(px, py, arrow)) return;
         // The toggle bug (LaneM.md): a press on the ANCHOR — the button that opened this popover —
         // used to read as "outside" (the anchor lives outside the panel's own Node), so this fired
         // close() on pointerdown, and the anchor's own click handler reopened it right after on the
@@ -598,6 +613,8 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     // Lane WW1, item 3: a menu from a glass control covers the control, growing from it (`PlacePopover`'s `Over`).
     const over = !!this.Source();
     const region = this._resolveRegion(rect.width, rect.height, over);
+    const pointing = this._pointing(rect.width, rect.height, over);
+    this._pointingNow = pointing;
     const scrolls = this._scrollers.length > 0;
     const h = this._naturalHeight(scrolls);
     const w = this._width();
@@ -611,12 +628,12 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
     const beside = this.Beside();
     const avoid = this.Avoid();
     const key = `${anchor.X},${anchor.Y},${anchor.Width},${anchor.Height}|${region.X},${region.Y},${region.Width},${region.Height}|${Math.round(h)}|${w}|${scrolls}|${beside}`
-      + `|${avoid.map((r) => `${r.X},${r.Y},${r.Width},${r.Height}`).join(';')}|${making}`;
+      + `|${avoid.map((r) => `${r.X},${r.Y},${r.Width},${r.Height}`).join(';')}|${making}|${pointing}`;
     if (key === this._placeKey) return;
     this._placeKey = key;
     const placement = PlacePopover({
       Anchor: anchor, Region: region, W: w, H: h, PrevDown: this._prevDown, Hold: this._hold, Scrolls: scrolls, Beside: beside, Avoid: avoid,
-      Over: over, MakingRoom: making,
+      Over: over, MakingRoom: making, Pointing: pointing,
     });
     // The first placement moves the whole subtree off the spot its first layout put it; it lands there, unseen, and
     // shows on the next frame (`_stepOpen`).

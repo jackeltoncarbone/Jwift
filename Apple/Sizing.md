@@ -227,6 +227,33 @@ Wheel mode, Jwift's `WheelPicker`): no selection band, and the centered row read
 | band corner radius | about 8 pt in a compact (iPhone-width) picker; concentric with whatever sheet or popover hosts it, same as every other near-edge radius (section 11) | [I] |
 | row font | Regular (400) weight at every row, 21 to 23 pt for the centered row; off-center rows shrink and fade by the roll (VisualScale/Opacity), never heavier | [I] |
 
+## 13. Popover arrow (`_UIPopoverShapeLayerChromeView`, `_UIPopoverShapePathProviderIOS`) [C]
+
+Read for Drill Sentences lane GL4 (three blind rounds: a word popover on desktop had no arrow to its word). iOS 26's
+popover background is ONE path: `-[_UIPopoverShapeLayerChromeView createShapeLayerPath]` asks the idiom's provider
+(`_UIPopoverShapePathProviderIOS generatePopoverPathForParameters:`) for the rounded body and its arrow as a single
+`UIBezierPath`, and under Solarium hands that path to the glass (`_UIPopoverGlassBackground setShapePath:`), so the
+glass, its rim, lens and shadow all follow the arrow. Restore files: `UIKitCore/_UIPopoverShapeLayerChromeView.mm`,
+`_UIPopoverShapePathProviderIOS.mm`, `_UIPopoverStandardChromeView.mm`, `_UIPopoverGlassBackground.mm`; the two class
+methods' immediates from the iOS 26.1 dyld cache (`ipsw dyld disass`, Methods.md 3).
+
+| part | value | status |
+|---|---|---|
+| arrow height | 13 pt (`+[_UIPopoverShapeLayerChromeView arrowHeight]` at 0x188dac3c4: `fmov d0, #13.0`) | [C] |
+| arrow base | 26 pt (`+arrowBase` at 0x189fdeb00: `fmov d0, #26.0`) | [C] |
+| body corner | 34 pt under Solarium, 13 before (`+cornerRadius`) | [C] |
+| the tip | the two flanks stop 2 pt either side of the peak and 1 pt back toward the body, and a cubic whose two control points are both the peak joins them (`_addArrowCurveToPath:`, the `x ± 2, y ± 1` points): a tip rounded over about 4 pt | [C] |
+| the base joins | each flank leaves the body edge through a concave fillet: it starts on the edge half the flank's run past the base corner (5.5 pt: (13 - 2) / 2), and a cubic with both control points on the base corner carries it to the flank's midpoint, then a straight line to the tip (`_addLineWithSlightTrailingAndLeadingCurveToPath:`). The arrow therefore meets the edge over 26 + 2 x 5.5 = 37 pt, tangent to it | [C] |
+| the arrow's points, base centre at (0, 0), outward +y | fillet (-18.5, 0) c (-13, 0) (-13, 0) to (-7.5, 6); line to (-2, 12); tip c (0, 13) (0, 13) to (2, 12); line to (7.5, 6); fillet c (13, 0) (13, 0) to (18.5, 0) | [C] |
+| where it stands | `arrowOffset` from the edge's centre (`_upAndDownStartingXLocationForBounds:`: `midX + offset - base / 2`, clamped to the bounds); unpinned while `|offset| <= floor(edge / 2) - corner - 15` (`maxNonPinnedOffset`), past that a "pinned" arrow curves into the corner | [C] |
+| the content | inset by the arrow height on the arrow's side only (`_UIPopoverStandardChromeView`, `arrowHeight` into the content insets) | [C] |
+| the rim | a 2 pt stroke of white at 0.16 (light) or 0.10 (dark) on the same path, only on the pre-glass chrome (`_createStrokeView`) | [C] |
+| where it shows | only at regular width; compact width adapts the popover to a sheet (HIG Popovers, `HIG.md` 10, `Sheets.md`) | [C] |
+
+Jaui draws it as `GlassArrow` (`Jaui/Jaui/src/Core/Glass.Jss.md`): the glass SDF is the union of the body and this
+outline, so lens, rim, edge bleed and both shadows follow it. Ours never pins: the offset is clamped so the 37 pt
+footprint stays clear of the corner radius (`|offset| <= edge / 2 - corner - 18.5`).
+
 ## Not found
 
 These need the binary's `__const` data section, which the decompile does not carry: every `dbl_*` / `xmmword_*` table value (button insets, segmented font sizes, the tab config slots 88, 184, 304 and the bottom offset at vtable+0x138), the segmented pill inset and divider width, the `off_1E70ECD20` / `off_1E70ECD28` font weights. DesignLibrary holds iOS metrics only for Switch, Stepper and ProgressView (`DesignLibrary_01` to `_15`; its `iOSProgressView` is a SwiftUI mock whose frame values are float arguments the decompile dropped, and UIKit's own files, sections 8 and 9, supersede it); there are no iOS token plists or asset catalogs in the restore. [C] for the absence.
