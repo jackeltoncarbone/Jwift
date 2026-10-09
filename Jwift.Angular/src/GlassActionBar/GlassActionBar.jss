@@ -152,8 +152,10 @@ Jwift_GlassActionTip_Hidden {
 Jwift_GlassActionTipPill : JwiftPanelGlass {
   MinHeight: 26pt
   MaxWidth: 100%
-  Padding: 6pt 10pt
-  BorderRadius: 8pt
+  Padding: 6pt 12pt
+  // A tip is a capsule (the owner, 2026-10-09: "the tooltips on hover were not pill shaped, they had small border
+  // radius"), the same pill every floating label in the app wears; a two-line tip rounds into a stadium.
+  BorderRadius: 999pt
   Direction: Row
   Align: Center
   PointerEvents: None
