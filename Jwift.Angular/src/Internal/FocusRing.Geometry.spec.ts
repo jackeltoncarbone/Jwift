@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FOCUS_RING_GAP_PT, FocusRingGeometryOf, ParsePt } from './FocusRing.Geometry';
+import { FOCUS_RING_BARE_RADIUS_PT, FOCUS_RING_GAP_PT, FocusRingGeometryOf, ParsePt } from './FocusRing.Geometry';
 
 describe('ParsePt', () => {
   it('reads a pt length the way a resolved JSS Style bag gives one', () => {
@@ -29,7 +29,6 @@ describe('FocusRingGeometryOf — concentric with the ringed control', () => {
     expect(FocusRingGeometryOf(24).RadiusPt).toBe(24 + FOCUS_RING_GAP_PT);
     expect(FocusRingGeometryOf(14).RadiusPt).toBe(14 + FOCUS_RING_GAP_PT);
     expect(FocusRingGeometryOf(999).RadiusPt).toBe(999 + FOCUS_RING_GAP_PT); // a capsule stays a capsule
-    expect(FocusRingGeometryOf(0).RadiusPt).toBe(FOCUS_RING_GAP_PT); // a square corner still gets the gap's own curve
   });
 
   it('AttachInset is the gap\'s negative, so Attach/Fill grows the box outward, never inward', () => {
@@ -37,8 +36,9 @@ describe('FocusRingGeometryOf — concentric with the ringed control', () => {
     expect(FocusRingGeometryOf(24).AttachInsetPt).toBeLessThan(0);
   });
 
-  it('an unreadable control radius leaves the ring with no radius override, never a guessed one', () => {
-    expect(FocusRingGeometryOf(null).RadiusPt).toBeNull();
+  it('a control with no corner of its own (unreadable or zero, like the bare title button) rings softly rounded, never a square box', () => {
+    expect(FocusRingGeometryOf(null).RadiusPt).toBe(FOCUS_RING_BARE_RADIUS_PT + FOCUS_RING_GAP_PT);
+    expect(FocusRingGeometryOf(0).RadiusPt).toBe(FOCUS_RING_BARE_RADIUS_PT + FOCUS_RING_GAP_PT);
   });
 
   it('a caller may widen the gap; the radius grows with it and the inset stays its negative — concentricity holds at any gap', () => {

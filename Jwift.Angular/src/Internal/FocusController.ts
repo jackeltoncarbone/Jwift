@@ -156,7 +156,7 @@ export class FocusController {
       Opts: {
         Style: {
           ...resolved?.Style,
-          ...(geometry.RadiusPt === null ? {} : { BorderRadius: `${geometry.RadiusPt}pt` }),
+          BorderRadius: `${geometry.RadiusPt}pt`,
         } as Record<string, unknown>,
         ChildLayout: {
           Position: 'Attach',
