@@ -16,6 +16,7 @@ import { DOCUMENT } from '@angular/common';
 import { Jaui, Jiv, JSS_REGISTRY } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
 import { IsEscapeKey } from '../Internal/Keys';
+import { PresentationStack } from '../Internal/PresentationOpen';
 import { RowIndicator, type RowIndicatorRow } from '../Internal/RowIndicator';
 import { EscapeStep } from './GlassDropdown.Escape';
 import GlassDropdownJss from './GlassDropdown.jss';
@@ -86,6 +87,10 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   /** Read for `@SafeBottom` when the panel measures its room — the same table every sheet resolves
    *  `@Name` against, so the inset here is the inset the glass is using. */
   private readonly _jss = inject(JSS_REGISTRY);
+  /** Drill Sentences lane AF1, item 1: this dropdown stays mounted the whole time (`Open()`/`Close()` toggle
+   *  its own `_open`, never `@if`), unlike `Popover`'s mount-IS-open, so registration rides those two methods
+   *  instead of `ngOnInit`/`ngOnDestroy` — released there too, as a backstop for one destroyed while open. */
+  private readonly _presentations = inject(PresentationStack);
 
   /** Extra class ANDed onto the closed pill — how the action group marks the
    *  avatar-only sink so the avatar can fill the glass. */
@@ -232,6 +237,9 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this._growRaf !== null) { cancelAnimationFrame(this._growRaf); this._growRaf = null; }
     if (this._settleRaf !== null) { cancelAnimationFrame(this._settleRaf); this._settleRaf = null; }
+    // A backstop for one destroyed while still open (`Close()` is the ordinary release); idempotent, so a
+    // dropdown that already closed itself costs nothing more than a no-op filter.
+    this._presentations.Remove(this);
     this._unbindDoc?.();
     this._detachOnDestroy();
   }
@@ -240,7 +248,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
    *  `defaultPage`). The page an open begins on is where Escape closes it (`EscapeStep`); a page pushed past it
    *  (`PushPage`) steps back to it first. Already open, `page` is pushed like any other. */
   Open(page: string | null = null): void {
-    if (!this._open()) this._entryPage = page;
+    if (!this._open()) { this._entryPage = page; this._presentations.Add(this); }
     if (page !== null) this._page.set(page);
     // Opened below, a press on the slot above is the dropdown's own (`onDocDown`), so its rect is read.
     if (this.openBelow()) this.Node.Parent?.WatchRect?.(true);
@@ -388,6 +396,7 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
     // The open width is the open panel's alone: the closed pill takes its own (`Jwift_GlassDropdown_Closed`) back.
     if (this._width !== null) { this._width = null; this.ClearStyleOverride('Width'); }
     this._holdTopLayerWhileClosing();
+    this._presentations.Remove(this);
     this._open.set(false); this._page.set(null); this._rowIndicator.Reset();
     // The output half of [(open)]. Emitted from Close() and Open() rather than from the click handler,
     // so every route into the state - a tap, the escape key, an outside click, the controlled input -

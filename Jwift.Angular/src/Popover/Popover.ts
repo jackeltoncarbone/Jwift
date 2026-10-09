@@ -18,6 +18,7 @@ import { Jaui, Jiv, JSS_REGISTRY } from 'jaui-angular';
 import type { JivHandle } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import { IsEscapeKey } from '../Internal/Keys';
+import { PresentationStack } from '../Internal/PresentationOpen';
 import { JwiftStyleLoader } from '../Jss/Jwift.Style.Loader';
 import GlassDropdownJss from '../GlassDropdown/GlassDropdown.jss';
 import PopoverJss from './Popover.jss';
@@ -150,6 +151,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   private readonly _doc = inject(DOCUMENT);
   private readonly _styleLoader = inject(JwiftStyleLoader);
   private readonly _topBand = inject(JWIFT_POPOVER_TOP_BAND, { optional: true });
+  private readonly _presentations = inject(PresentationStack);
 
   private readonly _placement = signal<PopoverPlacement | null>(null);
   /** Whether the last placement may cap the panel: only while content that scrolls is mounted. */
@@ -360,6 +362,10 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this._attachOnInit();
+    // Drill Sentences lane AF1, item 1: the consumer gates this component with `@if` and mount/unmount IS
+    // the open/close (the class doc, above), so registering here and releasing in `ngOnDestroy` is the whole
+    // of it — one line, not a parallel flag each new menu has to remember, the way the capsule's own never did.
+    this._presentations.Add(this);
     this.Node.WatchRect(true);
 
     const onDocDown = (e: PointerEvent): void => {
@@ -416,6 +422,7 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this._presentations.Remove(this);
     this._stopTracking();
     this._unbindDoc?.();
     // Drill Sentences lane KK1, item 6 (a round 15 blind phone tester: after the count picker's Done, an empty glass
