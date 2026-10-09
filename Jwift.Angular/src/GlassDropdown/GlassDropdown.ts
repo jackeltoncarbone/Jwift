@@ -147,8 +147,14 @@ export class GlassDropdown extends JivHost implements OnInit, OnDestroy {
 
   constructor() {
     super('GlassDropdown', GlassDropdownJss, 'Jwift_GlassDropdown_Closed', () => {
-      if (this._open()) return this.openBelow() ? 'Jwift_GlassDropdown_Open Jwift_GlassDropdown_OpenBelow' : 'Jwift_GlassDropdown_Open';
       const extra = this.closedVariant();
+      if (this._open()) {
+        if (this.openBelow()) return 'Jwift_GlassDropdown_Open Jwift_GlassDropdown_OpenBelow';
+        // Drill Sentences lane SH2: the toolbar's sink and a cell's menu grow concentric with the button they open from.
+        if (extra?.includes('Jwift_GlassDropdown_ClosedAvatarOnly')) return 'Jwift_GlassDropdown_Open Jwift_GlassDropdown_OpenFromPill';
+        if (extra?.includes('Jwift_GlassDropdown_ClosedCell')) return 'Jwift_GlassDropdown_Open Jwift_GlassDropdown_OpenFromCell';
+        return 'Jwift_GlassDropdown_Open';
+      }
       return extra ? `Jwift_GlassDropdown_Closed ${extra}` : 'Jwift_GlassDropdown_Closed';
     });
     // The controlled half of `[(open)]`. Reads the input, compares with the state this component

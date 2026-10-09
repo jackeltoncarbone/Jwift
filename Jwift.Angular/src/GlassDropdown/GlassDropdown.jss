@@ -70,8 +70,10 @@ Jwift_GlassDropdown_Closed : Jwift_GlassDropdown {
   // list closed, its button came back 54pt below the toolbar, at the open list's place, and stayed there). The
   // open panel is Placed at Top 0 (Top 54pt opened below, `Jwift_GlassDropdown_OpenBelow`), and a JivHost
   // rebuilds a node's ChildLayout over the one it has (`JivHost._buildOpts`), so a key this class leaves out
-  // keeps the open panel's value. Top is stated, so the closed pill always lands at the top of its slot.
+  // keeps the open panel's value. Top is stated, so the closed pill always lands at the top of its slot; Right too, so a
+  // menu grown out past its button (Jwift_GlassDropdown_OpenFromPill) leaves no offset behind on the pill.
   Top: 0pt
+  Right: 0pt
 }
 
 // Closed-state cell — flat 44pt round hit-target inside a closed dropdown.
@@ -295,6 +297,25 @@ Jwift_GlassDropdown_Open : Jwift_GlassDropdown, JwiftPanelGlass {
 // the 6pt gap a tip keeps below the bar (`Jwift_GlassActionTip`), so the bar that opened it stays in view.
 Jwift_GlassDropdown_OpenBelow {
   Top: 54pt
+}
+
+// THE MENU GROWS CONCENTRIC WITH WHAT IT GREW FROM (Drill Sentences lane SH2; the shape audit, live: the account menu's
+// 32pt corner stood 28pt in from the screen's 52pt corner, where 52 - 28 = 24 is concentric). A menu morphs out of its
+// button (HIG "morphs into the overlay"), so its corner keeps the button's corner centre: it stands out past the button by
+// the difference of the two corners, the menu's (@JwiftDropdownRadius, concentric with its rows) less the button's. The
+// toolbar's 48pt avatar sink is itself concentric with the screen (24 = 52 - 28), so the menu is too: 32pt, 20pt in. A
+// cell in a group (Camera) grows the same way out of its 44pt capsule. Its corner travels with the width and height.
+Jwift_GlassDropdown_OpenFromPill {
+  Top: 24pt - @JwiftDropdownRadius
+  Right: 24pt - @JwiftDropdownRadius
+  @Transition Top { Duration: 280ms }
+  @Transition Right { Duration: 280ms }
+}
+Jwift_GlassDropdown_OpenFromCell {
+  Top: 22pt - @JwiftDropdownRadius
+  Right: 22pt - @JwiftDropdownRadius
+  @Transition Top { Duration: 280ms }
+  @Transition Right { Duration: 280ms }
 }
 
 // AN OPEN MENU DOES NOT REACT TO THE POINTER. ITS ROWS DO.
