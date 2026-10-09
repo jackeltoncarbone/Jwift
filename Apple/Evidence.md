@@ -107,6 +107,18 @@ Erf fits across edges behind the glass (`edge.py`; thin lines fitted as a box of
 | Photos bar in its pocket reads None; App Store tab bar in its pocket reads Automatic | [I] | 1b rows; None's floor 0.62 x 4 px = 2.48 px | the tab bar's exemption is unread |
 | ours, 44 pt glass over a hard edge at 3x, `?glass-skip=grade,rim,bleed,shadow`, `/dev/controls` GLASS FROST | [I] | `SP\SmallGlass\SmallGlass.Sheet.png`, `SP\SmallGlass\edge.py` | Automatic 4.21 px at the centre (3.92 at 3/4), Reduced 1.22 (1.21), None 2.38 (2.39); Apple's Photos bar 2.5 to 2.7 |
 
+## 1d. Glass over glass, the elevation trait (2026-10-08, lane GL3)
+
+`LiquidGlass.md` 8.1. The restore files were fetched with `gh api` (`Methods.md` 1) into the lane's scratchpad (`gl3r\`).
+
+| fact | status | source | notes |
+|---|---|---|---|
+| `_UITraitGlassElevationLevel` is an NSInteger trait of enum `_UIGlassElevationLevel` (RawValue Int) | [C] | `D:\AppleIPSW\uikit_swift.txt` 384, 14318, 27814; R: UITraitCollection.mm 581, 9943 | not a Bool |
+| UIKit bridges it to DesignLibrary's `EnvironmentValues.glassMaterialForeground` (Bool), both ways | [C] | R: UIKitCore_35.mm 1667 (`coreResolvedGlassMaterialEnvironment(base:)`), 2404 (`sub_188EB8324`); FW: `ipsw dyld disass --vaddr 0x18A4A4F68` / `0x18A4A4F58` name the stubs | UIKitCore_57.mm `sub_1890916FC` forwards it to a hosted view |
+| foreground glass drops `EnvironmentFlags` 0x4 in an active window (0x80007 to 0x80003) | [C] | R: DesignLibrary_14.mm 6862 (`sub_18AFA8DFC`) | field indices fixed by the reduceTransparency / reduceMotion / showButtonShapes bits |
+| flag 0x4 is `StyleFlags` 2; its one reader is the tint (weights 1.0 / 0.6 to 0.5 / 0.5) | [C] | R: DesignLibrary_14.mm 6817 (`sub_18AFA8DB8`); DesignLibrary_09.mm 9882 (`sub_18AF5E044`) | |
+| no face, fill, shadow or rim read of the flag | [C] by the paths read | R: DesignLibrary_13.mm 6478 (`sub_18AF952E4` stores it at +688), 7294 (`sub_18AF96894`); DesignLibrary_09.mm 6767 (`sub_18AF58948`) | |
+
 ## 2. The liquid lens (`_UILiquidLensView`)
 
 `LiquidGlass.md` 7. Line numbers are `R: UIKitCore_73.mm` unless named.
