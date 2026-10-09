@@ -14,6 +14,7 @@ import { Jaui, Jiv } from 'jaui-angular';
 import { type ChildLayout } from 'jaui';
 import { JivHost } from '../Internal/JivHost';
 import SliderJss from './Slider.jss';
+import { SliderFollows, SliderSnapsOnPress } from './Slider.Touch';
 
 export interface SliderScrubEvent {
   value: number;
@@ -102,13 +103,19 @@ export class Slider extends JivHost implements OnInit, OnDestroy {
     if (start == null) return;
     this._active.set(true);
 
-    let last = this.snapToClick() ? start : this.value();
-    if (this.snapToClick() && last !== this.value()) {
+    // A finger's tap never moves the value, and its drag only once past the slop (`Slider.Touch.ts`, lane R35, item 4).
+    const snaps = SliderSnapsOnPress(this.snapToClick(), event.pointerType);
+    let last = snaps ? start : this.value();
+    if (snaps && last !== this.value()) {
       this.valueChange.emit(last);
     }
     this.scrubStart.emit({ value: last, event });
 
+    const from = { X: event.clientX, Y: event.clientY };
+    let following = false;
     const onMove = (e: PointerEvent): void => {
+      following = SliderFollows(event.pointerType, from, { X: e.clientX, Y: e.clientY }, following);
+      if (!following) return;
       const v = this._valueAtPointer(e);
       if (v == null) return;
       const delta = v - last;
