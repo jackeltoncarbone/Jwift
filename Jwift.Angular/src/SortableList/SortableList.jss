@@ -68,6 +68,16 @@ Jwift_SortableSectionRule {
 // `<sortable-row>` wrapping a whole phrase: its header AND its own nested line list, not one row's worth
 // of content) relies on this Gap for the space between them, having zeroed its own Padding (see
 // SortableRow.ts's own doc comment) so the 12pt content inset below is never applied twice.
+// Drill Sentences lane AG1, item 1 (round 31 blind desktop, 30_after_move_together.png): a merged line left its
+// two donor rows standing at full height, empty glass shells holding only their own "+", for the whole
+// Presence spring's fade -- Presence.md's own documented default ("a leaving Jiv keeps its layout space until
+// Presence reaches 0... Authors opt into collapsing-on-exit by binding sizing to Presence"), which this row
+// never opted into. Apple's own list delete animates the gap closed, never leaves a hollow row standing
+// (HIG.md, Lists and tables). `@JwiftSortableRowCollapseCeiling` is no real row's height -- MaxHeight clamps a
+// LEAVING row to 0 as its Presence falls (and a newly mounted one grows up from 0 the same way on entry,
+// Presence.md's symmetric default), so a row shrinks while it fades and the rows below slide onto its spring,
+// not just once the node is finally removed.
+@JwiftSortableRowCollapseCeiling: 100000pt
 Jwift_SortableRow {
   Direction: Column
   Justify: Start
@@ -76,6 +86,7 @@ Jwift_SortableRow {
   Padding: 11pt 12pt
   Interactive: true
   Cursor: Pointer
+  MaxHeight: Presence * @JwiftSortableRowCollapseCeiling
   @Transition Background { Duration: 140ms }
   @Transition BackdropFilter { Duration: 140ms }
 }
