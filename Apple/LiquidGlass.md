@@ -191,9 +191,8 @@ A general law for an arbitrary seed [I]: `darkShade = ycc(seed, Y × 0.58, chrom
 - The macOS 27 SwiftUI fit (luma × 0.35, chroma × 1.10, coral) misses orange's green by 38 levels.
 
 Worked for Show Studio's gold [I] (Jaui `Core/Glass.Pipeline.ts`, `GlassTintShadeOf`):
-- Dark seed (185, 130, 28): dark shade (110, 75, 11).
-- Light seed (153, 108, 23): dark shade (91, 62, 9).
-- The prominent body's numbers over dark, mid and light backdrops are in Jaui `Core/Glass.md`, Tint.
+- One seed in both themes, (200, 141, 30): dark shade (119, 82, 12).
+- The prominent body's numbers over dark, mid and light backdrops, and the label's ink on each (white on the dark shade, black on the light gold, switched at WCAG's crossover on the body [I]), are in Jaui `Core/Glass.md`, Tint.
 
 ## 5. The highlight (the rim): `CASDFKeyFillHighlightEffect` + `vibrantColorMatrix`
 

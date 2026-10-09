@@ -642,8 +642,10 @@ JwiftPressTint:Active {
 // `mix(darkShade, seed, L)`, L the glass's own lightness. So it is saturated but alive: over dark content it takes
 // the gold's darker shade, over light content the seed itself, never a flat card (Jaui Core/Glass.md, Tint).
 //
-// `@Prominent` is the seed per theme and `@OnProminent` is Apple's on-tint ink, white: the seed is chosen so that
-// white clears 4.5:1 on the tinted body over any backdrop, in both themes (App/src/Design/ProminentGlass.Render.spec.ts).
+// `@Prominent` is the one house gold in both themes. The label on it takes white or black by the tinted body under
+// it, decided where the tint is (Jaui Glass.Pipeline.glsl, GlassTintInkWhite, run by the text shader at the glass's
+// probed mean; lane GL6b), so it clears 4.5:1 over any backdrop (App/src/Design/ProminentGlass.Render.spec.ts).
+// `@OnProminent` is only the ink before the glass has a probe.
 // No seed steps on hover or press: Apple's press is the flex and its glows (section 9), and the hover is the
 // glass's own (JwiftPress), both over the tint.
 JwiftProminent : JwiftGlass, JwiftPressGlass {
