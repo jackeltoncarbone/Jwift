@@ -214,7 +214,7 @@ Jwift_GlassBtnBar_Round {
   @If (Ancestor(Jwift_Toolbar)) {
     Width: 44pt
     Height: 44pt
-    BorderRadius: 22pt
+    BorderRadius: 999pt
   }
 }
 
