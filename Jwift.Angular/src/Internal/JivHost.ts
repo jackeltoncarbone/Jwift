@@ -309,6 +309,21 @@ export abstract class JivHost {
     StampProbeHost(this._host.nativeElement, this.Node.Id, this._className());
   }
 
+  /** Keys the LAST `_buildOpts` actually got from the resolved CLASS's own ChildLayout — read at the
+   *  top of this method (below) to tell a stale class value apart from an imperative one, and replaced
+   *  at the bottom with this call's own set.
+   *
+   *  Drill Sentences lane AI1: the field selection capsule's lead pill collapses to
+   *  `Width`/`MinWidth`/`MinHeight`: 0px while hidden (`FieldSelectionBarLead_Hidden`) and never grew
+   *  back once shown again (`FieldSelectionBarLead`, which states none of the three) — `Node.ChildLayout`
+   *  is one proxy-mirrored bag shared by every class apply AND by a subclass's own imperative writes
+   *  (`Node.ChildLayout.Left = ...`, SelectionIndicator's RAF tick, Perf.*.ts's pans), so spreading it
+   *  wholesale under the new class's bag (the shape this carried since `01466ef8`, "merge live proxy
+   *  ChildLayout under the class-resolved bag") could not tell "a class set this and still does" from
+   *  "a class set this and no longer does" apart — only the SECOND should revert to the engine default
+   *  rather than ride the mirror forward forever. */
+  private _lastClassChildLayout = new Set<string>();
+
   private _buildOpts(className: string): JivApplyOpts {
     const fromClass = this._registry.Resolve(className) ?? null;
     // Layer the per-instance Style overrides OVER the class-resolved bag.
@@ -325,6 +340,16 @@ export abstract class JivHost {
     for (const [key, value] of Object.entries(this._styleOverride())) overrides[SlotFor(key)][key] = value;
     const hasLayout = Object.keys(overrides.Layout).length > 0;
     const hasChildLayout = Object.keys(overrides.ChildLayout).length > 0;
+    // Carry forward only the proxy's keys the LAST apply did NOT itself get from a class — an
+    // imperative write surviving a class-swap, the one case `01466ef8` meant to cover — never a class
+    // key that this resolve simply stopped restating (the carry-everything shape's own bug, above).
+    const classChildLayout = fromClass?.ChildLayout as Record<string, unknown> | undefined;
+    const nodeChildLayout = this.Node.ChildLayout as unknown as Record<string, unknown>;
+    const carriedChildLayout: Record<string, unknown> = {};
+    for (const key of Object.keys(nodeChildLayout)) {
+      if (!this._lastClassChildLayout.has(key)) carriedChildLayout[key] = nodeChildLayout[key];
+    }
+    this._lastClassChildLayout = new Set(Object.keys(classChildLayout ?? {}));
     const styleBag = {
       ...fromClass?.Style,
       ...overrides.Style,
@@ -358,8 +383,8 @@ export abstract class JivHost {
       Layout:        (fromClass?.Layout || hasLayout)
         ? ({ ...fromClass?.Layout, ...overrides.Layout } as Record<string, unknown>)
         : undefined,
-      ChildLayout:   (fromClass?.ChildLayout || hasChildLayout)
-        ? ({ ...this.Node.ChildLayout, ...fromClass?.ChildLayout, ...overrides.ChildLayout } as Record<string, unknown>)
+      ChildLayout:   (classChildLayout || hasChildLayout)
+        ? ({ ...carriedChildLayout, ...classChildLayout, ...overrides.ChildLayout } as Record<string, unknown>)
         : undefined,
       TextStyle:     (fromClass?.TextStyle || Object.keys(overrides.TextStyle).length > 0 || Object.keys(this._textStyleOverride()).length > 0)
         ? ({ ...fromClass?.TextStyle, ...overrides.TextStyle, ...this._textStyleOverride() } as Record<string, unknown>)
