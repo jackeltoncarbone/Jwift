@@ -55,10 +55,13 @@ export {
 } from './Sheet/Sheet.Geometry';
 export { Slider, type SliderScrubEvent } from './Slider/Slider';
 export { GlassButton, type GlassButtonShape, type GlassButtonVariant, type GlassButtonSize } from './GlassButton/GlassButton';
-export { GlassDropdown } from './GlassDropdown/GlassDropdown';
-export { GlassDropdownItem } from './GlassDropdown/GlassDropdownItem';
-export { GlassActionGroup, type GlassAction } from './GlassActionGroup/GlassActionGroup';
-export { GlassActionBar, type ActionGroup } from './GlassActionBar/GlassActionBar';
+// `GlassDropdown`, `GlassDropdownItem`, `GlassActionGroup` and `GlassActionBar` are NOT re-exported here —
+// every one of their real consumers is a lazy page (Admin, the CMS surface editor, Picture/Item/Camera/
+// Field/Uniform pages, the Drill editor's own toolbar), yet barrel-exporting them was enough to pull them
+// into the one chunk every page's initial load imports, same as TokenSentence (see that component's own
+// doc comment). The two *types* stay re-exported — a type has no runtime weight.
+export type { GlassAction } from './GlassActionGroup/GlassActionGroup';
+export type { ActionGroup } from './GlassActionBar/GlassActionBar';
 export { Toolbar } from './Toolbar/Toolbar';
 export { ToolbarTitle } from './ToolbarTitle/ToolbarTitle';
 export { ToolbarCompactDef } from './ToolbarTitle/ToolbarCompactDef';
@@ -104,42 +107,49 @@ export { List } from './List/List';
 export { ListRow } from './List/ListRow';
 export { ListSeparator } from './List/ListSeparator';
 export { Toggle } from './Toggle/Toggle';
-export { Stepper } from './Stepper/Stepper';
+// `Stepper` (Picture.Page/FieldDesigner only), `MediaTransport` (Camera/Drill editor only) and
+// `SearchPicker` (Admin only) are NOT re-exported here — see GlassActionBar's own comment above.
 export { TagBadge, type TagBadgeTone } from './TagBadge/TagBadge';
 export { DisclosureRow } from './DisclosureRow/DisclosureRow';
 export { SidebarRow } from './SidebarRow/SidebarRow';
 export { ComposerBar } from './ComposerBar/ComposerBar';
-export { MediaTransport } from './MediaTransport/MediaTransport';
 export { TitleButton } from './TitleButton/TitleButton';
 export { SwatchChip } from './SwatchChip/SwatchChip';
-export {
-  SearchPicker, heldPills, pickerGroups,
-  type HeldPill, type PickGroup, type PickOption,
-} from './SearchPicker/SearchPicker';
+export type { HeldPill, PickGroup, PickOption } from './SearchPicker/SearchPicker';
 export { FilterChip } from './FilterChip/FilterChip';
 export { TokenChip } from './TokenChip/TokenChip';
 export { ReferenceChip } from './ReferenceChip/ReferenceChip';
 export { Callout } from './Callout/Callout';
 export { DismissibleHint } from './DismissibleHint/DismissibleHint';
 export { SelectMark } from './SelectMark/SelectMark';
-export {
-  EntryListEditor, type EntryListEditorRowContext,
-} from './EntryListEditor/EntryListEditor';
+// `EntryListEditor` (the CMS surface editor only) is NOT re-exported here — see GlassActionBar's own
+// comment above. Its one type has no runtime weight, so it stays.
+export type { EntryListEditorRowContext } from './EntryListEditor/EntryListEditor';
 export { Paper, JWIFT_PAPER_GEOMETRY } from './Paper/Paper';
 export { PaperRadius, RowRadius } from './Paper/Paper.Geometry';
-export { Popover, JWIFT_POPOVER_ROOM, JWIFT_POPOVER_TOP_BAND, type PopoverClosed } from './Popover/Popover';
+// `Popover` and `PopoverMenu` (the Drill editor's own menus — WhoChooser, EditorToolbar, Drill.Page,
+// UseDrillSettings — are their only consumers) are NOT re-exported here — see GlassActionBar's own
+// comment above. Everything else these two files export is a token or a type, so it has no runtime
+// weight and stays.
+export type { PopoverClosed } from './Popover/Popover';
 export { PresentationStack } from './Internal/PresentationOpen';
 export { PlacePopover, type PopoverRect } from './Popover/Popover.Placement';
-export { PopoverMenu, type PopoverMenuItem } from './Popover/PopoverMenu';
-export { TokenSentence } from './TokenSentence/TokenSentence';
-export {
-  FirstGlowTarget, IsTappable, LayoutSentence, PillRectOf, type SentenceToken, type SentenceTokenKind,
-} from './TokenSentence/TokenSentence.Layout';
-export { NumberField, type NumberFieldUnit, type NumberFieldRow } from './NumberField/NumberField';
+export type { PopoverMenuItem } from './Popover/PopoverMenu';
+// `TokenSentence` (the component) and `TokenSentence.Layout`'s own functions are NOT re-exported here —
+// see Jwift.Angular/src/TokenSentence/TokenSentence.ts's own doc comment on why: Drill Sentences' editor
+// is their only runtime consumer (lazy, reached only through the App's Drill.Page route), and re-exporting
+// them from this barrel was enough to drag both modules (~80 kB) into the one shared chunk EVERY page's
+// initial load imports — this barrel is also reached eagerly (App.ts, Navigation.ts, the app-shell sheets)
+// for components that ARE needed on every page. The two *types* stay re-exported: a type has no runtime
+// weight, so there is no bundle cost to barrel-exporting it, and `Editor/SentenceTokens.ts` /
+// `Roster/RosterSentence.ts` read them from here as `import type`.
+export type { SentenceToken, SentenceTokenKind } from './TokenSentence/TokenSentence.Layout';
+// `NumberField` (the Drill editor's own measures/counts fields — CastPanel, EditorPhrase, EditorControls
+// — are its only consumers) and `SortableList`/`SortableSection`/`SortableRow` (EditorList.ts/
+// EditorPhrase.ts, same editor) are NOT re-exported here — see GlassActionBar's own comment above.
+export type { NumberFieldUnit, NumberFieldRow } from './NumberField/NumberField';
 export { AngleDial } from './AngleDial/AngleDial';
 export { Snap as AngleSnap } from './AngleDial/AngleDial.Logic';
 export { SwipeRow } from './Swipe/SwipeRow';
 export { type SwipeAction } from './Swipe/Swipe.Logic';
-export { SortableList, type SortableReorder } from './SortableList/SortableList';
-export { SortableSection } from './SortableList/SortableSection';
-export { SortableRow } from './SortableList/SortableRow';
+export type { SortableReorder } from './SortableList/SortableList';
