@@ -190,6 +190,71 @@ JwiftEditPulse {
 @JwiftRimWidth: 1pt
 @JwiftRimStrength: 2
 
+// ── APPLE'S TYPE SCALE (Drill Sentences lane TK1, the token sweep) ──
+// HIG.md 15, iOS/iPadOS "Large" column: @TextX is Apple's own size, @LeadRatioX its own absolute
+// leading DIVIDED BY that size — this engine's LineHeight is a unitless multiplier (Text.Types.ts:
+// "a 16pt line of 12pt type is 1.333, never 16pt", Drill.jss's own SelectionDockTip comment), not an
+// absolute pt value, so the ratio below IS Apple's absolute pair, expressed the one way this engine
+// can apply it, rather than a tuned-by-eye constant. macOS reads a DIFFERENT scale, not a shrunken
+// one (HIG.md 15); @TextBodyMac etc. are macOS's own rungs for the kit's desktop-density classes.
+@TextLargeTitle: 34pt    @LeadRatioLargeTitle: 1.206   // 41/34
+@TextTitle1: 28pt        @LeadRatioTitle1: 1.214       // 34/28
+@TextTitle2: 22pt        @LeadRatioTitle2: 1.273       // 28/22
+@TextTitle3: 20pt        @LeadRatioTitle3: 1.25        // 25/20
+@TextHeadline: 17pt      @LeadRatioHeadline: 1.294     // 22/17
+@TextBody: 17pt          @LeadRatioBody: 1.294         // 22/17
+@TextCallout: 16pt       @LeadRatioCallout: 1.3125     // 21/16
+@TextSubhead: 15pt       @LeadRatioSubhead: 1.333      // 20/15
+@TextFootnote: 13pt      @LeadRatioFootnote: 1.3846    // 18/13
+@TextCaption1: 12pt      @LeadRatioCaption1: 1.333     // 16/12
+@TextCaption2: 11pt      @LeadRatioCaption2: 1.1818    // 13/11
+// macOS's own rungs (HIG.md 15) — named apart from the iOS set above because macOS Body (13/16) is
+// NOT iOS Footnote (13/18) despite sharing a size.
+@TextBodyMac: 13pt       @LeadRatioBodyMac: 1.2308     // 16/13
+// Apple's own macOS Caption 1/Footnote rung, reused generically across this kit (TitleButton's chevron,
+// FieldSquadTagTextCompact's quiet variant, and every already-ON 10pt caption elsewhere in Drill.jss and
+// GlassActionBar.jss) as the smallest caption-weight text regardless of platform — collapses the
+// {9pt, 9.5pt, 10pt} near-duplicate cluster TOKENS.md's audit found into the one size already correct
+// at 7 other call sites.
+@CaptionSmall: 10pt
+
+// ── SPACING, THE 4pt GRID (TOKENS.md; Apps.md:107, HIG.md:117) ──────
+// @GapHairline is the one named exception below the grid — Apple's own repeated micro-gap
+// (GlassDropdown.jss, NumberField.jss), not a step on the 4pt ladder.
+@GapHairline: 2pt
+@Gap4: 4pt
+@Gap8: 8pt
+@Gap12: 12pt
+@Gap16: 16pt
+@Gap20: 20pt
+@Gap24: 24pt
+@Inset: 16pt             // standard margin (Apps.md:107)
+@BezelPad: 12pt          // HIG.md:117, around a bordered control
+@BorderlessPad: 24pt     // HIG.md:117, around a borderless control
+
+// ── CONTROL HEIGHTS AND HIT TARGETS (Sizing.md 3; HIG.md 4) ─────────
+@HeightSmallMini: 28pt
+@HeightMedium: 34pt
+@HeightLarge: 50pt       // Apple's large glass button — the kit's own 48pt rungs were NEAR this, Δ2
+@HeightBarButton: 44pt
+@HeightSegmented: 32pt
+@TapTarget: 44pt         // iOS/iPadOS default hit region
+@PointerTarget: 28pt     // macOS default hit region
+
+// ── NAMED RADII, AND THE CONCENTRIC DERIVATION RULE (LiquidGlass.md 10; HIG.md 3) ───────────────────
+// Capsule = height / 2, ALWAYS computed from the control's own height — never typed as a second
+// literal (Sizing.md 3). Concentric(parent, inset) = parent radius − inset: a shape nested in another
+// takes the outer radius less whatever padding actually separates them, never a second, unrelated
+// literal picked by eye (`@JwiftScreenRadius`/`@JwiftSheetRadius` above are this rule in use). The
+// named rungs below are Apple's own fixed corners, for the controls too small, or too far from any
+// enclosing edge, to derive one.
+@RadiusSmallMini: 14pt
+@RadiusMedium: 17pt
+@RadiusLarge: 25pt       // Apple's large glass button radius — height/2 of @HeightLarge, stated once
+@RadiusSegmented: 8pt
+@RadiusSheetTop: 38pt
+@RadiusSheetForm: 32pt
+
 // ── THE SCREEN CORNER ───────────────────────────────────────────────
 // Concentric means the same on every device: the app's outer corner is the tab bar's radius plus its inset from
 // the edge, 31 + 21 = 52 pt on a phone, an iPad and the web alike (Apple/Sizing.md 11). Everything near the
