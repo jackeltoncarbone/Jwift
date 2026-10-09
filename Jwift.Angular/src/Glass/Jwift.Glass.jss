@@ -131,6 +131,21 @@ JwiftSelectedRowFill {
   BackdropFilter: Vibrancy(@JwiftVibrancySecondaryFill)
 }
 
+// ── THE PICKED ROW (not the current one) ────────────────────────────
+// Drill Sentences lane AC3, round 28 item 1 (a blind desktop tester, 102-tab3.png): a field pick can ride
+// several lines at once (`EditorStore.HighlightedLines`), and every row it rides used to wear the exact
+// same fill as the one row that is actually CURRENT -- two rows read as "selected" at once, which the
+// tester named a stuck hover (macOS lists, Apple's own HIG Pointing Devices section 23, never hover-paint
+// a row at all; only a selection does, and a list shows at most one of those at a time). A picked-but-not-
+// current row now reads at HALF the selected row's own fill (`@JwiftVibrancyTertiaryFill`, already the
+// house's next quieter step down from `@JwiftVibrancySecondaryFill`) -- clearly a different, lesser mark,
+// so the list still shows which lines the pick rides without a second row ever competing with the one
+// true "you are here."
+JwiftPickedRowFill {
+  Background: rgba(0, 0, 0, 0)
+  BackdropFilter: Vibrancy(@JwiftVibrancyTertiaryFill)
+}
+
 // ── THE EDIT PULSE ───────────────────────────────────────────────────
 // A line just edited flashes once, the house gold at low opacity, and fades -- Apple's own brief, quiet edit
 // confirmation, never a held paint (round 27 item 1). A consumer flips its `Edited` input true for one tick and
