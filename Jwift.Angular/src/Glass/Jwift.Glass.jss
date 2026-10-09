@@ -653,9 +653,12 @@ JwiftProminent : JwiftGlass, JwiftPressGlass {
 
 // Apple's prominent action keeps its glass inside glass: the sheet's blue checkmark and a capsule's lead are tinted
 // glass on glass, the one exception to "no glass on glass" (JwiftGlass:InGlass), so the material, the rim and the
-// glass press come back here. A filter merges by function, so the fill's vibrancy is zeroed, not "None"d.
+// glass press come back here, reading what they sit on (`GlassReads: Surface`), the glass under them, as the sheet's
+// own bar buttons do (Sheet.jss, `Jwift_SheetBarButton`). A filter merges by function, so the fill's vibrancy is
+// zeroed, not "None"d.
 JwiftProminent:InGlass {
   Glass: Regular
+  GlassReads: Surface
   RimWidth: @JwiftRimWidth
   RimStrength: @JwiftRimStrength
   BackdropFilter: Vibrancy(0)
