@@ -17,6 +17,12 @@ Jwift_Stepper : JwiftGlass {
   Overflow: Hidden
 }
 
+// Drill Sentences lane AH1, item 1 (blind phone round 31, 21-after-minus4.png): a fast tap here could wobble
+// enough to cross the card's own vertical pan claim (`Jwift_SheetCard { PanClaim: Down }`, Sheet.jss),
+// reading as the start of its swipe to dismiss. `Hold` never claims on its own (`PickClaimant`,
+// Scroll.PanClaim.ts) -- it exists only to be taken by `Node.ClaimPan()`, which Stepper.ts calls the instant
+// a press lands here, ahead of any travel the engine could ever measure. Apple's own UIStepper never lets a
+// tap on it become the sheet's own swipe down; this is that rule.
 Jwift_StepperSeg : JwiftPress {
   Direction: Row
   Justify: Center
@@ -24,6 +30,7 @@ Jwift_StepperSeg : JwiftPress {
   FlexGrow: 1
   Width: 30pt
   Height: 30pt
+  PanClaim: Hold
 }
 Jwift_StepperSeg_Coarse {
   Width: 44pt
