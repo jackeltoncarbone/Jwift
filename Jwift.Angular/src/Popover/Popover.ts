@@ -25,7 +25,7 @@ import {
   PlacePopover, PointInRect, PopoverTargetRect, POPOVER_PANEL_PADDING, RoomWaitStep, ShortfallBelow,
   type PopoverHold, type PopoverPlacement, type PopoverRect,
 } from './Popover.Placement';
-import { PopoverGlassArrow } from './Popover.Arrow';
+import { PopoverArrowRect, PopoverGlassArrow } from './Popover.Arrow';
 import {
   GlassCollapseOnto, GlassCollapseStyle, GlassMorphEnd, GlassMorphStart, GlassMotionFor, type GlassMotion,
 } from '../Morph/GlassMorph';
@@ -376,6 +376,9 @@ export class Popover extends JivHost implements OnInit, OnDestroy {
         // the panel grows in is judged against the box its rows are laid out in (`PopoverTargetRect`) too.
         const p = this._placement();
         if (p && PointInRect(px, py, PopoverTargetRect(p, this._width(), this._placedHeight))) return;
+        // Lane GL4: the glass's arrow is the panel too, so a press on it is no outside press.
+        const arrow = p ? PopoverArrowRect(p, PopoverTargetRect(p, this._width(), this._placedHeight).Height) : null;
+        if (arrow && PointInRect(px, py, arrow)) return;
         // The toggle bug (LaneM.md): a press on the ANCHOR — the button that opened this popover —
         // used to read as "outside" (the anchor lives outside the panel's own Node), so this fired
         // close() on pointerdown, and the anchor's own click handler reopened it right after on the

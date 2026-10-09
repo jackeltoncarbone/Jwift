@@ -4,7 +4,7 @@ import {
   PlacePopover, ShortfallBelow, type PopoverRect,
   POPOVER_ARROW_GAP, POPOVER_ARROW_HEIGHT, POPOVER_ARROW_TIP_GAP, POPOVER_POINTING_INSET,
 } from './Popover.Placement';
-import { PopoverGlassArrow } from './Popover.Arrow';
+import { PopoverArrowRect, PopoverGlassArrow } from './Popover.Arrow';
 import { IsRegularWidth } from '../Sheet/Sheet.Geometry';
 
 /**
@@ -40,6 +40,8 @@ describe('Pointing: a regular-width popover\'s glass arrow, aimed at its anchor'
     expect(style.GlassArrowOffset).toBe('0px');
     // The tip: the panel's top less the arrow's height, a few points under the word.
     expect(p.Y - POPOVER_ARROW_HEIGHT - (word.Y + word.Height)).toBe(POPOVER_ARROW_TIP_GAP);
+    // A press on the arrow is a press on the panel: its box spans the 37 pt footprint over the panel's top.
+    expect(PopoverArrowRect(p, 200)).toEqual({ X: centre - 18.5, Y: p.Y - 13, Width: 37, Height: 13 });
   });
 
   it('above its anchor: the arrow on the bottom edge, pointing down at the word', () => {
@@ -94,6 +96,7 @@ describe('Pointing: a regular-width popover\'s glass arrow, aimed at its anchor'
     const beside = PlacePopover({ Anchor: { X: 40, Y: 300, Width: 70, Height: 22 }, Region: desktop, W: 250, H: 300, PrevDown: null, Beside: 448 });
     expect(beside.ArrowEdge ?? null).toBeNull();
     expect(PopoverGlassArrow(null, 250, 200).GlassArrow).toBe('None');
+    expect(PopoverArrowRect(p, 200)).toBeNull();
   });
 
   it('a menu grown over its control (cover placement) never points, at any width, as iOS 26\'s menus do not', () => {

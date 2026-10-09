@@ -9,7 +9,22 @@
  * only at regular width and never on a menu grown over its control) at the placement's `Arrow`, which is measured from
  * the panel's left or top; Jaui takes it from the edge's centre, as UIKit's `arrowOffset` is.
  */
-import type { PopoverPlacement } from './Popover.Placement';
+import { POPOVER_ARROW_HEIGHT, type PopoverPlacement, type PopoverRect } from './Popover.Placement';
+
+/** Half the arrow's footprint along its edge, its fillets included (Sizing.md 13: 26 pt base + 2 x 5.5 pt). */
+const HALF_FOOTPRINT = 18.5;
+
+/** The box the arrow of a placed panel `height` tall stands in, in the panel's coordinates (the canvas's), or null
+ *  for a panel that does not point: a press there is a press on the panel, as Apple's arrow is the popover's own. */
+export function PopoverArrowRect(p: PopoverPlacement, height: number): PopoverRect | null {
+  const edge = p.ArrowEdge ?? null;
+  if (edge === null || p.Arrow === null) return null;
+  if (edge === 'Leading') {
+    return { X: p.X - POPOVER_ARROW_HEIGHT, Y: p.Y + p.Arrow - HALF_FOOTPRINT, Width: POPOVER_ARROW_HEIGHT, Height: 2 * HALF_FOOTPRINT };
+  }
+  const y = edge === 'Top' ? p.Y - POPOVER_ARROW_HEIGHT : p.Y + height;
+  return { X: p.X + p.Arrow - HALF_FOOTPRINT, Y: y, Width: 2 * HALF_FOOTPRINT, Height: POPOVER_ARROW_HEIGHT };
+}
 
 export interface PopoverGlassArrowStyle {
   readonly GlassArrow: 'None' | 'Top' | 'Bottom' | 'Leading';
