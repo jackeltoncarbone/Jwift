@@ -24,7 +24,7 @@ import { SWIPE_GROUP, SwipeGroup } from '../Swipe/SwipeController';
 import { JWIFT_PAPER_GEOMETRY } from '../Paper/Paper';
 import { RowRadius } from '../Paper/Paper.Geometry';
 import {
-  AutoscrollVelocity, DomOrdered, IsMove, ItemHolding, LIFT_IDLE_MS, LiftIdle, LiftStart, Shifts, Target, TOUCH_HOLD_MS,
+  AutoscrollVelocity, DomOrdered, IsMove, ItemHolding, LIFT_IDLE_MS, LiftIdle, LiftStart, Shifts, SlotGap, Target, TOUCH_HOLD_MS,
   type SortableEntry, type SortableEntryKind,
 } from './Sortable.Logic';
 import SortableListJss from './SortableList.jss';
@@ -288,6 +288,7 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
     const order = this._orderedEntries();
     const originIndex = order.indexOf(entry);
     const liftedHeight = entry.Node.Height;
+    const slotGap = SlotGap(this._entryRects());
     const [, startCanvasY] = CanvasPress.ToNode(this._canvasRef?.Canvas, clientX, clientY);
     const originY = startCanvasY - entry.Node.Y;
     const ids = order.map((o) => o.Id());
@@ -302,7 +303,7 @@ export class SortableList extends JivHost implements OnInit, OnDestroy {
       this._updateDropTarget(order, t.IntoSection);
       if (targetIndex === state.Target) return;
       state.Target = targetIndex;
-      const shifts = Shifts(ids, originIndex, targetIndex, liftedHeight);
+      const shifts = Shifts(ids, originIndex, targetIndex, liftedHeight, slotGap);
       for (const o of order) {
         if (o === entry) continue;
         o.SetShift(shifts.get(o.Id()) ?? null, false);

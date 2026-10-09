@@ -120,21 +120,22 @@ Jwift_SortableRow_InSection {
 // r = 0.25 -> Stiffness 632, Damping 50 (FlexMovement.TuneSpring): the lift grows into place.
 // Layer 60: "Carry" (Design/Layers.ts -- Jwift cannot import it, so the rung is named here instead).
 //
-// THE LIFTED ROW IS THE ROW'S OWN GLASS, LIFTED (Drill Sentences lane SH1; the owner, live: "some things i was resorting in
-// list had a solid grey background"). It wore @Paper, rgba(28, 28, 30, 0.9) in dark: an opaque grey card with a 44pt
-// shadow that read as no shadow at all over the dark panel, the one opaque plate in a list of glass. UIKit lifts a row as
-// a platter of its own material with the platter's shadow under it (_UIPlatterView); here the row's material is the
-// panel's glass, so the lifted row is that glass: JwiftPanelGlass, whose :InGlass keeps it real glass inside the
-// panel (a panel within a panel, Jwift.Glass.jss) reading the same content the panel reads, so it reads as the panel's
-// own surface risen, its rows under it gone under glass rather than through a plate, with Apple's platter shadow
-// (GlassShadow: Platter, the drop shadow every floating platter casts).
+// THE LIFTED ROW IS THE ROW'S OWN GLASS, LIFTED (Drill Sentences lanes SH1 and SH2; the owner, live: "some things i was
+// resorting in list had a solid grey background", then "an opaque dark card with no shadow"). It wore @Paper,
+// rgba(28, 28, 30, 0.9) in dark: an opaque grey card whose 44pt shadow read as none over the dark panel, the one opaque
+// plate in a list of glass. UIKit lifts a row onto a platter of its own material with the platter's shadow under it
+// (_UIPlatterView); a row's material here is the panel's glass, so the lifted row is that glass: JwiftPanelGlass, whose
+// :InGlass keeps it real glass inside the panel (a panel within a panel, Jwift.Glass.jss), the panel's own surface risen
+// over the rows it passes. Its shadow is the platter's (`GlassShadow: Lift`, Jaui Glass.Jss.md): `Platter` alone ramps
+// to nothing at 64pt, which a 68pt row barely clears, so a carried row takes the platter's opacity at any size.
 //
 // IT STAYS IN ITS COLUMN, CONCENTRIC. A flat 1.03 grew a 416pt row 6.2pt each side, past its 8pt inset to 1.8pt from the
 // panel's edge, its 28pt corner scaled to 28.8 where the panel's 36 less that inset wants 34.2. The lift's growth is a
-// fixed 4pt a side instead, so the scale is 1 + 8 / its width and its corner grows by the same 4pt
-// (SortableRow.ts's LiftGeometry): a row concentric at rest stays concentric lifted, 4pt in from where it stood.
+// fixed 4pt a side instead, so the scale is 1 + 8 / its width (about 1.02) and its corner grows by the same 4pt
+// (Sortable.Logic.ts's LiftGeometry, SortableRow.ts): a row concentric at rest stays concentric lifted, 4pt in from
+// where it stood.
 Jwift_SortableRow_Lifted : JwiftPanelGlass {
-  GlassShadow: Platter
+  GlassShadow: Lift
   Layer: 60
   @Spring VisualScale { Stiffness: 632, Damping: 50, Mass: 1 }
 }

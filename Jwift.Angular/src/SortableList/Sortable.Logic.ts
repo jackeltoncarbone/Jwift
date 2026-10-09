@@ -82,6 +82,19 @@ export function Shifts(
   return out;
 }
 
+/** The space between neighbouring entries, in the entries' own units (Drill Sentences lane SH2; the owner, live: "the rows
+ *  below don't open a gap"). The shift a passed entry takes is one slot, the lifted entry's height and this gap, and the
+ *  list's gap is whatever its own `Gap` (8pt, or a list's override) lays out, never a constant: `Shifts`' 2 left a passed
+ *  row 6pt short of the slot it made room in. Read off the laid out entries, the first pair that stands apart; 0 with
+ *  fewer than two. */
+export function SlotGap(entries: readonly Pick<SortableEntry, 'Y' | 'Height'>[]): number {
+  for (let i = 1; i < entries.length; i++) {
+    const gap = entries[i].Y - (entries[i - 1].Y + entries[i - 1].Height);
+    if (gap >= 0) return gap;
+  }
+  return 0;
+}
+
 /** Whether a drop at `targetIndex` (`Target`'s slot, before that entry) moves the entry lifted from
  *  `originIndex` at all: its own slot and the one just after it both leave it where it stood. */
 export const IsMove = (originIndex: number, targetIndex: number): boolean =>
