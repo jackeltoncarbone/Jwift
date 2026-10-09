@@ -83,6 +83,10 @@ Jwift_SortableRow {
 // never the house gold, which read as a second prominent, tinted element (Drill Sentences lane AB3, round 27 item 1).
 Jwift_SortableRow_Selected : JwiftSelectedRowFill {
 }
+// A row the pick rides, but not the current one (Jwift.Glass.jss, JwiftPickedRowFill) -- half the selected row's
+// own fill, so a field pick never reads as a second selection (Drill Sentences lane AC3, round 28 item 1).
+Jwift_SortableRow_Picked : JwiftPickedRowFill {
+}
 // A line just edited flashes the house gold at low opacity and fades (Jwift.Glass.jss, JwiftEditPulse) --
 // Apple's own brief, quiet confirmation, never a held paint.
 Jwift_SortableRow_EditPulse : JwiftEditPulse {

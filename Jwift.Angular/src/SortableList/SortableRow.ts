@@ -49,6 +49,13 @@ import SortableListJss from './SortableList.jss';
 export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableEntryHandle {
   readonly Key = input.required<string>();
   readonly Selected = input(false);
+  /** This row stands in a pick that rides several rows at once, but is not itself the current row (a
+   *  caller's own distinction -- see its own doc comment) -- wears the quieter `Jwift_SortableRow_Picked`
+   *  (half `Selected`'s own fill) instead, never both: `Selected` wins outright when a row is both (the
+   *  constructor's own class list only ever pushes one of the two). Drill Sentences lane AC3, round 28
+   *  item 1: a field pick used to paint every row it rode with the SAME fill `Selected` wears, so two rows
+   *  read as one competing "you are here" (a blind desktop tester named it a stuck hover). */
+  readonly Picked = input(false);
   /** True for one tick right after an edit commits, to wear the quiet edit pulse (Jwift.Glass.jss, JwiftEditPulse)
    *  and fade -- the caller flips it back to `false` itself; this input only decides whether the row wears the
    *  pulse class, not how long the flash lasts (that is the class's own `@Transition` duration). */
@@ -112,7 +119,10 @@ export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableE
     super('SortableList', SortableListJss, 'Jwift_SortableRow', () => {
       const parts = ['Jwift_SortableRow'];
       if (this._section) parts.push('Jwift_SortableRow_InSection');
+      // Selected wins outright over Picked -- a row that is both the current one AND riding a pick wears
+      // the one, stronger "you are here" fill, never both stacked (Picked's own doc comment).
       if (this.Selected()) parts.push('Jwift_SortableRow_Selected');
+      else if (this.Picked()) parts.push('Jwift_SortableRow_Picked');
       // After Selected, so a line edited while selected still flashes the pulse on top of the quiet selection fill.
       if (this.Edited()) parts.push('Jwift_SortableRow_EditPulse');
       // Drill Sentences lane PP1, item 1a (a round 20 blind phone tester's lift hid every other row): the lifted row

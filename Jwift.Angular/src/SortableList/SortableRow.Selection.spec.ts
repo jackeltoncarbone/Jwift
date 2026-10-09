@@ -56,3 +56,31 @@ describe('a selected row wears Apple\'s own neutral fill, and an edit flashes go
     expect(editedAt).toBeGreaterThan(selectedAt);
   });
 });
+
+// Drill Sentences lane AC3, round 28 item 1 (a blind desktop tester, 102-tab3.png): a field pick can ride several
+// rows at once (`EditorStore.HighlightedLines`), and every one of them used to wear the exact SAME fill as the one
+// row that is actually current -- two rows read as one competing selection, which the tester took for a stuck
+// hover. Apple's own convention (HIG Pointing Devices, section 23; Mail, Notes, Reminders, Finder) never hover-
+// paints a list row at all, and a list shows at most one true selection at a time -- a picked-but-not-current row
+// now wears a clearly quieter fill instead of a second one of Selected's own.
+describe('a row the pick rides, but not the current one, wears half the selected row\'s own fill', () => {
+  it('Picked extends the quieter tertiary-fill class, never the selected row\'s own', () => {
+    expect(SORTABLE).toMatch(/^Jwift_SortableRow_Picked : JwiftPickedRowFill \{/m);
+    const fill = block(GLASS, 'JwiftPickedRowFill');
+    expect(fill).toMatch(/BackdropFilter:\s*Vibrancy\(@JwiftVibrancyTertiaryFill\)/);
+    expect(fill).not.toMatch(/rgb\(/);
+  });
+
+  it('the tertiary fill token is defined as half the secondary (selected row) one, so Picked is clearly quieter', () => {
+    expect(GLASS).toMatch(/@JwiftVibrancyTertiaryFill:\s*0\.5 \* @JwiftVibrancySecondaryFill/);
+  });
+
+  it('SortableRow carries a Picked input, false by default', () => {
+    expect(ROW).toContain('readonly Picked = input(false);');
+  });
+
+  it('Selected wins outright: Picked is only ever worn in the else branch of the Selected check', () => {
+    expect(ROW).toContain("if (this.Selected()) parts.push('Jwift_SortableRow_Selected');");
+    expect(ROW).toContain("else if (this.Picked()) parts.push('Jwift_SortableRow_Picked');");
+  });
+});
