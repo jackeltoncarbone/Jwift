@@ -471,6 +471,31 @@ describe('LayoutSentence — a narrow word reaches the least across, and no two 
     const last = laid.Hits.find((h) => h.TokenIndex === 2)!;
     expect(laid.Add!.Hit.X).toBeGreaterThanOrEqual(last.X + last.Width - 1e-6);
   });
+
+  // Drill Sentences lane AE1, item 1: a round 29 blind phone tester's tap on "+" opened the LAST WORD's
+  // own control instead -- a short final token ("...8") directly against "+". A short last token's own
+  // `minHit` deficit used to read "+" as a row's freeEnd with no want of its own (the SAME clause that
+  // lets an ordinary trailing WORD top itself up from blank margin, `hitOf`'s own `!next` branch) and
+  // ceded it the WHOLE gap, right down to "+"'s own bare glyph. The gap now splits at the plain midpoint
+  // of the two DRAWN edges regardless of either side's deficit (`_RowEntry`'s own `IsAdd`), so a tap on or
+  // nearer the "+" glyph always adds a step and a tap on or nearer the word always edits it.
+  it('a short last token never cedes the whole "+" gap to its own minHit deficit (phone geometry)', () => {
+    const shortTokens: readonly SentenceToken[] = [
+      { Key: 'move', Text: 'mark time', Kind: 'Word' }, { Key: 'sp', Text: ' ', Kind: 'Text' },
+      { Key: 'val', Text: '8', Kind: 'Value' },
+    ];
+    const laid = LayoutSentence(shortTokens, { WrapWidth: 1000, LineHeight: 23, FontSize: 16, Measure: measure, ShowAdd: true, MinHitWidth: 44 });
+    const last = laid.Hits.find((h) => h.TokenIndex === 2)!;
+    const lastPiece = laid.Pieces.find((p) => p.TokenIndex === 2)!;
+    const addPiece = laid.Add!;
+    const midpoint = (lastPiece.X + lastPiece.Width + addPiece.X) / 2;
+    expect(last.X + last.Width).toBeCloseTo(midpoint, 5);
+    expect(addPiece.Hit.X).toBeCloseTo(midpoint, 5);
+    // "+" keeps some of its own pad before its glyph, and the word never reaches that glyph either --
+    // the bug gave the word everything, right up to (never past) the glyph's own edge.
+    expect(addPiece.Hit.X).toBeLessThan(addPiece.X);
+    expect(last.X + last.Width).toBeLessThan(addPiece.X);
+  });
 });
 
 // Drill Sentences lane YY3b, item 10: SF Pro's own per-size tracking (Apple's HIG Typography table,
