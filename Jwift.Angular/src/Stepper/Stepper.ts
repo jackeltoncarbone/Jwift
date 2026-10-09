@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, input, output, signal, viewChild } from '@angular/core';
 import { Jiv, Jext, Jyle } from 'jaui-angular';
 import { Icon } from '../Icon/Icon';
+import { IsNewPress, NextRepeatDelayMs } from './Stepper.Repeat';
 import StepperJss from './Stepper.jss';
 
 /**
@@ -14,24 +15,32 @@ import StepperJss from './Stepper.jss';
  *
  * Drill Sentences lane AH1, item 1 (blind phone round 31, 21-after-minus4.png: four quick taps on "−"
  * registered only three decrements, and the sheet it sat in then closed itself on the unconfirmed value).
- * Two fixes, both below:
+ * Two fixes, both still live below:
  *
  *   (a) The tap itself. `(click)` cancels the moment travel since press passes 10px — Chromium's own mobile
- *       slop, `Jaui.ts`'s `TAP_SLOP` — which four quick real taps can cross even while each one still lifts
- *       squarely back over its own segment; Apple's own stepper "registers every tap... however fast." Each
- *       segment now presses its own `(pointerdown)`/`(pointerup)` pair instead: the engine fires
- *       `OnPointerUp` on whichever jiv the finger actually lifted over, UNCONDITIONALLY — no intermediate
- *       travel ever cancels it the way it cancels `(click)`'s own pending press. `(click)` stays too, for a
- *       keyboard's Enter/Space on the semantic mirror (which fires no pointer events of its own at all) —
- *       `_downId` tells it a pointer-driven tap is already in flight (or just finished) so the one gesture
- *       still bumps only once.
- *   (b) The sheet closing under it. The same in-tap wobble that used to cancel the click could also cross
- *       the sheet card's own vertical pan claim (`Jwift_SheetCard { PanClaim: Down }`) — reading as the
- *       start of its swipe to dismiss. Each segment claims its own press's pan the instant it lands
- *       (`Node.ClaimPan()`, taking the `PanClaim: Hold` Stepper.jss already gives it, `Scroll.PanClaim.ts`'s
- *       own "`Hold` never claims on its own; it exists only to be taken") — before the engine has measured
- *       any travel at all, so no wobble during a tap on the stepper can ever reach the card's own claim.
- *       Apple's own UIStepper never lets a tap on it double as the sheet's own swipe down; this is that rule.
+ *       slop, `Jaui.ts`'s `TAP_SLOP`. Each segment presses its own `(pointerdown)`/`(pointerup)` pair instead
+ *       (lane AI1 below carries this further: `(mousedown)`/`(mouseup)` too).
+ *   (b) The sheet closing under it. A fast tap's own in-tap wobble could cross the sheet card's own vertical
+ *       pan claim (`Jwift_SheetCard { PanClaim: Down }`) — reading as the start of its swipe to dismiss. Each
+ *       segment claims its own press's pan the instant it lands (`Node.ClaimPan()`, taking the
+ *       `PanClaim: Hold` Stepper.jss already gives it, `Scroll.PanClaim.ts`'s own "`Hold` never claims on its
+ *       own; it exists only to be taken") — before the engine has measured any travel at all, so no wobble
+ *       during a tap on the stepper can ever reach the card's own claim. Apple's own UIStepper never lets a
+ *       tap on it double as the sheet's own swipe down; this is that rule.
+ *
+ * Drill Sentences lane AI1 (my own live check): desktop, holding "−" for 1.5s stepped once, with no repeat
+ * at all; phone, four quick taps went 16 -> 4, three steps per tap, where 1s-spaced taps stepped once each.
+ * Apple's own `UIStepper` (`Jwift/Apple/HIG.md` 14): "Press-and-hold auto-repeats and accelerates... one-
+ * tap-per-step with no repeat is missing standard behavior" — desktop never repeated at all, and lane AH1's
+ * own `(click)`/`_downId` dedupe between a pointer-driven tap and its own synthesized `click` (the engine
+ * fires `OnClick` before the matching `OnPointerUp`, `Jaui.ts`'s own `pointerup` handler) had nothing
+ * standing between ONE physical tap's `pointerdown` and the NEXT one's, so four taps fast enough for the
+ * engine's own event queue to coalesce oddly could still cross-fire. Both fixed together: a press now bumps
+ * ONCE, immediately, on press-DOWN (Apple's own stepper gives feedback the instant a finger lands, never
+ * waiting on lift) and then repeats on a real timer (`Stepper.Repeat.ts`'s `NextRepeatDelayMs`, pinned by
+ * `Stepper.Repeat.spec.ts`) until release or a limit — so a quick tap, however many of `pointerdown`,
+ * the compat `mousedown` a touch can ALSO raise, and `click` the browser sends for it, is the ONE gesture
+ * `_pressOpen` (below) already has open, and a hold repeats on its own schedule with nothing left to race.
  */
 @Component({
   selector: 'stepper',
@@ -41,7 +50,9 @@ import StepperJss from './Stepper.jss';
   template: `
     <jyle [source]="Jss" />
     <jiv class="Jwift_Stepper">
-      <jiv #minus [class]="_MinusClass()" (pointerdown)="_onSegDown($event, 'Minus')" (pointerup)="_onSegUp($event, 'Minus')"
+      <jiv #minus [class]="_MinusClass()"
+           (pointerdown)="_onPressStart('Minus')" (pointerup)="_onPressEnd('Minus')" (pointercancel)="_onPressEnd('Minus')"
+           (mousedown)="_onPressStart('Minus')" (mouseup)="_onPressEnd('Minus')"
            (click)="_onSegClick('Minus')">
         <icon class="Jwift_StepperGlyph" Name="minus" />
       </jiv>
@@ -50,7 +61,9 @@ import StepperJss from './Stepper.jss';
         <jext class="Jwift_StepperValue" [text]="value() + ''" />
         <jiv class="Jwift_StepperDivider" />
       }
-      <jiv #plus [class]="_PlusClass()" (pointerdown)="_onSegDown($event, 'Plus')" (pointerup)="_onSegUp($event, 'Plus')"
+      <jiv #plus [class]="_PlusClass()"
+           (pointerdown)="_onPressStart('Plus')" (pointerup)="_onPressEnd('Plus')" (pointercancel)="_onPressEnd('Plus')"
+           (mousedown)="_onPressStart('Plus')" (mouseup)="_onPressEnd('Plus')"
            (click)="_onSegClick('Plus')">
         <icon class="Jwift_StepperGlyph" Name="plus" />
       </jiv>
@@ -58,7 +71,7 @@ import StepperJss from './Stepper.jss';
   `,
   styles: [':host { display: contents; }'],
 })
-export class Stepper {
+export class Stepper implements OnDestroy {
   protected readonly Jss = StepperJss;
 
   readonly value = input.required<number>();
@@ -108,35 +121,71 @@ export class Stepper {
     return max !== null && this._liveValue() >= max;
   });
 
-  /** The pointer id a segment's press is tracking, and which segment — null once it lifts (or never started). */
-  private _downId: number | null = null;
+  /** Whether a press is OPEN for this segment right now — the one gate every press-start (`pointerdown`,
+   *  the compat `mousedown` a touch can ALSO raise, lane AI1) and every press-end (`pointerup`,
+   *  `pointercancel`, `mouseup`) checks (`Stepper.Repeat.ts`'s `IsNewPress`), so however many of those
+   *  the browser sends for ONE physical tap, only the first start opens it and only the first end closes
+   *  it. `click` reads it too, to tell a keyboard's Enter/Space (no pointer events at all) apart from a
+   *  pointer tap's own synthesized click (the engine fires `OnClick` before the matching `OnPointerUp`,
+   *  `Jaui.ts`'s own `pointerup` handler, so this is STILL open when that click lands). */
+  private readonly _pressOpen: { Minus: boolean; Plus: boolean } = { Minus: false, Plus: false };
+  /** The repeat chain's own pending wait, per segment — cleared on every press-end, including the
+   *  component's own teardown (`ngOnDestroy`), so a held stepper that leaves the page mid-repeat never
+   *  bumps a value nothing reads any more. */
+  private readonly _repeatTimer: { Minus: ReturnType<typeof setTimeout> | null; Plus: ReturnType<typeof setTimeout> | null } =
+    { Minus: null, Plus: null };
 
-  /** Part (b): claims this press's pan for the segment itself, the instant it lands — ahead of any travel
-   *  the engine's own `PickClaimant` arbitration could ever measure, so the sheet's card (`PanClaim: Down`)
+  /** Part (a): a press lands — bump ONCE, at once (Apple's own `UIStepper` gives feedback the instant a
+   *  finger touches down, never waiting on lift), then arm the repeat chain (`_armRepeat`). Part (b):
+   *  claims this press's pan for the segment itself, the instant it lands — ahead of any travel the
+   *  engine's own `PickClaimant` arbitration could ever measure, so the sheet's card (`PanClaim: Down`)
    *  can never read a tap here as the start of its own swipe to dismiss. */
-  protected _onSegDown(e: PointerEvent, seg: 'Minus' | 'Plus'): void {
-    this._downId = e.pointerId;
+  protected _onPressStart(seg: 'Minus' | 'Plus'): void {
+    if (!IsNewPress(this._pressOpen[seg])) return;
+    this._pressOpen[seg] = true;
     (seg === 'Minus' ? this._minus() : this._plus())?.Node.ClaimPan();
+    this._bump(seg === 'Minus' ? -this.step() : this.step());
+    this._armRepeat(seg, Date.now());
   }
 
-  /** Part (a): the tap itself, off the engine's own `OnPointerUp` hit — fired on whichever jiv the finger
-   *  actually lifted over, with no intermediate-travel cancellation at all (unlike `(click)`'s own pending
-   *  press, cancelled by `Jaui.ts`'s 10px `TAP_SLOP`). Only the matching pointer id counts, so a finger that
-   *  slid off this segment before lifting elsewhere never fires it from here. */
-  protected _onSegUp(e: PointerEvent, seg: 'Minus' | 'Plus'): void {
-    if (this._downId !== e.pointerId) return;
-    this._downId = null;
-    this._bump(seg === 'Minus' ? -this.step() : this.step());
+  /** Part (a)'s other half: the press closes — stand down the repeat chain. The value this press already
+   *  reached (its own immediate bump, plus whatever repeats fired) stands; nothing further bumps on release. */
+  protected _onPressEnd(seg: 'Minus' | 'Plus'): void {
+    if (IsNewPress(this._pressOpen[seg])) return; // already closed (a redundant `pointercancel`/`mouseup`).
+    this._pressOpen[seg] = false;
+    const timer = this._repeatTimer[seg];
+    if (timer !== null) { clearTimeout(timer); this._repeatTimer[seg] = null; }
+  }
+
+  /** Schedules this segment's NEXT repeat bump (`Stepper.Repeat.ts`'s `NextRepeatDelayMs`, the delay then
+   *  the accelerating interval), re-arming itself after each one fires, until `_onPressEnd` clears the
+   *  timer or a bump reaches a limit without moving the value (`_bump`'s own min/max clamp) — Apple's
+   *  "stopping at release or at min/max." `startedAt` is the press's own `Date.now()`, so every wait is
+   *  measured off how long the press has ACTUALLY stood, never off a fixed per-tick interval that would
+   *  drift the delay-then-accelerate schedule under a slow frame. */
+  private _armRepeat(seg: 'Minus' | 'Plus', startedAt: number): void {
+    const wait = NextRepeatDelayMs(Date.now() - startedAt);
+    this._repeatTimer[seg] = setTimeout(() => {
+      this._repeatTimer[seg] = null;
+      if (!this._pressOpen[seg]) return;
+      const before = this._liveValue();
+      this._bump(seg === 'Minus' ? -this.step() : this.step());
+      if (this._liveValue() === before) { this._pressOpen[seg] = false; return; } // a limit: stop here.
+      this._armRepeat(seg, startedAt);
+    }, wait);
   }
 
   /** Keyboard's Enter/Space on the semantic mirror fires a bare `click`, no pointer events of its own at
-   *  all — `_downId` stays null for it, so it bumps here directly. A pointer tap's own `click` (Jaui's
-   *  engine dispatches it, when travel stayed under slop, BEFORE the matching `pointerup` that `_onSegUp`
-   *  answers to) finds `_downId` still set and stands down, so the one gesture bumps once, through
-   *  `_onSegUp`, never twice. */
+   *  all — `_pressOpen` stays closed for it, so it bumps here directly. A pointer tap's own `click` finds
+   *  the press `_onPressStart` already opened still open (this fires before the matching `pointerup`
+   *  closes it) and stands down, so the one gesture bumps once, through `_onPressStart`, never twice. */
   protected _onSegClick(seg: 'Minus' | 'Plus'): void {
-    if (this._downId !== null) return;
+    if (!IsNewPress(this._pressOpen[seg])) return;
     this._bump(seg === 'Minus' ? -this.step() : this.step());
+  }
+
+  ngOnDestroy(): void {
+    for (const seg of ['Minus', 'Plus'] as const) this._onPressEnd(seg);
   }
 
   protected _bump(delta: number): void {
