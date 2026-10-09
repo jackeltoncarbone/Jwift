@@ -68,6 +68,21 @@ Jwift_SortableSectionRule {
 // `<sortable-row>` wrapping a whole phrase: its header AND its own nested line list, not one row's worth
 // of content) relies on this Gap for the space between them, having zeroed its own Padding (see
 // SortableRow.ts's own doc comment) so the 12pt content inset below is never applied twice.
+// Drill Sentences lane AG1b, item 1 (round 31 blind desktop, 30_after_move_together.png, follow-up): a merged
+// line's donor rows stood at full height, empty glass shells, for the whole Presence fade -- a leaving Jiv
+// keeps its layout space by default (Presence.md). The first fix, `MaxHeight: Presence * 100000pt`, blanked the
+// WHOLE EDITOR (A/B confirmed, Jwift 489e51e95): `Presence` is a RenderStyle-slot builtin (`Jiv.StyleAnimator.ts`'s
+// own per-tick context) and is never populated in the LAYOUT pass's `ResolveContext` (`Layout.Solver.ts`,
+// `Layout.Intrinsic.ts`) -- a ChildLayout property (MaxHeight, Height, Padding, Margin, Gap) that references it
+// resolves to 0 PERMANENTLY, not only while leaving, collapsing every row of every sortable list in the app at
+// once. `Height`/`MaxHeight` bound to `Presence` cannot work in this engine build; every other place in the
+// house that animates a box's own size (`GlassDropdown.jss`, `Popover.jss`, `Slider.jss`, `Toggle.jss`) does it
+// the OTHER way instead: an imperative, concrete `SetStyleOverride({ Height: ... })` from TypeScript, with
+// `@Transition Height` here to ease it. `SortableRow.ts`'s own `ngOnDestroy` now sets the row's `Height` to
+// `0px` as it leaves (`_detachOnDestroy`'s own `leaveWith`, the same call `Popover.ts` uses to freeze ITS OWN
+// height instead) -- a concrete number, never a `Presence` expression, so the flex solver reads a real target
+// and springs every row below it up into the closing gap on the SAME pass (confirmed: ordinary flex siblings
+// are re-targeted by the next solve, Jaui.ts's own `_solveAndAnimate`, with no extra reflow code needed).
 Jwift_SortableRow {
   Direction: Column
   Justify: Start
@@ -78,6 +93,7 @@ Jwift_SortableRow {
   Cursor: Pointer
   @Transition Background { Duration: 140ms }
   @Transition BackdropFilter { Duration: 140ms }
+  @Transition Height { Duration: 220ms }
 }
 // Apple's own measured level for a selected row, neutral and quiet (Jwift.Glass.jss, JwiftSelectedRowFill) --
 // never the house gold, which read as a second prominent, tinted element (Drill Sentences lane AB3, round 27 item 1).
