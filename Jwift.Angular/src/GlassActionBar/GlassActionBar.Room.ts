@@ -93,28 +93,26 @@ export interface TipBox {
   readonly Bottom: number;
 }
 
-/** How much of its cell a tip moved sideways still stands over, at the least, px at one point a pt: so it still reads as
- *  that cell's. */
-export const TIP_CELL_OVERLAP_PT = 12;
-/** The air a tip moved clear of a box keeps from it, pt. */
+/** The air a tip keeps from a box it stands clear of, and from the screen's edge, pt. */
 export const TIP_AVOID_GAP_PT = 6;
 
 /**
- * How far to move a tip sideways, px, so it clears `avoid` (Drill Sentences lane RR1, item 3): 0 when it already does (or
- * there is nothing to avoid), the shorter of the moves that put it just beside the box, left or right, else null when no
- * spot along its band is clear. A move keeps the tip inside `bounds` and still over `cell` by `overlap` at the least, so
- * it points at the cell it names; a tip with no such spot is not shown.
+ * WHERE A TIP STANDS: CENTRED UNDER THE CONTROL IT NAMES (Drill Sentences lane SH2; the owner, live: "Undo's hover tip
+ * appears at the far left under the back button, not centered under Undo. A tip centers under the control it names").
+ * Lane RR1 moved a tip SIDEWAYS along its band to clear the selection bar (`TipAvoid`), up to the far side of the bar:
+ * 104pt left of Undo at a 1024pt window, and hidden outright when no sideways spot was clear. A tip names its control by
+ * standing under it, as AppKit's help tag does; so it keeps its centre on the control's and steps DOWN instead, just
+ * below the box it would cover. Only the screen's edge moves it sideways, the least that keeps it on screen, as a help
+ * tag does at the edge. Returns the move, px: `DX` across (0 but at an edge), `DY` down (0 with nothing under it).
  */
-export function TipShift(
-  tip: TipBox, cell: { readonly Left: number; readonly Right: number }, avoid: TipBox | null,
-  bounds: { readonly Left: number; readonly Right: number }, gap: number, overlap: number,
-): number | null {
-  const covers = (dx: number): boolean => !!avoid && tip.Left + dx < avoid.Right && tip.Right + dx > avoid.Left
-    && tip.Top < avoid.Bottom && tip.Bottom > avoid.Top;
-  if (!covers(0)) return 0;
-  const fits = (dx: number): boolean => tip.Left + dx >= bounds.Left && tip.Right + dx <= bounds.Right
-    && Math.min(tip.Right + dx, cell.Right) - Math.max(tip.Left + dx, cell.Left) >= Math.min(overlap, cell.Right - cell.Left);
-  const moves = [avoid!.Right + gap - tip.Left, avoid!.Left - gap - tip.Right].filter((dx) => fits(dx) && !covers(dx));
-  if (!moves.length) return null;
-  return moves.reduce((a, b) => (Math.abs(b) < Math.abs(a) ? b : a));
+export function TipPlace(
+  tip: TipBox, avoid: TipBox | null, bounds: { readonly Left: number; readonly Right: number }, gap: number,
+): { readonly DX: number; readonly DY: number } {
+  let dx = 0;
+  if (tip.Right - tip.Left <= bounds.Right - bounds.Left - 2 * gap) {
+    if (tip.Left < bounds.Left + gap) dx = bounds.Left + gap - tip.Left;
+    else if (tip.Right > bounds.Right - gap) dx = bounds.Right - gap - tip.Right;
+  }
+  const covers = !!avoid && tip.Left + dx < avoid.Right && tip.Right + dx > avoid.Left && tip.Top < avoid.Bottom && tip.Bottom > avoid.Top;
+  return { DX: dx, DY: covers ? avoid!.Bottom + gap - tip.Top : 0 };
 }

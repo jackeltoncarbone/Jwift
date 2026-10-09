@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BarRoom, CELL_PT, CellWidth, PillWidth, ShowsTitle, TipShift, TitleWidth } from './GlassActionBar.Room';
+import { BarRoom, CELL_PT, CellWidth, PillWidth, ShowsTitle, TipPlace, TitleWidth } from './GlassActionBar.Room';
 
 describe('BarRoom (Drill Sentences lane AA1, item 6: a phone title truncated while there was room)', () => {
   it('counts every other child of the trailing cluster, each with the cluster\'s gap', () => {
@@ -56,30 +56,25 @@ describe('a titled cell wears its name beside its glyph while there is room', ()
   });
 });
 
-/** Drill Sentences lane RR1, item 3 (a round 22 blind desktop tester's "Undo the last edit" stood over the selection bar). */
-describe('TipShift: a tip moves sideways along its band, clear of the page\'s chrome', () => {
+/** Drill Sentences lane SH2 (the owner: "A tip centers under the control it names"), over lane RR1, item 3. */
+describe('TipPlace: a tip stays centred under its control, and steps down past the page chrome', () => {
   const screen = { Left: 0, Right: 1440 };
-  // Undo's tip, 130 wide, under its 40pt cell at 760-800, in the band just under the toolbar.
+  // Undo's tip, 130 wide, centred under its cell at 780, in the band just under the toolbar.
   const tip = { Left: 715, Top: 82, Right: 845, Bottom: 108 };
-  const cell = { Left: 760, Right: 800 };
 
   it('stays put with nothing to avoid, or a box it does not cover', () => {
-    expect(TipShift(tip, cell, null, screen, 6, 12)).toBe(0);
-    expect(TipShift(tip, cell, { Left: 200, Top: 86, Right: 600, Bottom: 126 }, screen, 6, 12)).toBe(0);
-    expect(TipShift(tip, cell, { Left: 600, Top: 140, Right: 900, Bottom: 180 }, screen, 6, 12)).toBe(0);
+    expect(TipPlace(tip, null, screen, 6)).toEqual({ DX: 0, DY: 0 });
+    expect(TipPlace(tip, { Left: 200, Top: 86, Right: 600, Bottom: 126 }, screen, 6)).toEqual({ DX: 0, DY: 0 });
+    expect(TipPlace(tip, { Left: 600, Top: 140, Right: 900, Bottom: 180 }, screen, 6)).toEqual({ DX: 0, DY: 0 });
   });
 
-  it('moves just beside the box, the shorter way, still over its cell', () => {
-    // A selection bar ending at 740, under the tip's left end: the tip moves right, 6 clear of it.
-    expect(TipShift(tip, cell, { Left: 560, Top: 86, Right: 740, Bottom: 126 }, screen, 6, 12)).toBe(31);
-    // One starting at 830, under its right end: it moves left.
-    expect(TipShift(tip, cell, { Left: 830, Top: 86, Right: 1200, Bottom: 126 }, screen, 6, 12)).toBe(-21);
+  it('never moves sideways off its control for a box under it: it steps down just below the box', () => {
+    expect(TipPlace(tip, { Left: 560, Top: 86, Right: 740, Bottom: 126 }, screen, 6)).toEqual({ DX: 0, DY: 50 });
+    expect(TipPlace(tip, { Left: 640, Top: 86, Right: 1245, Bottom: 126 }, screen, 6)).toEqual({ DX: 0, DY: 50 });
   });
 
-  it('is not shown where no clear spot still points at its cell, or the clear spot is off screen', () => {
-    // A box under the whole cell: clear of it, the tip would no longer stand over the cell.
-    expect(TipShift(tip, cell, { Left: 640, Top: 86, Right: 1245, Bottom: 126 }, screen, 6, 12)).toBeNull();
-    // Beside the box to the right is past the screen's edge, and to the left leaves its cell.
-    expect(TipShift(tip, cell, { Left: 560, Top: 86, Right: 790, Bottom: 126 }, { Left: 0, Right: 900 }, 6, 12)).toBeNull();
+  it('moves across only to stay on screen, the least that does', () => {
+    expect(TipPlace({ Left: -20, Top: 82, Right: 110, Bottom: 108 }, null, screen, 6)).toEqual({ DX: 26, DY: 0 });
+    expect(TipPlace({ Left: 1380, Top: 82, Right: 1510, Bottom: 108 }, null, screen, 6)).toEqual({ DX: -76, DY: 0 });
   });
 });

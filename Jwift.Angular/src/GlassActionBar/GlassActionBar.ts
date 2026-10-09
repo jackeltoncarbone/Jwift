@@ -28,7 +28,7 @@ import { JwiftSpinner } from '../Spinner/JwiftSpinner';
 import GlassActionBarJss from './GlassActionBar.jss';
 import { HoverTip } from './HoverTip';
 import {
-  BarRoom, CELL_PT, CellWidth, PillWidth, ShowsTitle, TIP_AVOID_GAP_PT, TIP_CELL_OVERLAP_PT, TipShift, TitleWidth, type TipBox,
+  BarRoom, CELL_PT, CellWidth, PillWidth, ShowsTitle, TIP_AVOID_GAP_PT, TipPlace, TitleWidth, type TipBox,
 } from './GlassActionBar.Room';
 
 /**
@@ -382,8 +382,8 @@ export class GlassActionBar implements OnDestroy {
    *  something under the bar, a notice, whose place the tip would cover (Drill Sentences lane JJ1, item 5). */
   readonly QuietTips = input<unknown>(null);
   /** A box on screen, px, that no tip may cover (Drill Sentences lane RR1, item 3: the drill page's selection bar stands
-   *  under the toolbar, where the tips stand). A tip that would cover it moves sideways along its band until it is clear,
-   *  still over its cell and on screen (`TipShift`), and shows not at all where no such spot is. Null: none. */
+   *  under the toolbar, where the tips stand). A tip that would cover it steps down just below it, still centred under its
+   *  cell (`TipPlace`, Drill Sentences lane SH2). Null: none. */
   readonly TipAvoid = input<TipBox | null>(null);
   private readonly _quietTipsEffect = effect(() => {
     this.QuietTips();
@@ -413,15 +413,15 @@ export class GlassActionBar implements OnDestroy {
   private static readonly _TipInsetPt = { X: 10, Y: 5 };
   private static readonly _TipMinHeightPt = 26;
 
-  /** How far, pt, the tip naming `label` for the cell at `cellLeft` (`width` wide, its centre `centre`, pt from the bar's
-   *  left) moves sideways to clear `TipAvoid` (Drill Sentences lane RR1, item 3, `TipShift`), its pill as wide as its words
-   *  run (`TitleWidth`, generous), on screen as the bar stands; null where no spot is clear. 0 with nothing to avoid or the
-   *  bar not laid out yet. */
-  private _tipShift(label: string, centre: number, cellLeft: number, width: number): number | null {
+  /** How far, pt, the tip naming `label` for the cell centred at `centre` (pt from the bar's left) moves: down, just below
+   *  `TipAvoid` when it would cover it, and across only where the screen's edge would cut it (`TipPlace`, Drill Sentences
+   *  lane SH2: a tip stands centred under the control it names). Its pill is as wide as its words run (`TitleWidth`,
+   *  generous), on screen as the bar stands. Nothing with the bar not laid out yet. */
+  private _tipMove(label: string, centre: number): { readonly DX: number; readonly DY: number } {
     const avoid = this.TipAvoid();
     const bar = this._Bar?.Node;
     const toolbar = bar?.Parent?.Parent;
-    if (!avoid || !bar || !toolbar || !(toolbar.Width > 0)) return 0;
+    if (!bar || !toolbar || !(toolbar.Width > 0)) return { DX: 0, DY: 0 };
     const ps = toolbar.ResolveCtx?.PointScale ?? 1;
     const inset = GlassActionBar._TipInsetPt;
     const words = TitleWidth(label, GlassActionBar._TipFontPt) + 2 * inset.X;
@@ -431,9 +431,8 @@ export class GlassActionBar implements OnDestroy {
     const x = (pt: number): number => bar.X + pt * ps;
     const top = bar.Y + GlassActionBar._TipTopPt * ps;
     const tip = { Left: x(centre - pill / 2), Right: x(centre + pill / 2), Top: top, Bottom: top + height * ps };
-    const dx = TipShift(tip, { Left: x(cellLeft), Right: x(cellLeft + width) }, avoid,
-      { Left: toolbar.X, Right: toolbar.X + toolbar.Width }, TIP_AVOID_GAP_PT * ps, TIP_CELL_OVERLAP_PT * ps);
-    return dx === null ? null : dx / ps;
+    const move = TipPlace(tip, avoid, { Left: toolbar.X, Right: toolbar.X + toolbar.Width }, TIP_AVOID_GAP_PT * ps);
+    return { DX: move.DX / ps, DY: move.DY / ps };
   }
   protected readonly _TipLayout = computed<{ Label: string; Layout: Partial<ChildLayout> } | null>(() => {
     const id = this._Tip.Shown();
@@ -455,13 +454,12 @@ export class GlassActionBar implements OnDestroy {
         const cellLeft = left + pad + before;
         const width = CellWidth(target, titles);
         const centre = cellLeft + width / 2;
-        const shift = this._tipShift(label, centre, cellLeft, width);
-        if (shift === null) return null;
+        const move = this._tipMove(label, centre);
         return {
           Label: label,
           Layout: {
-            Position: 'Placed', Left: `${centre - GlassActionBar._TipWidthPt / 2 + shift}pt`,
-            Top: `${GlassActionBar._TipTopPt}pt`, Width: `${GlassActionBar._TipWidthPt}pt`,
+            Position: 'Placed', Left: `${centre - GlassActionBar._TipWidthPt / 2 + move.DX}pt`,
+            Top: `${GlassActionBar._TipTopPt + move.DY}pt`, Width: `${GlassActionBar._TipWidthPt}pt`,
           },
         };
       }
@@ -471,10 +469,11 @@ export class GlassActionBar implements OnDestroy {
   });
 
   // Geometry — in sync with Jwift_GlassDropdown_Closed (44pt cells, `CELL_PT`, 4pt gap,
-  // 2pt pad) and Jwift_GlassActionBar (10pt inter-pill gap).
+  // 2pt pad) and Jwift_GlassActionBar (@Gap12 between pills; lane TK1 moved the sheet's 10 to 12 and this stayed 10, so every
+  // cell after the first pill was modelled 2pt left per pill before it: Drill Sentences lane SH2).
   private static readonly _GapPt     =  4;
   private static readonly _PadPt     =  2;
-  private static readonly _PillGapPt = 10;
+  private static readonly _PillGapPt = 12;
   private static readonly _ToolbarPadPt = 10;
   private static readonly _HysteresisPt = 8;
   /** Jwift_ToolbarTrailing's own Gap, between the bar and whatever else the trailing cluster holds. */
