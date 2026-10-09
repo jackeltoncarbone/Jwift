@@ -147,3 +147,21 @@ export function AutoscrollVelocity(fingerY: number, scrollerTop: number, scrolle
   if (fingerY > scrollerBottom - 40) return Math.min(14, (fingerY - scrollerBottom + 40) / 4);
   return 0;
 }
+
+/** How far a lifted row grows past its own edges, pt a side (Drill Sentences lane SH1). Half the 8pt a row stands in from
+ *  the drill panel's edge, so the lift reads as a lift and stays in its column. */
+export const LIFT_GROWTH_PT = 4;
+
+/**
+ * THE LIFT STAYS CONCENTRIC (Drill Sentences lane SH1; the owner, live: the lifted row poked past the list's inset and its
+ * corners did not nest in the panel's). A flat scale grows a row by a share of its width, a 416pt row 6.2pt a side at
+ * 1.03, and scales its corner by the same factor, 28 to 28.8, where a corner nested in its container wants to grow by
+ * exactly the inset it gave up. So the row grows a fixed `growth` a side, `1 + 2 growth / width`, and its corner is set
+ * before the scale so that, drawn, it is the resting corner plus that same growth: a row concentric at rest is
+ * concentric lifted. `width` and `radius` in pt; a row too narrow to grow keeps scale 1.
+ */
+export function LiftGeometry(width: number, radius: number, growth = LIFT_GROWTH_PT): { readonly Scale: number; readonly Radius: number } {
+  if (!(width > 2 * growth)) return { Scale: 1, Radius: radius };
+  const scale = 1 + (2 * growth) / width;
+  return { Scale: scale, Radius: (radius + growth) / scale };
+}

@@ -119,17 +119,23 @@ Jwift_SortableRow_InSection {
 
 // r = 0.25 -> Stiffness 632, Damping 50 (FlexMovement.TuneSpring): the lift grows into place.
 // Layer 60: "Carry" (Design/Layers.ts -- Jwift cannot import it, so the rung is named here instead).
-// Drill Sentences lane PP1, item 1a: the paper material itself (Paper.jss's own fill, frost and rim), worn in the
-// row's own slot. It used to borrow Jwift_PaperSurface, a backdrop panel placed over its parent's whole box, which
-// pulled the lifted row out of the flow and over every other row.
-Jwift_SortableRow_Lifted : JwiftSolidGlass {
-  Background: @Paper
-  BackdropFilter: Blur(26pt) Saturate(1.5)
+//
+// THE LIFTED ROW IS THE ROW'S OWN GLASS, LIFTED (Drill Sentences lane SH1; the owner, live: "some things i was resorting in
+// list had a solid grey background"). It wore @Paper, rgba(28, 28, 30, 0.9) in dark: an opaque grey card with a 44pt
+// shadow that read as no shadow at all over the dark panel, the one opaque plate in a list of glass. UIKit lifts a row as
+// a platter of its own material with the platter's shadow under it (_UIPlatterView); here the row's material is the
+// panel's glass, so the lifted row is that glass: JwiftPanelGlass, whose :InGlass keeps it real glass inside the
+// panel (a panel within a panel, Jwift.Glass.jss) reading the same content the panel reads, so it reads as the panel's
+// own surface risen, its rows under it gone under glass rather than through a plate, with Apple's platter shadow
+// (GlassShadow: Platter, the drop shadow every floating platter casts).
+//
+// IT STAYS IN ITS COLUMN, CONCENTRIC. A flat 1.03 grew a 416pt row 6.2pt each side, past its 8pt inset to 1.8pt from the
+// panel's edge, its 28pt corner scaled to 28.8 where the panel's 36 less that inset wants 34.2. The lift's growth is a
+// fixed 4pt a side instead, so the scale is 1 + 8 / its width and its corner grows by the same 4pt
+// (SortableRow.ts's LiftGeometry): a row concentric at rest stays concentric lifted, 4pt in from where it stood.
+Jwift_SortableRow_Lifted : JwiftPanelGlass {
+  GlassShadow: Platter
   Layer: 60
-  VisualScale: 1.03
-  ShadowColor: rgba(0, 0, 0, 0.28)
-  ShadowBlur: 44pt
-  ShadowOffsetY: 18pt
   @Spring VisualScale { Stiffness: 632, Damping: 50, Mass: 1 }
 }
 

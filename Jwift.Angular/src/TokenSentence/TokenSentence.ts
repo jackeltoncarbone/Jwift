@@ -751,7 +751,7 @@ export class TokenSentence extends JivHost implements OnInit, OnDestroy {
       // Jwift_TokenSentenceAdd's own BorderRadius (TokenSentence.jss) — PillRadiusOf deliberately
       // answers null for "+" (its own doc comment: that one names the CORNER A WORD'S MENU grows out
       // of), so this reads the "+"'s actual drawn corner straight off its own class instead.
-      return add ? { Rect: { X: add.X, Y: add.Y, Width: add.Width, Height: add.Height }, RadiusPt: 13 } : null;
+      return add ? { Rect: { X: add.X, Y: add.Y, Width: add.Width, Height: add.Height }, RadiusPt: add.Height / 2 } : null;
     }
     const tokenIndex = this.Tokens().findIndex((t) => t.Key === key);
     const piece = layout.Pieces.find((p) => p.TokenIndex === tokenIndex);

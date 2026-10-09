@@ -148,8 +148,15 @@ const WEIGHT_OF: Record<SentenceTokenKind, number> = {
 };
 
 const ADD_GAP = 4;
+// The "+"'s plate is a 28pt circle (Drill Sentences lane SH1; the owner, live: its hover circle sat low and off the glyph).
+// It was 28 x 26 drawn from its line's top, so the 26pt plate hung 1.5pt below the line's centre and the glyph, laid at
+// the plate's top, 2.8pt above its own plate's centre. The plate now centres on its line (`ADD_HEIGHT` around
+// `LineHeight / 2`) and the glyph centres in it (TokenSentence.jss). Its REACH is unchanged: 8pt past its width and 9pt
+// past the old 26pt line box, 44pt tall (`ADD_REACH_HEIGHT`), so no hit target moved.
 const ADD_WIDTH = 28;
-const ADD_HEIGHT = 26;
+const ADD_HEIGHT = 28;
+const ADD_LINE_BOX = 26;
+const ADD_REACH_HEIGHT = ADD_LINE_BOX + 18;
 /** Sentinel token index for the synthetic add-button unit — never a real token position. */
 const ADD_TOKEN_INDEX = -1;
 
@@ -420,8 +427,8 @@ export function LayoutSentence(
   for (const p of placed) {
     if (p.Unit.IsAdd) {
       add = {
-        X: p.X, Y: p.Y, Width: ADD_WIDTH, Height: ADD_HEIGHT, Row: p.Row,
-        Hit: { X: p.X - 8, Y: p.Y - 9, Width: ADD_WIDTH + 16, Height: ADD_HEIGHT + 18 },
+        X: p.X, Y: p.Y + (LineHeight - ADD_HEIGHT) / 2, Width: ADD_WIDTH, Height: ADD_HEIGHT, Row: p.Row,
+        Hit: { X: p.X - 8, Y: p.Y - 9, Width: ADD_WIDTH + 16, Height: ADD_REACH_HEIGHT },
       };
       continue;
     }

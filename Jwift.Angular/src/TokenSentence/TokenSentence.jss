@@ -96,11 +96,17 @@ Jwift_TokenSentenceTextHit {
 
 // The trailing "+" add button: a small round glyph glued to the sentence's last token. One the words
 // pushed elsewhere goes at once, as a word does (lane BB2, item 4).
+// A CIRCLE, ITS GLYPH AT THE CENTRE (Drill Sentences lane SH1; the owner, live: the "+" hover circle sat low and off the
+// glyph). 28 x 26 drawn from the line's top, with the glyph laid at its top, put the plate 2.8pt below the glyph's centre.
+// A 28pt circle centred on its line (TokenSentence.Layout.ts, ADD_HEIGHT), the glyph centred in it.
 Jwift_TokenSentenceAdd {
   Position: Placed
   Width: 28pt
-  Height: 26pt
-  BorderRadius: 13pt
+  Height: 28pt
+  BorderRadius: 14pt
+  Direction: Row
+  Justify: Center
+  Align: Center
   PointerEvents: None
   Opacity: Presence * (1 - Exiting)
   @Transition Opacity { Duration: 0ms }

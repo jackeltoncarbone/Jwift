@@ -179,6 +179,15 @@ Jwift_GlassDropdown_ClosedCell : Jwift_GlassDropdown_Closed {
   RimStrength: 0
   Background: rgba(255, 255, 255, 0)
 }
+// NO PLATE AT REST (Drill Sentences lane SH1; the owner, live: the toolbar read [Cast, Library, (Camera)], one cell
+// looking selected). This class still extends JwiftGlass through Jwift_GlassDropdown, so in its pill it answered
+// `JwiftGlass:InGlass` and wore the tertiary fill every glass control in glass takes, at rest, while Cast and Library
+// beside it, plain cells, wore nothing. A closed menu cell in a group looks like its neighbours: the hover and the
+// press are the cell's own (Jwift_GlassDropdownCell, inside it), and only those draw its capsule. A filter merges by
+// function, so the fill is zeroed, not "None"d.
+Jwift_GlassDropdown_ClosedCell:InGlass {
+  BackdropFilter: Vibrancy(0)
+}
 Jwift_GlassDropdownCell_Avatar_Fill : Jwift_GlassDropdownCell_Avatar {
   Width: 48pt
   Height: 48pt

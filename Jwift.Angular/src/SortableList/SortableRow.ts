@@ -10,6 +10,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { Jaui, Jiv } from 'jaui-angular';
 import { JivHost } from '../Internal/JivHost';
@@ -18,6 +19,7 @@ import { SWIPE_GROUP, SwipeController, type SwipeControllerHost } from '../Swipe
 import { RestingOpenWidth, type SwipeAction } from '../Swipe/Swipe.Logic';
 import { SORTABLE_ENTRY, SORTABLE_LIST, type SortableEntryHandle } from './SortableList';
 import { SortableSection } from './SortableSection';
+import { LiftGeometry } from './Sortable.Logic';
 import SortableListJss from './SortableList.jss';
 
 /**
@@ -139,7 +141,19 @@ export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableE
     // this row wears while lifted) and every other thick house surface states explicitly rather than leaves to
     // whatever a plain rounded rect defaults to. Live feedback: a selected row's own GoldWash had square
     // corners; EffectiveRadius alone was not the whole gap.
-    if (list) effect(() => this.SetStyleOverride({ BorderRadius: `${list.EffectiveRadius()}pt`, CornerShape: 'Squircle' }));
+    // Drill Sentences lane SH1: lifted, the row grows a fixed 4pt a side and its corner with it (`LiftGeometry`), so it stays
+    // in its column and concentric with the panel it was concentric with at rest; the width is read as the lift begins.
+    if (list) effect(() => {
+      const radius = list.EffectiveRadius();
+      if (this._lifted()) {
+        const ps = untracked(() => this.Node.ResolveCtx?.PointScale ?? 1);
+        const lift = LiftGeometry(untracked(() => this.Node.Width) / ps, radius);
+        this.SetStyleOverride({ BorderRadius: `${lift.Radius}pt`, CornerShape: 'Squircle', VisualScale: `${lift.Scale}` });
+      } else {
+        this.SetStyleOverride({ BorderRadius: `${radius}pt`, CornerShape: 'Squircle' });
+        this.ClearStyleOverride('VisualScale');
+      }
+    });
     effect(() => {
       const padding = this.Padding();
       if (padding !== null) this.SetStyleOverride({ Padding: padding });

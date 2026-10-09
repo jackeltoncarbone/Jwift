@@ -27,6 +27,15 @@ Jwift_GlassBtn_Round : Jwift_GlassBtn {
   Width: @HeightLarge
   Height: @HeightLarge
   BorderRadius: @RadiusLarge
+  // IN A TOOLBAR IT IS THE BAR'S OWN ROW (Drill Sentences lane SH1). The 50pt large tier stood 2pt taller than the 48pt
+  // groups beside it in one bar (back 28..78 against the groups' 28..76) and 1pt off the screen corner's centre: the
+  // header's 24 + 4 puts a 48pt button's centre 52pt in, the screen radius (Toolbar.jss), so a 48pt circle there is
+  // concentric with the corner (52 − 28 = 24) and a 50pt one is not (25). A toolbar button is the toolbar's height.
+  @If (Ancestor(Jwift_Toolbar)) {
+    Width: @JwiftScrollEdgeRow
+    Height: @JwiftScrollEdgeRow
+    BorderRadius: @JwiftScrollEdgeRow / 2
+  }
 }
 
 Jwift_GlassBtn_Pill : Jwift_GlassBtn {
@@ -201,6 +210,12 @@ Jwift_GlassBtnBar_Round {
   Height: 44pt
   FlexShrink: 0
   BorderRadius: 22pt
+  // A size the caller chose keeps it in a toolbar too: restated after Jwift_GlassBtn_Round's toolbar rule, which it follows.
+  @If (Ancestor(Jwift_Toolbar)) {
+    Width: 44pt
+    Height: 44pt
+    BorderRadius: 22pt
+  }
 }
 
 Jwift_GlassBtnBar_Pill {
@@ -224,6 +239,11 @@ Jwift_GlassBtnSmall_Round {
   Height: 28pt
   FlexShrink: 0
   BorderRadius: 14pt
+  @If (Ancestor(Jwift_Toolbar)) {
+    Width: 28pt
+    Height: 28pt
+    BorderRadius: 14pt
+  }
 }
 
 Jwift_GlassBtnSmall_Pill {
