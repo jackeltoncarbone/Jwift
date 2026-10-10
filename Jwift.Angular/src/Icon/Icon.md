@@ -20,7 +20,11 @@ Icon/
 ```
 
 The app owns `src/Icons/Icon.Manifest` (which names ship) and the output
-`public/fonts/JwiftIcons/Icon.Font.woff2` plus `NOTICE.txt` beside it.
+`public/fonts/JwiftIcons/Icon.Font.<hash>.woff2` plus `NOTICE.txt` beside it. The font's name carries a
+hash of its bytes, so every app version loads exactly the font its codepoint map was built with (a fixed
+URL let a cached older app draw with a newer font). The generator also writes `src/Icons/Icon.Font.gen.scss`
+(`$Url`, `$Family`) and `src/Icons/Icon.Font.gen.ts` (`IconFontUrl`, `IconFontFamily`); the app's
+`@font-face` reads the URL from the Sass module, and Jaui's canvas loads the font from that rule.
 
 ## Packs
 
