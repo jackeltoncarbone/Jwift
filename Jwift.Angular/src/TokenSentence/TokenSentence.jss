@@ -50,12 +50,12 @@ Jwift_TokenSentenceBadgePill {
 }
 
 // Word/Problem's underline — a 1pt hairline under the ink, hidden while the token is open (the pill
-// says "active" instead). It goes the way its word goes (Jwift_TokenSentenceWord, below).
+// says "active" instead). It comes and goes the way its word does (Jwift_TokenSentenceWord, below).
 Jwift_TokenSentenceUnderline {
   Position: Placed
   Height: 1pt
   PointerEvents: None
-  Opacity: Presence * (1 - Exiting)
+  Opacity: Entering * (1 - Presence) + Presence * (1 - Exiting)
   @Transition Opacity { Duration: 0ms }
 }
 
@@ -69,11 +69,18 @@ Jwift_TokenSentenceUnderline_Faint {
 
 // Every word of the sentence. Drill Sentences lane BB2, item 4 (blind testers: "outs8 counts" after a
 // grouping, "theright face" after an undo): a word the sentence no longer has used to fade out where it
-// stood for the presence spring's ~400ms, under the words now standing there. It goes at once; a word that
-// arrives still fades in, in its own place (`LandPieces`, TokenSentence.Layout.ts, keeps any word from
-// sliding through another).
+// stood for the presence spring's ~400ms, under the words now standing there. It goes at once (`LandPieces`,
+// TokenSentence.Layout.ts, keeps any word from sliding through another).
+// Drill Sentences lane R35, item 1 (round 34 blind desktop, 47a_move_together.png: after Move together the joined
+// row's sentence read dimmed): a word that arrives came in on its own Presence, so every word an edit moved (each
+// a new node where it now goes) stood half drawn for ~400ms beside the words that stayed. It comes at once too, as
+// UIKit swaps a reconfigured cell's text: nothing reads dimmed after an edit. A sentence that mounts with its row
+// still fades in with the row around it, whose own Presence every word under it is drawn through. Arriving
+// (`Entering`) it stands whole, `(1 - Presence) + Presence`; leaving it is gone, and stays gone once its Presence has
+// settled at 0 (when `Exiting` reads 0 again, and a bare `1 - Exiting` drew the departed word back whole until the
+// engine removed it).
 Jwift_TokenSentenceWord {
-  Opacity: Presence * (1 - Exiting)
+  Opacity: Entering * (1 - Presence) + Presence * (1 - Exiting)
   @Transition Opacity { Duration: 0ms }
 }
 
@@ -95,7 +102,8 @@ Jwift_TokenSentenceTextHit {
 }
 
 // The trailing "+" add button: a small round glyph glued to the sentence's last token. One the words
-// pushed elsewhere goes at once, as a word does (lane BB2, item 4).
+// pushed elsewhere goes at once, and comes at once where it now stands, as a word does (lanes BB2, item 4 and
+// R35, item 1).
 // A CIRCLE, ITS GLYPH AT THE CENTRE (Drill Sentences lane SH1; the owner, live: the "+" hover circle sat low and off the
 // glyph). 28 x 26 drawn from the line's top, with the glyph laid at its top, put the plate 2.8pt below the glyph's centre.
 // A 28pt circle centred on its line (TokenSentence.Layout.ts, ADD_HEIGHT), the glyph centred in it.
@@ -108,7 +116,7 @@ Jwift_TokenSentenceAdd {
   Justify: Center
   Align: Center
   PointerEvents: None
-  Opacity: Presence * (1 - Exiting)
+  Opacity: Entering * (1 - Presence) + Presence * (1 - Exiting)
   @Transition Opacity { Duration: 0ms }
 }
 Jwift_TokenSentenceAdd_Hover {

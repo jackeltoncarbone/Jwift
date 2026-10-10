@@ -166,21 +166,15 @@ export class SortableRow extends JivHost implements OnInit, OnDestroy, SortableE
     this.Node.WatchRect(true);
     this._list?.RegisterEntry(this);
   }
-  /** Drill Sentences lane AG1b, item 1 (round 31 blind desktop, 30_after_move_together.png, follow-up): a row
-   *  that leaves kept its layout space at full height for the whole Presence fade, an empty glass shell holding
-   *  only its own "+". The engine's own documented collapse-on-exit idiom (`Height` bound to `Presence`) is a
-   *  ChildLayout-slot property, resolved only by the layout pass -- where `Presence` is never populated (it is
-   *  a RenderStyle-slot builtin) -- so it blanked the whole editor instead (SortableList.jss's own comment,
-   *  Jwift 489e51e95, the revert). The house's own proven pattern for animating a box's own size instead (every
-   *  `GlassDropdown`/`Popover`/`Slider`/`Toggle` panel): a concrete, imperative `Height` the class's own
-   *  `@Transition Height` eases, never a `Presence` expression. `leaveWith` (`_detachOnDestroy`'s own, the SAME
-   *  call `Popover.ts` uses to freeze ITS height as it leaves) targets 0 instead, so the row collapses as it
-   *  fades and the rows below it spring up into the closing gap on the very next solve. */
+  /** Drill Sentences lane R35, item 1 (round 34 blind desktop: after Move together a donor row stood as an empty card
+   *  holding only its "…", its words already gone): a row leaves as one unit, its card and its "…" in the frame its
+   *  words go (`leaveWith`'s Opacity 0, which SortableList.jss's own 0ms states at once), and the rows below spring up
+   *  into the gap (SortableList.jss's own comment on why AG1b's `Height: 0px` never moved them). */
   ngOnDestroy(): void {
     this._controller.Destroy();
     this._list?.UnregisterEntry(this);
     this.Node.WatchRect(false);
-    this._detachOnDestroy({ Height: '0px' });
+    this._detachOnDestroy({ Opacity: '0' });
   }
 
   // ── SortableEntryHandle ── (driven by the LIST during a drag) ──
